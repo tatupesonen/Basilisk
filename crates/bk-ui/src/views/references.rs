@@ -9,10 +9,30 @@ use crate::design::{icons, widgets};
 use crate::model::{Address, Location, Page, Reference, SortOrder};
 
 const COLUMNS: [ColumnDef; 4] = [
-    ColumnDef { title: "Location", width: 100.0, sortable: true, numeric: false },
-    ColumnDef { title: "Label", width: 140.0, sortable: true, numeric: false },
-    ColumnDef { title: "Code Unit", width: 260.0, sortable: false, numeric: false },
-    ColumnDef { title: "Ref Type", width: 120.0, sortable: true, numeric: false },
+    ColumnDef {
+        title: "Location",
+        width: 100.0,
+        sortable: true,
+        numeric: false,
+    },
+    ColumnDef {
+        title: "Label",
+        width: 140.0,
+        sortable: true,
+        numeric: false,
+    },
+    ColumnDef {
+        title: "Code Unit",
+        width: 260.0,
+        sortable: false,
+        numeric: false,
+    },
+    ColumnDef {
+        title: "Ref Type",
+        width: 120.0,
+        sortable: true,
+        numeric: false,
+    },
 ];
 
 /// Most references listed for one target.
@@ -35,11 +55,16 @@ fn fetch_for(target: Address) -> super::table::Fetch<Reference> {
             .filter(|r| {
                 f.is_empty()
                     || r.code.to_lowercase().contains(&f)
-                    || r.from_function.as_deref().is_some_and(|n| n.to_lowercase().contains(&f))
+                    || r.from_function
+                        .as_deref()
+                        .is_some_and(|n| n.to_lowercase().contains(&f))
             })
             .collect();
         rows.sort_by(|a, b| match sort {
-            1 => a.from_function.cmp(&b.from_function).then(a.from.cmp(&b.from)),
+            1 => a
+                .from_function
+                .cmp(&b.from_function)
+                .then(a.from.cmp(&b.from)),
             3 => a.kind.name().cmp(b.kind.name()).then(a.from.cmp(&b.from)),
             _ => a.from.cmp(&b.from),
         });
@@ -48,7 +73,11 @@ fn fetch_for(target: Address) -> super::table::Fetch<Reference> {
         }
         let total = rows.len() as u64;
         Ok(Page {
-            rows: rows.into_iter().skip(offset as usize).take(limit as usize).collect(),
+            rows: rows
+                .into_iter()
+                .skip(offset as usize)
+                .take(limit as usize)
+                .collect(),
             total,
         })
     })
@@ -57,7 +86,15 @@ fn fetch_for(target: Address) -> super::table::Fetch<Reference> {
 impl Default for ReferencesView {
     fn default() -> Self {
         Self {
-            table: PagedTable::new(Arc::new(|_, _, _, _, _, _| Ok(Page { rows: Vec::new(), total: 0 })), 0),
+            table: PagedTable::new(
+                Arc::new(|_, _, _, _, _, _| {
+                    Ok(Page {
+                        rows: Vec::new(),
+                        total: 0,
+                    })
+                }),
+                0,
+            ),
             target: None,
         }
     }
@@ -94,12 +131,24 @@ impl View for ReferencesView {
             );
             return;
         }
-        let ev = self.table.ui(ui, cx, "references", &COLUMNS, "Filter references", |ui, r, c| match c {
-            0 => code_cell(ui, &t, &r.from.to_string(), t.syntax.address),
-            1 => code_cell(ui, &t, r.from_function.as_deref().unwrap_or(""), t.syntax.function),
-            2 => code_cell(ui, &t, &r.code, t.syntax.mnemonic),
-            _ => text_cell(ui, r.kind.name(), t.palette.text_secondary),
-        });
+        let ev = self.table.ui(
+            ui,
+            cx,
+            "references",
+            &COLUMNS,
+            "Filter references",
+            |ui, r, c| match c {
+                0 => code_cell(ui, &t, &r.from.to_string(), t.syntax.address),
+                1 => code_cell(
+                    ui,
+                    &t,
+                    r.from_function.as_deref().unwrap_or(""),
+                    t.syntax.function,
+                ),
+                2 => code_cell(ui, &t, &r.code, t.syntax.mnemonic),
+                _ => text_cell(ui, r.kind.name(), t.palette.text_secondary),
+            },
+        );
         if let Some(TableEvent::Selected(r) | TableEvent::Activated(r)) = ev {
             cx.shared.nav.go(Location::at(r.from));
         }

@@ -377,7 +377,12 @@ pub fn popup_menu(ui: &mut egui::Ui, cx: &mut ViewCx<'_>, target: Option<&Target
         let name = target
             .and_then(|t| t.token.as_ref())
             .map_or_else(String::new, |t| format!(" {}", t.text));
-        menu_item(ui, cx, ActionId::ShowReferences, &format!("Show References to{name}"));
+        menu_item(
+            ui,
+            cx,
+            ActionId::ShowReferences,
+            &format!("Show References to{name}"),
+        );
     });
     ui.separator();
     menu_item(ui, cx, ActionId::Snapshot, "Snapshot");

@@ -72,7 +72,7 @@ fn num(s: &str) -> Option<u64> {
 }
 
 fn hex_bytes(s: &str) -> Option<Vec<u8>> {
-    if s.len() % 2 != 0 {
+    if !s.len().is_multiple_of(2) {
         return None;
     }
     (0..s.len())
@@ -116,9 +116,9 @@ pub(crate) fn parse(text: &str) -> Result<RawProgram, ParseError> {
         let number = |n: usize| field(n).and_then(|s| num(s).ok_or_else(|| bad("bad number")));
         match field(0)? {
             "PROGRAM" => {
-                p.name = field(1)?.to_owned();
-                p.language = field(2)?.to_owned();
-                p.format = field(3)?.to_owned();
+                field(1)?.clone_into(&mut p.name);
+                field(2)?.clone_into(&mut p.language);
+                field(3)?.clone_into(&mut p.format);
                 p.image_base = number(4)?;
             }
             "SECTION" => p.sections.push(RawSection {
@@ -147,11 +147,11 @@ pub(crate) fn parse(text: &str) -> Result<RawProgram, ParseError> {
                 bytes: hex_bytes(field(2)?).ok_or_else(|| bad("bad bytes"))?,
                 mnemonic: field(3)?.to_owned(),
                 operands: field(4)?.to_owned(),
-                line: u32::try_from(number(5)?).map_err(|_| bad("line out of range"))?,
+                line: u32::try_from(number(5)?).map_err(|e| bad(&format!("line number: {e}")))?,
             }),
             "SRC" => p.source.push((
                 field(1)?.to_owned(),
-                u32::try_from(number(2)?).map_err(|_| bad("line out of range"))?,
+                u32::try_from(number(2)?).map_err(|e| bad(&format!("line number: {e}")))?,
                 unescape(f.get(3).copied().unwrap_or_default()),
             )),
             kind @ ("EOL" | "PRE" | "PLATE") => {

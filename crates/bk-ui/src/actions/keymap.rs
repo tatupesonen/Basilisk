@@ -24,6 +24,10 @@ pub struct KeyChord {
 }
 
 /// A chord (for the action table).
+#[expect(
+    clippy::fn_params_excessive_bools,
+    reason = "mirrors the modifier keys; reads as a table"
+)]
 pub const fn chord(key: Key, ctrl: bool, shift: bool, alt: bool) -> KeyChord {
     KeyChord {
         key,
@@ -36,12 +40,12 @@ pub const fn chord(key: Key, ctrl: bool, shift: bool, alt: bool) -> KeyChord {
 impl KeyChord {
     /// Whether the chord has no modifier (fires only when no text field
     /// has focus, so typing is never taken for a command).
-    pub fn is_bare(&self) -> bool {
+    pub fn is_bare(self) -> bool {
         !self.ctrl && !self.alt && !self.shift
     }
 
     /// Whether `modifiers` match the chord exactly.
-    pub fn matches(&self, key: Key, modifiers: Modifiers) -> bool {
+    pub fn matches(self, key: Key, modifiers: Modifiers) -> bool {
         self.key == key
             && self.ctrl == modifiers.command
             && self.shift == modifiers.shift
@@ -49,7 +53,7 @@ impl KeyChord {
     }
 
     /// The chord as shown on this platform (`Ctrl+Shift+F`, `Cmd+E`).
-    pub fn label(&self, mac: bool) -> String {
+    pub fn label(self, mac: bool) -> String {
         let mut s = String::new();
         if self.ctrl {
             s.push_str(if mac { "Cmd+" } else { "Ctrl+" });
@@ -188,7 +192,10 @@ mod tests {
         // Taking G from Go To unbinds it there.
         k.bind(ActionId::Rename, chord(Key::G, false, false, false));
         assert!(k.bindings(ActionId::GoTo).is_empty());
-        assert_eq!(k.conflict(ActionId::SetComment, chord(Key::G, false, false, false)), Some(ActionId::Rename));
+        assert_eq!(
+            k.conflict(ActionId::SetComment, chord(Key::G, false, false, false)),
+            Some(ActionId::Rename)
+        );
         let json = serde_json::to_string(&k).unwrap();
         let back: Keymap = serde_json::from_str(&json).unwrap();
         assert_eq!(back, k);

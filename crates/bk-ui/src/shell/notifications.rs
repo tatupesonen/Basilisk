@@ -29,7 +29,11 @@ impl Notices {
     pub fn push(&mut self, level: Level, text: impl Into<String>, now: f64) {
         let text = text.into();
         self.items.retain(|n| n.text != text);
-        self.items.push(Notice { level, text, at: now });
+        self.items.push(Notice {
+            level,
+            text,
+            at: now,
+        });
         if self.items.len() > MAX {
             self.items.remove(0);
         }
@@ -53,7 +57,10 @@ impl Notices {
         let p = t.palette;
         egui::Area::new(egui::Id::new("bk-notices"))
             .order(egui::Order::Tooltip)
-            .anchor(Align2::RIGHT_BOTTOM, vec2(-space::LG, -bottom_margin - space::LG))
+            .anchor(
+                Align2::RIGHT_BOTTOM,
+                vec2(-space::LG, -bottom_margin - space::LG),
+            )
             .interactable(false)
             .show(ctx, |ui| {
                 for n in &self.items {

@@ -50,7 +50,10 @@ pub(crate) fn operands(text: &str) -> Vec<OpPiece> {
                 _ => out.push(OpPiece::Scalar(word.into())),
             }
         } else if first.is_ascii_alphabetic() {
-            if word.chars().all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit()) {
+            if word
+                .chars()
+                .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit())
+            {
                 out.push(OpPiece::Register(word.into()));
             } else {
                 out.push(OpPiece::Word(word.into()));
@@ -83,12 +86,15 @@ pub(crate) fn c_line(line: &str) -> Vec<(CClass, &str)> {
         let c = b.get(i).copied().unwrap_or(b' ');
         let start = i;
         let class = if c.is_ascii_alphabetic() || c == b'_' {
-            while b.get(i).is_some_and(|x| x.is_ascii_alphanumeric() || *x == b'_') {
+            while b
+                .get(i)
+                .is_some_and(|x| x.is_ascii_alphanumeric() || *x == b'_')
+            {
                 i += 1;
             }
             CClass::Ident
         } else if c.is_ascii_digit() {
-            while b.get(i).is_some_and(|x| x.is_ascii_alphanumeric()) {
+            while b.get(i).is_some_and(u8::is_ascii_alphanumeric) {
                 i += 1;
             }
             CClass::Number

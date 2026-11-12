@@ -1,7 +1,7 @@
 //! The window layout: the main window's docking tree and the detached
 //! native windows, each with its own docking tree.
 //!
-//! The default is Ghidra's CodeBrowser arrangement: Program Trees above
+//! The default is Ghidra's `CodeBrowser` arrangement: Program Trees above
 //! the Symbol Tree on the left, the Listing in the centre, the Decompiler
 //! on the right, the Console at the bottom (with the Functions, Defined
 //! Strings and References windows as tabs beside it). Everything here is
@@ -50,6 +50,15 @@ impl Detached {
     }
 }
 
+/// Which window a pane is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Place {
+    /// The main window.
+    Main,
+    /// A detached window, by id.
+    Window(u64),
+}
+
 /// The whole layout.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Layout {
@@ -63,7 +72,9 @@ pub struct Layout {
 /// Where a kind of pane goes when it is opened and not already showing.
 fn home(kind: ViewKind) -> &'static [ViewKind] {
     match kind {
-        ViewKind::SymbolTree | ViewKind::ProgramTrees => &[ViewKind::SymbolTree, ViewKind::ProgramTrees],
+        ViewKind::SymbolTree | ViewKind::ProgramTrees => {
+            &[ViewKind::SymbolTree, ViewKind::ProgramTrees]
+        }
         ViewKind::Listing => &[ViewKind::Listing],
         ViewKind::Decompiler => &[ViewKind::Decompiler],
         _ => &[
@@ -83,7 +94,7 @@ impl Default for Layout {
 }
 
 impl Layout {
-    /// Ghidra's CodeBrowser arrangement.
+    /// Ghidra's `CodeBrowser` arrangement.
     pub fn ghidra() -> Self {
         let mut next_id = 0;
         let mut tab = |kind| {
@@ -140,15 +151,15 @@ impl Layout {
             .map(|t| t.id)
     }
 
-    /// Which window holds tab `id`: `None` for main, `Some(window id)`.
-    pub fn window_of(&self, id: u64) -> Option<Option<u64>> {
+    /// Which window holds tab `id`, if any does.
+    pub fn window_of(&self, id: u64) -> Option<Place> {
         if self.main.find_tab_from(|t| t.id == id).is_some() {
-            return Some(None);
+            return Some(Place::Main);
         }
         self.windows
             .iter()
             .find(|w| w.dock.find_tab_from(|t| t.id == id).is_some())
-            .map(|w| Some(w.id))
+            .map(|w| Place::Window(w.id))
     }
 
     /// Makes tab `id` the visible tab of its group.
@@ -225,10 +236,13 @@ impl Layout {
     /// Detaches tab `id` into a new native window; returns the window id.
     pub fn detach(&mut self, id: u64) -> Option<u64> {
         // Already alone in its own window: nothing to do.
-        if let Some(Some(w)) = self.window_of(id) {
-            if self.windows.iter().any(|d| d.id == w && d.tabs().count() == 1) {
-                return Some(w);
-            }
+        if let Some(Place::Window(w)) = self.window_of(id)
+            && self
+                .windows
+                .iter()
+                .any(|d| d.id == w && d.tabs().count() == 1)
+        {
+            return Some(w);
         }
         let tab = self.remove(id)?;
         let wid = self.new_id();
@@ -266,7 +280,7 @@ impl Layout {
         closed
     }
 
-    /// Turns egui_dock's floating windows (a tab dragged out of the dock
+    /// Turns `egui_dock`'s floating windows (a tab dragged out of the dock
     /// area) into native windows at the same place. `origin` is the main
     /// window's inner position on screen.
     pub fn adopt_floating(&mut self, origin: Option<Pos2>) -> Vec<u64> {
@@ -290,9 +304,12 @@ impl Layout {
                 let wid = self.new_id();
                 let place = |r: Rect| {
                     let o = origin.unwrap_or(Pos2::ZERO);
-                    ([o.x + r.min.x, o.y + r.min.y], [r.width().max(360.0), r.height().max(240.0)])
+                    (
+                        [o.x + r.min.x, o.y + r.min.y],
+                        [r.width().max(360.0), r.height().max(240.0)],
+                    )
                 };
-                let (position, size) = match rect.filter(|r| r.is_positive()) {
+                let (position, size) = match rect.filter(Rect::is_positive) {
                     Some(r) => {
                         let (p, s) = place(r);
                         (Some(p), Some(s))
@@ -325,9 +342,16 @@ impl Layout {
 
     /// Repairs a layout read from disk: drops empty windows, keeps ids
     /// unique, and starts over if the main window lost every pane.
+    #[must_use]
     pub fn repair(mut self) -> Self {
         self.windows.retain(|w| w.tabs().next().is_some());
-        let max = self.tabs().iter().map(|t| t.id).chain(self.windows.iter().map(|w| w.id)).max().unwrap_or(0);
+        let max = self
+            .tabs()
+            .iter()
+            .map(|t| t.id)
+            .chain(self.windows.iter().map(|w| w.id))
+            .max()
+            .unwrap_or(0);
         self.next_id = self.next_id.max(max);
         if self.main.iter_all_tabs().next().is_none() && self.windows.is_empty() {
             return Self::ghidra();
@@ -390,7 +414,7 @@ mod tests {
         let mut l = Layout::ghidra();
         let dec = l.find_kind(ViewKind::Decompiler).unwrap();
         let w = l.detach(dec).unwrap();
-        assert_eq!(l.window_of(dec), Some(Some(w)));
+        assert_eq!(l.window_of(dec), Some(Place::Window(w)));
         assert!(!kinds(&l.main).contains(&ViewKind::Decompiler));
         assert_eq!(l.windows[0].title(), "basilisk — Decompile");
         // Another pane can join the detached window.
@@ -400,8 +424,8 @@ mod tests {
         assert_eq!(l.windows[0].tabs().count(), 2);
         l.dock(w);
         assert!(l.windows.is_empty());
-        assert_eq!(l.window_of(dec), Some(None));
-        assert_eq!(l.window_of(console), Some(None));
+        assert_eq!(l.window_of(dec), Some(Place::Main));
+        assert_eq!(l.window_of(console), Some(Place::Main));
     }
 
     #[test]
@@ -421,11 +445,20 @@ mod tests {
         let mut l = Layout::ghidra();
         let strings = l.find_kind(ViewKind::Strings).unwrap();
         let path = l.main.find_tab_from(|t| t.id == strings).unwrap();
-        l.main.detach_tab(path, Rect::from_min_size(Pos2::new(100.0, 50.0), Vec2::new(500.0, 300.0)));
+        l.main.detach_tab(
+            path,
+            Rect::from_min_size(Pos2::new(100.0, 50.0), Vec2::new(500.0, 300.0)),
+        );
         let made = l.adopt_floating(Some(Pos2::new(1000.0, 200.0)));
         assert_eq!(made.len(), 1);
-        assert_eq!(l.window_of(strings), Some(Some(made[0])));
-        assert_eq!(l.main.iter_surfaces().filter(|s| matches!(s, Surface::Window(..))).count(), 0);
+        assert_eq!(l.window_of(strings), Some(Place::Window(made[0])));
+        assert_eq!(
+            l.main
+                .iter_surfaces()
+                .filter(|s| matches!(s, Surface::Window(..)))
+                .count(),
+            0
+        );
         // egui_dock knows the window's rectangle only once it has drawn it;
         // until then the native window takes its default size.
         assert!(l.windows[0].size.is_none() || l.windows[0].size == Some([500.0, 300.0]));
@@ -436,14 +469,18 @@ mod tests {
         let mut l = Layout::ghidra();
         let dec = l.find_kind(ViewKind::Decompiler).unwrap();
         let w = l.detach(dec).unwrap();
-        l.set_window_rect(w, Some(Pos2::new(1500.0, 80.0)), Some(Vec2::new(700.0, 900.0)));
+        l.set_window_rect(
+            w,
+            Some(Pos2::new(1500.0, 80.0)),
+            Some(Vec2::new(700.0, 900.0)),
+        );
         // eframe stores preferences as RON (which keeps egui_dock's NaN
         // rectangles; JSON cannot).
         let text = ron::to_string(&l).unwrap();
         let back: Layout = ron::from_str::<Layout>(&text).unwrap().repair();
         assert_eq!(back.windows.len(), 1);
         assert_eq!(back.windows[0].position, Some([1500.0, 80.0]));
-        assert_eq!(back.window_of(dec), Some(Some(w)));
+        assert_eq!(back.window_of(dec), Some(Place::Window(w)));
         let mut back = back;
         assert!(back.new_id() > w);
     }

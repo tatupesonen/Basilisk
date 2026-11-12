@@ -43,9 +43,17 @@ fn function_header_has_ghidra_shape() {
         .unwrap();
     assert!(matches!(rows[0].content, RowContent::Blank));
     assert!(matches!(rows[1].content, RowContent::PlateBorder));
-    assert!(rows.iter().any(|r| matches!(&r.content, RowContent::Plate(t) if t.contains("Entry point"))));
-    assert!(rows.iter().any(|r| matches!(&r.content, RowContent::Signature(_))));
-    assert!(rows.iter().any(|r| matches!(&r.content, RowContent::Variable { storage, .. } if &**storage == "EDI:4")));
+    assert!(
+        rows.iter()
+            .any(|r| matches!(&r.content, RowContent::Plate(t) if t.contains("Entry point")))
+    );
+    assert!(
+        rows.iter()
+            .any(|r| matches!(&r.content, RowContent::Signature(_)))
+    );
+    assert!(rows.iter().any(
+        |r| matches!(&r.content, RowContent::Variable { storage, .. } if &**storage == "EDI:4")
+    ));
     assert!(matches!(
         &rows.iter().rev().find(|r| matches!(r.content, RowContent::Label { .. })).unwrap().content,
         RowContent::Label { name, .. } if &*name.text == "main"
@@ -62,7 +70,11 @@ fn calls_resolve_to_names_with_references_back() {
     let r = &refs.rows[0];
     assert_eq!(r.kind, RefKind::Call);
     assert_eq!(r.from_function.as_deref(), Some("load_config"));
-    assert!(r.code.contains("CALL") && r.code.contains("parse_config_line"), "{}", r.code);
+    assert!(
+        r.code.contains("CALL") && r.code.contains("parse_config_line"),
+        "{}",
+        r.code
+    );
     // Calls to imports show the thunk's name.
     let span = p.rows_for_address(r.from).unwrap();
     let row = &p.listing_rows(span.unit, 1).unwrap()[0];
@@ -70,7 +82,10 @@ fn calls_resolve_to_names_with_references_back() {
         panic!("not an instruction")
     };
     assert_eq!(operands[0].kind, TokenKind::Function);
-    assert_eq!(operands[0].referent.as_ref().and_then(Referent::address), Some(parse_config_line));
+    assert_eq!(
+        operands[0].referent.as_ref().and_then(Referent::address),
+        Some(parse_config_line)
+    );
 }
 
 #[test]
@@ -92,7 +107,10 @@ fn decompiled_lines_map_to_instructions_both_ways() {
         .unwrap();
     assert_eq!(target.kind, TokenKind::Function);
     // Every instruction in the range is inside main.
-    let f = p.function_containing(call.ranges[0].start).unwrap().unwrap();
+    let f = p
+        .function_containing(call.ranges[0].start)
+        .unwrap()
+        .unwrap();
     assert_eq!(f.entry, main);
     // Variables are tokens with referents shared by all their uses.
     let uses: Vec<_> = d
@@ -102,7 +120,10 @@ fn decompiled_lines_map_to_instructions_both_ways() {
         .filter(|t| &*t.text == "iVar1")
         .collect();
     assert!(uses.len() > 3);
-    assert!(uses.iter().all(|t| t.referent == uses[0].referent && t.kind == TokenKind::Variable));
+    assert!(
+        uses.iter()
+            .all(|t| t.referent == uses[0].referent && t.kind == TokenKind::Variable)
+    );
 }
 
 #[test]
@@ -115,8 +136,18 @@ fn renames_and_comments_show_everywhere() {
     })
     .unwrap();
     let main = p.decompile(addr_of(&p, "main")).unwrap();
-    assert!(main.lines.iter().flat_map(|l| &l.tokens).any(|t| &*t.text == "check_licence"));
-    assert!(p.lookup("validate_key", 10).unwrap().iter().all(|s| &*s.name != "validate_key"));
+    assert!(
+        main.lines
+            .iter()
+            .flat_map(|l| &l.tokens)
+            .any(|t| &*t.text == "check_licence")
+    );
+    assert!(
+        p.lookup("validate_key", 10)
+            .unwrap()
+            .iter()
+            .all(|s| &*s.name != "validate_key")
+    );
 
     let before = p.listing_len().unwrap();
     p.apply(&Command::SetComment {
@@ -134,14 +165,24 @@ fn renames_and_comments_show_everywhere() {
     })
     .unwrap();
     let d = p.decompile(target).unwrap();
-    let signature = d.lines.iter().find(|l| l.tokens.iter().any(|t| t.kind == TokenKind::Function)).unwrap();
-    assert!(signature.tokens.iter().any(|t| &*t.text == "key" && t.kind == TokenKind::Parameter));
-    assert!(p
-        .apply(&Command::RenameSymbol {
+    let signature = d
+        .lines
+        .iter()
+        .find(|l| l.tokens.iter().any(|t| t.kind == TokenKind::Function))
+        .unwrap();
+    assert!(
+        signature
+            .tokens
+            .iter()
+            .any(|t| &*t.text == "key" && t.kind == TokenKind::Parameter)
+    );
+    assert!(
+        p.apply(&Command::RenameSymbol {
             address: target,
             name: "has space".into()
         })
-        .is_err());
+        .is_err()
+    );
 }
 
 #[test]
@@ -174,9 +215,13 @@ fn tables_filter_sort_and_page() {
 #[test]
 fn search_finds_text_and_bytes() {
     let p = licd();
-    let hits = p.search(&SearchQuery::Text("getaddrinfo".into()), 100).unwrap();
+    let hits = p
+        .search(&SearchQuery::Text("getaddrinfo".into()), 100)
+        .unwrap();
     assert!(hits.total >= 2, "{hits:?}");
-    let push_rbp = p.search(&SearchQuery::Bytes(vec![0x55, 0x48, 0x89, 0xe5]), 1000).unwrap();
+    let push_rbp = p
+        .search(&SearchQuery::Bytes(vec![0x55, 0x48, 0x89, 0xe5]), 1000)
+        .unwrap();
     let push_only = p.search(&SearchQuery::Bytes(vec![0x55]), 1000).unwrap();
     assert!(push_only.total >= 30);
     assert!(push_rbp.total <= push_only.total);
@@ -188,7 +233,12 @@ fn every_unit_produces_the_rows_it_counts() {
     let p = licd();
     let db = p.db.read();
     for (i, u) in db.units.iter().enumerate() {
-        assert_eq!(rows::unit_rows(&db, i).len(), rows::unit_row_count(&db, u), "unit at {:#x}", u.address);
+        assert_eq!(
+            rows::unit_rows(&db, i).len(),
+            rows::unit_row_count(&db, u),
+            "unit at {:#x}",
+            u.address
+        );
     }
     drop(db);
     // And paging returns each row once: no row appears on two pages.
@@ -198,7 +248,11 @@ fn every_unit_produces_the_rows_it_counts() {
         seen.extend(p.listing_rows(RowIndex(start), 64).unwrap());
     }
     assert_eq!(seen.len() as u64, n);
-    let units: Vec<_> = seen.iter().filter(|r| r.is_unit()).map(|r| r.address).collect();
+    let units: Vec<_> = seen
+        .iter()
+        .filter(|r| r.is_unit())
+        .map(|r| r.address)
+        .collect();
     let mut dedup = units.clone();
     dedup.dedup();
     assert_eq!(units, dedup);

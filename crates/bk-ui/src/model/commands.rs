@@ -75,7 +75,10 @@ impl Command {
             Self::RemoveLabel { address } => format!("Remove label at {address}"),
             Self::RenameVariable { name, .. } => format!("Rename variable to {name}"),
             Self::SetComment {
-                address, kind, text, ..
+                address,
+                kind,
+                text,
+                ..
             } if text.is_empty() => format!("Clear {} at {address}", kind.title()),
             Self::SetComment { address, kind, .. } => format!("Set {} at {address}", kind.title()),
         }

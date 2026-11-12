@@ -2,7 +2,7 @@
 //! and the core views (listing, decompiler, symbol tree, functions, defined
 //! strings, references, console), in egui.
 //!
-//! It corresponds to Ghidra's CodeBrowser tool and the plugins that make it
+//! It corresponds to Ghidra's `CodeBrowser` tool and the plugins that make it
 //! up (`Ghidra/Features/Base/.../app/plugin/core/codebrowser`,
 //! `.../decompile`, `.../symboltree`, `.../functionwindow`,
 //! `.../strings`, `.../navigation`, `.../console`), keeping Ghidra's

@@ -4,6 +4,7 @@
 //! Each row becomes one `Galley`, built once when its page arrives and
 //! reused every frame until the page, the theme or the density changes.
 
+use std::fmt::Write as _;
 use std::sync::Arc;
 
 use egui::text::{LayoutJob, TextFormat};
@@ -11,9 +12,7 @@ use egui::{Color32, FontFamily, FontId, Galley};
 
 use crate::design::Tokens;
 use crate::design::syntax;
-use crate::model::{
-    Address, ListingRow, Referent, RowContent, Token, TokenKind, XrefEntry,
-};
+use crate::model::{Address, ListingRow, Referent, RowContent, Token, TokenKind, XrefEntry};
 
 /// Bytes shown in the bytes field before "…" (Ghidra wraps them onto more
 /// lines; one row per instruction keeps every row the same height).
@@ -163,7 +162,7 @@ pub(crate) fn bytes_text(bytes: &[u8]) -> String {
         if i > 0 {
             s.push(' ');
         }
-        s.push_str(&format!("{b:02x}"));
+        let _ = write!(s, "{b:02x}");
     }
     if bytes.len() > MAX_BYTES {
         s.push_str(" …");
@@ -172,6 +171,10 @@ pub(crate) fn bytes_text(bytes: &[u8]) -> String {
 }
 
 /// Lays out one row.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "short names for the builder, tokens, syntax and palette keep the field table readable"
+)]
 pub(crate) fn layout(
     row: &ListingRow,
     cols: &Columns,
@@ -323,7 +326,13 @@ pub(crate) fn row_text(row: &ListingRow) -> String {
             operands,
             comment,
         } => {
-            s.push_str(&format!("{}  {:<20}{:<10} ", row.address, bytes_text(bytes), mnemonic.text));
+            let _ = write!(
+                s,
+                "{}  {:<20}{:<10} ",
+                row.address,
+                bytes_text(bytes),
+                mnemonic.text
+            );
             for o in operands {
                 s.push_str(&o.text);
             }
@@ -365,6 +374,6 @@ mod tests {
         assert!(c.mnemonic >= c.bytes + MAX_BYTES * 3);
         assert!(c.operands > c.mnemonic + 7);
         assert_eq!(address_digits(Address(0x1_0000_0650)), 9);
-        assert_eq!(address_digits(Address(0x401000)), 8);
+        assert_eq!(address_digits(Address(0x0040_1000)), 8);
     }
 }

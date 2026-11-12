@@ -72,13 +72,13 @@ mod tests {
 
     #[test]
     fn addresses_print_like_ghidra() {
-        assert_eq!(Address(0x401000).to_string(), "00401000");
+        assert_eq!(Address(0x0040_1000).to_string(), "00401000");
         assert_eq!(Address(0x1_0000_0650).to_string(), "100000650");
     }
 
     #[test]
     fn addresses_parse_with_or_without_prefix() {
-        assert_eq!(Address::parse("0x401000"), Some(Address(0x401000)));
+        assert_eq!(Address::parse("0x401000"), Some(Address(0x0040_1000)));
         assert_eq!(Address::parse(" 100000650 "), Some(Address(0x1_0000_0650)));
         assert_eq!(Address::parse("main"), None);
         assert_eq!(Address::parse(""), None);

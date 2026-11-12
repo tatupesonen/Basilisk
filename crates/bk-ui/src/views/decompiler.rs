@@ -114,31 +114,31 @@ impl DecompilerView {
             self.request(cx, a, false);
         }
         self.seen_generation = Some(generation);
-        if let Some(f) = &mut self.fetch {
-            if let Some(r) = f.take() {
-                self.fetch = None;
-                match r {
-                    Ok((info, decompiled)) => {
-                        self.error = None;
-                        if let Some(d) = decompiled {
-                            let same = self.function.as_ref().is_some_and(|f| f.entry == d.entry);
-                            self.function = Some(Arc::new(d));
-                            self.layout_key = None;
-                            if !same {
-                                self.cursor = None;
-                                self.scroller = Scroller::default();
-                            }
+        if let Some(f) = &mut self.fetch
+            && let Some(r) = f.take()
+        {
+            self.fetch = None;
+            match r {
+                Ok((info, decompiled)) => {
+                    self.error = None;
+                    if let Some(d) = decompiled {
+                        let same = self.function.as_ref().is_some_and(|f| f.entry == d.entry);
+                        self.function = Some(Arc::new(d));
+                        self.layout_key = None;
+                        if !same {
+                            self.cursor = None;
+                            self.scroller = Scroller::default();
                         }
-                        self.info = info;
-                        self.reveal_marked = true;
                     }
-                    Err(SourceError::NoFunction(a)) => {
-                        self.function = None;
-                        self.info = None;
-                        self.error = Some(format!("No function at {a}"));
-                    }
-                    Err(e) => self.error = Some(e.to_string()),
+                    self.info = info;
+                    self.reveal_marked = true;
                 }
+                Err(SourceError::NoFunction(a)) => {
+                    self.function = None;
+                    self.info = None;
+                    self.error = Some(format!("No function at {a}"));
+                }
+                Err(e) => self.error = Some(e.to_string()),
             }
         }
         // Mark the lines of the current location.
@@ -160,7 +160,10 @@ impl DecompilerView {
             self.layouts.clear();
             return;
         };
-        let key = (u64::from(t.kind == crate::design::ThemeKind::Dark) + (t.metrics.code_size as u64) * 2, f.lines.len());
+        let key = (
+            u64::from(t.kind == crate::design::ThemeKind::Dark) + (t.metrics.code_size as u64) * 2,
+            f.lines.len(),
+        );
         if self.layout_key == Some(key) && self.layouts.len() == f.lines.len() {
             return;
         }
@@ -184,7 +187,8 @@ impl DecompilerView {
                 );
                 let mut spans = Vec::new();
                 // The signature line (unindented, no keywords) names the function.
-                let defining_line = line.indent == 0 && !line.tokens.iter().any(|t| t.kind == TokenKind::Keyword);
+                let defining_line =
+                    line.indent == 0 && !line.tokens.iter().any(|t| t.kind == TokenKind::Keyword);
                 for tok in &line.tokens {
                     let x0 = col as f32 * self.cw;
                     let fam = if defining_line && tok.kind == TokenKind::Function {
@@ -201,7 +205,9 @@ impl DecompilerView {
                         ),
                     );
                     col += tok.text.chars().count();
-                    if !matches!(tok.kind, TokenKind::Plain | TokenKind::Punctuation) || tok.referent.is_some() {
+                    if !matches!(tok.kind, TokenKind::Plain | TokenKind::Punctuation)
+                        || tok.referent.is_some()
+                    {
                         spans.push(Span {
                             x0,
                             x1: col as f32 * self.cw,
@@ -239,11 +245,12 @@ impl DecompilerView {
         cx.shared.related = Related {
             ranges: l.ranges.clone(),
         };
-        if let Some(r) = l.ranges.first() {
-            if self.snapshot.is_none() && !l.covers(cx.shared.nav.current().address) {
-                cx.shared.nav.move_to(Location::at(r.start));
-                self.seen_generation = Some(cx.shared.nav.generation());
-            }
+        if let Some(r) = l.ranges.first()
+            && self.snapshot.is_none()
+            && !l.covers(cx.shared.nav.current().address)
+        {
+            cx.shared.nav.move_to(Location::at(r.start));
+            self.seen_generation = Some(cx.shared.nav.generation());
         }
     }
 
@@ -261,7 +268,12 @@ impl DecompilerView {
     }
 
     fn step_highlight(&mut self, cx: &mut ViewCx<'_>, forward: bool) -> bool {
-        let Some(h) = cx.shared.highlight.clone().or_else(|| self.cursor_token().map(|s| s.token.clone())) else {
+        let Some(h) = cx
+            .shared
+            .highlight
+            .clone()
+            .or_else(|| self.cursor_token().map(|s| s.token.clone()))
+        else {
             return false;
         };
         let all: Vec<(usize, usize)> = self
@@ -284,7 +296,8 @@ impl DecompilerView {
         };
         if let Some(&(l, i)) = next {
             self.set_cursor(cx, l, Some(i));
-            self.scroller.keep_visible(l as u64, self.layouts.len() as u64);
+            self.scroller
+                .keep_visible(l as u64, self.layouts.len() as u64);
         }
         true
     }
@@ -299,7 +312,13 @@ impl DecompilerView {
         let mut moved = false;
         ui.input(|i| {
             for e in &i.events {
-                if let egui::Event::Key { key, pressed: true, modifiers, .. } = e {
+                if let egui::Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } = e
+                {
                     if modifiers.command || modifiers.alt {
                         continue;
                     }
@@ -324,6 +343,7 @@ impl DecompilerView {
         }
     }
 
+    #[expect(clippy::many_single_char_names, reason = "painter geometry")]
     fn paint_line(&self, ui: &egui::Ui, cx: &ViewCx<'_>, i: usize, rect: Rect) {
         let t = cx.tokens;
         let p = t.palette;
@@ -342,16 +362,27 @@ impl DecompilerView {
             Align2::RIGHT_CENTER,
             (i + 1).to_string(),
             FontId::monospace(t.metrics.code_size - 1.0),
-            if cursor_line { p.text_secondary } else { p.text_disabled },
+            if cursor_line {
+                p.text_secondary
+            } else {
+                p.text_disabled
+            },
         );
-        let origin = pos2(rect.left() + self.gutter, rect.center().y - l.galley.size().y / 2.0);
+        let origin = pos2(
+            rect.left() + self.gutter,
+            rect.center().y - l.galley.size().y / 2.0,
+        );
         let cursor_tok = self.cursor_token().map(|s| &s.token);
         for (k, s) in l.spans.iter().enumerate() {
             let r = Rect::from_min_max(
                 pos2(origin.x + s.x0 - 1.0, rect.top() + 2.0),
                 pos2(origin.x + s.x1 + 1.0, rect.bottom() - 2.0),
             );
-            let persistent = cx.shared.highlight.as_ref().is_some_and(|h| h.matches(&s.token));
+            let persistent = cx
+                .shared
+                .highlight
+                .as_ref()
+                .is_some_and(|h| h.matches(&s.token));
             let same_as_cursor = cursor_tok.is_some_and(|c| c.matches(&s.token));
             if s.token.referent.is_some() {
                 super::token_node(ui, ui.id().with(("decomp-token", i, k)), r, &s.token);
@@ -359,7 +390,11 @@ impl DecompilerView {
             if persistent {
                 painter.rect_filled(r, CornerRadius::same(2), p.token_highlight);
             } else if same_as_cursor {
-                painter.rect_filled(r, CornerRadius::same(2), widgets::fade(p.token_highlight, 0.55));
+                painter.rect_filled(
+                    r,
+                    CornerRadius::same(2),
+                    widgets::fade(p.token_highlight, 0.55),
+                );
             }
             if cursor_line && self.cursor.and_then(|c| c.1) == Some(k) {
                 painter.rect_stroke(
@@ -370,17 +405,23 @@ impl DecompilerView {
                 );
             }
         }
-        painter.galley(origin, l.galley.clone(), p.text);
+        painter.galley(origin, Arc::clone(&l.galley), p.text);
         if cursor_line {
             let c = if cx.focused { p.accent } else { p.text_muted };
             painter.rect_filled(
-                Rect::from_min_size(pos2(rect.left() + 4.0, rect.top() + 2.0), vec2(3.0, rect.height() - 4.0)),
+                Rect::from_min_size(
+                    pos2(rect.left() + 4.0, rect.top() + 2.0),
+                    vec2(3.0, rect.height() - 4.0),
+                ),
                 CornerRadius::same(1),
                 c,
             );
         } else if marked {
             painter.rect_filled(
-                Rect::from_min_size(pos2(rect.left() + 5.0, rect.top() + 3.0), vec2(1.5, rect.height() - 6.0)),
+                Rect::from_min_size(
+                    pos2(rect.left() + 5.0, rect.top() + 3.0),
+                    vec2(1.5, rect.height() - 6.0),
+                ),
                 CornerRadius::ZERO,
                 p.text_muted,
             );
@@ -414,7 +455,9 @@ impl View for DecompilerView {
         let address = token
             .as_ref()
             .and_then(|t| match t.kind {
-                TokenKind::Function if line == 0 || l.ranges.is_empty() => t.referent.as_ref().and_then(Referent::address),
+                TokenKind::Function if line == 0 || l.ranges.is_empty() => {
+                    t.referent.as_ref().and_then(Referent::address)
+                }
                 _ => None,
             })
             .or_else(|| l.ranges.first().map(|r| r.start))
@@ -433,7 +476,10 @@ impl View for DecompilerView {
             ActionId::PreviousHighlight => self.step_highlight(cx, false),
             ActionId::Copy => {
                 if let (Some(f), Some((l, _))) = (&self.function, self.cursor) {
-                    let text = f.lines.get(l).map(|l| l.tokens.iter().map(|t| &*t.text).collect::<String>());
+                    let text = f
+                        .lines
+                        .get(l)
+                        .map(|l| l.tokens.iter().map(|t| &*t.text).collect::<String>());
                     cx.ctx.copy_text(text.unwrap_or_default());
                 }
                 true
@@ -445,10 +491,20 @@ impl View for DecompilerView {
     fn ui(&mut self, ui: &mut egui::Ui, cx: &mut ViewCx<'_>) {
         let t = *cx.tokens;
         self.sync(cx);
-        ui.painter().rect_filled(ui.available_rect_before_wrap(), CornerRadius::ZERO, t.palette.surface);
+        ui.painter().rect_filled(
+            ui.available_rect_before_wrap(),
+            CornerRadius::ZERO,
+            t.palette.surface,
+        );
         if self.function.is_none() {
             match (&self.error, &self.fetch) {
-                (Some(e), _) => widgets::empty_state(ui, &t, icons::DECOMPILER, e, "Put the cursor in a function to decompile it."),
+                (Some(e), _) => widgets::empty_state(
+                    ui,
+                    &t,
+                    icons::DECOMPILER,
+                    e,
+                    "Put the cursor in a function to decompile it.",
+                ),
                 (None, _) => widgets::empty_state(ui, &t, icons::DECOMPILER, "Decompiling…", ""),
             }
             return;
@@ -466,14 +522,18 @@ impl View for DecompilerView {
         let mut lines = Vec::new();
         let top_pad = 6.0;
         ui.add_space(top_pad);
-        let shown = self.scroller.show(ui, &t, n, row_h, |_, i, r| lines.push((i, r)));
+        let shown = self
+            .scroller
+            .show(ui, &t, n, row_h, |_, i, r| lines.push((i, r)));
         for (i, r) in lines {
             self.paint_line(ui, cx, i as usize, r);
         }
         let resp = shown.response;
         let rect = shown.rect;
         let hit = |s: &Self, pos: egui::Pos2| {
-            let k = ((pos.y - rect.top() + s.scroller.offset) / row_h).floor().max(0.0) as u64;
+            let k = ((pos.y - rect.top() + s.scroller.offset) / row_h)
+                .floor()
+                .max(0.0) as u64;
             let line = (s.scroller.top + k) as usize;
             let tok = s.token_at(line, pos.x - rect.left() - s.gutter);
             (line, tok)
@@ -490,19 +550,26 @@ impl View for DecompilerView {
         }
         self.preview.want(cx, hovered);
         if self.preview.active() {
-            let digits = crate::views::listing::layout::address_digits(cx.shared.program.image_base.offset(0xffff_ffff));
-            resp.clone().on_hover_ui_at_pointer(|ui| self.preview.ui(ui, &t, digits));
+            let digits = crate::views::listing::layout::address_digits(
+                cx.shared.program.image_base.offset(0xffff_ffff),
+            );
+            resp.clone()
+                .on_hover_ui_at_pointer(|ui| self.preview.ui(ui, &t, digits));
         }
         if let Some(pos) = resp.interact_pointer_pos() {
             let (line, tok) = hit(self, pos);
-            if (line as u64) < n && (resp.clicked() || resp.secondary_clicked() || resp.double_clicked()) {
+            if (line as u64) < n
+                && (resp.clicked() || resp.secondary_clicked() || resp.double_clicked())
+            {
                 self.set_cursor(cx, line, tok);
             }
             if resp.double_clicked() {
                 self.follow(cx);
             }
             if resp.middle_clicked() {
-                let token = tok.and_then(|k| self.layouts.get(line)?.spans.get(k)).map(|s| s.token.clone());
+                let token = tok
+                    .and_then(|k| self.layouts.get(line)?.spans.get(k))
+                    .map(|s| s.token.clone());
                 cx.shared.highlight = match (token, &cx.shared.highlight) {
                     (Some(t), Some(h)) if t.matches(h) => None,
                     (t, _) => t,
@@ -512,7 +579,8 @@ impl View for DecompilerView {
         let target = self.target();
         resp.context_menu(|ui| super::popup_menu(ui, cx, target.as_ref()));
         if self.fetch.is_some() {
-            ui.ctx().request_repaint_after(std::time::Duration::from_millis(30));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(30));
         }
     }
 }

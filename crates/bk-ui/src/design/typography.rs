@@ -1,9 +1,9 @@
 //! Typefaces and the type scale.
 //!
-//! Inter for the chrome and JetBrains Mono (no-ligature build) for code,
+//! Inter for the chrome and `JetBrains` Mono (no-ligature build) for code,
 //! both under the SIL Open Font License 1.1 (licence texts beside the font
 //! files in `assets/fonts/`), which permits bundling in a GPL-3.0 program.
-//! Inter is drawn for screens at small sizes; JetBrains Mono has a tall
+//! Inter is drawn for screens at small sizes; `JetBrains` Mono has a tall
 //! x-height and distinct `0O 1lI` shapes. Icons are Phosphor (MIT) through
 //! `egui-phosphor`.
 
@@ -33,7 +33,7 @@ pub fn code_strong_family() -> FontFamily {
     FontFamily::Name("bk-code-strong".into())
 }
 
-/// The font set: Inter and JetBrains Mono, with Phosphor icons as a
+/// The font set: Inter and `JetBrains` Mono, with Phosphor icons as a
 /// fallback in every family so an icon can sit inside any label.
 pub fn fonts() -> FontDefinitions {
     let mut fonts = FontDefinitions::empty();
@@ -47,9 +47,10 @@ pub fn fonts() -> FontDefinitions {
             .font_data
             .insert(name.into(), Arc::new(FontData::from_static(bytes)));
     }
-    fonts
-        .families
-        .insert(FontFamily::Proportional, vec!["inter".into(), "mono".into()]);
+    fonts.families.insert(
+        FontFamily::Proportional,
+        vec!["inter".into(), "mono".into()],
+    );
     fonts
         .families
         .insert(FontFamily::Monospace, vec!["mono".into(), "inter".into()]);
@@ -64,7 +65,9 @@ pub fn fonts() -> FontDefinitions {
     egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
     // Icons are drawn in their own family: Inter has private-use glyphs of
     // its own that would shadow Phosphor's codepoints in a fallback chain.
-    fonts.families.insert(icon_family(), vec!["phosphor".into()]);
+    fonts
+        .families
+        .insert(icon_family(), vec!["phosphor".into()]);
     // Icons inside every family, after the text faces.
     for fam in [FontFamily::Monospace, strong_family(), code_strong_family()] {
         if let Some(list) = fonts.families.get_mut(&fam) {
@@ -101,9 +104,15 @@ pub fn text_styles(m: &Metrics) -> std::collections::BTreeMap<TextStyle, FontId>
         (TextStyle::Body, FontId::proportional(m.body_size)),
         (TextStyle::Button, FontId::proportional(m.body_size)),
         (TextStyle::Monospace, FontId::monospace(m.code_size)),
-        (TextStyle::Heading, FontId::new(m.title_size, strong_family())),
+        (
+            TextStyle::Heading,
+            FontId::new(m.title_size, strong_family()),
+        ),
         (style::heading(), FontId::new(m.body_size, strong_family())),
-        (style::display(), FontId::new(m.display_size, strong_family())),
+        (
+            style::display(),
+            FontId::new(m.display_size, strong_family()),
+        ),
     ]
     .into_iter()
     .collect()

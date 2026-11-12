@@ -50,7 +50,10 @@ impl Find {
                 if rows.is_empty() {
                     return None;
                 }
-                if let Some(x) = rows.iter().find(|x| x.address != here && self.matches(&x.content)) {
+                if let Some(x) = rows
+                    .iter()
+                    .find(|x| x.address != here && self.matches(&x.content))
+                {
                     return Some(x.address);
                 }
                 r += rows.len() as u64;
@@ -89,11 +92,26 @@ mod tests {
         let p = DemoProgram::licd().unwrap();
         let main = p.info().entry;
         let span = p.rows_for_address(main).unwrap();
-        let next = Find { kind: UnitKind::Function, forward: true }.run(&p, span.unit.0).unwrap();
+        let next = Find {
+            kind: UnitKind::Function,
+            forward: true,
+        }
+        .run(&p, span.unit.0)
+        .unwrap();
         assert!(next > main);
-        let prev = Find { kind: UnitKind::Function, forward: false }.run(&p, span.unit.0).unwrap();
+        let prev = Find {
+            kind: UnitKind::Function,
+            forward: false,
+        }
+        .run(&p, span.unit.0)
+        .unwrap();
         assert!(prev < main);
-        let insn = Find { kind: UnitKind::Instruction, forward: true }.run(&p, span.unit.0).unwrap();
+        let insn = Find {
+            kind: UnitKind::Instruction,
+            forward: true,
+        }
+        .run(&p, span.unit.0)
+        .unwrap();
         assert!(insn > main);
     }
 }

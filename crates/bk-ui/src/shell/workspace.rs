@@ -116,7 +116,11 @@ impl Workspace {
     /// The kind of the active pane.
     pub fn active_kind(&self) -> Option<ViewKind> {
         let id = self.active?;
-        self.layout.tabs().into_iter().find(|t| t.id == id).map(|t| t.kind)
+        self.layout
+            .tabs()
+            .into_iter()
+            .find(|t| t.id == id)
+            .map(|t| t.kind)
     }
 
     /// Opens (or focuses) a pane of `kind` and makes it active.
@@ -180,35 +184,50 @@ impl Workspace {
         }
         // The function at the current location, for titles and the status bar.
         let generation = self.shared.nav.generation() ^ self.client.revision().rotate_left(32);
-        let stale = self.function_req.as_ref().is_none_or(|(g, _)| *g != generation);
+        let stale = self
+            .function_req
+            .as_ref()
+            .is_none_or(|(g, _)| *g != generation);
         if stale {
             let a = self.shared.nav.current().address;
-            self.function_req = Some((generation, self.client.request(move |s| s.function_containing(a))));
+            self.function_req = Some((
+                generation,
+                self.client.request(move |s| s.function_containing(a)),
+            ));
         }
-        if let Some((_, p)) = &mut self.function_req {
-            if let Some(r) = p.poll() {
-                let f = r.as_ref().ok().cloned().flatten();
-                self.shared.nav.set_function(f.as_ref().map(|f| f.entry));
-                self.shared.function = f;
-            }
+        if let Some((_, p)) = &mut self.function_req
+            && let Some(r) = p.poll()
+        {
+            let f = r.as_ref().ok().cloned().flatten();
+            self.shared.nav.set_function(f.as_ref().map(|f| f.entry));
+            self.shared.function = f;
         }
         self.notices.expire(now);
     }
 
     /// Carries out what the views asked for this frame, except actions,
     /// which are returned for the shell to run.
-    pub fn handle_requests(&mut self, requests: Vec<Request>, now: f64) -> Vec<crate::actions::ActionId> {
+    pub fn handle_requests(
+        &mut self,
+        requests: Vec<Request>,
+        now: f64,
+    ) -> Vec<crate::actions::ActionId> {
         let mut actions = Vec::new();
         for r in requests {
             match r {
                 Request::Action(a) => actions.push(a),
-                Request::Apply { command, undo } => self.apply(Edit { command, undo }, EditKind::New),
+                Request::Apply { command, undo } => {
+                    self.apply(Edit { command, undo }, EditKind::New);
+                }
                 Request::ShowReferences(a, name) => {
                     self.shared.references_to = Some((a, name));
                     self.show(ViewKind::References);
                 }
                 Request::EditComment(a, kind) => {
-                    self.overlay = Some((egui::ViewportId::ROOT, Overlay::comment(self, a, Some(kind))));
+                    self.overlay = Some((
+                        egui::ViewportId::ROOT,
+                        Overlay::comment(self, a, Some(kind)),
+                    ));
                 }
                 Request::Snapshot(kind, at) => {
                     let id = self.layout.new_id();

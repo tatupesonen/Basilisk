@@ -112,10 +112,7 @@ impl<T: Clone + Send + 'static> PagedTable<T> {
             cx.client
                 .request(move |s| fetch(s, &filter, sort, order, p * PAGE, PAGE as u32))
         });
-        match pending.poll()? {
-            Ok(page) => Some(page),
-            Err(_) => None,
-        }
+        pending.poll()?.as_ref().ok()
     }
 
     fn row(&mut self, cx: &ViewCx<'_>, i: u64) -> Option<T> {
@@ -138,12 +135,17 @@ impl<T: Clone + Send + 'static> PagedTable<T> {
             self.error = None;
         }
         // The first page tells the total.
-        let total = match self.pages.entry(0).or_insert_with(|| {
-            let fetch = Arc::clone(&self.fetch);
-            let (filter, sort, order) = (self.filter.clone(), self.sort, self.order);
-            cx.client
-                .request(move |s| fetch(s, &filter, sort, order, 0, PAGE as u32))
-        }).poll() {
+        let total = match self
+            .pages
+            .entry(0)
+            .or_insert_with(|| {
+                let fetch = Arc::clone(&self.fetch);
+                let (filter, sort, order) = (self.filter.clone(), self.sort, self.order);
+                cx.client
+                    .request(move |s| fetch(s, &filter, sort, order, 0, PAGE as u32))
+            })
+            .poll()
+        {
             Some(Ok(p)) => Some(p.total),
             Some(Err(e)) => {
                 self.error = Some(e.to_string());
@@ -171,9 +173,7 @@ impl<T: Clone + Send + 'static> PagedTable<T> {
         self.refresh(cx);
         let mut event = None;
         widgets::pane_toolbar(ui, &t, |ui| {
-            let total = self
-                .total
-                .map_or_else(|| "…".to_owned(), |n| n.to_string());
+            let total = self.total.map_or_else(|| "…".to_owned(), |n| n.to_string());
             let r = widgets::filter_field(
                 ui,
                 &t,
@@ -186,142 +186,164 @@ impl<T: Clone + Send + 'static> PagedTable<T> {
             let _ = total;
         });
         let total = self.total.unwrap_or(0);
-        egui::Frame::NONE.fill(p.surface).inner_margin(egui::Margin { left: 8, right: 4, top: 0, bottom: 0 }).show(ui, |ui| {
-            ui.set_min_size(ui.available_size());
-            if let Some(e) = &self.error {
-                widgets::empty_state(ui, &t, icons::WARNING, "Could not load", e);
-                return;
-            }
-            if self.total == Some(0) {
-                let what = if self.filter.is_empty() {
-                    "Nothing to show"
-                } else {
-                    "No matches"
-                };
-                widgets::empty_state(ui, &t, icons::SEARCH, what, "");
-                return;
-            }
-            // Keyboard: arrows move the selection, Enter activates.
-            if cx.focused && !ui.ctx().egui_wants_keyboard_input() && total > 0 {
-                let (down, up, enter) = ui.input(|i| {
-                    (
-                        i.key_pressed(egui::Key::ArrowDown),
-                        i.key_pressed(egui::Key::ArrowUp),
-                        i.key_pressed(egui::Key::Enter),
-                    )
-                });
-                let cur = self.selected;
-                let next = if down {
-                    Some(cur.map_or(0, |c| (c + 1).min(total - 1)))
-                } else if up {
-                    Some(cur.map_or(0, |c| c.saturating_sub(1)))
-                } else {
-                    None
-                };
-                if let Some(n) = next {
-                    self.selected = Some(n);
-                    if let Some(row) = self.row(cx, n) {
-                        event = Some(TableEvent::Selected(row));
-                    }
+        egui::Frame::NONE
+            .fill(p.surface)
+            .inner_margin(egui::Margin {
+                left: 8,
+                right: 4,
+                top: 0,
+                bottom: 0,
+            })
+            .show(ui, |ui| {
+                ui.set_min_size(ui.available_size());
+                if let Some(e) = &self.error {
+                    widgets::empty_state(ui, &t, icons::WARNING, "Could not load", e);
+                    return;
                 }
-                if enter {
-                    if let Some(row) = self.selected.and_then(|s| self.row(cx, s)) {
+                if self.total == Some(0) {
+                    let what = if self.filter.is_empty() {
+                        "Nothing to show"
+                    } else {
+                        "No matches"
+                    };
+                    widgets::empty_state(ui, &t, icons::SEARCH, what, "");
+                    return;
+                }
+                // Keyboard: arrows move the selection, Enter activates.
+                if cx.focused && !ui.ctx().egui_wants_keyboard_input() && total > 0 {
+                    let (down, up, enter) = ui.input(|i| {
+                        (
+                            i.key_pressed(egui::Key::ArrowDown),
+                            i.key_pressed(egui::Key::ArrowUp),
+                            i.key_pressed(egui::Key::Enter),
+                        )
+                    });
+                    let cur = self.selected;
+                    let next = if down {
+                        Some(cur.map_or(0, |c| (c + 1).min(total - 1)))
+                    } else if up {
+                        Some(cur.map_or(0, |c| c.saturating_sub(1)))
+                    } else {
+                        None
+                    };
+                    if let Some(n) = next {
+                        self.selected = Some(n);
+                        if let Some(row) = self.row(cx, n) {
+                            event = Some(TableEvent::Selected(row));
+                        }
+                    }
+                    if enter && let Some(row) = self.selected.and_then(|s| self.row(cx, s)) {
                         event = Some(TableEvent::Activated(row));
                     }
                 }
-            }
-            let row_h = t.metrics.table_row;
-            let mut builder = TableBuilder::new(ui)
-                .id_salt(id)
-                .striped(false)
-                .resizable(true)
-                .sense(Sense::click())
-                .cell_layout(egui::Layout::left_to_right(egui::Align::Center));
-            for (i, c) in columns.iter().enumerate() {
-                let col = if i + 1 == columns.len() {
-                    Column::remainder().at_least(60.0)
-                } else {
-                    Column::initial(c.width).at_least(40.0).clip(true)
-                };
-                builder = builder.column(col);
-            }
-            if let Some(sel) = self.selected {
-                if matches!(event, Some(TableEvent::Selected(_))) {
+                let row_h = t.metrics.table_row;
+                let mut builder = TableBuilder::new(ui)
+                    .id_salt(id)
+                    .striped(false)
+                    .resizable(true)
+                    .sense(Sense::click())
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center));
+                for (i, c) in columns.iter().enumerate() {
+                    let col = if i + 1 == columns.len() {
+                        Column::remainder().at_least(60.0)
+                    } else {
+                        Column::initial(c.width).at_least(40.0).clip(true)
+                    };
+                    builder = builder.column(col);
+                }
+                if let Some(sel) = self.selected
+                    && matches!(event, Some(TableEvent::Selected(_)))
+                {
                     builder = builder.scroll_to_row(sel as usize, None);
                 }
-            }
-            builder
-                .header(row_h, |mut header| {
-                    for (i, c) in columns.iter().enumerate() {
-                        header.col(|ui| {
-                            let arrow = if self.sort == i {
-                                match self.order {
-                                    SortOrder::Ascending => " ↑",
-                                    SortOrder::Descending => " ↓",
-                                }
-                            } else {
-                                ""
-                            };
-                            let text = RichText::new(format!("{}{arrow}", c.title))
-                                .size(t.metrics.small_size)
-                                .color(if self.sort == i { p.text } else { p.text_secondary });
-                            let r = ui.add(egui::Label::new(text).sense(if c.sortable {
-                                Sense::click()
-                            } else {
-                                Sense::hover()
-                            }));
-                            if c.sortable && r.clicked() {
-                                if self.sort == i {
-                                    self.order = match self.order {
-                                        SortOrder::Ascending => SortOrder::Descending,
-                                        SortOrder::Descending => SortOrder::Ascending,
-                                    };
+                builder
+                    .header(row_h, |mut header| {
+                        for (i, c) in columns.iter().enumerate() {
+                            header.col(|ui| {
+                                let arrow = if self.sort == i {
+                                    match self.order {
+                                        SortOrder::Ascending => " ↑",
+                                        SortOrder::Descending => " ↓",
+                                    }
                                 } else {
-                                    self.sort = i;
-                                    self.order = SortOrder::Ascending;
-                                }
-                            }
-                        });
-                    }
-                })
-                .body(|body| {
-                    body.rows(row_h, total as usize, |mut row| {
-                        let i = row.index() as u64;
-                        let data = self.row(cx, i);
-                        row.set_selected(self.selected == Some(i));
-                        for c in 0..columns.len() {
-                            row.col(|ui| match &data {
-                                Some(d) => cell(ui, d, c),
-                                None => {
-                                    let r = ui.available_rect_before_wrap();
-                                    widgets::placeholder_bar(ui, &t, r.shrink2(egui::vec2(0.0, 5.0)), 0.5);
+                                    ""
+                                };
+                                let text = RichText::new(format!("{}{arrow}", c.title))
+                                    .size(t.metrics.small_size)
+                                    .color(if self.sort == i {
+                                        p.text
+                                    } else {
+                                        p.text_secondary
+                                    });
+                                let r = ui.add(egui::Label::new(text).sense(if c.sortable {
+                                    Sense::click()
+                                } else {
+                                    Sense::hover()
+                                }));
+                                if c.sortable && r.clicked() {
+                                    if self.sort == i {
+                                        self.order = match self.order {
+                                            SortOrder::Ascending => SortOrder::Descending,
+                                            SortOrder::Descending => SortOrder::Ascending,
+                                        };
+                                    } else {
+                                        self.sort = i;
+                                        self.order = SortOrder::Ascending;
+                                    }
                                 }
                             });
                         }
-                        let resp = row.response();
-                        if resp.clicked() {
-                            self.selected = Some(i);
-                            if let Some(d) = &data {
-                                event = Some(TableEvent::Selected(d.clone()));
+                    })
+                    .body(|body| {
+                        body.rows(row_h, total as usize, |mut row| {
+                            let i = row.index() as u64;
+                            let data = self.row(cx, i);
+                            row.set_selected(self.selected == Some(i));
+                            for c in 0..columns.len() {
+                                row.col(|ui| {
+                                    if let Some(d) = &data {
+                                        cell(ui, d, c);
+                                    } else {
+                                        let r = ui.available_rect_before_wrap();
+                                        widgets::placeholder_bar(
+                                            ui,
+                                            &t,
+                                            r.shrink2(egui::vec2(0.0, 5.0)),
+                                            0.5,
+                                        );
+                                    }
+                                });
                             }
-                        }
-                        if resp.double_clicked() {
-                            if let Some(d) = &data {
+                            let resp = row.response();
+                            if resp.clicked() {
+                                self.selected = Some(i);
+                                if let Some(d) = &data {
+                                    event = Some(TableEvent::Selected(d.clone()));
+                                }
+                            }
+                            if resp.double_clicked()
+                                && let Some(d) = &data
+                            {
                                 event = Some(TableEvent::Activated(d.clone()));
                             }
-                        }
+                        });
                     });
-                });
-        });
+            });
         if self.pages.values_mut().any(|p| p.poll().is_none()) {
-            ui.ctx().request_repaint_after(std::time::Duration::from_millis(30));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(30));
         }
         event
     }
 }
 
 /// A cell of monospaced text in a syntax colour.
-pub fn code_cell(ui: &mut egui::Ui, cx_tokens: &crate::design::Tokens, text: &str, color: egui::Color32) {
+pub fn code_cell(
+    ui: &mut egui::Ui,
+    cx_tokens: &crate::design::Tokens,
+    text: &str,
+    color: egui::Color32,
+) {
     ui.add(
         egui::Label::new(
             RichText::new(text)
@@ -336,5 +358,9 @@ pub fn code_cell(ui: &mut egui::Ui, cx_tokens: &crate::design::Tokens, text: &st
 
 /// A cell of plain text.
 pub fn text_cell(ui: &mut egui::Ui, text: &str, color: egui::Color32) {
-    ui.add(egui::Label::new(RichText::new(text).color(color)).truncate().selectable(false));
+    ui.add(
+        egui::Label::new(RichText::new(text).color(color))
+            .truncate()
+            .selectable(false),
+    );
 }

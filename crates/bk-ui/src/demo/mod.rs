@@ -197,7 +197,12 @@ impl ProgramSource for DemoProgram {
         Ok(decompile::decompile(&db, f))
     }
 
-    fn symbols(&self, category: SymbolCategory, filter: &str, limit: u32) -> SourceResult<Page<Symbol>> {
+    fn symbols(
+        &self,
+        category: SymbolCategory,
+        filter: &str,
+        limit: u32,
+    ) -> SourceResult<Page<Symbol>> {
         let db = self.db.read();
         let filter = filter.to_lowercase();
         let mut out = Vec::new();
@@ -218,7 +223,12 @@ impl ProgramSource for DemoProgram {
                 }
             }
             SymbolCategory::Exports => {
-                push(db.func_name_at(self.info.entry.0), self.info.entry.0, SymbolKind::Function, "");
+                push(
+                    db.func_name_at(self.info.entry.0),
+                    self.info.entry.0,
+                    SymbolKind::Function,
+                    "",
+                );
             }
             SymbolCategory::Functions => {
                 for f in db.funcs.iter().filter(|f| !f.is_thunk) {
@@ -236,7 +246,7 @@ impl ProgramSource for DemoProgram {
             }
             SymbolCategory::Classes | SymbolCategory::Namespaces => {}
         }
-        out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        out.sort_by_key(|a| a.name.to_lowercase());
         Ok(page(out, 0, limit))
     }
 
@@ -252,7 +262,11 @@ impl ProgramSource for DemoProgram {
                     SymbolKind::Import | SymbolKind::Data => 10,
                     _ => 0,
                 };
-                let namespace = if n.kind == SymbolKind::Import { LIBRARY } else { "" };
+                let namespace = if n.kind == SymbolKind::Import {
+                    LIBRARY
+                } else {
+                    ""
+                };
                 scored.push((
                     score + bonus,
                     Symbol {
@@ -265,12 +279,20 @@ impl ProgramSource for DemoProgram {
             }
         }
         scored.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.name.len().cmp(&b.1.name.len())));
-        Ok(scored.into_iter().take(limit as usize).map(|(_, s)| s).collect())
+        Ok(scored
+            .into_iter()
+            .take(limit as usize)
+            .map(|(_, s)| s)
+            .collect())
     }
 
     fn references_to(&self, address: Address, limit: u32) -> SourceResult<Page<Reference>> {
         let db = self.db.read();
-        let refs = db.xrefs.get(&address.0).map(Vec::as_slice).unwrap_or_default();
+        let refs = db
+            .xrefs
+            .get(&address.0)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
         let rows = refs
             .iter()
             .map(|x| Reference {
@@ -362,7 +384,12 @@ impl ProgramSource for DemoProgram {
                 check_name(name)?;
                 let kind = match db.label_for(address.0).1 {
                     // A new name on a plain address becomes a label.
-                    SymbolKind::Data if !db.names.contains_key(&address.0) && db.func_containing(address.0).is_some() => SymbolKind::Label,
+                    SymbolKind::Data
+                        if !db.names.contains_key(&address.0)
+                            && db.func_containing(address.0).is_some() =>
+                    {
+                        SymbolKind::Label
+                    }
                     k => k,
                 };
                 if db.unit_for_address(address.0).is_none() {

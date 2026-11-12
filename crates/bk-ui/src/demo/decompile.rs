@@ -39,11 +39,15 @@ pub(crate) fn c_tokens(db: &Db, f: Option<&Func>, line: &str) -> Vec<Token> {
             CClass::Number | CClass::Char => Token::new(text, TokenKind::Constant),
             CClass::Comment => Token::new(text, TokenKind::Comment),
             CClass::String => {
-                let body = text.get(1..text.len().saturating_sub(1)).unwrap_or_default();
+                let body = text
+                    .get(1..text.len().saturating_sub(1))
+                    .unwrap_or_default();
                 match db.string_index.get(c_unescape(body).as_str()) {
-                    Some(a) => {
-                        Token::with_referent(text, TokenKind::String, Referent::Address(Address(*a)))
-                    }
+                    Some(a) => Token::with_referent(
+                        text,
+                        TokenKind::String,
+                        Referent::Address(Address(*a)),
+                    ),
                     None => Token::new(text, TokenKind::String),
                 }
             }
@@ -68,28 +72,32 @@ fn ident(db: &Db, f: Option<&Func>, text: &str, after_member: bool) -> Token {
     if lex::is_type(text) {
         return Token::with_referent(text, TokenKind::Type, Referent::Type(text.into()));
     }
-    if let Some(f) = f {
-        if let Some(i) = f.vars.iter().position(|v| &*v.name == text) {
-            let v = f.vars.get(i);
-            let name = db.var_name(f, i as u32).unwrap_or(text);
-            let kind = if v.is_some_and(|v| v.is_param) {
-                TokenKind::Parameter
-            } else {
-                TokenKind::Variable
-            };
-            return Token::with_referent(
-                name,
-                kind,
-                Referent::Variable {
-                    function: Address(f.entry),
-                    index: i as u32,
-                },
-            );
-        }
+    if let Some(f) = f
+        && let Some(i) = f.vars.iter().position(|v| &*v.name == text)
+    {
+        let v = f.vars.get(i);
+        let name = db.var_name(f, i as u32).unwrap_or(text);
+        let kind = if v.is_some_and(|v| v.is_param) {
+            TokenKind::Parameter
+        } else {
+            TokenKind::Variable
+        };
+        return Token::with_referent(
+            name,
+            kind,
+            Referent::Variable {
+                function: Address(f.entry),
+                index: i as u32,
+            },
+        );
     }
     if let Some((a, kind)) = db.ident_index.get(text) {
         let (name, _) = db.label_for(*a);
-        return Token::with_referent(name, symbol_token_kind(*kind), Referent::Address(Address(*a)));
+        return Token::with_referent(
+            name,
+            symbol_token_kind(*kind),
+            Referent::Address(Address(*a)),
+        );
     }
     Token::new(text, TokenKind::Plain)
 }
@@ -98,17 +106,22 @@ fn ident(db: &Db, f: Option<&Func>, text: &str, after_member: bool) -> Token {
 fn line_ranges(db: &Db, f: &Func, line: u32) -> Vec<AddressRange> {
     let mut ranges: Vec<AddressRange> = Vec::new();
     let start = db.units.partition_point(|u| u.address < f.entry);
-    for u in db.units.iter().skip(start).take_while(|u| u.address < f.end) {
-        if let UnitKind::Insn { line: l, .. } = u.kind {
-            if l == line {
-                let end = Address(u.address + u.size);
-                match ranges.last_mut() {
-                    Some(r) if r.end == Address(u.address) => r.end = end,
-                    _ => ranges.push(AddressRange {
-                        start: Address(u.address),
-                        end,
-                    }),
-                }
+    for u in db
+        .units
+        .iter()
+        .skip(start)
+        .take_while(|u| u.address < f.end)
+    {
+        if let UnitKind::Insn { line: l, .. } = u.kind
+            && l == line
+        {
+            let end = Address(u.address + u.size);
+            match ranges.last_mut() {
+                Some(r) if r.end == Address(u.address) => r.end = end,
+                _ => ranges.push(AddressRange {
+                    start: Address(u.address),
+                    end,
+                }),
             }
         }
     }
@@ -146,15 +159,16 @@ pub(crate) fn decompile(db: &Db, f: &Func) -> DecompiledFunction {
             // Plate comments go above the signature (below); pre-comments
             // above the first statement of their instruction.
             for kind in [CommentKind::Pre] {
-                if let Some(c) = db.comments.get(&(a, kind)) {
-                    if commented.insert((a, kind)) && *n != f.source.first().map_or(0, |s| s.0) {
-                        for l in c.lines() {
-                            lines.push(DecompLine {
-                                indent,
-                                tokens: vec![Token::new(format!("/* {l} */"), TokenKind::Comment)],
-                                ranges: vec![*first],
-                            });
-                        }
+                if let Some(c) = db.comments.get(&(a, kind))
+                    && commented.insert((a, kind))
+                    && *n != f.source.first().map_or(0, |s| s.0)
+                {
+                    for l in c.lines() {
+                        lines.push(DecompLine {
+                            indent,
+                            tokens: vec![Token::new(format!("/* {l} */"), TokenKind::Comment)],
+                            ranges: vec![*first],
+                        });
                     }
                 }
             }

@@ -170,13 +170,19 @@ impl Scroller {
         }
         let id = ui.id().with("bk-scrollbar");
         let resp = ui.interact(track, id, Sense::click_and_drag());
-        let thumb_h = (track.height() * self.visible as f32 / total as f32).clamp(28.0, track.height());
+        let thumb_h =
+            (track.height() * self.visible as f32 / total as f32).clamp(28.0, track.height());
         let travel = (track.height() - thumb_h).max(1.0);
         let frac = self.top as f64 / max as f64;
         let thumb_top = track.top() + (frac as f32) * travel;
-        let thumb = Rect::from_min_size(pos2(track.left() + 2.0, thumb_top), vec2(BAR - 4.0, thumb_h));
+        let thumb = Rect::from_min_size(
+            pos2(track.left() + 2.0, thumb_top),
+            vec2(BAR - 4.0, thumb_h),
+        );
         if resp.drag_started() {
-            let y = resp.interact_pointer_pos().map_or(thumb.center().y, |p| p.y);
+            let y = resp
+                .interact_pointer_pos()
+                .map_or_else(|| thumb.center().y, |p| p.y);
             if thumb.contains(pos2(thumb.center().x, y)) {
                 self.drag_start = Some((y, self.top));
             } else {
@@ -187,23 +193,23 @@ impl Scroller {
                 self.drag_start = Some((y, self.top));
             }
         }
-        if resp.dragged() {
-            if let (Some((y0, top0)), Some(p)) = (self.drag_start, resp.interact_pointer_pos()) {
-                let rows = f64::from((p.y - y0) / travel) * max as f64;
-                let top = (top0 as f64 + rows).clamp(0.0, max as f64);
-                self.top = top as u64;
-                self.offset = 0.0;
-            }
+        if resp.dragged()
+            && let (Some((y0, top0)), Some(p)) = (self.drag_start, resp.interact_pointer_pos())
+        {
+            let rows = f64::from((p.y - y0) / travel) * max as f64;
+            let top = (top0 as f64 + rows).clamp(0.0, max as f64);
+            self.top = top as u64;
+            self.offset = 0.0;
         }
         if resp.drag_stopped() {
             self.drag_start = None;
         }
-        if resp.clicked() {
-            if let Some(p) = resp.interact_pointer_pos() {
-                let f = ((p.y - track.top() - thumb_h / 2.0) / travel).clamp(0.0, 1.0);
-                self.top = (f64::from(f) * max as f64) as u64;
-                self.offset = 0.0;
-            }
+        if resp.clicked()
+            && let Some(p) = resp.interact_pointer_pos()
+        {
+            let f = ((p.y - track.top() - thumb_h / 2.0) / travel).clamp(0.0, 1.0);
+            self.top = (f64::from(f) * max as f64) as u64;
+            self.offset = 0.0;
         }
         let p = t.palette;
         let active = resp.hovered() || resp.dragged();

@@ -1,5 +1,15 @@
 //! Helpers shared by the interface tests.
-#![allow(dead_code, clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    dead_code,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -21,11 +31,17 @@ pub(crate) fn prefs(theme: ThemeKind, density: Density) -> Prefs {
 
 /// A headless harness (no GPU) on the demo program.
 pub(crate) fn harness() -> Harness<'static, BasiliskApp> {
-    harness_with(prefs(ThemeKind::Dark, Density::Comfortable), bk_ui::shell::app::demo_opener())
+    harness_with(
+        prefs(ThemeKind::Dark, Density::Comfortable),
+        bk_ui::shell::app::demo_opener(),
+    )
 }
 
 /// A headless harness with `prefs` and an opener.
-pub(crate) fn harness_with(prefs: Prefs, opener: bk_ui::shell::tool::Opener) -> Harness<'static, BasiliskApp> {
+pub(crate) fn harness_with(
+    prefs: Prefs,
+    opener: bk_ui::shell::tool::Opener,
+) -> Harness<'static, BasiliskApp> {
     let ctx = egui::Context::default();
     let app = BasiliskApp::new(&ctx, prefs, opener);
     Harness::builder()
@@ -35,9 +51,18 @@ pub(crate) fn harness_with(prefs: Prefs, opener: bk_ui::shell::tool::Opener) -> 
 }
 
 /// A harness that can render images.
-pub(crate) fn gpu_harness(theme: ThemeKind, density: Density, w: f32, h: f32) -> Harness<'static, BasiliskApp> {
+pub(crate) fn gpu_harness(
+    theme: ThemeKind,
+    density: Density,
+    w: f32,
+    h: f32,
+) -> Harness<'static, BasiliskApp> {
     let ctx = egui::Context::default();
-    let app = BasiliskApp::new(&ctx, prefs(theme, density), bk_ui::shell::app::demo_opener());
+    let app = BasiliskApp::new(
+        &ctx,
+        prefs(theme, density),
+        bk_ui::shell::app::demo_opener(),
+    );
     Harness::builder()
         .with_size(egui::vec2(w, h))
         .with_pixels_per_point(2.0)
@@ -52,7 +77,12 @@ pub(crate) fn settle(h: &mut Harness<'_, BasiliskApp>) {
     let mut quiet = 0;
     while Instant::now() < deadline {
         h.step();
-        let busy = h.state().tool().ws.as_ref().is_some_and(|w| w.client.busy() > 0);
+        let busy = h
+            .state()
+            .tool()
+            .ws
+            .as_ref()
+            .is_some_and(|w| w.client.busy() > 0);
         if busy {
             quiet = 0;
             std::thread::yield_now();
@@ -70,9 +100,21 @@ pub(crate) fn settle(h: &mut Harness<'_, BasiliskApp>) {
 pub(crate) fn go_to(h: &mut Harness<'_, BasiliskApp>, name: &str) {
     let addr = {
         let src = bk_ui::demo::DemoProgram::licd().unwrap();
-        src.lookup(name, 5).unwrap().into_iter().find(|s| &*s.name == name).unwrap().address
+        src.lookup(name, 5)
+            .unwrap()
+            .into_iter()
+            .find(|s| &*s.name == name)
+            .unwrap()
+            .address
     };
-    h.state().tool().ws.as_mut().unwrap().shared.nav.go(Location::at(addr));
+    h.state()
+        .tool()
+        .ws
+        .as_mut()
+        .unwrap()
+        .shared
+        .nav
+        .go(Location::at(addr));
 }
 
 /// Renders and saves a PNG.
@@ -121,7 +163,10 @@ impl ProgramSource for Recording {
 }
 
 /// A harness on a recording demo source, with the record.
-pub(crate) fn recording_harness() -> (Harness<'static, BasiliskApp>, std::sync::Arc<parking_lot::Mutex<Vec<bk_ui::model::Command>>>) {
+pub(crate) fn recording_harness() -> (
+    Harness<'static, BasiliskApp>,
+    std::sync::Arc<parking_lot::Mutex<Vec<bk_ui::model::Command>>>,
+) {
     let commands = std::sync::Arc::new(parking_lot::Mutex::new(Vec::new()));
     let c2 = std::sync::Arc::clone(&commands);
     let opener: bk_ui::shell::tool::Opener = std::sync::Arc::new(move || {
@@ -138,12 +183,25 @@ pub(crate) fn recording_harness() -> (Harness<'static, BasiliskApp>, std::sync::
 /// The address of a demo symbol.
 pub(crate) fn addr(name: &str) -> bk_ui::model::Address {
     let src = bk_ui::demo::DemoProgram::licd().unwrap();
-    src.lookup(name, 5).unwrap().into_iter().find(|s| &*s.name == name).unwrap().address
+    src.lookup(name, 5)
+        .unwrap()
+        .into_iter()
+        .find(|s| &*s.name == name)
+        .unwrap()
+        .address
 }
 
 /// The current location.
 pub(crate) fn here(h: &Harness<'_, BasiliskApp>) -> bk_ui::model::Address {
-    h.state().tool().ws.as_ref().unwrap().shared.nav.current().address
+    h.state()
+        .tool()
+        .ws
+        .as_ref()
+        .unwrap()
+        .shared
+        .nav
+        .current()
+        .address
 }
 
 /// Types text into the focused field.
@@ -165,9 +223,19 @@ pub(crate) fn double_click(h: &mut Harness<'_, BasiliskApp>, rect: egui::Rect) {
     h.event(egui::Event::PointerMoved(pos));
     h.step();
     for _ in 0..2 {
-        h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed: true, modifiers: egui::Modifiers::NONE });
+        h.event(egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed: true,
+            modifiers: egui::Modifiers::NONE,
+        });
         h.step();
-        h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed: false, modifiers: egui::Modifiers::NONE });
+        h.event(egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed: false,
+            modifiers: egui::Modifiers::NONE,
+        });
         h.step();
     }
     h.run_steps(2);

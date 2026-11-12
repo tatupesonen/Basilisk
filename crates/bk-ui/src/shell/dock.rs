@@ -8,8 +8,8 @@ use super::layout::Tab;
 use super::workspace::Workspace;
 use crate::actions::Keymap;
 use crate::design::{Tokens, tokens::space};
-use crate::views::{Request, Shared, View, ViewCx};
 use crate::task::DataClient;
+use crate::views::{Request, Shared, View, ViewCx};
 
 /// What a pane's tab menu asked for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,7 +100,8 @@ impl TabViewer for Viewer<'_> {
             ui.close();
         }
         if tab.kind.is_code() && ui.button("Snapshot").clicked() {
-            self.requests.push(Request::Snapshot(tab.kind, self.shared.nav.current()));
+            self.requests
+                .push(Request::Snapshot(tab.kind, self.shared.nav.current()));
             ui.close();
         }
     }
@@ -109,7 +110,8 @@ impl TabViewer for Viewer<'_> {
         // egui_dock draws tabs without accessibility names; give each its title.
         if let Some(view) = self.views.get(&tab.id) {
             let title = view.title(self.shared);
-            response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &title));
+            response
+                .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &title));
         }
         if response.clicked() || response.drag_started() {
             *self.active = Some(tab.id);

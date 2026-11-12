@@ -23,7 +23,7 @@ const KEEP_PAGES: usize = 48;
 #[derive(Debug)]
 enum PageState {
     Loading(Pending<SourceResult<Vec<ListingRow>>>),
-    Ready(Arc<Vec<ListingRow>>),
+    Ready(Arc<[ListingRow]>),
     Failed(String),
 }
 
@@ -61,23 +61,23 @@ impl RowCache {
                 break;
             }
             self.pages.entry(p).or_insert_with(|| {
-                PageState::Loading(client.request(move |s| {
-                    s.listing_rows(RowIndex(p * PAGE), PAGE as u32)
-                }))
+                PageState::Loading(
+                    client.request(move |s| s.listing_rows(RowIndex(p * PAGE), PAGE as u32)),
+                )
             });
         }
         for state in self.pages.values_mut() {
-            if let PageState::Loading(pending) = state {
-                if let Some(result) = pending.take() {
-                    *state = match result {
-                        Ok(rows) => PageState::Ready(Arc::new(rows)),
-                        Err(e) => PageState::Failed(e.to_string()),
-                    };
-                }
+            if let PageState::Loading(pending) = state
+                && let Some(result) = pending.take()
+            {
+                *state = match result {
+                    Ok(rows) => PageState::Ready(rows.into()),
+                    Err(e) => PageState::Failed(e.to_string()),
+                };
             }
         }
         if self.pages.len() > KEEP_PAGES + (p1 - p0 + 1) as usize {
-            let centre = (p0 + p1) / 2;
+            let centre = u64::midpoint(p0, p1);
             let mut far: Vec<u64> = self.pages.keys().copied().collect();
             far.sort_by_key(|p| std::cmp::Reverse(p.abs_diff(centre)));
             for p in far.into_iter().take(self.pages.len() - KEEP_PAGES) {

@@ -142,6 +142,9 @@ mod tests {
         assert!(a.matches(&b));
         assert!(!a.matches(&c));
         assert!(c.matches(&Token::new("main", TokenKind::Label)));
-        assert!(!Token::new(",", TokenKind::Punctuation).matches(&Token::new(",", TokenKind::Punctuation)));
+        assert!(
+            !Token::new(",", TokenKind::Punctuation)
+                .matches(&Token::new(",", TokenKind::Punctuation))
+        );
     }
 }

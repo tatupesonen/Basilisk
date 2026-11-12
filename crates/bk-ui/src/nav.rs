@@ -45,7 +45,7 @@ impl Navigator {
     pub fn current(&self) -> Location {
         self.entries
             .get(self.index)
-            .map_or(Location::at(Address(0)), |e| e.location)
+            .map_or_else(|| Location::at(Address(0)), |e| e.location)
     }
 
     /// Changes on every move; views compare it with the value they last saw.
@@ -74,11 +74,11 @@ impl Navigator {
     /// Moves the cursor to `location` without a history entry (clicking
     /// around inside the code already shown).
     pub fn move_to(&mut self, location: Location) {
-        if let Some(e) = self.entries.get_mut(self.index) {
-            if e.location != location {
-                e.location = location;
-                self.generation += 1;
-            }
+        if let Some(e) = self.entries.get_mut(self.index)
+            && e.location != location
+        {
+            e.location = location;
+            self.generation += 1;
         }
     }
 

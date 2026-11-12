@@ -2,8 +2,8 @@
 //! beside the pointer (Ghidra's reference hover), in the Listing and the
 //! Decompiler alike.
 
-use super::listing::layout::{self, Columns};
 use super::ViewCx;
+use super::listing::layout::{self, Columns};
 use crate::design::Tokens;
 use crate::model::{Address, ListingRow, RowContent, SourceResult};
 use crate::task::Pending;
@@ -72,7 +72,8 @@ impl Preview {
             }
             None => {
                 ui.label(format!("Loading {a}…"));
-                ui.ctx().request_repaint_after(std::time::Duration::from_millis(30));
+                ui.ctx()
+                    .request_repaint_after(std::time::Duration::from_millis(30));
             }
         }
     }

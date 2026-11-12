@@ -10,16 +10,30 @@ use super::tool::Tool;
 use crate::actions::{ACTIONS, ActionId, Menu, action};
 use crate::design::{Density, ThemeKind, Tokens, icons, tokens::radius, tokens::space, widgets};
 
-fn item(ui: &mut egui::Ui, tool: &Tool, id: ActionId, checked: Option<bool>, run: &mut Vec<ActionId>) {
+fn item(
+    ui: &mut egui::Ui,
+    tool: &Tool,
+    id: ActionId,
+    checked: Option<bool>,
+    run: &mut Vec<ActionId>,
+) {
     let Some(a) = action(id) else { return };
     let cx = tool.action_context();
-    let shortcut = tool.prefs.keymap.primary(id).map(|k| k.label(tool.mac)).unwrap_or_default();
+    let shortcut = tool
+        .prefs
+        .keymap
+        .primary(id)
+        .map(|k| k.label(tool.mac))
+        .unwrap_or_default();
     let text = match checked {
         Some(true) => format!("✓ {}", a.name),
         Some(false) => format!("   {}", a.name),
         None => a.name.to_owned(),
     };
-    let mut resp = ui.add_enabled(a.enabled(&cx), egui::Button::new(text).shortcut_text(shortcut));
+    let mut resp = ui.add_enabled(
+        a.enabled(cx),
+        egui::Button::new(text).shortcut_text(shortcut),
+    );
     resp = match a.unavailable_reason() {
         Some(r) => resp.on_disabled_hover_text(r),
         None => resp.on_hover_text(a.description),
@@ -81,12 +95,17 @@ pub fn toolbar(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> ToolbarOut {
     let p = t.palette;
     let button = |ui: &mut egui::Ui, id: ActionId, icon: &str, out: &mut ToolbarOut| {
         let Some(a) = action(id) else { return };
-        let key = tool.prefs.keymap.primary(id).map(|k| format!("  ({})", k.label(tool.mac))).unwrap_or_default();
+        let key = tool
+            .prefs
+            .keymap
+            .primary(id)
+            .map(|k| format!("  ({})", k.label(tool.mac)))
+            .unwrap_or_default();
         let tip = match a.unavailable_reason() {
             Some(r) => format!("{} — {r}", a.name),
             None => format!("{}{key}", a.name),
         };
-        if widgets::icon_button(ui, t, icon, &tip, a.enabled(&cx)).clicked() {
+        if widgets::icon_button(ui, t, icon, &tip, a.enabled(cx)).clicked() {
             out.run.push(id);
         }
     };
@@ -104,7 +123,12 @@ pub fn toolbar(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> ToolbarOut {
                 button(ui, ActionId::Forward, icons::FORWARD, &mut out);
                 history_menu(ui, tool, t, false, &mut out);
                 widgets::toolbar_divider(ui, t);
-                button(ui, ActionId::NextInstruction, icons::NEXT_INSTRUCTION, &mut out);
+                button(
+                    ui,
+                    ActionId::NextInstruction,
+                    icons::NEXT_INSTRUCTION,
+                    &mut out,
+                );
                 button(ui, ActionId::NextData, icons::NEXT_DATA, &mut out);
                 button(ui, ActionId::NextLabel, icons::NEXT_LABEL, &mut out);
                 button(ui, ActionId::NextFunction, icons::NEXT_FUNCTION, &mut out);
@@ -134,15 +158,32 @@ pub fn toolbar(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> ToolbarOut {
 
 /// The back/forward drop-down (Ghidra's navigation history list).
 fn history_menu(ui: &mut egui::Ui, tool: &Tool, t: &Tokens, back: bool, out: &mut ToolbarOut) {
-    let entries = tool.ws.as_ref().map(|w| if back { w.shared.nav.back_list() } else { w.shared.nav.forward_list() }).unwrap_or_default();
+    let entries = tool
+        .ws
+        .as_ref()
+        .map(|w| {
+            if back {
+                w.shared.nav.back_list()
+            } else {
+                w.shared.nav.forward_list()
+            }
+        })
+        .unwrap_or_default();
     let enabled = !entries.is_empty();
-    let color = if enabled { t.palette.text_muted } else { t.palette.text_disabled };
+    let color = if enabled {
+        t.palette.text_muted
+    } else {
+        t.palette.text_disabled
+    };
     let r = ui
         .add_enabled_ui(enabled, |ui| {
             ui.menu_button(icons::rich(icons::EXPANDED).size(10.0).color(color), |ui| {
                 ui.set_min_width(180.0);
                 for (i, l) in entries.iter().enumerate().take(20) {
-                    if ui.button(RichText::new(l.address.to_string()).monospace()).clicked() {
+                    if ui
+                        .button(RichText::new(l.address.to_string()).monospace())
+                        .clicked()
+                    {
                         if back {
                             out.back_by = Some(i + 1);
                         } else {
@@ -159,22 +200,57 @@ fn history_menu(ui: &mut egui::Ui, tool: &Tool, t: &Tokens, back: bool, out: &mu
 
 /// The palette field at the end of the tool bar: a search box that opens
 /// the command palette.
+#[expect(clippy::many_single_char_names, reason = "painter geometry")]
 fn palette_field(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> egui::Response {
     let p = t.palette;
     let w = 300.0_f32.min(ui.available_width() - 8.0).max(120.0);
-    let (rect, resp) = ui.allocate_exact_size(vec2(w, t.metrics.toolbar_height - 10.0), Sense::click());
+    let (rect, resp) =
+        ui.allocate_exact_size(vec2(w, t.metrics.toolbar_height - 10.0), Sense::click());
     let fill = if resp.hovered() { p.hover } else { p.input };
-    ui.painter().rect(rect, egui::CornerRadius::same(radius::SM), fill, egui::Stroke::new(1.0, p.hairline), egui::StrokeKind::Inside);
+    ui.painter().rect(
+        rect,
+        egui::CornerRadius::same(radius::SM),
+        fill,
+        egui::Stroke::new(1.0, p.hairline),
+        egui::StrokeKind::Inside,
+    );
     let y = rect.center().y;
-    ui.painter().text(egui::pos2(rect.left() + 10.0, y), egui::Align2::LEFT_CENTER, icons::SEARCH, icons::font(t.metrics.icon_size - 1.0), p.text_muted);
-    ui.painter().text(egui::pos2(rect.left() + 30.0, y), egui::Align2::LEFT_CENTER, "Search actions and symbols", egui::FontId::proportional(t.metrics.small_size), p.text_muted);
+    ui.painter().text(
+        egui::pos2(rect.left() + 10.0, y),
+        egui::Align2::LEFT_CENTER,
+        icons::SEARCH,
+        icons::font(t.metrics.icon_size - 1.0),
+        p.text_muted,
+    );
+    ui.painter().text(
+        egui::pos2(rect.left() + 30.0, y),
+        egui::Align2::LEFT_CENTER,
+        "Search actions and symbols",
+        egui::FontId::proportional(t.metrics.small_size),
+        p.text_muted,
+    );
     if let Some(k) = tool.prefs.keymap.primary(ActionId::CommandPalette) {
-        let g = ui.painter().layout_no_wrap(k.label(tool.mac), egui::FontId::monospace(t.metrics.small_size - 1.0), p.text_muted);
-        let chip = egui::Rect::from_min_size(egui::pos2(rect.right() - g.size().x - 14.0, y - g.size().y / 2.0 - 2.0), g.size() + vec2(8.0, 4.0));
-        ui.painter().rect(chip, egui::CornerRadius::same(3), p.chrome, egui::Stroke::new(1.0, p.hairline), egui::StrokeKind::Inside);
-        ui.painter().galley(chip.min + vec2(4.0, 2.0), g, p.text_muted);
+        let g = ui.painter().layout_no_wrap(
+            k.label(tool.mac),
+            egui::FontId::monospace(t.metrics.small_size - 1.0),
+            p.text_muted,
+        );
+        let chip = egui::Rect::from_min_size(
+            egui::pos2(rect.right() - g.size().x - 14.0, y - g.size().y / 2.0 - 2.0),
+            g.size() + vec2(8.0, 4.0),
+        );
+        ui.painter().rect(
+            chip,
+            egui::CornerRadius::same(3),
+            p.chrome,
+            egui::Stroke::new(1.0, p.hairline),
+            egui::StrokeKind::Inside,
+        );
+        ui.painter()
+            .galley(chip.min + vec2(4.0, 2.0), g, p.text_muted);
     }
-    resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text("Command Palette: every action, function, label and address")
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text("Command Palette: every action, function, label and address")
 }
 
 /// The status bar: last message on the left; running jobs, the current
@@ -206,21 +282,54 @@ pub fn status_bar(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> Vec<crate::task
                     let prog = &ws.shared.program;
                     ui.label(small(&prog.language, p.text_muted));
                     let here = ws.shared.nav.current().address;
-                    ui.label(RichText::new(here.to_string()).monospace().size(t.metrics.small_size).color(p.text));
+                    ui.label(
+                        RichText::new(here.to_string())
+                            .monospace()
+                            .size(t.metrics.small_size)
+                            .color(p.text),
+                    );
                     if let Some(f) = &ws.shared.function {
                         let off = here.0.saturating_sub(f.entry.0);
-                        let text = if off == 0 { f.name.to_string() } else { format!("{} + {off:#x}", f.name) };
-                        ui.label(RichText::new(text).monospace().size(t.metrics.small_size).color(t.syntax.function));
+                        let text = if off == 0 {
+                            f.name.to_string()
+                        } else {
+                            format!("{} + {off:#x}", f.name)
+                        };
+                        ui.label(
+                            RichText::new(text)
+                                .monospace()
+                                .size(t.metrics.small_size)
+                                .color(t.syntax.function),
+                        );
                     }
                     for job in ws.client.jobs() {
-                        if ui.add(egui::Button::new(icons::rich(icons::CLOSE).size(t.metrics.small_size).color(p.text_muted)).frame(false)).on_hover_text("Cancel").clicked() {
+                        if ui
+                            .add(
+                                egui::Button::new(
+                                    icons::rich(icons::CLOSE)
+                                        .size(t.metrics.small_size)
+                                        .color(p.text_muted),
+                                )
+                                .frame(false),
+                            )
+                            .on_hover_text("Cancel")
+                            .clicked()
+                        {
                             cancel.push(job.clone());
                         }
-                        ui.add(egui::ProgressBar::new(job.progress.fraction()).desired_width(80.0).desired_height(6.0));
+                        ui.add(
+                            egui::ProgressBar::new(job.progress.fraction())
+                                .desired_width(80.0)
+                                .desired_height(6.0),
+                        );
                         ui.label(small(&job.name, p.text_secondary));
                     }
                     if ws.client.busy() > 0 {
-                        ui.add(egui::Spinner::new().size(t.metrics.small_size).color(p.text_muted));
+                        ui.add(
+                            egui::Spinner::new()
+                                .size(t.metrics.small_size)
+                                .color(p.text_muted),
+                        );
                     }
                 });
             });

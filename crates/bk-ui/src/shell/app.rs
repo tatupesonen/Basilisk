@@ -178,7 +178,13 @@ fn overlays(ctx: &egui::Context, tool: &mut Tool, vp: egui::ViewportId) {
     }
 }
 
-fn process(ctx: &egui::Context, tool: &mut Tool, requests: Vec<Request>, run: Vec<ActionId>, vp: egui::ViewportId) {
+fn process(
+    ctx: &egui::Context,
+    tool: &mut Tool,
+    requests: Vec<Request>,
+    run: Vec<ActionId>,
+    vp: egui::ViewportId,
+) {
     let mut actions = run;
     if let Some(ws) = &mut tool.ws {
         let now = ws.shared.now;
@@ -197,7 +203,7 @@ fn tab_commands(tool: &mut Tool, commands: Vec<dock::TabCommand>) {
                 ws.layout.detach(id);
             }
             dock::TabCommand::Dock(id) => {
-                if let Some(Some(w)) = ws.layout.window_of(id) {
+                if let Some(super::layout::Place::Window(w)) = ws.layout.window_of(id) {
                     ws.layout.dock(w);
                 }
             }
@@ -216,38 +222,54 @@ pub fn main_window(ui: &mut egui::Ui, tool: &mut Tool) {
     let mut run = Vec::new();
     let mut back_fwd = (None, None);
     let frame = egui::Frame::NONE.fill(t.palette.chrome);
-    egui::Panel::top("bk-chrome").frame(frame).show_separator_line(false).show(ui, |ui| {
-        ui.spacing_mut().item_spacing.y = 0.0;
-        run.extend(chrome::menu_bar(ui, tool, &t));
-        let out = chrome::toolbar(ui, tool, &t);
-        run.extend(out.run);
-        back_fwd = (out.back_by, out.forward_by);
-        let r = ui.max_rect();
-        ui.painter().hline(r.x_range(), r.bottom(), egui::Stroke::new(1.0, t.palette.border));
-    });
+    egui::Panel::top("bk-chrome")
+        .frame(frame)
+        .show_separator_line(false)
+        .show(ui, |ui| {
+            ui.spacing_mut().item_spacing.y = 0.0;
+            run.extend(chrome::menu_bar(ui, tool, &t));
+            let out = chrome::toolbar(ui, tool, &t);
+            run.extend(out.run);
+            back_fwd = (out.back_by, out.forward_by);
+            let r = ui.max_rect();
+            ui.painter().hline(
+                r.x_range(),
+                r.bottom(),
+                egui::Stroke::new(1.0, t.palette.border),
+            );
+        });
     let mut cancel = Vec::new();
-    egui::Panel::bottom("bk-status").frame(frame).show_separator_line(false).show(ui, |ui| {
-        let r = ui.max_rect();
-        ui.painter().hline(r.x_range(), r.top(), egui::Stroke::new(1.0, t.palette.border));
-        cancel = chrome::status_bar(ui, tool, &t);
-    });
+    egui::Panel::bottom("bk-status")
+        .frame(frame)
+        .show_separator_line(false)
+        .show(ui, |ui| {
+            let r = ui.max_rect();
+            ui.painter().hline(
+                r.x_range(),
+                r.top(),
+                egui::Stroke::new(1.0, t.palette.border),
+            );
+            cancel = chrome::status_bar(ui, tool, &t);
+        });
     for j in cancel {
         j.progress.cancel();
     }
     let mut requests = Vec::new();
     let mut commands = Vec::new();
-    egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.palette.chrome)).show(ui, |ui| {
-        let keymap = tool.prefs.keymap.clone();
-        let mac = tool.mac;
-        match &mut tool.ws {
-            Some(ws) => commands = dock::show(ui, ws, None, &t, &keymap, mac, &mut requests),
-            None => {
-                if let Some(a) = welcome::ui(ui, tool, &t) {
-                    run.push(a);
+    egui::CentralPanel::default()
+        .frame(egui::Frame::NONE.fill(t.palette.chrome))
+        .show(ui, |ui| {
+            let keymap = tool.prefs.keymap.clone();
+            let mac = tool.mac;
+            match &mut tool.ws {
+                Some(ws) => commands = dock::show(ui, ws, None, &t, &keymap, mac, &mut requests),
+                None => {
+                    if let Some(a) = welcome::ui(ui, tool, &t) {
+                        run.push(a);
+                    }
                 }
             }
-        }
-    });
+        });
     if let Some(ws) = &mut tool.ws {
         if let Some(n) = back_fwd.0 {
             ws.shared.nav.back_by(n);
@@ -296,28 +318,48 @@ fn detached_window(ui: &mut egui::Ui, tool: &mut Tool, wid: u64, vp: egui::Viewp
     let keymap = tool.prefs.keymap.clone();
     let mac = tool.mac;
     egui::Panel::top(egui::Id::new(("bk-detached-bar", wid)))
-        .frame(egui::Frame::NONE.fill(t.palette.chrome).inner_margin(egui::Margin::symmetric(8, 2)))
+        .frame(
+            egui::Frame::NONE
+                .fill(t.palette.chrome)
+                .inner_margin(egui::Margin::symmetric(8, 2)),
+        )
         .show_separator_line(false)
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("Detached window").size(t.metrics.small_size).color(t.palette.text_muted));
+                ui.label(
+                    egui::RichText::new("Detached window")
+                        .size(t.metrics.small_size)
+                        .color(t.palette.text_muted),
+                );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if crate::design::widgets::button(ui, &t, "Dock Window").on_hover_text("Put these panes back in the main window").clicked() {
-                        if let Some(ws) = &mut tool.ws {
-                            ws.layout.dock(wid);
-                        }
+                    if crate::design::widgets::button(ui, &t, "Dock Window")
+                        .on_hover_text("Put these panes back in the main window")
+                        .clicked()
+                        && let Some(ws) = &mut tool.ws
+                    {
+                        ws.layout.dock(wid);
                     }
-                    if crate::design::widgets::icon_button(ui, &t, crate::design::icons::PALETTE, "Command Palette", true).clicked() {
+                    if crate::design::widgets::icon_button(
+                        ui,
+                        &t,
+                        crate::design::icons::PALETTE,
+                        "Command Palette",
+                        true,
+                    )
+                    .clicked()
+                    {
                         run.push(ActionId::CommandPalette);
                     }
                 });
             });
         });
-    egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.palette.chrome)).show(ui, |ui| {
-        if let Some(ws) = &mut tool.ws {
-            commands = dock::show(ui, ws, Some(wid), &t, &keymap, mac, &mut requests);
-        }
-    });
+    egui::CentralPanel::default()
+        .frame(egui::Frame::NONE.fill(t.palette.chrome))
+        .show(ui, |ui| {
+            if let Some(ws) = &mut tool.ws {
+                commands = dock::show(ui, ws, Some(wid), &t, &keymap, mac, &mut requests);
+            }
+        });
     tab_commands(tool, commands);
     overlays(&ctx, tool, vp);
     process(&ctx, tool, requests, run, vp);

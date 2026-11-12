@@ -20,9 +20,7 @@ use super::scroller::Scroller;
 use super::{Request, Target, View, ViewCx, ViewKind};
 use crate::actions::ActionId;
 use crate::design::{Tokens, widgets};
-use crate::model::{
-    Address, Location, Referent, RowSpan, SourceResult, Token,
-};
+use crate::model::{Address, Location, Referent, RowSpan, SourceResult, Token};
 use crate::task::Pending;
 
 /// Width of the marker gutter left of the address column.
@@ -90,7 +88,10 @@ impl ListingView {
 
     /// Requests the rows of `a` and moves the cursor there when they arrive.
     fn go_to(&mut self, cx: &ViewCx<'_>, a: Address, reveal_header: bool) {
-        self.follow = Some((cx.client.request(move |s| s.rows_for_address(a)), reveal_header));
+        self.follow = Some((
+            cx.client.request(move |s| s.rows_for_address(a)),
+            reveal_header,
+        ));
     }
 
     fn sync(&mut self, cx: &mut ViewCx<'_>) {
@@ -104,13 +105,13 @@ impl ListingView {
                 self.go_to(cx, a, false);
             }
         }
-        if let Some(req) = &mut self.total_req {
-            if let Some(r) = req.take() {
-                self.total_req = None;
-                match r {
-                    Ok(n) => self.total = Some(n),
-                    Err(e) => cx.shared.log(super::Level::Error, format!("Listing: {e}")),
-                }
+        if let Some(req) = &mut self.total_req
+            && let Some(r) = req.take()
+        {
+            self.total_req = None;
+            match r {
+                Ok(n) => self.total = Some(n),
+                Err(e) => cx.shared.log(super::Level::Error, format!("Listing: {e}")),
             }
         }
         // Follow the tool's location unless this is a snapshot.
@@ -138,20 +139,22 @@ impl ListingView {
                         }
                         self.scroller.keep_visible(span.unit.0, self.total());
                     }
-                    Err(e) => cx.requests.push(Request::Notify(super::Level::Warning, e.to_string())),
+                    Err(e) => cx
+                        .requests
+                        .push(Request::Notify(super::Level::Warning, e.to_string())),
                 }
             }
         }
-        if let Some(f) = &mut self.find {
-            if let Some(found) = f.take() {
-                self.find = None;
-                match found {
-                    Some(a) => cx.shared.nav.go(Location::at(a)),
-                    None => cx.requests.push(Request::Notify(
-                        super::Level::Info,
-                        "Nothing further in that direction".into(),
-                    )),
-                }
+        if let Some(f) = &mut self.find
+            && let Some(found) = f.take()
+        {
+            self.find = None;
+            match found {
+                Some(a) => cx.shared.nav.go(Location::at(a)),
+                None => cx.requests.push(Request::Notify(
+                    super::Level::Info,
+                    "Nothing further in that direction".into(),
+                )),
             }
         }
     }
@@ -208,7 +211,10 @@ impl ListingView {
         ui.input(|i| {
             for e in &i.events {
                 if let egui::Event::Key {
-                    key, pressed: true, modifiers, ..
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
                 } = e
                 {
                     if modifiers.command || modifiers.alt {
@@ -223,7 +229,7 @@ impl ListingView {
                         egui::Key::End => row = total.saturating_sub(1),
                         egui::Key::ArrowRight => token = Some(token.map_or(0, |t| t + 1)),
                         egui::Key::ArrowLeft => token = token.and_then(|t| t.checked_sub(1)),
-                        _ => continue,
+                        _ => {}
                     }
                 }
             }
@@ -248,7 +254,9 @@ impl ListingView {
     }
 
     fn row_at(&self, rect: Rect, row_h: f32, y: f32) -> u64 {
-        let k = ((y - rect.top() + self.scroller.offset) / row_h).floor().max(0.0) as u64;
+        let k = ((y - rect.top() + self.scroller.offset) / row_h)
+            .floor()
+            .max(0.0) as u64;
         self.scroller.top + k
     }
 
@@ -285,9 +293,7 @@ impl ListingView {
             return;
         };
         let address = self.cache.row(row).map(|r| (r.address, r.is_unit()));
-        let in_selection = self
-            .selection
-            .is_some_and(|(a, b)| (a..=b).contains(&row));
+        let in_selection = self.selection.is_some_and(|(a, b)| (a..=b).contains(&row));
         let related = address.is_some_and(|(a, unit)| unit && cx.shared.related.contains(a));
         let bg = if in_selection {
             Some(p.selection)
@@ -301,12 +307,24 @@ impl ListingView {
         if let Some(bg) = bg {
             painter.rect_filled(rect, CornerRadius::ZERO, bg);
         }
-        self.content_width = self.content_width.max(layout.galley.size().x + 2.0 * self.cw);
-        let origin = pos2(rect.left() + GUTTER - self.hscroll, rect.center().y - layout.galley.size().y / 2.0);
-        let painter = painter.with_clip_rect(rect.intersect(ui.clip_rect()).with_min_x(rect.left() + GUTTER - 2.0));
+        self.content_width = self
+            .content_width
+            .max(layout.galley.size().x + 2.0 * self.cw);
+        let origin = pos2(
+            rect.left() + GUTTER - self.hscroll,
+            rect.center().y - layout.galley.size().y / 2.0,
+        );
+        let painter = painter.with_clip_rect(
+            rect.intersect(ui.clip_rect())
+                .with_min_x(rect.left() + GUTTER - 2.0),
+        );
         // Token highlights under the text.
         for (i, s) in layout.spans.iter().enumerate() {
-            let hl = cx.shared.highlight.as_ref().is_some_and(|h| h.matches(&s.token));
+            let hl = cx
+                .shared
+                .highlight
+                .as_ref()
+                .is_some_and(|h| h.matches(&s.token));
             let r = Rect::from_min_max(
                 pos2(origin.x + s.x0 - 1.0, rect.top() + 2.0),
                 pos2(origin.x + s.x1 + 1.0, rect.bottom() - 2.0),
@@ -326,25 +344,38 @@ impl ListingView {
                 );
             }
         }
-        painter.galley(origin, layout.galley.clone(), p.text);
+        painter.galley(origin, std::sync::Arc::clone(&layout.galley), p.text);
         // Gutter: the cursor marker, and a quiet bar on linked rows.
         if row == self.cursor {
             let c = if cx.focused { p.accent } else { p.text_muted };
             ui.painter().rect_filled(
-                Rect::from_min_size(pos2(rect.left() + 4.0, rect.top() + 2.0), vec2(3.0, rect.height() - 4.0)),
+                Rect::from_min_size(
+                    pos2(rect.left() + 4.0, rect.top() + 2.0),
+                    vec2(3.0, rect.height() - 4.0),
+                ),
                 CornerRadius::same(1),
                 c,
             );
         } else if related {
             ui.painter().rect_filled(
-                Rect::from_min_size(pos2(rect.left() + 5.0, rect.top() + 3.0), vec2(1.5, rect.height() - 6.0)),
+                Rect::from_min_size(
+                    pos2(rect.left() + 5.0, rect.top() + 3.0),
+                    vec2(1.5, rect.height() - 6.0),
+                ),
                 CornerRadius::ZERO,
                 p.text_muted,
             );
         }
     }
 
-    fn hover(&mut self, ui: &egui::Ui, cx: &ViewCx<'_>, resp: &egui::Response, rect: Rect, row_h: f32) {
+    fn hover(
+        &mut self,
+        ui: &egui::Ui,
+        cx: &ViewCx<'_>,
+        resp: &egui::Response,
+        rect: Rect,
+        row_h: f32,
+    ) {
         let Some(pos) = resp.hover_pos() else {
             self.preview.want(cx, None);
             return;
@@ -368,7 +399,10 @@ impl ListingView {
         ui.painter().hline(
             x0..=x1,
             origin_y + row_h - 3.0,
-            Stroke::new(1.0, crate::design::syntax::color(&cx.tokens.syntax, span.token.kind)),
+            Stroke::new(
+                1.0,
+                crate::design::syntax::color(&cx.tokens.syntax, span.token.kind),
+            ),
         );
         self.preview.want(cx, Some(a));
     }
@@ -387,14 +421,18 @@ impl ListingView {
             let w = (view * frac).max(24.0);
             let x = rect.left() + GUTTER + (view - w) * (self.hscroll / max);
             let bar = Rect::from_min_size(pos2(x, rect.bottom() - 5.0), vec2(w, 3.0));
-            ui.painter().rect_filled(bar, CornerRadius::same(2), t.palette.hairline);
+            ui.painter()
+                .rect_filled(bar, CornerRadius::same(2), t.palette.hairline);
         }
         self.content_width = 0.0;
     }
 
     fn start_find(&mut self, cx: &ViewCx<'_>, kind: UnitKind, forward: bool) {
         let from = self.cursor;
-        self.find = Some(cx.client.request(move |s| Find { kind, forward }.run(s, from)));
+        self.find = Some(
+            cx.client
+                .request(move |s| Find { kind, forward }.run(s, from)),
+        );
     }
 }
 
@@ -467,17 +505,33 @@ impl View for ListingView {
         let cols = Columns::new(digits.min(16));
         if cols != self.columns {
             self.columns = cols;
-            self.cache.restyle(style_key(&t).wrapping_add(digits as u64));
+            self.cache
+                .restyle(style_key(&t).wrapping_add(digits as u64));
         }
-        ui.painter().rect_filled(ui.available_rect_before_wrap(), CornerRadius::ZERO, t.palette.surface);
+        ui.painter().rect_filled(
+            ui.available_rect_before_wrap(),
+            CornerRadius::ZERO,
+            t.palette.surface,
+        );
         let Some(total) = self.total else {
-            widgets::empty_state(ui, &t, crate::design::icons::LISTING, "Loading listing…", "");
+            widgets::empty_state(
+                ui,
+                &t,
+                crate::design::icons::LISTING,
+                "Loading listing…",
+                "",
+            );
             return;
         };
         self.keyboard(ui, cx);
         let row_h = t.metrics.code_row;
         let cache = &mut self.cache;
-        cache.want(cx.client, self.scroller.top, self.scroller.top + self.scroller.visible + 1, total);
+        cache.want(
+            cx.client,
+            self.scroller.top,
+            self.scroller.top + self.scroller.visible + 1,
+            total,
+        );
         let mut rows_to_paint = Vec::new();
         let shown = self.scroller.show(ui, &t, total, row_h, |_, row, rect| {
             rows_to_paint.push((row, rect));
@@ -486,7 +540,8 @@ impl View for ListingView {
             self.paint_row(ui, cx, row, rect);
         }
         if self.cache.loading() {
-            ui.ctx().request_repaint_after(std::time::Duration::from_millis(50));
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(50));
         }
         let resp = shown.response;
         let rect = shown.rect;
@@ -512,25 +567,27 @@ impl View for ListingView {
             if resp.drag_started() && !ui.input(|i| i.modifiers.shift) {
                 self.anchor = Some(row);
             }
-            if resp.dragged() {
-                if let Some(a) = self.anchor {
-                    if a != row {
-                        self.selection = Some((a.min(row), a.max(row)));
-                    }
-                }
+            if resp.dragged()
+                && let Some(a) = self.anchor
+                && a != row
+            {
+                self.selection = Some((a.min(row), a.max(row)));
             }
         }
-        if resp.middle_clicked() {
-            if let Some(pos) = resp.interact_pointer_pos() {
-                let row = self.row_at(rect, row_h, pos.y);
-                let tok = self
-                    .token_at(row, rect, pos.x)
-                    .and_then(|i| self.cache_layout(row)?.spans.get(i).map(|s| s.token.clone()));
-                cx.shared.highlight = match (tok, &cx.shared.highlight) {
-                    (Some(t), Some(h)) if t.matches(h) => None,
-                    (t, _) => t,
-                };
-            }
+        if resp.middle_clicked()
+            && let Some(pos) = resp.interact_pointer_pos()
+        {
+            let row = self.row_at(rect, row_h, pos.y);
+            let tok = self.token_at(row, rect, pos.x).and_then(|i| {
+                self.cache_layout(row)?
+                    .spans
+                    .get(i)
+                    .map(|s| s.token.clone())
+            });
+            cx.shared.highlight = match (tok, &cx.shared.highlight) {
+                (Some(t), Some(h)) if t.matches(h) => None,
+                (t, _) => t,
+            };
         }
         if self.preview.active() {
             let digits = self.columns.bytes.saturating_sub(2);

@@ -14,7 +14,11 @@ use super::typography;
 /// A square icon button for toolbars and pane headers. Quiet until hovered.
 pub fn icon_button(ui: &mut Ui, t: &Tokens, icon: &str, tooltip: &str, enabled: bool) -> Response {
     let side = t.metrics.toolbar_height - 8.0;
-    let sense = if enabled { Sense::click() } else { Sense::hover() };
+    let sense = if enabled {
+        Sense::click()
+    } else {
+        Sense::hover()
+    };
     let (rect, response) = ui.allocate_exact_size(Vec2::splat(side), sense);
     let response = response.on_hover_text(tooltip);
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, tooltip));
@@ -84,7 +88,13 @@ pub fn key_chip(ui: &mut Ui, t: &Tokens, text: &str) -> Response {
 
 /// A filter field with a search icon and a clear button. Returns the text
 /// edit's response (changed when the text changed).
-pub fn filter_field(ui: &mut Ui, t: &Tokens, text: &mut String, hint: &str, id: egui::Id) -> Response {
+pub fn filter_field(
+    ui: &mut Ui,
+    t: &Tokens,
+    text: &mut String,
+    hint: &str,
+    id: egui::Id,
+) -> Response {
     let p = t.palette;
     let height = t.metrics.table_row;
     let width = ui.available_width();
@@ -109,7 +119,10 @@ pub fn filter_field(ui: &mut Ui, t: &Tokens, text: &mut String, hint: &str, id: 
                 name_field(ui, &r, hint);
                 if !text.is_empty() {
                     let clear = ui
-                        .add(egui::Label::new(icons::rich(icons::CLOSE).color(p.text_muted)).sense(Sense::click()))
+                        .add(
+                            egui::Label::new(icons::rich(icons::CLOSE).color(p.text_muted))
+                                .sense(Sense::click()),
+                        )
                         .on_hover_text("Clear filter");
                     if clear.clicked() {
                         text.clear();
@@ -164,7 +177,11 @@ pub fn empty_state(ui: &mut Ui, t: &Tokens, icon: &str, title: &str, detail: &st
                 .color(p.text_secondary),
         );
         ui.add_space(space::XXS);
-        ui.label(RichText::new(detail).color(p.text_muted).size(t.metrics.small_size));
+        ui.label(
+            RichText::new(detail)
+                .color(p.text_muted)
+                .size(t.metrics.small_size),
+        );
     });
 }
 

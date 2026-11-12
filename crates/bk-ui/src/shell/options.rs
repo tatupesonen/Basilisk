@@ -46,15 +46,25 @@ impl OptionsState {
 
     /// Records `chord` for the action being captured.
     pub fn assign(&mut self, keymap: &mut Keymap, chord: KeyChord) {
-        let Some(id) = self.capture.take() else { return };
+        let Some(id) = self.capture.take() else {
+            return;
+        };
         let lost = keymap.conflict(id, chord);
         keymap.bind(id, chord);
-        self.message = lost.and_then(crate::actions::action).map(|a| format!("{chord} was removed from {}", a.name));
+        self.message = lost
+            .and_then(crate::actions::action)
+            .map(|a| format!("{chord} was removed from {}", a.name));
     }
 }
 
 /// Draws the options window. Returns false when it was closed.
-pub fn ui(ctx: &egui::Context, st: &mut OptionsState, prefs: &mut Prefs, t: &Tokens, mac: bool) -> bool {
+pub fn ui(
+    ctx: &egui::Context,
+    st: &mut OptionsState,
+    prefs: &mut Prefs,
+    t: &Tokens,
+    mac: bool,
+) -> bool {
     let p = t.palette;
     let mut open = true;
     // Capture before anything else sees the keys.
@@ -62,7 +72,13 @@ pub fn ui(ctx: &egui::Context, st: &mut OptionsState, prefs: &mut Prefs, t: &Tok
         let pressed = ctx.input_mut(|i| {
             let mut found = None;
             for e in &i.events {
-                if let egui::Event::Key { key, pressed: true, modifiers, .. } = e {
+                if let egui::Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } = e
+                {
                     found = Some((*key, *modifiers));
                 }
             }
@@ -75,7 +91,10 @@ pub fn ui(ctx: &egui::Context, st: &mut OptionsState, prefs: &mut Prefs, t: &Tok
             if key == egui::Key::Escape {
                 st.capture = None;
             } else {
-                st.assign(&mut prefs.keymap, crate::actions::keymap::chord(key, m.command, m.shift, m.alt));
+                st.assign(
+                    &mut prefs.keymap,
+                    crate::actions::keymap::chord(key, m.command, m.shift, m.alt),
+                );
             }
         }
     }
@@ -88,7 +107,10 @@ pub fn ui(ctx: &egui::Context, st: &mut OptionsState, prefs: &mut Prefs, t: &Tok
             ui.horizontal_top(|ui| {
                 ui.vertical(|ui| {
                     ui.set_width(150.0);
-                    for (page, name) in [(Page::Appearance, "Appearance"), (Page::KeyBindings, "Key Bindings")] {
+                    for (page, name) in [
+                        (Page::Appearance, "Appearance"),
+                        (Page::KeyBindings, "Key Bindings"),
+                    ] {
                         if ui.selectable_label(st.page == page, name).clicked() {
                             st.page = page;
                         }
@@ -125,11 +147,23 @@ fn appearance(ui: &mut egui::Ui, prefs: &mut Prefs, t: &Tokens) {
     );
 }
 
-fn key_bindings(ui: &mut egui::Ui, st: &mut OptionsState, keymap: &mut Keymap, t: &Tokens, mac: bool) {
+fn key_bindings(
+    ui: &mut egui::Ui,
+    st: &mut OptionsState,
+    keymap: &mut Keymap,
+    t: &Tokens,
+    mac: bool,
+) {
     let p = t.palette;
     ui.horizontal(|ui| {
         ui.set_width(520.0);
-        widgets::filter_field(ui, t, &mut st.filter, "Filter actions", egui::Id::new("bk-keys-filter"));
+        widgets::filter_field(
+            ui,
+            t,
+            &mut st.filter,
+            "Filter actions",
+            egui::Id::new("bk-keys-filter"),
+        );
     });
     ui.add_space(space::XS);
     if let Some(m) = &st.message {
@@ -137,43 +171,67 @@ fn key_bindings(ui: &mut egui::Ui, st: &mut OptionsState, keymap: &mut Keymap, t
     }
     if let Some(id) = st.capture {
         let name = crate::actions::action(id).map_or("", |a| a.name);
-        ui.label(RichText::new(format!("Press the new keys for {name} (Esc cancels)")).color(p.accent_text));
+        ui.label(
+            RichText::new(format!("Press the new keys for {name} (Esc cancels)"))
+                .color(p.accent_text),
+        );
     }
     let f = st.filter.to_lowercase();
-    egui::ScrollArea::vertical().max_height(360.0).auto_shrink(false).show(ui, |ui| {
-        egui::Grid::new("bk-keys").num_columns(4).spacing([space::LG, space::XS]).show(ui, |ui| {
-            for a in ACTIONS.iter().filter(|a| f.is_empty() || a.name.to_lowercase().contains(&f)) {
-                let menu = a.menu.map_or("", |m| m.title());
-                ui.label(RichText::new(a.name).color(p.text));
-                ui.label(RichText::new(menu).color(p.text_muted).size(t.metrics.small_size));
-                ui.horizontal(|ui| {
-                    let keys = keymap.bindings(a.id);
-                    if keys.is_empty() {
-                        ui.label(RichText::new("—").color(p.text_disabled));
-                    }
-                    for k in keys {
-                        widgets::key_chip(ui, t, &k.label(mac));
-                    }
-                    if keymap.is_changed(a.id) {
-                        ui.label(RichText::new("changed").color(p.accent_text).size(t.metrics.small_size));
+    egui::ScrollArea::vertical()
+        .max_height(360.0)
+        .auto_shrink(false)
+        .show(ui, |ui| {
+            egui::Grid::new("bk-keys")
+                .num_columns(4)
+                .spacing([space::LG, space::XS])
+                .show(ui, |ui| {
+                    for a in ACTIONS
+                        .iter()
+                        .filter(|a| f.is_empty() || a.name.to_lowercase().contains(&f))
+                    {
+                        let menu = a.menu.map_or("", |m| m.title());
+                        ui.label(RichText::new(a.name).color(p.text));
+                        ui.label(
+                            RichText::new(menu)
+                                .color(p.text_muted)
+                                .size(t.metrics.small_size),
+                        );
+                        ui.horizontal(|ui| {
+                            let keys = keymap.bindings(a.id);
+                            if keys.is_empty() {
+                                ui.label(RichText::new("—").color(p.text_disabled));
+                            }
+                            for k in keys {
+                                widgets::key_chip(ui, t, &k.label(mac));
+                            }
+                            if keymap.is_changed(a.id) {
+                                ui.label(
+                                    RichText::new("changed")
+                                        .color(p.accent_text)
+                                        .size(t.metrics.small_size),
+                                );
+                            }
+                        });
+                        ui.horizontal(|ui| {
+                            if ui
+                                .small_button("Set…")
+                                .on_hover_text("Press the new keys")
+                                .clicked()
+                            {
+                                st.capture = Some(a.id);
+                                st.message = None;
+                            }
+                            if ui.small_button("Clear").clicked() {
+                                keymap.unbind(a.id);
+                            }
+                            if keymap.is_changed(a.id) && ui.small_button("Default").clicked() {
+                                keymap.reset(a.id);
+                            }
+                        });
+                        ui.end_row();
                     }
                 });
-                ui.horizontal(|ui| {
-                    if ui.small_button("Set…").on_hover_text("Press the new keys").clicked() {
-                        st.capture = Some(a.id);
-                        st.message = None;
-                    }
-                    if ui.small_button("Clear").clicked() {
-                        keymap.unbind(a.id);
-                    }
-                    if keymap.is_changed(a.id) && ui.small_button("Default").clicked() {
-                        keymap.reset(a.id);
-                    }
-                });
-                ui.end_row();
-            }
         });
-    });
     ui.add_space(space::SM);
     if widgets::button(ui, t, "Restore Ghidra Defaults").clicked() {
         keymap.reset_all();

@@ -12,7 +12,10 @@ pub fn decode(png: &[u8]) -> Option<egui::ColorImage> {
     let img = image::load_from_memory_with_format(png, image::ImageFormat::Png).ok()?;
     let rgba = img.to_rgba8();
     let size = [rgba.width() as usize, rgba.height() as usize];
-    Some(egui::ColorImage::from_rgba_unmultiplied(size, rgba.as_raw()))
+    Some(egui::ColorImage::from_rgba_unmultiplied(
+        size,
+        rgba.as_raw(),
+    ))
 }
 
 /// The mark for `theme` (Ember on dark, Ember deep on light), as the

@@ -140,7 +140,7 @@ fn split_decl(decl: &str) -> Option<(String, String)> {
         Some(p) => (decl.get(..p)?, decl.get(p..).unwrap_or_default().trim()),
         None => (decl, ""),
     };
-    let split = decl.rfind(|c: char| c == ' ' || c == '*')?;
+    let split = decl.rfind([' ', '*'])?;
     let name = decl.get(split + 1..)?.trim();
     let mut ty = decl.get(..=split)?.trim().to_owned();
     if !array.is_empty() {
@@ -210,7 +210,12 @@ fn data_value(d: &super::parse::RawData) -> (String, Option<u64>) {
         return ("??".into(), None);
     }
     if d.datatype == "char[65]" {
-        let s: String = d.bytes.iter().take_while(|b| **b != 0).map(|b| char::from(*b)).collect();
+        let s: String = d
+            .bytes
+            .iter()
+            .take_while(|b| **b != 0)
+            .map(|b| char::from(*b))
+            .collect();
         return (format!("\"{s}\""), None);
     }
     let mut v = [0u8; 8];
@@ -253,7 +258,9 @@ impl Db {
         let src_by_fn = {
             let mut m: HashMap<&str, Vec<(u32, Box<str>)>> = HashMap::new();
             for (f, n, text) in &raw.source {
-                m.entry(f.as_str()).or_default().push((*n, text.as_str().into()));
+                m.entry(f.as_str())
+                    .or_default()
+                    .push((*n, text.as_str().into()));
             }
             m
         };
@@ -434,7 +441,8 @@ impl Db {
         }
         for (a, n) in &self.names {
             if n.kind == SymbolKind::Data {
-                self.ident_index.insert(n.name.clone(), (*a, SymbolKind::Data));
+                self.ident_index
+                    .insert(n.name.clone(), (*a, SymbolKind::Data));
                 // `stderr` and `optarg` are read through their GOT entries.
                 if let Some(base) = n.name.strip_prefix("PTR_") {
                     let c_name = if base == "stderrp" { "stderr" } else { base };
@@ -520,9 +528,7 @@ impl Db {
     /// The function whose body contains `a`.
     pub(crate) fn func_containing(&self, a: u64) -> Option<&Func> {
         let i = self.funcs.partition_point(|f| f.entry <= a);
-        self.funcs
-            .get(i.checked_sub(1)?)
-            .filter(|f| a < f.end)
+        self.funcs.get(i.checked_sub(1)?).filter(|f| a < f.end)
     }
 
     /// The current name of a function (after renames).
@@ -580,10 +586,10 @@ impl Db {
     /// Index of the unit containing `a`, or of the next unit after it.
     pub(crate) fn unit_for_address(&self, a: u64) -> Option<usize> {
         let i = self.units.partition_point(|u| u.address <= a);
-        if let Some(prev) = i.checked_sub(1).and_then(|p| self.units.get(p)) {
-            if a < prev.address + prev.size {
-                return Some(i - 1);
-            }
+        if let Some(prev) = i.checked_sub(1).and_then(|p| self.units.get(p))
+            && a < prev.address + prev.size
+        {
+            return Some(i - 1);
         }
         (i < self.units.len()).then_some(i)
     }
@@ -608,7 +614,10 @@ mod tests {
             split_decl("char *param_2"),
             Some(("char *".into(), "param_2".into()))
         );
-        assert_eq!(split_decl("FILE *__stream;"), Some(("FILE *".into(), "__stream".into())));
+        assert_eq!(
+            split_decl("FILE *__stream;"),
+            Some(("FILE *".into(), "__stream".into()))
+        );
     }
 
     #[test]
@@ -620,6 +629,9 @@ mod tests {
 
     #[test]
     fn string_labels_follow_ghidra() {
-        assert_eq!(string_label("cannot open %s", 0x1d14), "s_cannot_open_%s_00001d14");
+        assert_eq!(
+            string_label("cannot open %s", 0x1d14),
+            "s_cannot_open_%s_00001d14"
+        );
     }
 }

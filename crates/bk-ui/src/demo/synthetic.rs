@@ -43,7 +43,7 @@ impl SyntheticProgram {
         format!("FUN_{:08x}", Self::entry(k))
     }
 
-    fn info_of(&self, k: u64) -> FunctionInfo {
+    fn info_of(k: u64) -> FunctionInfo {
         FunctionInfo {
             entry: Address(Self::entry(k)),
             name: Self::name(k).into(),
@@ -59,11 +59,16 @@ impl SyntheticProgram {
         let fun = |text: String, a: u64| {
             Token::with_referent(text, TokenKind::Function, Referent::Address(Address(a)))
         };
-        let reg = |r: &str| Token::with_referent(r, TokenKind::Register, Referent::Register(r.into()));
+        let reg =
+            |r: &str| Token::with_referent(r, TokenKind::Register, Referent::Register(r.into()));
         let p = |s: &str| Token::new(s, TokenKind::Punctuation);
         let (mnemonic, operands, bytes): (&str, Vec<Token>, &[u8]) = match j % 6 {
             0 => ("PUSH", vec![reg("RBP")], &[0x55]),
-            1 => ("MOV", vec![reg("RBP"), p(","), reg("RSP")], &[0x48, 0x89, 0xe5]),
+            1 => (
+                "MOV",
+                vec![reg("RBP"), p(","), reg("RSP")],
+                &[0x48, 0x89, 0xe5],
+            ),
             2 => (
                 "MOV",
                 vec![
@@ -80,7 +85,11 @@ impl SyntheticProgram {
             ),
             3 => (
                 "ADD",
-                vec![reg("EAX"), p(","), Token::new(format!("{:#x}", j), TokenKind::Immediate)],
+                vec![
+                    reg("EAX"),
+                    p(","),
+                    Token::new(format!("{j:#x}"), TokenKind::Immediate),
+                ],
                 &[0x83, 0xc0, 0x01],
             ),
             4 => (
@@ -114,14 +123,22 @@ impl SyntheticProgram {
                 RowContent::Signature(vec![
                     Token::new("undefined8", TokenKind::Type),
                     Token::new(" ", TokenKind::Plain),
-                    Token::with_referent(Self::name(k), TokenKind::Function, Referent::Address(Address(entry))),
+                    Token::with_referent(
+                        Self::name(k),
+                        TokenKind::Function,
+                        Referent::Address(Address(entry)),
+                    ),
                     Token::new("(long param_1)", TokenKind::Punctuation),
                 ]),
             ),
             5 => (
                 entry,
                 RowContent::Label {
-                    name: Token::with_referent(Self::name(k), TokenKind::Function, Referent::Address(Address(entry))),
+                    name: Token::with_referent(
+                        Self::name(k),
+                        TokenKind::Function,
+                        Referent::Address(Address(entry)),
+                    ),
                     xref_count: u32::from(k > 0),
                     first_xref: (k > 0).then(|| XrefEntry {
                         from: Address(Self::entry(k - 1) + 16),
@@ -202,7 +219,7 @@ impl ProgramSource for SyntheticProgram {
         let index = |n: u64| if desc { self.functions - 1 - n } else { n };
         if q.filter.is_empty() {
             let rows = (q.offset..(q.offset + u64::from(q.limit)).min(self.functions))
-                .map(|n| self.info_of(index(n)))
+                .map(|n| Self::info_of(index(n)))
                 .collect();
             return Ok(Page {
                 rows,
@@ -220,7 +237,7 @@ impl ProgramSource for SyntheticProgram {
                 .iter()
                 .skip(q.offset as usize)
                 .take(q.limit as usize)
-                .map(|k| self.info_of(*k))
+                .map(|k| Self::info_of(*k))
                 .collect(),
         })
     }
@@ -231,7 +248,7 @@ impl ProgramSource for SyntheticProgram {
         };
         let k = off / FUNCTION_STRIDE;
         let inside = off % FUNCTION_STRIDE < INSNS_PER_FUNCTION * 4;
-        Ok((k < self.functions && inside).then(|| self.info_of(k)))
+        Ok((k < self.functions && inside).then(|| Self::info_of(k)))
     }
 
     fn decompile(&self, address: Address) -> SourceResult<DecompiledFunction> {
@@ -265,7 +282,12 @@ impl ProgramSource for SyntheticProgram {
         })
     }
 
-    fn symbols(&self, category: SymbolCategory, filter: &str, limit: u32) -> SourceResult<Page<Symbol>> {
+    fn symbols(
+        &self,
+        category: SymbolCategory,
+        filter: &str,
+        limit: u32,
+    ) -> SourceResult<Page<Symbol>> {
         if category != SymbolCategory::Functions {
             return Ok(Page {
                 rows: Vec::new(),
@@ -329,12 +351,17 @@ impl ProgramSource for SyntheticProgram {
         })
     }
 
-    fn comments(&self, _address: Address) -> SourceResult<Vec<(crate::model::CommentKind, String)>> {
+    fn comments(
+        &self,
+        _address: Address,
+    ) -> SourceResult<Vec<(crate::model::CommentKind, String)>> {
         Ok(Vec::new())
     }
 
     fn apply(&self, _command: &Command) -> SourceResult<()> {
-        Err(SourceError::Rejected("the synthetic program is read-only".into()))
+        Err(SourceError::Rejected(
+            "the synthetic program is read-only".into(),
+        ))
     }
 }
 

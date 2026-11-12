@@ -25,21 +25,39 @@ pub enum Density {
     Compact,
 }
 
-const fn hex(rgb: u32) -> Color32 {
-    Color32::from_rgb((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
+const fn nibble(c: u8) -> u8 {
+    match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => c - b'a' + 10,
+        b'A'..=b'F' => c - b'A' + 10,
+        _ => 0,
+    }
+}
+
+/// A colour written as `#RRGGBB` (as in the brand guide and the design
+/// document). A malformed string gives magenta, which a test rejects.
+pub const fn hex(s: &str) -> Color32 {
+    match s.as_bytes() {
+        [b'#', r1, r2, g1, g2, b1, b2] => Color32::from_rgb(
+            nibble(*r1) * 16 + nibble(*r2),
+            nibble(*g1) * 16 + nibble(*g2),
+            nibble(*b1) * 16 + nibble(*b2),
+        ),
+        _ => Color32::MAGENTA,
+    }
 }
 
 /// The brand colours (`assets/brand/README.md`).
 pub mod brand {
     use super::{Color32, hex};
     /// Ember: the mark on dark backgrounds, and the accent.
-    pub const EMBER: Color32 = hex(0xFF6A2B);
+    pub const EMBER: Color32 = hex("#FF6A2B");
     /// Ember deep: the mark on light backgrounds.
-    pub const EMBER_DEEP: Color32 = hex(0xE8551A);
+    pub const EMBER_DEEP: Color32 = hex("#E8551A");
     /// Soot: dark backgrounds.
-    pub const SOOT: Color32 = hex(0x150F0D);
+    pub const SOOT: Color32 = hex("#150F0D");
     /// Bone: text on dark.
-    pub const BONE: Color32 = hex(0xF1ECE6);
+    pub const BONE: Color32 = hex("#F1ECE6");
 }
 
 /// Surface and text colours of a theme.
@@ -198,87 +216,87 @@ pub struct Tokens {
 }
 
 const DARK: Palette = Palette {
-    chrome: hex(0x15100E),
-    surface: hex(0x1D1815),
-    raised: hex(0x27211D),
-    input: hex(0x15100E),
-    border: hex(0x0E0A08),
-    hairline: hex(0x2A2420),
-    hover: hex(0x2B2420),
-    selection: hex(0x45291C),
-    cursor_line: hex(0x2C241F),
-    related_line: hex(0x262421),
-    token_highlight: hex(0x4A3D17),
-    text: hex(0xECE5DD),
-    text_secondary: hex(0xB3A89E),
-    text_muted: hex(0x968C82),
-    text_disabled: hex(0x645B54),
+    chrome: hex("#15100E"),
+    surface: hex("#1D1815"),
+    raised: hex("#27211D"),
+    input: hex("#15100E"),
+    border: hex("#0E0A08"),
+    hairline: hex("#2A2420"),
+    hover: hex("#2B2420"),
+    selection: hex("#45291C"),
+    cursor_line: hex("#2C241F"),
+    related_line: hex("#262421"),
+    token_highlight: hex("#4A3D17"),
+    text: hex("#ECE5DD"),
+    text_secondary: hex("#B3A89E"),
+    text_muted: hex("#968C82"),
+    text_disabled: hex("#645B54"),
     accent: brand::EMBER,
     on_accent: brand::SOOT,
-    accent_text: hex(0xFF8A57),
-    error: hex(0xF2806F),
-    warning: hex(0xE8B85A),
-    success: hex(0x8CCB8A),
+    accent_text: hex("#FF8A57"),
+    error: hex("#F2806F"),
+    warning: hex("#E8B85A"),
+    success: hex("#8CCB8A"),
 };
 
 const LIGHT: Palette = Palette {
-    chrome: hex(0xEFEAE4),
-    surface: hex(0xFBF8F4),
-    raised: hex(0xFFFFFF),
-    input: hex(0xFFFFFF),
-    border: hex(0xD6CCC2),
-    hairline: hex(0xEDE7E0),
-    hover: hex(0xF0E9E1),
-    selection: hex(0xF8D9C6),
-    cursor_line: hex(0xF3ECE4),
-    related_line: hex(0xF5F0E6),
-    token_highlight: hex(0xF7E39A),
-    text: hex(0x1E1814),
-    text_secondary: hex(0x5E554E),
-    text_muted: hex(0x6E645C),
-    text_disabled: hex(0xA79D94),
+    chrome: hex("#EFEAE4"),
+    surface: hex("#FBF8F4"),
+    raised: hex("#FFFFFF"),
+    input: hex("#FFFFFF"),
+    border: hex("#D6CCC2"),
+    hairline: hex("#EDE7E0"),
+    hover: hex("#F0E9E1"),
+    selection: hex("#F8D9C6"),
+    cursor_line: hex("#F3ECE4"),
+    related_line: hex("#F5F0E6"),
+    token_highlight: hex("#F7E39A"),
+    text: hex("#1E1814"),
+    text_secondary: hex("#5E554E"),
+    text_muted: hex("#6E645C"),
+    text_disabled: hex("#A79D94"),
     accent: brand::EMBER_DEEP,
-    on_accent: hex(0xFFFFFF),
-    accent_text: hex(0xB93D0A),
-    error: hex(0xB4271C),
-    warning: hex(0x8A5A00),
-    success: hex(0x2E7A2E),
+    on_accent: hex("#FFFFFF"),
+    accent_text: hex("#B93D0A"),
+    error: hex("#B4271C"),
+    warning: hex("#8A5A00"),
+    success: hex("#2E7A2E"),
 };
 
 const DARK_SYNTAX: SyntaxPalette = SyntaxPalette {
-    mnemonic: hex(0xE4DCD3),
-    register: hex(0x8DB8E8),
-    number: hex(0xA8DCA0),
-    label: hex(0xE3AC7E),
-    function: hex(0xEAC86E),
-    global: hex(0xEE98B0),
-    variable: hex(0xC0D2EA),
-    parameter: hex(0xB5A6F5),
-    keyword: hex(0xDA94D0),
-    datatype: hex(0x4EC5C1),
-    string: hex(0xD3D98A),
-    comment: hex(0x968C82),
-    punctuation: hex(0xB3A89E),
-    address: hex(0x968C82),
-    bytes: hex(0x7F766E),
+    mnemonic: hex("#E4DCD3"),
+    register: hex("#8DB8E8"),
+    number: hex("#A8DCA0"),
+    label: hex("#E3AC7E"),
+    function: hex("#EAC86E"),
+    global: hex("#EE98B0"),
+    variable: hex("#C0D2EA"),
+    parameter: hex("#B5A6F5"),
+    keyword: hex("#DA94D0"),
+    datatype: hex("#4EC5C1"),
+    string: hex("#D3D98A"),
+    comment: hex("#968C82"),
+    punctuation: hex("#B3A89E"),
+    address: hex("#968C82"),
+    bytes: hex("#7F766E"),
 };
 
 const LIGHT_SYNTAX: SyntaxPalette = SyntaxPalette {
-    mnemonic: hex(0x2A221D),
-    register: hex(0x1D5FA8),
-    number: hex(0x276B1A),
-    label: hex(0x9A4E12),
-    function: hex(0x7A5A00),
-    global: hex(0xB02A5E),
-    variable: hex(0x3F5163),
-    parameter: hex(0x5B45C7),
-    keyword: hex(0x9A2F96),
-    datatype: hex(0x006A75),
-    string: hex(0x5F5E00),
-    comment: hex(0x6E655D),
-    punctuation: hex(0x5E554E),
-    address: hex(0x6E645C),
-    bytes: hex(0x7A7068),
+    mnemonic: hex("#2A221D"),
+    register: hex("#1D5FA8"),
+    number: hex("#276B1A"),
+    label: hex("#9A4E12"),
+    function: hex("#7A5A00"),
+    global: hex("#B02A5E"),
+    variable: hex("#3F5163"),
+    parameter: hex("#5B45C7"),
+    keyword: hex("#9A2F96"),
+    datatype: hex("#006A75"),
+    string: hex("#5F5E00"),
+    comment: hex("#6E655D"),
+    punctuation: hex("#5E554E"),
+    address: hex("#6E645C"),
+    bytes: hex("#7A7068"),
 };
 
 const COMFORTABLE: Metrics = Metrics {

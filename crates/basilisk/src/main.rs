@@ -2,7 +2,11 @@
 //! opens the desktop interface (`bk-ui`); further subcommands arrive with
 //! the milestones in `docs/PLAN.md`.
 
-#![expect(clippy::print_stdout, clippy::print_stderr, reason = "the binary's job is to print")]
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "the binary's job is to print"
+)]
 
 use std::process::ExitCode;
 
@@ -21,7 +25,9 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Some(other) => {
-            eprintln!("basilisk: unknown command {other:?}; run without arguments for the interface");
+            eprintln!(
+                "basilisk: unknown command {other:?}; run without arguments for the interface"
+            );
             ExitCode::from(2)
         }
     }

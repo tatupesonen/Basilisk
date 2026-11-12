@@ -5,8 +5,7 @@
 use super::db::{Db, Unit, UnitKind};
 use super::lex::OpPiece;
 use crate::model::{
-    Address, CommentKind, ListingRow, Referent, RowContent, SymbolKind, Token, TokenKind,
-    XrefEntry,
+    Address, CommentKind, ListingRow, Referent, RowContent, SymbolKind, Token, TokenKind, XrefEntry,
 };
 
 /// XREFs shown below a label before "[more]" (Ghidra's default is 4).
@@ -34,18 +33,15 @@ pub(crate) fn unit_row_count(db: &Db, u: &Unit) -> usize {
         n += 2;
     }
     let plate = comment_lines(db, a, CommentKind::Plate).len();
-    match db.func_containing(a).filter(|f| f.entry == a) {
-        Some(f) => {
-            let vars = f.vars.iter().filter(|v| v.storage.is_some()).count();
-            n += 1 + 2 + plate.max(1) + 1 + 1 + vars + label_rows(db, a);
+    if let Some(f) = db.func_containing(a).filter(|f| f.entry == a) {
+        let vars = f.vars.iter().filter(|v| v.storage.is_some()).count();
+        n += 1 + 2 + plate.max(1) + 1 + 1 + vars + label_rows(db, a);
+    } else {
+        if plate > 0 {
+            n += plate + 2;
         }
-        None => {
-            if plate > 0 {
-                n += plate + 2;
-            }
-            if db.names.contains_key(&a) {
-                n += label_rows(db, a);
-            }
+        if db.names.contains_key(&a) {
+            n += label_rows(db, a);
         }
     }
     n += comment_lines(db, a, CommentKind::Pre).len();

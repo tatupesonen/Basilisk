@@ -24,6 +24,7 @@ pub fn contrast(a: Color32, b: Color32) -> f64 {
 }
 
 /// CIELAB coordinates (D65).
+#[expect(clippy::many_single_char_names, reason = "the CIE formulas' own names")]
 pub fn lab(c: Color32) -> [f64; 3] {
     let (r, g, b) = (linear(c.r()), linear(c.g()), linear(c.b()));
     let x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.950_47;
@@ -63,6 +64,28 @@ mod tests {
     }
 
     #[test]
+    fn colours_parse() {
+        use crate::design::tokens::hex;
+        assert_eq!(hex("#FF6A2B"), brand::EMBER);
+        assert_eq!(hex("#ff6a2b"), brand::EMBER);
+        assert_eq!(hex("FF6A2B"), Color32::MAGENTA);
+        for t in both() {
+            let p = t.palette;
+            for c in [
+                p.chrome,
+                p.surface,
+                p.raised,
+                p.text,
+                p.accent,
+                t.syntax.mnemonic,
+                t.syntax.comment,
+            ] {
+                assert_ne!(c, Color32::MAGENTA);
+            }
+        }
+    }
+
+    #[test]
     fn brand_figures_match_the_brand_readme() {
         assert!((contrast(brand::EMBER, brand::SOOT) - 6.6).abs() < 0.1);
         assert!((contrast(brand::BONE, brand::SOOT) - 16.2).abs() < 0.1);
@@ -73,14 +96,32 @@ mod tests {
         for t in both() {
             let p = t.palette;
             for bg in [p.chrome, p.surface, p.raised, p.hover, p.cursor_line] {
-                assert!(contrast(p.text, bg) >= 12.0, "{:?} text {}", t.kind, contrast(p.text, bg));
-                assert!(contrast(p.text_secondary, bg) >= 5.5, "{:?} secondary", t.kind);
-                assert!(contrast(p.text_muted, bg) >= 4.5, "{:?} muted {}", t.kind, contrast(p.text_muted, bg));
+                assert!(
+                    contrast(p.text, bg) >= 12.0,
+                    "{:?} text {}",
+                    t.kind,
+                    contrast(p.text, bg)
+                );
+                assert!(
+                    contrast(p.text_secondary, bg) >= 5.5,
+                    "{:?} secondary",
+                    t.kind
+                );
+                assert!(
+                    contrast(p.text_muted, bg) >= 4.5,
+                    "{:?} muted {}",
+                    t.kind,
+                    contrast(p.text_muted, bg)
+                );
             }
             // Text stays readable on a selected row and on the accent fill.
             assert!(contrast(p.text, p.selection) >= 10.0);
             assert!(contrast(p.on_accent, p.accent) >= 3.4);
-            assert!(contrast(p.accent_text, p.surface) >= 4.5, "{:?} accent text", t.kind);
+            assert!(
+                contrast(p.accent_text, p.surface) >= 4.5,
+                "{:?} accent text",
+                t.kind
+            );
             // The accent is visible as a mark (WCAG 1.4.11, 3:1).
             assert!(contrast(p.accent, p.surface) >= 3.0);
         }
@@ -104,11 +145,20 @@ mod tests {
                 ("string", s.string),
                 ("comment", s.comment),
             ];
-            let bgs = [t.palette.surface, t.palette.cursor_line, t.palette.related_line];
+            let bgs = [
+                t.palette.surface,
+                t.palette.cursor_line,
+                t.palette.related_line,
+            ];
             for (name, c) in roles {
                 for bg in bgs {
                     let min = if name == "comment" { 4.5 } else { 5.0 };
-                    assert!(contrast(c, bg) >= min, "{:?} {name}: {:.2}", t.kind, contrast(c, bg));
+                    assert!(
+                        contrast(c, bg) >= min,
+                        "{:?} {name}: {:.2}",
+                        t.kind,
+                        contrast(c, bg)
+                    );
                 }
             }
             for (i, (a, ca)) in roles.iter().enumerate() {

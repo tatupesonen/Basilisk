@@ -124,7 +124,7 @@ pub enum ActionId {
     ShowKeyBindings,
 }
 
-/// The top-level menus, in Ghidra's CodeBrowser order (File and Edit
+/// The top-level menus, in Ghidra's `CodeBrowser` order (File and Edit
 /// first, the rest alphabetical, Window and Help last).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Menu {
@@ -282,7 +282,10 @@ pub const ACTIONS: &[Action] = &[
     a(ActionId::About, "About basilisk", "Version and licences", Some(Menu::Help), 1, NO_KEYS, Scope::Global, false),
 ];
 
-#[expect(clippy::too_many_arguments, reason = "a table row; named fields would triple the table")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a table row; named fields would triple the table"
+)]
 const fn a(
     id: ActionId,
     name: &'static str,
@@ -333,7 +336,7 @@ pub struct ActionContext {
 
 impl Action {
     /// Whether the action can run now.
-    pub fn enabled(&self, cx: &ActionContext) -> bool {
+    pub fn enabled(&self, cx: ActionContext) -> bool {
         let scoped = match self.scope {
             Scope::Global => true,
             Scope::Program => cx.program,
@@ -378,7 +381,15 @@ mod tests {
 
     #[test]
     fn ghidra_default_bindings() {
-        let key = |id| action(id).unwrap().keys.first().copied().unwrap().to_string();
+        let key = |id| {
+            action(id)
+                .unwrap()
+                .keys
+                .first()
+                .copied()
+                .unwrap()
+                .to_string()
+        };
         assert_eq!(key(ActionId::GoTo), "G");
         assert_eq!(key(ActionId::Rename), "L");
         assert_eq!(key(ActionId::SetComment), ";");
@@ -408,12 +419,12 @@ mod tests {
             program: true,
             ..ActionContext::default()
         };
-        assert!(!back.enabled(&cx));
+        assert!(!back.enabled(cx));
         cx.can_back = true;
-        assert!(back.enabled(&cx));
-        assert!(!action(ActionId::Rename).unwrap().enabled(&cx));
+        assert!(back.enabled(cx));
+        assert!(!action(ActionId::Rename).unwrap().enabled(cx));
         cx.code_view = true;
-        assert!(action(ActionId::Rename).unwrap().enabled(&cx));
-        assert!(!action(ActionId::AutoAnalyze).unwrap().enabled(&cx));
+        assert!(action(ActionId::Rename).unwrap().enabled(cx));
+        assert!(!action(ActionId::AutoAnalyze).unwrap().enabled(cx));
     }
 }

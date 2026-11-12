@@ -1,7 +1,16 @@
 //! Renders the interface to PNG: the designer's eyes, and the pictures in
 //! `docs/features/ui-screenshots/`. Needs a GPU, so it runs only when
 //! `BK_UI_SCREENSHOT_DIR` names the folder to write into.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
@@ -17,7 +26,13 @@ use egui_kittest::kittest::Queryable;
 
 type H = Harness<'static, BasiliskApp>;
 
-const CMD_SHIFT: Modifiers = Modifiers { alt: false, ctrl: false, shift: true, mac_cmd: false, command: true };
+const CMD_SHIFT: Modifiers = Modifiers {
+    alt: false,
+    ctrl: false,
+    shift: true,
+    mac_cmd: false,
+    command: true,
+};
 
 fn dir() -> Option<PathBuf> {
     let d = PathBuf::from(std::env::var_os("BK_UI_SCREENSHOT_DIR")?);
@@ -73,7 +88,10 @@ fn screenshots() {
     };
     for theme in [ThemeKind::Dark, ThemeKind::Light] {
         let tn = theme_name(theme);
-        for (density, dn) in [(Density::Comfortable, "normal"), (Density::Compact, "compact")] {
+        for (density, dn) in [
+            (Density::Comfortable, "normal"),
+            (Density::Compact, "compact"),
+        ] {
             // The main window: main in the listing and the decompiler, the
             // decompiler's cursor on a call, its instructions marked in the
             // listing.
@@ -132,7 +150,10 @@ fn screenshots() {
         shot(&mut h, &d, &format!("comment-{tn}"));
 
         let mut h = app(theme, Density::Comfortable);
-        h.get_all_by_label("decode_strings").next().unwrap().click_secondary();
+        h.get_all_by_label("decode_strings")
+            .next()
+            .unwrap()
+            .click_secondary();
         h.run_steps(3);
         shot(&mut h, &d, &format!("popup-menu-{tn}"));
 

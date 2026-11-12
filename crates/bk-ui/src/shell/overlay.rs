@@ -64,6 +64,9 @@ enum RenameKind {
     Variable { function: Address, index: u32 },
 }
 
+/// The existing comments, loading.
+type CommentsLoad = Pending<SourceResult<Vec<(CommentKind, String)>>>;
+
 /// The Set Comment dialog's state.
 #[derive(Debug)]
 pub struct CommentEdit {
@@ -71,7 +74,7 @@ pub struct CommentEdit {
     kind: CommentKind,
     texts: BTreeMap<u8, String>,
     originals: BTreeMap<u8, String>,
-    load: Option<Pending<SourceResult<Vec<(CommentKind, String)>>>>,
+    load: Option<CommentsLoad>,
     focus: bool,
 }
 
@@ -115,7 +118,7 @@ pub fn parse_bytes(text: &str) -> Result<Vec<u8>, String> {
     if hex.is_empty() {
         return Err("Type the bytes to find, in hex (48 89 e5)".into());
     }
-    if hex.len() % 2 != 0 {
+    if !hex.len().is_multiple_of(2) {
         return Err("Hex bytes come in pairs of digits".into());
     }
     (0..hex.len())
@@ -231,32 +234,45 @@ impl Overlay {
     }
 }
 
-fn dialog<R>(ctx: &egui::Context, t: &Tokens, title: &str, add: impl FnOnce(&mut egui::Ui) -> R) -> Option<R> {
-    egui::Window::new(RichText::new(title).family(typography::strong_family()).size(t.metrics.body_size + 1.0))
-        .id(egui::Id::new("bk-dialog").with(title))
-        .collapsible(false)
-        .resizable(false)
-        .anchor(Align2::CENTER_TOP, vec2(0.0, 120.0))
-        .frame(
-            egui::Frame::window(&ctx.global_style())
-                .fill(t.palette.raised)
-                .inner_margin(egui::Margin::same(space::XL as i8)),
-        )
-        .show(ctx, |ui| {
-            ui.set_width(440.0);
-            add(ui)
-        })
-        .and_then(|r| r.inner)
+fn dialog<R>(
+    ctx: &egui::Context,
+    t: &Tokens,
+    title: &str,
+    add: impl FnOnce(&mut egui::Ui) -> R,
+) -> Option<R> {
+    egui::Window::new(
+        RichText::new(title)
+            .family(typography::strong_family())
+            .size(t.metrics.body_size + 1.0),
+    )
+    .id(egui::Id::new("bk-dialog").with(title))
+    .collapsible(false)
+    .resizable(false)
+    .anchor(Align2::CENTER_TOP, vec2(0.0, 120.0))
+    .frame(
+        egui::Frame::window(&ctx.global_style())
+            .fill(t.palette.raised)
+            .inner_margin(egui::Margin::same(space::XL as i8)),
+    )
+    .show(ctx, |ui| {
+        ui.set_width(440.0);
+        add(ui)
+    })
+    .and_then(|r| r.inner)
 }
 
 fn buttons(ui: &mut egui::Ui, t: &Tokens, ok: &str) -> (bool, bool) {
     ui.add_space(space::LG);
     let size = vec2(ui.available_width(), t.metrics.table_row + 4.0);
-    ui.allocate_ui_with_layout(size, egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let ok = widgets::primary_button(ui, t, ok).clicked();
-        let cancel = widgets::button(ui, t, "Cancel").clicked();
-        (ok, cancel)
-    })
+    ui.allocate_ui_with_layout(
+        size,
+        egui::Layout::right_to_left(egui::Align::Center),
+        |ui| {
+            let ok = widgets::primary_button(ui, t, ok).clicked();
+            let cancel = widgets::button(ui, t, "Cancel").clicked();
+            (ok, cancel)
+        },
+    )
     .inner
 }
 
@@ -288,7 +304,11 @@ fn rename_ui(ctx: &egui::Context, env: &Env<'_>, r: &mut Rename) -> Outcome {
         }
         if let Some(e) = &r.error {
             ui.add_space(space::XS);
-            ui.label(RichText::new(e).color(t.palette.error).size(t.metrics.small_size));
+            ui.label(
+                RichText::new(e)
+                    .color(t.palette.error)
+                    .size(t.metrics.small_size),
+            );
         }
         let enter = resp.response.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
         let (ok, cancel) = buttons(ui, t, "OK");
@@ -314,7 +334,11 @@ fn rename_ui(ctx: &egui::Context, env: &Env<'_>, r: &mut Rename) -> Outcome {
     let name = r.name.trim().to_owned();
     let edit = match r.make {
         RenameKind::Variable { function, index } => Edit {
-            command: Command::RenameVariable { function, index, name },
+            command: Command::RenameVariable {
+                function,
+                index,
+                name,
+            },
             undo: Command::RenameVariable {
                 function,
                 index,
@@ -338,13 +362,13 @@ fn rename_ui(ctx: &egui::Context, env: &Env<'_>, r: &mut Rename) -> Outcome {
 
 fn comment_ui(ctx: &egui::Context, env: &Env<'_>, c: &mut CommentEdit) -> Outcome {
     let t = env.tokens;
-    if let Some(p) = &mut c.load {
-        if let Some(r) = p.take() {
-            c.load = None;
-            for (k, text) in r.unwrap_or_default() {
-                c.originals.insert(kind_key(k), text.clone());
-                c.texts.entry(kind_key(k)).or_insert(text);
-            }
+    if let Some(p) = &mut c.load
+        && let Some(r) = p.take()
+    {
+        c.load = None;
+        for (k, text) in r.unwrap_or_default() {
+            c.originals.insert(kind_key(k), text.clone());
+            c.texts.entry(kind_key(k)).or_insert(text);
         }
     }
     let title = format!("Set Comment at {}", c.address);
@@ -353,7 +377,11 @@ fn comment_ui(ctx: &egui::Context, env: &Env<'_>, c: &mut CommentEdit) -> Outcom
             for k in CommentKind::ALL {
                 let on = c.kind == k;
                 let has = c.texts.get(&kind_key(k)).is_some_and(|s| !s.is_empty());
-                let text = if has { format!("{} •", k.title()) } else { k.title().to_owned() };
+                let text = if has {
+                    format!("{} •", k.title())
+                } else {
+                    k.title().to_owned()
+                };
                 if ui.selectable_label(on, text).clicked() {
                     c.kind = k;
                     c.focus = true;
@@ -375,12 +403,15 @@ fn comment_ui(ctx: &egui::Context, env: &Env<'_>, c: &mut CommentEdit) -> Outcom
         }
         ui.add_space(space::XS);
         ui.label(
-            RichText::new("Enter saves · Shift+Enter starts a new line · an empty comment is removed")
-                .color(t.palette.text_muted)
-                .size(t.metrics.small_size),
+            RichText::new(
+                "Enter saves · Shift+Enter starts a new line · an empty comment is removed",
+            )
+            .color(t.palette.text_muted)
+            .size(t.metrics.small_size),
         );
         // Enter saves; Shift+Enter is a new line (the text edit inserts it).
-        let enter = resp.has_focus() && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::Enter));
+        let enter =
+            resp.has_focus() && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::Enter));
         let (ok, cancel) = buttons(ui, t, "OK");
         (ok || enter, cancel)
     });
@@ -418,7 +449,11 @@ fn comment_ui(ctx: &egui::Context, env: &Env<'_>, c: &mut CommentEdit) -> Outcom
 
 fn search_ui(ctx: &egui::Context, env: &Env<'_>, s: &mut SearchBox) -> Outcome {
     let t = env.tokens;
-    let title = if s.memory { "Search Memory" } else { "Search Program Text" };
+    let title = if s.memory {
+        "Search Memory"
+    } else {
+        "Search Program Text"
+    };
     let out = dialog(ctx, t, title, |ui| {
         let hint = if s.memory {
             "Hex bytes, for example 55 48 89 e5"
@@ -437,7 +472,11 @@ fn search_ui(ctx: &egui::Context, env: &Env<'_>, s: &mut SearchBox) -> Outcome {
             resp.request_focus();
         }
         if let Some(e) = &s.error {
-            ui.label(RichText::new(e).color(t.palette.error).size(t.metrics.small_size));
+            ui.label(
+                RichText::new(e)
+                    .color(t.palette.error)
+                    .size(t.metrics.small_size),
+            );
         }
         let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
         let (ok, cancel) = buttons(ui, t, "Search");
@@ -464,7 +503,10 @@ fn search_ui(ctx: &egui::Context, env: &Env<'_>, s: &mut SearchBox) -> Outcome {
         s.error = Some("Type the text to find".into());
         Outcome::Keep
     } else {
-        Outcome::Search(SearchQuery::Text(s.text.trim().to_owned()), format!("\"{}\"", s.text.trim()))
+        Outcome::Search(
+            SearchQuery::Text(s.text.trim().to_owned()),
+            format!("\"{}\"", s.text.trim()),
+        )
     }
 }
 
@@ -477,8 +519,15 @@ fn about_ui(ctx: &egui::Context, env: &Env<'_>) -> Outcome {
             }
             ui.add_space(space::LG);
             ui.vertical(|ui| {
-                ui.label(RichText::new("basilisk").text_style(typography::style::display()).color(t.palette.text));
-                ui.label(RichText::new(format!("Version {}", env!("CARGO_PKG_VERSION"))).color(t.palette.text_secondary));
+                ui.label(
+                    RichText::new("basilisk")
+                        .text_style(typography::style::display())
+                        .color(t.palette.text),
+                );
+                ui.label(
+                    RichText::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
+                        .color(t.palette.text_secondary),
+                );
             });
         });
         ui.add_space(space::LG);
@@ -492,19 +541,25 @@ fn about_ui(ctx: &egui::Context, env: &Env<'_>) -> Outcome {
         }
         ui.add_space(space::LG);
         let size = vec2(ui.available_width(), t.metrics.table_row + 4.0);
-        ui.allocate_ui_with_layout(size, egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            widgets::primary_button(ui, t, "Close").clicked()
-        })
+        ui.allocate_ui_with_layout(
+            size,
+            egui::Layout::right_to_left(egui::Align::Center),
+            |ui| widgets::primary_button(ui, t, "Close").clicked(),
+        )
         .inner
     });
-    if out == Some(true) { Outcome::Close } else { Outcome::Keep }
+    if out == Some(true) {
+        Outcome::Close
+    } else {
+        Outcome::Keep
+    }
 }
 
 fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
     let t = env.tokens;
     let pal = t.palette;
     p.refresh(env.client);
-    let entries = p.entries(env.keymap, &env.actions, env.mac);
+    let entries = p.entries(env.keymap, env.actions, env.mac);
     let (down, up, enter) = ctx.input_mut(|i| {
         (
             i.consume_key(egui::Modifiers::NONE, Key::ArrowDown),
@@ -534,7 +589,11 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                     ui.set_width(width);
                     ui.horizontal(|ui| {
                         ui.label(icons::rich(icons::PALETTE).color(pal.text_muted));
-                        ui.label(RichText::new(p.title()).size(t.metrics.small_size).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(p.title())
+                                .size(t.metrics.small_size)
+                                .color(pal.text_secondary),
+                        );
                     });
                     ui.add_space(space::XS);
                     let hint = p.hint();
@@ -568,12 +627,23 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                         ui.add_space(space::SM);
                     }
                     for (i, e) in entries.iter().take(super::palette::MAX_SHOWN).enumerate() {
-                        let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), t.metrics.table_row + 6.0), Sense::click());
+                        let (rect, resp) = ui.allocate_exact_size(
+                            vec2(ui.available_width(), t.metrics.table_row + 6.0),
+                            Sense::click(),
+                        );
                         let sel = i == p.selected;
                         if sel {
-                            ui.painter().rect_filled(rect, egui::CornerRadius::same(radius::SM), pal.selection);
+                            ui.painter().rect_filled(
+                                rect,
+                                egui::CornerRadius::same(radius::SM),
+                                pal.selection,
+                            );
                         } else if resp.hovered() {
-                            ui.painter().rect_filled(rect, egui::CornerRadius::same(radius::SM), pal.hover);
+                            ui.painter().rect_filled(
+                                rect,
+                                egui::CornerRadius::same(radius::SM),
+                                pal.hover,
+                            );
                         }
                         let icon = match (&e.choice, e.kind) {
                             (Choice::Action(_), _) => icons::KEYBOARD,
@@ -585,19 +655,48 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                             (_, None) => icons::GOTO,
                         };
                         let y = rect.center().y;
-                        let fg = if e.enabled { pal.text } else { pal.text_disabled };
-                        ui.painter().text(egui::pos2(rect.left() + 14.0, y), Align2::CENTER_CENTER, icon, icons::font(t.metrics.icon_size), pal.text_muted);
+                        let fg = if e.enabled {
+                            pal.text
+                        } else {
+                            pal.text_disabled
+                        };
+                        ui.painter().text(
+                            egui::pos2(rect.left() + 14.0, y),
+                            Align2::CENTER_CENTER,
+                            icon,
+                            icons::font(t.metrics.icon_size),
+                            pal.text_muted,
+                        );
                         // Label with matched characters in the accent colour.
                         let mut job = egui::text::LayoutJob::default();
                         for (ci, ch) in e.label.chars().enumerate() {
                             let hit = e.matched.contains(&ci);
-                            let color = if hit && e.enabled { pal.accent_text } else { fg };
-                            let family = if hit { typography::strong_family() } else { egui::FontFamily::Proportional };
-                            job.append(&ch.to_string(), 0.0, egui::TextFormat::simple(egui::FontId::new(t.metrics.body_size, family), color));
+                            let color = if hit && e.enabled {
+                                pal.accent_text
+                            } else {
+                                fg
+                            };
+                            let family = if hit {
+                                typography::strong_family()
+                            } else {
+                                egui::FontFamily::Proportional
+                            };
+                            job.append(
+                                &ch.to_string(),
+                                0.0,
+                                egui::TextFormat::simple(
+                                    egui::FontId::new(t.metrics.body_size, family),
+                                    color,
+                                ),
+                            );
                         }
                         let g = ui.painter().layout_job(job);
                         let label_w = g.size().x;
-                        ui.painter().galley(egui::pos2(rect.left() + 30.0, y - g.size().y / 2.0), g, fg);
+                        ui.painter().galley(
+                            egui::pos2(rect.left() + 30.0, y - g.size().y / 2.0),
+                            g,
+                            fg,
+                        );
                         ui.painter().text(
                             egui::pos2(rect.left() + 30.0 + label_w + 10.0, y),
                             Align2::LEFT_CENTER,
@@ -607,13 +706,25 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                         );
                         if let Some(s) = &e.shortcut {
                             let font = egui::FontId::monospace(t.metrics.small_size - 1.0);
-                            let g = ui.painter().layout_no_wrap(s.clone(), font, pal.text_secondary);
+                            let g =
+                                ui.painter()
+                                    .layout_no_wrap(s.clone(), font, pal.text_secondary);
                             let chip = egui::Rect::from_min_size(
-                                egui::pos2(rect.right() - g.size().x - 18.0, y - g.size().y / 2.0 - 3.0),
+                                egui::pos2(
+                                    rect.right() - g.size().x - 18.0,
+                                    y - g.size().y / 2.0 - 3.0,
+                                ),
                                 g.size() + vec2(12.0, 6.0),
                             );
-                            ui.painter().rect(chip, egui::CornerRadius::same(radius::SM), pal.chrome, egui::Stroke::new(1.0, pal.hairline), egui::StrokeKind::Inside);
-                            ui.painter().galley(chip.min + vec2(6.0, 3.0), g, pal.text_secondary);
+                            ui.painter().rect(
+                                chip,
+                                egui::CornerRadius::same(radius::SM),
+                                pal.chrome,
+                                egui::Stroke::new(1.0, pal.hairline),
+                                egui::StrokeKind::Inside,
+                            );
+                            ui.painter()
+                                .galley(chip.min + vec2(6.0, 3.0), g, pal.text_secondary);
                         }
                         if resp.clicked() {
                             chosen = Some(e.clone());
@@ -621,14 +732,26 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                     }
                     let n = entries.len();
                     if n > super::palette::MAX_SHOWN {
-                        ui.label(RichText::new(format!("{} more — keep typing to narrow", n - super::palette::MAX_SHOWN)).size(t.metrics.small_size).color(pal.text_muted));
+                        ui.label(
+                            RichText::new(format!(
+                                "{} more — keep typing to narrow",
+                                n - super::palette::MAX_SHOWN
+                            ))
+                            .size(t.metrics.small_size)
+                            .color(pal.text_muted),
+                        );
                     }
                     ui.add_space(space::XS);
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = space::XS;
-                        for (k, what) in [("↑↓", "select"), ("Enter", "run"), ("Esc", "close")] {
+                        for (k, what) in [("↑↓", "select"), ("Enter", "run"), ("Esc", "close")]
+                        {
                             widgets::key_chip(ui, t, k);
-                            ui.label(RichText::new(what).size(t.metrics.small_size).color(pal.text_muted));
+                            ui.label(
+                                RichText::new(what)
+                                    .size(t.metrics.small_size)
+                                    .color(pal.text_muted),
+                            );
                             ui.add_space(space::SM);
                         }
                     });
@@ -638,15 +761,16 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
         chosen = entries.get(p.selected).cloned();
     }
     let clicked_outside = ctx.input(|i| i.pointer.any_pressed())
-        && ctx.pointer_interact_pos().is_some_and(|pos| !area.response.rect.contains(pos));
+        && ctx
+            .pointer_interact_pos()
+            .is_some_and(|pos| !area.response.rect.contains(pos));
     match chosen {
         Some(e) if e.enabled => match e.choice {
             Choice::Action(a) => Outcome::Run(a),
             Choice::Go(a) => Outcome::Go(a),
         },
-        Some(_) => Outcome::Keep,
         None if clicked_outside => Outcome::Close,
-        None => Outcome::Keep,
+        Some(_) | None => Outcome::Keep,
     }
 }
 

@@ -16,6 +16,9 @@ use crate::views::{Level, ViewKind, search::SearchRequest};
 /// Opens the program the tool shows (the demo, for now).
 pub type Opener = Arc<dyn Fn() -> Result<Arc<dyn ProgramSource>, String> + Send + Sync>;
 
+/// The comments at an address, loading.
+type CommentsLoad = Pending<SourceResult<Vec<(CommentKind, String)>>>;
+
 /// What is kept between runs.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -59,7 +62,7 @@ pub struct Tool {
     pub mac: bool,
     opener: Opener,
     applied_style: Option<(ThemeKind, Density)>,
-    pending_delete: Option<(Address, Pending<SourceResult<Vec<(CommentKind, String)>>>)>,
+    pending_delete: Option<(Address, CommentsLoad)>,
     /// Set by File → Exit.
     pub quit: bool,
 }
@@ -115,7 +118,11 @@ impl Tool {
     pub fn open(&mut self) {
         match (self.opener)() {
             Ok(source) => {
-                let layout = self.prefs.layout.clone().map_or_else(Layout::ghidra, Layout::repair);
+                let layout = self
+                    .prefs
+                    .layout
+                    .clone()
+                    .map_or_else(Layout::ghidra, Layout::repair);
                 let ws = Workspace::new(source, layout);
                 let name = ws.shared.program.name.clone();
                 self.prefs.recent.retain(|r| *r != name);
@@ -156,7 +163,10 @@ impl Tool {
             program: true,
             code_view: kind.is_some_and(ViewKind::is_code),
             decompiler: kind == Some(ViewKind::Decompiler),
-            detached: ws.active.and_then(|a| ws.layout.window_of(a)).is_some_and(|w| w.is_some()),
+            detached: matches!(
+                ws.active.and_then(|a| ws.layout.window_of(a)),
+                Some(super::layout::Place::Window(_))
+            ),
             can_back: ws.shared.nav.can_back(),
             can_forward: ws.shared.nav.can_forward(),
             can_undo: !ws.undo.is_empty(),
@@ -166,7 +176,9 @@ impl Tool {
 
     /// Runs the key bindings pressed in viewport `vp` this frame.
     pub fn shortcuts(&mut self, ctx: &egui::Context, vp: egui::ViewportId) {
-        if self.ws.as_ref().is_some_and(|w| w.overlay.is_some()) || self.options.as_ref().is_some_and(|o| o.capturing()) {
+        if self.ws.as_ref().is_some_and(|w| w.overlay.is_some())
+            || self.options.as_ref().is_some_and(OptionsState::capturing)
+        {
             return;
         }
         let typing = ctx.egui_wants_keyboard_input();
@@ -175,14 +187,19 @@ impl Tool {
         ctx.input_mut(|i| {
             let mut consumed = Vec::new();
             for e in &i.events {
-                if let egui::Event::Key { key, pressed: true, modifiers, .. } = e {
-                    if let Some(id) = self.prefs.keymap.lookup(*key, *modifiers) {
-                        let bare = !modifiers.command && !modifiers.alt;
-                        let enabled = action(id).is_some_and(|a| a.enabled(&cx));
-                        if enabled && !(bare && typing) {
-                            fired.push(id);
-                            consumed.push((*modifiers, *key));
-                        }
+                if let egui::Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } = e
+                    && let Some(id) = self.prefs.keymap.lookup(*key, *modifiers)
+                {
+                    let bare = !modifiers.command && !modifiers.alt;
+                    let enabled = action(id).is_some_and(|a| a.enabled(cx));
+                    if enabled && !(bare && typing) {
+                        fired.push(id);
+                        consumed.push((*modifiers, *key));
                     }
                 }
             }
@@ -201,7 +218,7 @@ impl Tool {
     }
 
     /// Sends an action to the active pane, or to the main Listing.
-    fn to_view(&mut self, ctx: &egui::Context, id: ActionId) -> bool {
+    fn send_to_view(&mut self, ctx: &egui::Context, id: ActionId) -> bool {
         let Some(ws) = &mut self.ws else { return false };
         let t = Tokens::new(self.prefs.theme, self.prefs.density);
         let mut requests = Vec::new();
@@ -250,18 +267,24 @@ impl Tool {
     /// the window `vp` it came from.
     pub fn run(&mut self, ctx: &egui::Context, id: ActionId, vp: egui::ViewportId) {
         let cx = self.action_context();
-        if let Some(a) = action(id) {
-            if !a.enabled(&cx) {
-                if let Some(r) = a.unavailable_reason() {
-                    self.notify(Level::Info, format!("{}: {r}", a.name.trim_end_matches("...")));
-                }
-                return;
+        if let Some(a) = action(id)
+            && !a.enabled(cx)
+        {
+            if let Some(r) = a.unavailable_reason() {
+                self.notify(
+                    Level::Info,
+                    format!("{}: {r}", a.name.trim_end_matches("...")),
+                );
             }
+            return;
         }
         match id {
             ActionId::OpenProgram => {
                 if self.ws.is_some() {
-                    self.notify(Level::Info, "Opening other programs arrives with the loaders; the demo program is open");
+                    self.notify(
+                        Level::Info,
+                        "Opening other programs arrives with the loaders; the demo program is open",
+                    );
                 } else {
                     self.open();
                 }
@@ -308,7 +331,7 @@ impl Tool {
             ActionId::About => overlay(ws, Overlay::About),
             ActionId::SearchText => overlay(ws, Overlay::search(false)),
             ActionId::SearchMemory => overlay(ws, Overlay::search(true)),
-            ActionId::SearchStrings => ws.show(ViewKind::Strings),
+            ActionId::SearchStrings | ActionId::ShowStrings => ws.show(ViewKind::Strings),
             ActionId::Back => {
                 ws.shared.nav.back();
             }
@@ -359,7 +382,12 @@ impl Tool {
             }
             ActionId::ShowReferences => {
                 if let Some(t) = target {
-                    let (a, name) = match t.token.as_ref().and_then(|k| k.referent.as_ref().and_then(Referent::address).map(|a| (a, k.text.to_string()))) {
+                    let (a, name) = match t.token.as_ref().and_then(|k| {
+                        k.referent
+                            .as_ref()
+                            .and_then(Referent::address)
+                            .map(|a| (a, k.text.to_string()))
+                    }) {
                         Some(x) => x,
                         None => (t.address, t.address.to_string()),
                     };
@@ -384,7 +412,9 @@ impl Tool {
                 }
             }
             ActionId::DockWindow => {
-                if let Some(Some(w)) = ws.active.and_then(|a| ws.layout.window_of(a)) {
+                if let Some(super::layout::Place::Window(w)) =
+                    ws.active.and_then(|a| ws.layout.window_of(a))
+                {
                     ws.layout.dock(w);
                 }
             }
@@ -393,7 +423,6 @@ impl Tool {
             ActionId::ShowSymbolTree => ws.show(ViewKind::SymbolTree),
             ActionId::ShowProgramTrees => ws.show(ViewKind::ProgramTrees),
             ActionId::ShowFunctions => ws.show(ViewKind::Functions),
-            ActionId::ShowStrings => ws.show(ViewKind::Strings),
             ActionId::ShowReferencesWindow => ws.show(ViewKind::References),
             ActionId::ShowConsole => ws.show(ViewKind::Console),
             ActionId::FollowReference
@@ -405,7 +434,7 @@ impl Tool {
             | ActionId::PreviousFunction
             | ActionId::NextHighlight
             | ActionId::PreviousHighlight => {
-                self.to_view(ctx, id);
+                self.send_to_view(ctx, id);
             }
             _ => {}
         }
@@ -415,23 +444,32 @@ impl Tool {
     pub fn tick(&mut self, now: f64) {
         let Some(ws) = &mut self.ws else { return };
         ws.tick(now);
-        if let Some((a, p)) = &mut self.pending_delete {
-            if let Some(r) = p.take() {
-                let a = *a;
-                self.pending_delete = None;
-                let existing = r.unwrap_or_default();
-                if existing.is_empty() {
-                    ws.notices.push(Level::Info, format!("No comment at {a}"), now);
-                }
-                for (kind, old) in existing {
-                    ws.apply(
-                        super::workspace::Edit {
-                            command: crate::model::Command::SetComment { address: a, kind, text: String::new() },
-                            undo: crate::model::Command::SetComment { address: a, kind, text: old },
+        if let Some((a, p)) = &mut self.pending_delete
+            && let Some(r) = p.take()
+        {
+            let a = *a;
+            self.pending_delete = None;
+            let existing = r.unwrap_or_default();
+            if existing.is_empty() {
+                ws.notices
+                    .push(Level::Info, format!("No comment at {a}"), now);
+            }
+            for (kind, old) in existing {
+                ws.apply(
+                    super::workspace::Edit {
+                        command: crate::model::Command::SetComment {
+                            address: a,
+                            kind,
+                            text: String::new(),
                         },
-                        EditKind::New,
-                    );
-                }
+                        undo: crate::model::Command::SetComment {
+                            address: a,
+                            kind,
+                            text: old,
+                        },
+                    },
+                    EditKind::New,
+                );
             }
         }
     }
