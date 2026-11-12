@@ -1,8 +1,9 @@
 //! [`BigFloat`]: an arbitrary-precision IEEE 754 value.
 //!
 //! This is Ghidra's `ghidra.pcode.floatformat.BigFloat`: the value type of
-//! the exact float level. Arithmetic is in [`super::arith`]; this module has
-//! the representation, construction, classification and conversions.
+//! the exact float level. Arithmetic is in the private `arith` module; this
+//! module has the representation, construction, classification and
+//! conversions.
 
 use core::fmt;
 use core::hash::{Hash, Hasher};
