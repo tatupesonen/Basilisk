@@ -181,7 +181,9 @@ with no program database.
 ## Working in waves
 
 Per ADR-015 each wave has one spec and one agent per track, with disjoint
-crate ownership. Wave 1 is the six M0 tracks above. Wave 2 (planned):
-SLEIGH runtime (M1), SLEIGH compiler semantic analysis (M2), decompiler IR
-and type system (M3 start), PE and Mach-O parsers, and the Microsoft
-demangler (self-contained, 1,711 tests).
+crate ownership. Wave 1 was the six M0 tracks (complete). Wave 2 is being
+specified by research agents (see `PROGRESS.md`, `## Now`): the SLEIGH
+runtime and compiler (M1, M2), the decompiler port plan and its first
+tracks (M3), PE and Mach-O parsers and the program model (M4), with a
+storage-engine study deciding ADR-003. The UI (M7) and the GNU
+disassembler (M10) were started early at the owner's request.

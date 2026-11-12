@@ -1,52 +1,61 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-12)
+## Now — RESUME HERE (2026-11-12, evening)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Wave 1 (milestone M0) is in progress.** Six implementation agents and one design agent
-(Fable 5.2, started at high effort; agents started from now on run at medium), one per track, each in its own worktree under
-`../basilisk-wt/<track>` on branch `<track>`:
+**Milestone M0 is complete and on `master`** (gate green, 1,529 tests):
+`bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
+`bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
+reference tools in `../reference/`. Per-track history is in the log below.
 
-| Track / branch | Crates | Spec |
+**Wave 2 is being specified.** The owner asked for specs to be written by
+subagents: Fable 5.2 research agents (high effort), one per area, each in a
+worktree under `../basilisk-wt/<branch>`, writing only new files:
+
+| Branch | Writes | For |
 |---|---|---|
-| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — **merged 2026-11-12** |
-| `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
-| `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — **merged 2026-11-12** |
-| `lang` | `bk-lang` | `features/lang.md` — **merged 2026-11-12** (second attempt, after the root-path fix) |
-| `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — **merged 2026-11-12** |
-| `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
-| `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
-| `decomp-research` | docs only: `docs/research/decompiler-quality.md` | research (Fable 5.2 at high effort, the owner's choice for this one): how to beat Ghidra's decompiler on accuracy and readability; feeds the M3 specs and an ADR |
-| `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
-| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
+| `spec-sleigh` | `inventory/01-sleigh.md`, runtime and compiler specs, the shared-model crate decision | M1, M2 |
+| `spec-decompiler` | `inventory/02-decompiler.md`, `features/decomp-plan.md`, specs for the first decompiler tracks | M3 |
+| `spec-pe` | `features/pe.md` (crate decision by experiment, as for ELF) | M4 |
+| `spec-macho` | `features/macho.md` (same) | M4 |
+| `spec-program-model` | `inventory/03-program-model.md`, `features/program-model-plan.md` | M4 |
+| `store-spike` | `research/storage-engine.md` + `tools/store-spike/` benchmarks | ADR-003 |
+| `decomp-research` | `research/decompiler-quality.md` | M3 design, an ADR |
+
+Still running from before (Opus 5.5, implementation):
+
+| Branch | Crates | State |
+|---|---|---|
+| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | build crate done by the first agent; shim review, sanitizers, safe API in progress |
+| `ui` | `bk-ui`, GUI entry in `basilisk` | data layer, design tokens, views written; shell in progress; no window yet |
+
+Next steps for the coordinator:
+1. As each spec agent reports: read its documents critically (are claims
+   verified, are acceptance checks independent of the implementer, is each
+   track finishable by one agent), merge the docs to `master`, turn its
+   proposals into ADRs and `PLAN.md` changes, then start one Opus 5.5
+   implementation agent (medium effort) per track that can start.
+2. Reconcile `spec-decompiler` with `decomp-research` when both are in: the
+   research may overturn IR or rule-machinery design; settle it in an ADR
+   before the core IR track starts. Leaf tracks (types, circle ranges,
+   `.cspec`/prototype models) need not wait.
+3. Reconcile `spec-program-model` with `store-spike` the same way; decide
+   ADR-003's engine.
+4. Small follow-ups track (Opus), once capacity allows: move `bk-lang` and
+   `bk-testkit` XML reading onto `bk-marshal`'s document (ADR-011); crates
+   adopt `bk-testkit` in place of local "find Ghidra" helpers;
+   differential test of `bk-marshal`'s encoders against Ghidra's binary;
+   run the reference build on x86-64 Linux to confirm ADR-021's assumed
+   behaviour.
+5. Merge `gnu-disasm` and `ui` when they report (gate on the merge, as
+   always — it has caught three real problems so far).
 
 In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
-`BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`.
-
-**Handover to Opus 5.5** (owner, 2026-11-12): each wave 1 agent was told to
-stop at its first checkpoint — crates building, current tests passing,
-everything committed, `docs/agents/<track>.md` written with done/remaining.
-When a track checkpoints: read its report, start an Opus 5.5 agent (medium
-effort) in the same worktree to finish the spec, beginning with
-`git merge master` (stricter lints, ADR-018 licence, ADR-020 unsafe rule).
-
-Next steps for the coordinator:
-1. As each agent reports, review its branch against its spec
-   (`git -C ../basilisk-wt/<track> log --oneline master..HEAD`, read the
-   diff and `docs/agents/<track>.md`), run the gate on the merge, merge to
-   `master`, remove the worktree.
-2. After `core-marshal` and `lang` are both merged, move `bk-lang`'s XML
-   reading from `roxmltree` onto `bk-marshal`'s document (ADR-011). The
-   opcode attribute needs no glue: `bk-marshal` has generic
-   `read_enum`/`write_enum`.
-3. Tick M0 in `PLAN.md`, update `PARITY.md`, log the wave below.
-4. Plan wave 2 (`PLAN.md`, "Working in waves"): write the inventory
-   sections and feature specs for the SLEIGH runtime, the SLEIGH compiler's
-   semantic analysis, the decompiler IR and type system, PE and Mach-O
-   parsers, and the Microsoft demangler; then start the agents.
+`BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`, and must also test
+with the variable unset and with a non-canonical path.
 
 ## Blockers
 
