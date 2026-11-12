@@ -15,8 +15,11 @@ string-interner = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+insta = { workspace = true }
 proptest = { workspace = true }
+roxmltree = { workspace = true }
 rstest = { workspace = true }
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
