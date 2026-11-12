@@ -52,7 +52,9 @@ and a sane architecture in mind.
   The coordinator spawns the agents, reviews and merges their branches.
   Rules for agents: `docs/agents/RULES.md`.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
-  its own and may push on its own. Agents commit in their worktrees only.
+  its own and pushes on its own to `origin`
+  (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
+  green gate. Agents commit in their worktrees only and never push.
 * **Brand**: a minimal logo, in the spirit of Ghidra's but its own design
   (`assets/brand/`).
 * **Feature spec before code.** No implementation agent starts without a
@@ -60,11 +62,3 @@ and a sane architecture in mind.
 * The Ghidra source at `../ghidra` is **read-only reference**. Never modify
   it; build reference tools from a copy outside it (`../reference/`).
 * Use metric units.
-
-## Open owner decisions
-
-* **Git remote**: the owner allows the coordinator to commit and push on
-  its own (2026-11-12), but no remote exists yet. The coordinator does not
-  create a hosted repository itself (its name, owner and visibility are
-  the owner's call); once the owner adds a remote, finished work is pushed
-  to it after each green gate.

@@ -155,4 +155,5 @@ while iterating; run the full gate before every merge to `master`.
 Conventional messages (`feat(sleigh): …`, `test(elf): …`, `docs: …`), small
 and frequent, each ending with the Co-Authored-By trailer of the model that
 wrote it. Agents commit in their worktree only and never push or add
-remotes. Nothing is pushed until the owner names a remote (`DIRECTION.md`).
+remotes. The coordinator pushes `master` to `origin` after each green gate
+(`DIRECTION.md`).
