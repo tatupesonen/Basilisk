@@ -13,6 +13,7 @@ pub struct Covered {
     pub symbols: usize,
     pub relocations: usize,
     pub relr_relocations: usize,
+    pub versions: usize,
 }
 
 /// Compares `elf` (parsed from `data`) with `object`'s view of the same bytes.
@@ -227,6 +228,64 @@ fn check_class<Elf: FileHeader<Endian = object::Endianness>, P: ByteProvider>(
             let actual: Vec<u64> = elf.relocations(table).map(|r| r.r_offset).collect();
             assert_eq!(actual, expected, "RELR section {index}");
             covered.relr_relocations += expected.len();
+        }
+    }
+    // GNU symbol versioning.
+    for (index, section) in sections.iter().enumerate() {
+        let ours = &elf.sections()[index];
+        if let Some((versyms, _)) = section.gnu_versym(endian, data).unwrap() {
+            let expected: Vec<u16> = versyms.iter().map(|v| v.0.get(endian).0).collect();
+            assert_eq!(elf.symbol_versions(ours), expected);
+            covered.versions += expected.len();
+        }
+        if let Some((mut defs, _)) = section.gnu_verdef(endian, data).unwrap() {
+            let ours = elf.version_definitions(ours);
+            let mut i = 0;
+            while let Some((def, mut auxs)) = defs.next().unwrap() {
+                let o = &ours[i];
+                assert_eq!(o.vd_version, def.vd_version.get(endian));
+                assert_eq!(o.vd_flags, def.vd_flags.get(endian).0);
+                assert_eq!(o.vd_ndx, def.vd_ndx.get(endian).0);
+                assert_eq!(o.vd_cnt, def.vd_cnt.get(endian));
+                assert_eq!(o.vd_hash, def.vd_hash.get(endian));
+                let mut names = Vec::new();
+                while let Some(aux) = auxs.next().unwrap() {
+                    names.push(aux.vda_name.get(endian));
+                }
+                let ours_names: Vec<u32> = o.aux.iter().map(|a| a.vda_name).collect();
+                assert_eq!(ours_names, names);
+                i += 1;
+                covered.versions += 1;
+            }
+            assert_eq!(ours.len(), i);
+        }
+        if let Some((mut needs, _)) = section.gnu_verneed(endian, data).unwrap() {
+            let ours = elf.version_needs(ours);
+            let mut i = 0;
+            while let Some((need, mut auxs)) = needs.next().unwrap() {
+                let o = &ours[i];
+                assert_eq!(o.vn_version, need.vn_version.get(endian));
+                assert_eq!(o.vn_cnt, need.vn_cnt.get(endian));
+                assert_eq!(o.vn_file, need.vn_file.get(endian));
+                let mut entries = Vec::new();
+                while let Some(aux) = auxs.next().unwrap() {
+                    entries.push((
+                        aux.vna_hash.get(endian),
+                        aux.vna_flags.get(endian).0,
+                        aux.vna_other.get(endian).0,
+                        aux.vna_name.get(endian),
+                    ));
+                }
+                let ours_entries: Vec<_> = o
+                    .aux
+                    .iter()
+                    .map(|a| (a.vna_hash, a.vna_flags, a.vna_other, a.vna_name))
+                    .collect();
+                assert_eq!(ours_entries, entries);
+                i += 1;
+                covered.versions += 1;
+            }
+            assert_eq!(ours.len(), i);
         }
     }
     covered

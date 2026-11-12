@@ -68,7 +68,9 @@ fn fixtures_parse_cleanly_and_agree_with_object() {
         total.symbols += covered.symbols;
         total.relocations += covered.relocations;
         total.relr_relocations += covered.relr_relocations;
+        total.versions += covered.versions;
     }
+    assert!(total.versions > 20, "{total:?}");
     assert!(total.symbols > 200, "{total:?}");
     assert!(total.relocations > 50, "{total:?}");
     assert!(total.relr_relocations > 20, "{total:?}");

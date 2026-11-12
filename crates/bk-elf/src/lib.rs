@@ -39,6 +39,7 @@ mod strtab;
 pub mod symbol;
 pub mod symbol_name;
 mod tables;
+pub mod version;
 
 pub use constants::{
     DynamicTag, DynamicTagInfo, DynamicValueKind, ElfType, Machine, OsAbi, SectionType,

@@ -17,6 +17,9 @@ use crate::section_header::SectionHeader;
 use crate::strtab::StringTable;
 use crate::symbol::{FORMATTED_NO_NAME, Symbol, SymbolIter, SymbolTable};
 use crate::tables::ElfTables;
+use crate::version::{
+    self, VersionDefinition, VersionDefinitionIter, VersionNeed, VersionNeedIter,
+};
 
 /// A parsed ELF file (Ghidra's `ElfHeader` after `parse()`).
 ///
@@ -285,6 +288,33 @@ impl<P: ByteProvider> ElfFile<P> {
             return Ok(Cow::Borrowed(&[]));
         }
         self.file_bytes(segment.p_offset, segment.p_filesz)
+    }
+
+    // ---- GNU symbol versioning ----------------------------------------------------
+
+    /// The version index of each dynamic symbol, from a `.gnu.version`
+    /// (`SHT_GNU_versym`) section; empty when its data cannot be read.
+    pub fn symbol_versions(&self, section: &SectionHeader) -> Vec<u16> {
+        let data = self.section_data(section).unwrap_or_default();
+        version::symbol_versions(&data, self.tables.header.data_endian()).collect()
+    }
+
+    /// The version definitions of a `.gnu.version_d` (`SHT_GNU_verdef`)
+    /// section, at most `sh_info` of them. Names are offsets into the
+    /// section linked by `sh_link`.
+    pub fn version_definitions(&self, section: &SectionHeader) -> Vec<VersionDefinition> {
+        let data = self.section_data(section).unwrap_or_default();
+        let endian = self.tables.header.data_endian();
+        VersionDefinitionIter::new(&data, endian, section.sh_info.into()).collect()
+    }
+
+    /// The version requirements of a `.gnu.version_r` (`SHT_GNU_verneed`)
+    /// section, at most `sh_info` of them. Names are offsets into the
+    /// section linked by `sh_link`.
+    pub fn version_needs(&self, section: &SectionHeader) -> Vec<VersionNeed> {
+        let data = self.section_data(section).unwrap_or_default();
+        let endian = self.tables.header.data_endian();
+        VersionNeedIter::new(&data, endian, section.sh_info.into()).collect()
     }
 
     /// Up to `len` bytes at `offset`, cut at the end of the file.
