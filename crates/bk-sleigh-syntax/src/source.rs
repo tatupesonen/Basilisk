@@ -190,13 +190,6 @@ impl SourceMap {
 
     // ----- construction (used by the preprocessor) -----
 
-    pub(crate) fn find_file(&self, path: &Path) -> Option<FileId> {
-        self.files
-            .iter()
-            .position(|f| f.path == path)
-            .map(|i| FileId(i as u32))
-    }
-
     pub(crate) fn add_file(&mut self, path: PathBuf, text: String) -> FileId {
         let id = FileId(self.files.len() as u32);
         self.files.push(Arc::new(SourceFile::new(path, text)));

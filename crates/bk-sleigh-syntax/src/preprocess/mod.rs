@@ -81,6 +81,7 @@ pub(crate) fn preprocess_limited(
         diagnostics: Vec::new(),
         loader,
         stack: Vec::new(),
+        known: std::collections::HashMap::new(),
         stopped: false,
         max_output: max_output.min(MAX_OUTPUT_BYTES),
     };
@@ -127,8 +128,12 @@ struct Preprocessor<'a> {
     defines: Defines,
     diagnostics: Vec<Diagnostic>,
     loader: &'a mut dyn FileLoader,
-    /// Paths of the files currently being read, outermost first.
-    stack: Vec<PathBuf>,
+    /// The files currently being read, outermost first: each path as
+    /// spelled (includes resolve against it) and its identity
+    /// ([`FileLoader::identity`], for cycle detection).
+    stack: Vec<(PathBuf, PathBuf)>,
+    /// The file already read under each identity.
+    known: std::collections::HashMap<PathBuf, crate::span::FileId>,
     /// Set when a limit was hit; no more input is read.
     stopped: bool,
     /// Largest output accepted ([`MAX_OUTPUT_BYTES`] outside tests).
@@ -145,8 +150,9 @@ impl Preprocessor<'_> {
     /// Reads one file and appends its preprocessed lines. `parent` is the
     /// inclusion and line of the `@include` that named it.
     fn file(&mut self, path: PathBuf, parent: Option<(IncludeId, u32)>) {
-        let file_id = match self.map.find_file(&path) {
-            Some(id) => id,
+        let identity = self.loader.identity(&path);
+        let file_id = match self.known.get(&identity) {
+            Some(id) => *id,
             None => match self.loader.load(&path) {
                 Ok(text) if text.len() >= self.max_output => {
                     let err = LoadError::TooLarge {
@@ -156,7 +162,11 @@ impl Preprocessor<'_> {
                     self.load_failed(&path, parent.is_some(), &err);
                     return;
                 }
-                Ok(text) => self.map.add_file(path.clone(), text),
+                Ok(text) => {
+                    let id = self.map.add_file(path.clone(), text);
+                    self.known.insert(identity.clone(), id);
+                    id
+                }
                 Err(err) => {
                     self.load_failed(&path, parent.is_some(), &err);
                     return;
@@ -168,7 +178,7 @@ impl Preprocessor<'_> {
         };
         let include = self.map.add_include(file_id, parent);
         self.map.start_run(include, 1);
-        self.stack.push(path);
+        self.stack.push((path, identity));
 
         let mut conditionals = vec![Conditional {
             in_if: false,
@@ -324,11 +334,12 @@ impl Preprocessor<'_> {
             self.error(format!("unknown variable: {unknown}"));
             return false;
         }
-        let Some(current) = self.stack.last() else {
+        let Some((current, _)) = self.stack.last() else {
             return false;
         };
         let path = include::resolve(current, &expanded);
-        if self.stack.contains(&path) {
+        let identity = self.loader.identity(&path);
+        if self.stack.iter().any(|(_, open)| *open == identity) {
             self.error(format!(
                 "included file \"{}\": includes itself",
                 path.display()

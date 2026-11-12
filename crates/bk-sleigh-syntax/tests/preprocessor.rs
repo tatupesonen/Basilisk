@@ -401,3 +401,26 @@ fn line_kinds_and_origins_through_includes() {
     ];
     assert_eq!(origin, expected.map(|(f, l)| (f.to_owned(), l)).to_vec());
 }
+
+#[test]
+fn file_identity_does_not_depend_on_how_a_path_is_spelled() {
+    let p = run(&[
+        (
+            "d/a.slaspec",
+            "@include \"t.sinc\"\n@include \"x/../t.sinc\"\n@include \"./self.sinc\"\n",
+        ),
+        ("d/t.sinc", "t\n"),
+        ("d/self.sinc", "s\n@include \"../d/./self.sinc\"\n"),
+    ]);
+    // One file for both spellings of t.sinc, and the cycle is caught at once.
+    assert_eq!(p.sources.files().len(), 3);
+    assert_eq!(output(&p), ["t", "t", "s"]);
+    assert_eq!(
+        errors(&p),
+        [err(
+            "self.sinc",
+            2,
+            "included file \"d/../d/./self.sinc\": includes itself"
+        )]
+    );
+}
