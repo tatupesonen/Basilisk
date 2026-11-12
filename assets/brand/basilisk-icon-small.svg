@@ -1,14 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="basilisk">
-  <!-- simplified artwork for 16-32 px: heavier ring, one colour, no head eye, pupil on the pixel grid -->
+  <!-- simplified artwork for 16-32 px: heavier ring, no head eye, pupil centred on the pixel grid -->
   <rect width="256" height="256" rx="58" fill="#0F1412"/>
-  <g transform="translate(25.6 25.6) scale(0.8)">
-    <g fill="#B8F03C">
-      <!-- serpent: head, ring body, blade tail -->
-      <path fill-rule="evenodd" d="M158.9 52.9 A100 100 0 1 0 209.9 90.6 L209.5 92.2 C208.9 95.9 208.8 99.1 208.5 102.2 C207.9 109.6 207.1 116.2 206 122.3 C204.1 133 201.4 142.1 198.3 150.3 C193.6 162.5 188.3 172.5 182.3 181.9 C173.3 196 158.4 205.8 142.3 209.1 C126.3 212.5 109.2 209.2 95.7 200.5 C82.3 191.7 72.6 177.6 69.3 162.2 C66 146.8 69 130.3 77.4 117.3 C85.7 104.3 99.2 95 114 91.7 L128 120 L198 87 L202 73 Z"/>
-      <!-- crown -->
-      <path d="M87.9 58 L80.7 24.8 L113.7 46 L128 0 L142.3 46 L175.3 24.8 L168.1 58 Z"/>
-      <!-- pupil -->
-      <path d="M128 128 L148 156 V184 L128 212 L108 184 V156 Z"/>
-    </g>
+  <g fill="#B8F03C" transform="translate(25.6 25.6) scale(0.8)">
+    <!-- serpent: head, body tapering round to the tail -->
+    <path d="M158.9 52.9 A100 100 0 1 0 209.9 90.6 L209.5 92.2 C208.9 95.9 208.8 99.1 208.5 102.2 C207.9 109.6 207.1 116.2 206 122.3 C204.1 133 201.4 142.1 198.3 150.3 C193.6 162.5 188.3 172.5 182.3 181.9 C173.3 196 158.4 205.8 142.3 209.1 C126.3 212.5 109.2 209.2 95.7 200.5 C82.3 191.7 72.6 177.6 69.3 162.2 C66 146.8 69 130.3 77.4 117.3 C85.7 104.3 99.2 95 114 91.7 L128 120 L198 87 L202 73 Z"/>
+    <!-- crown -->
+    <path d="M87.9 58 L80.7 24.8 L113.7 46 L128 0 L142.3 46 L175.3 24.8 L168.1 58 Z"/>
+    <!-- slit pupil -->
+    <path d="M128 128 A54.1 54.1 0 0 1 128 212 A54.1 54.1 0 0 1 128 128 Z"/>
   </g>
 </svg>

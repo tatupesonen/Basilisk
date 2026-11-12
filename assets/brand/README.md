@@ -5,11 +5,11 @@
 ## The idea
 
 The basilisk is the crowned serpent whose gaze kills. The mark is that
-serpent coiled into a ring, and the ring is the iris of an eye: the narrow
-shard in the middle is the pupil. A tool that stares into binaries gets an
-emblem that is itself a stare. Read small it is an eye with a crown; read
-large it is a serpent chasing its tail. The ring and the stroke inside it
-are also a 0 and a 1.
+serpent coiled into a ring, and the ring is the iris of an eye: the slit in
+the middle is the pupil. A tool that stares into binaries gets an emblem
+that is itself a stare. Read small it is an eye with a crown; read large it
+is a serpent chasing its tail. The ring and the stroke inside it are also a
+0 and a 1.
 
 The body is a perfect circle on the outside and a near-even ring for three
 quarters of the way round, then thins into a blade for the tail. The tip of
@@ -17,13 +17,6 @@ the crown, the point of the jaw and the pupil sit on one vertical axis
 through the centre of the ring, so the mark is symmetrical apart from the
 head and the tail. Head, crown, pupil and tail all end in sharp points;
 everything else is one circle. In the icon the ring is centred on the tile.
-
-The colour version is cut like a stone, which is what the basilisk's gaze
-does to things: a second, deeper flat tone marks the serpent's underside
-(belly running into the lower jaw) and the right-hand face of each crown
-spike and of the pupil, so the pupil reads as a gem split down the centre
-axis. The one-colour version drops the second tone and keeps the same
-silhouette.
 
 It sits in the same family as Ghidra's dragon (a mythical beast as a flat
 emblem, coiled) but shares no shapes, colour or lettering with it: this is
@@ -35,27 +28,26 @@ the middle. It uses no Rust or Ferris artwork.
 | Name     | Hex       | Use                                             |
 |----------|-----------|-------------------------------------------------|
 | Venom    | `#B8F03C` | The mark on dark backgrounds; accents           |
-| Venom deep | `#8CC820` | Underside and facets of the Venom mark        |
 | Moss     | `#4A8500` | The mark on light backgrounds (4.5:1 on white)  |
-| Moss deep | `#376600` | Underside and facets of the Moss mark          |
 | Obsidian | `#0F1412` | Icon tile, dark backgrounds, wordmark on light  |
 | Bone     | `#E9EEE2` | Wordmark and text on dark                       |
 
-Two flat tones at most. No gradients, glows, outlines or shadows.
+Flat colour only. No gradients, glows, outlines or shadows.
 
 ## Files
 
 | File                       | Use it for                                                        |
 |----------------------------|-------------------------------------------------------------------|
-| `basilisk-mark.svg`        | Emblem alone, Venom with facets, transparent. Dark backgrounds (in-app, about box, dark docs). |
-| `basilisk-mark-light.svg`  | Emblem alone, Moss with facets, transparent. Light backgrounds.               |
-| `basilisk-mark-mono.svg`   | Emblem in `currentColor`, no facets. One-colour print, UI glyphs, anything that must inherit the text colour. |
+| `basilisk-mark.svg`        | Emblem alone, Venom, transparent. Dark backgrounds (in-app, about box, dark docs). |
+| `basilisk-mark-light.svg`  | Emblem alone, Moss, transparent. Light backgrounds.               |
+| `basilisk-mark-mono.svg`   | Emblem in `currentColor`. One-colour print, UI glyphs, anything that must inherit the text colour. |
 | `basilisk-logo.svg`        | Emblem + wordmark for light backgrounds.                          |
 | `basilisk-logo-dark.svg`   | Emblem + wordmark for dark backgrounds.                           |
 | `basilisk-icon.svg`        | App icon: emblem on the Obsidian tile. Source for 64 px and up.   |
-| `basilisk-icon-small.svg`  | Simplified icon for 16 and 32 px: heavier ring, one colour, no head eye, pupil on the pixel grid. |
+| `basilisk-icon-small.svg`  | Simplified icon for 16 and 32 px: heavier ring, no head eye, pupil centred on the pixel grid. |
 | `png/basilisk-icon-N.png`  | Icon renders at 16, 32, 64, 128, 256, 512, 1024 px (window icon, favicon, bundles). |
 | `png/preview-*.png`        | Previews only (mark, both logos, overview sheet). Not for shipping. |
+| `variants/`                | Colour, shape and tile variants of the icon to choose from, see below. |
 | `concepts/`                | Rejected directions, see below.                                   |
 
 For a README that follows the viewer's theme:
@@ -68,7 +60,7 @@ For a README that follows the viewer's theme:
 ```
 
 The wordmark is drawn as strokes and polygons, so no font is needed. The
-dots on the two i's repeat the pupil.
+dots on the two i's repeat the slit pupil.
 
 ## Clear space and minimum size
 
@@ -77,7 +69,7 @@ dots on the two i's repeat the pupil.
 - Mark: 24 px minimum on screen, 8 mm in print. Below 24 px use the icon
   PNGs (16 and 32 px come from the simplified artwork).
 - Logo: 120 px wide minimum on screen, 30 mm in print.
-- Icon: 16 px minimum. At 16 px it reads as a crowned ring with a pupil; the
+- Icon: 16 px minimum. At 16 px it reads as a crowned ring with a slit; the
   serpent's head only resolves from 32 px up.
 - Do not recolour outside the palette, rotate, stretch, outline, or put the
   Venom mark on a light background (use Moss or mono there).
@@ -86,11 +78,9 @@ dots on the two i's repeat the pupil.
 
 The SVGs are plain paths in a 256-unit box. The ring is a circle of radius
 100 centred on (128, 148); its outer edge is one arc command and its inner
-edge is nine cubic segments. Head, crown and pupil are straight-edged
-polygons; the pupil is a rhombus centred on x = 128. The deeper tone is a
-single path drawn on top: the belly band is everything inside radius 76,
-and each facet is a triangle that reuses the points of the shape under it,
-so if you move a crown or pupil point, move its facet point too.
+edge is nine cubic segments. Head and crown are straight-edged polygons and
+the pupil is two circular arcs centred on x = 128, all safe to nudge by
+hand.
 
 Regenerate the PNGs with [resvg](https://github.com/linebender/resvg):
 
@@ -99,6 +89,29 @@ cd assets/brand
 for s in 16 32;              do resvg -w $s basilisk-icon-small.svg png/basilisk-icon-$s.png; done
 for s in 64 128 256 512 1024; do resvg -w $s basilisk-icon.svg       png/basilisk-icon-$s.png; done
 ```
+
+## Variants
+
+![variants](png/preview-variants.png)
+
+`variants/` holds alternatives of the same flat mark, each a complete icon
+SVG named by the code on the sheet. They are options, not part of the set:
+pick one (or a colour from row A with a shape from row B) and the main
+files get rebuilt around it.
+
+- **A, colour** (same shape): A1 Venom on Obsidian (current), A2 inverted,
+  A3 gold, A4 ember, A5 glass cyan, A6 nightshade violet, A7 bone,
+  A8 bone with a Venom pupil, A9 Venom with an ember pupil. There is no red
+  on purpose: that is Ghidra's colour.
+- **B, shape** (same colour): B1 even ring with lens pupil (current),
+  B2 tapered ring (the first version), B3 gem pupil, B4 iris disc with the
+  slit cut out, B5 bar pupil (a literal 0 and 1), B6 bold, B7 fine line,
+  B8 closed ring with the tail tucked under the jaw (the most symmetrical),
+  B9 five-point crown.
+- **C, tile**: C1 round, C2 hexagon, C3 no tile.
+
+A two-tone faceted version was tried and dropped in favour of the flat
+mark; it is in the branch history (`a55ab1c`).
 
 ## Rejected concepts
 
