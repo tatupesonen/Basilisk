@@ -82,7 +82,8 @@ pub enum RawError {
     #[error("out of memory in the binutils shim")]
     OutOfMemory,
     /// binutils called `abort()` or `exit()`, or an assertion in it failed.
-    /// The call was abandoned; the process and the disassembler stay usable.
+    /// The call was abandoned and the process carries on; the architecture's
+    /// family is quarantined from then on ([`RawError::Quarantined`]).
     #[error("binutils gave up: {message}")]
     Aborted {
         /// What binutils reported, when it reported anything.
@@ -95,6 +96,29 @@ pub enum RawError {
         what: &'static str,
         /// Where the NUL is.
         position: usize,
+    },
+    /// The architecture's disassembler applies options only once per
+    /// process (ARC, `LoongArch`, VAX; RISC-V's `priv-spec`), and an earlier
+    /// disassembler of it was created with different ones. Creating this one
+    /// would silently give it the earlier one's options.
+    #[error(
+        "binutils' disassembler for architecture {arch:#x} takes its options once per process, \
+         and was already given different ones"
+    )]
+    OptionsConflict {
+        /// BFD architecture number.
+        arch: u32,
+    },
+    /// binutils aborted inside this architecture's disassembler earlier in
+    /// this process. Its static state may be half-updated, so the family is
+    /// no longer used (other architectures are unaffected).
+    #[error(
+        "binutils' disassembler for architecture {arch:#x} gave up earlier in this process \
+         and is no longer used"
+    )]
+    Quarantined {
+        /// BFD architecture number.
+        arch: u32,
     },
     /// [`Request::step`] was asked for an offset outside the request's bytes.
     #[error("offset {offset} is outside the request's {len} bytes")]

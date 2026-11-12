@@ -23,6 +23,12 @@ const BK_GDIS_UNKNOWN_ARCH: i32 = 1;
 const BK_GDIS_NO_DISASSEMBLER: i32 = 2;
 const BK_GDIS_NO_MEMORY: i32 = 3;
 const BK_GDIS_ABORTED: i32 = 4;
+const BK_GDIS_OPTIONS_CONFLICT: i32 = 6;
+const BK_GDIS_QUARANTINED: i32 = 7;
+
+/// What RISC-V's disassembler says about the empty option string the shim
+/// gives it so that it restores its defaults (`shim/bk_state.c`).
+const RESET_ARTEFACT: &str = "unrecognized disassembler option: ";
 
 /// `bk_gdis`: opaque to Rust.
 #[repr(C)]
@@ -144,7 +150,8 @@ fn take_message(_access: &Access) -> Option<String> {
     // other thread is inside the shim.
     let n = unsafe { bk_gdis_take_message(buf.as_mut_ptr().cast(), buf.len()) };
     let text = buf.get(..n)?;
-    (!text.is_empty()).then(|| String::from_utf8_lossy(text).into_owned())
+    let text = String::from_utf8_lossy(text);
+    (!text.is_empty() && text != RESET_ARTEFACT).then(|| text.into_owned())
 }
 
 fn aborted(held: &Access) -> RawError {
@@ -153,10 +160,14 @@ fn aborted(held: &Access) -> RawError {
     }
 }
 
-fn status_error(status: i32, held: &Access) -> RawError {
+/// The error for a shim status other than `BK_GDIS_OK`; `arch` is the
+/// architecture the call was about (0 for calls about none).
+fn status_error(status: i32, arch: u32, held: &Access) -> RawError {
     match status {
         BK_GDIS_NO_MEMORY => RawError::OutOfMemory,
         BK_GDIS_ABORTED => aborted(held),
+        BK_GDIS_OPTIONS_CONFLICT => RawError::OptionsConflict { arch },
+        BK_GDIS_QUARANTINED => RawError::Quarantined { arch },
         _ => RawError::Internal,
     }
 }
@@ -168,14 +179,14 @@ pub(crate) fn architecture_names() -> Result<Vec<String>, RawError> {
     // is a valid out-pointer; `held` gives access.
     let status = unsafe { bk_gdis_arch_list(ptr::null_mut(), 0, &raw mut needed) };
     if status != BK_GDIS_OK {
-        return Err(status_error(status, &held));
+        return Err(status_error(status, 0, &held));
     }
     let mut buf = vec![0u8; needed];
     // SAFETY: `buf` is writable for `buf.len()` bytes; `needed` is a valid
     // out-pointer; `held` gives access.
     let status = unsafe { bk_gdis_arch_list(buf.as_mut_ptr().cast(), buf.len(), &raw mut needed) };
     if status != BK_GDIS_OK {
-        return Err(status_error(status, &held));
+        return Err(status_error(status, 0, &held));
     }
     drop(held);
     Ok(buf
@@ -205,7 +216,7 @@ pub(crate) fn scan_architecture(name: &str) -> Result<Option<ArchInfo>, RawError
     match status {
         BK_GDIS_OK => {}
         BK_GDIS_UNKNOWN_ARCH => return Ok(None),
-        other => return Err(status_error(other, &held)),
+        other => return Err(status_error(other, 0, &held)),
     }
     drop(held);
     Ok(Some(ArchInfo {
@@ -239,6 +250,8 @@ fn static_c_string(text: *const c_char) -> String {
 #[derive(Debug)]
 pub struct RawDisassembler {
     handle: NonNull<BkGdis>,
+    /// BFD architecture number, for errors.
+    arch: u32,
     /// The request's private copy of the caller's bytes.
     bytes: Vec<u8>,
     /// Where the shim writes one instruction's text.
@@ -285,7 +298,7 @@ impl RawDisassembler {
         let Some(handle) = NonNull::new(handle) else {
             return Err(match status {
                 BK_GDIS_NO_DISASSEMBLER => RawError::NoDisassembler { arch, mach },
-                other => status_error(other, &held),
+                other => status_error(other, arch, &held),
             });
         };
         // A complaint about the options, if any, belongs to nobody yet.
@@ -293,6 +306,7 @@ impl RawDisassembler {
         drop(held);
         Ok(Self {
             handle,
+            arch,
             bytes: Vec::new(),
             text: Box::new([0; TEXT_CAPACITY]),
         })
@@ -325,7 +339,7 @@ impl RawDisassembler {
         // `drop`); the lock is held.
         let status = unsafe { bk_gdis_begin(self.handle.as_ptr()) };
         if status != BK_GDIS_OK {
-            return Err(status_error(status, &held));
+            return Err(status_error(status, self.arch, &held));
         }
         IN_REQUEST.set(true);
         Ok(Request {
@@ -418,7 +432,7 @@ impl Request<'_> {
         };
         if status != BK_GDIS_OK {
             self.abandoned = true;
-            return Err(status_error(status, &self.held));
+            return Err(status_error(status, self.owner.arch, &self.held));
         }
         // The shim reports at most `TEXT_CAPACITY - 1` bytes; `get` keeps
         // even a wrong report from reaching past the buffer.

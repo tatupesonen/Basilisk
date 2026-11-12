@@ -100,6 +100,7 @@ fn run() -> Result<(), String> {
     }
     build
         .file(shim.join("bk_gdis.c"))
+        .file(shim.join("bk_state.c"))
         .file(shim.join("bfd_nofile.c"));
     build
         .try_compile("bk_binutils")

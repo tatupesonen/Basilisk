@@ -40,7 +40,7 @@ struct bk_gdis
   enum bfd_architecture arch;
   unsigned long mach;
   enum bfd_endian endian;
-  char *options;                /* as given, or NULL */
+  char *options;                /* bk_effective_options, or NULL */
   char *options_scratch;        /* the copy binutils may edit, or NULL */
   int info_live;                /* info holds target state to free */
 
@@ -326,6 +326,7 @@ static int32_t
 bk_setup (bk_gdis *d)
 {
   bk_release_info (d);
+  bk_reset_target_globals (d->arch);
 
   init_disassemble_info (&d->info, d, bk_printf, bk_printf_styled);
   d->info.application_data = d;
@@ -429,9 +430,21 @@ bk_gdis_create (uint32_t arch, uint64_t mach, int big_endian,
   bk_gdis *volatile d = NULL;
   int32_t dummy;
   int32_t rc;
+  int no_memory;
 
   if (status == NULL)
     status = &dummy;
+  if (bk_quarantined (arch))
+    {
+      *status = BK_GDIS_QUARANTINED;
+      return NULL;
+    }
+  rc = bk_once_check ((enum bfd_architecture) arch, options, 0);
+  if (rc != BK_GDIS_OK)
+    {
+      *status = rc;
+      return NULL;
+    }
   *status = BK_GDIS_NO_MEMORY;
 
   d = (bk_gdis *) calloc (1, sizeof (bk_gdis));
@@ -440,20 +453,25 @@ bk_gdis_create (uint32_t arch, uint64_t mach, int big_endian,
   d->arch = (enum bfd_architecture) arch;
   d->mach = (unsigned long) mach;
   d->endian = big_endian ? BFD_ENDIAN_BIG : BFD_ENDIAN_LITTLE;
-  if (options != NULL)
+  d->options = bk_effective_options (d->arch, options, &no_memory);
+  if (no_memory)
+    goto fail;
+  if (d->options != NULL)
     {
-      size_t n = strlen (options) + 1;
-
-      d->options = (char *) malloc (n);
-      d->options_scratch = (char *) malloc (n);
-      if (d->options == NULL || d->options_scratch == NULL)
+      d->options_scratch = (char *) malloc (strlen (d->options) + 1);
+      if (d->options_scratch == NULL)
         goto fail;
-      memcpy (d->options, options, n);
     }
 
-  BK_GUARD ({ *status = BK_GDIS_ABORTED; goto fail_unowned; });
+  BK_GUARD ({
+    bk_quarantine (d->arch);
+    *status = BK_GDIS_ABORTED;
+    goto fail_unowned;
+  });
   rc = bk_setup (d);
   BK_UNGUARD ();
+  if (rc == BK_GDIS_OK)
+    rc = bk_once_check (d->arch, options, 1);
   if (rc != BK_GDIS_OK)
     {
       *status = rc;
@@ -481,8 +499,11 @@ bk_gdis_begin (bk_gdis *d)
 
   if (d == NULL)
     return BK_GDIS_BAD_ARGUMENT;
+  if (bk_quarantined (d->arch))
+    return BK_GDIS_QUARANTINED;
   BK_GUARD ({
     /* Whatever the aborted setup left in info is abandoned.  */
+    bk_quarantine (d->arch);
     d->info_live = 0;
     d->print = NULL;
     if (bk_owner == d)
@@ -504,6 +525,10 @@ bk_gdis_step (bk_gdis *d, uint8_t *buf, size_t len, uint64_t vma,
       || offset >= len || d->print == NULL || !d->info_live)
     return BK_GDIS_BAD_ARGUMENT;
   memset (out, 0, sizeof *out);
+  /* Another disassembler of this family may have aborted since this
+     request began.  */
+  if (bk_quarantined (d->arch))
+    return BK_GDIS_QUARANTINED;
 
   d->buf = buf;
   d->buf_len = len;
@@ -535,8 +560,9 @@ bk_gdis_step (bk_gdis *d, uint8_t *buf, size_t len, uint64_t vma,
 
   BK_GUARD ({
     /* The target was interrupted mid-instruction: whatever it keeps in
-       info is abandoned (not freed), and the next bk_gdis_begin starts
-       over.  */
+       info is abandoned (not freed), and the family's static state may
+       be half-updated: it is not used again.  */
+    bk_quarantine (d->arch);
     d->buf = NULL;
     d->text = NULL;
     d->info_live = 0;
@@ -578,9 +604,14 @@ bk_gdis_destroy (bk_gdis *d)
     return BK_GDIS_OK;
   if (bk_owner == d)
     bk_owner = NULL;
+  /* After an abort in this family, freeing the target's data could touch
+     half-updated static state: it is leaked instead.  */
+  if (bk_quarantined (d->arch))
+    d->info_live = 0;
   if (BK_SETJMP (bk_trap) != 0)
     {
       bk_trap_armed = 0;
+      bk_quarantine (d->arch);
       rc = BK_GDIS_ABORTED;
     }
   else

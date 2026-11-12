@@ -22,6 +22,10 @@
 #define BK_GDIS_NO_MEMORY 3
 #define BK_GDIS_ABORTED 4          /* binutils called abort()/exit()/assert */
 #define BK_GDIS_BAD_ARGUMENT 5
+#define BK_GDIS_OPTIONS_CONFLICT 6 /* the target takes options once per
+                                      process, and was given others */
+#define BK_GDIS_QUARANTINED 7      /* binutils aborted in this architecture
+                                      family earlier; it is not used again */
 
 typedef struct bk_gdis bk_gdis;
 
@@ -63,13 +67,18 @@ int32_t bk_gdis_scan_arch (const char *name, bk_gdis_arch *out);
 
 /* Creates a disassembler.  ARCH and MACH are BFD's numbers; OPTIONS is a
    NUL-terminated disassembler option string (objdump -M) or NULL, and is
-   copied.  Returns NULL and sets *STATUS on failure. */
+   copied.  Returns NULL and sets *STATUS on failure.
+   The disassembler behaves the same whatever disassemblers were created
+   before it (bk_state.c); where binutils cannot be made to, creation fails
+   with BK_GDIS_OPTIONS_CONFLICT. */
 bk_gdis *bk_gdis_create (uint32_t arch, uint64_t mach, int big_endian,
                          const char *options, int32_t *status);
 
 /* Starts a request: resets the disassembler to the state a fresh gdis
    request has (new disassemble_info, target initialised, options applied).
-   Call before the first bk_gdis_step of a block. */
+   Call before the first bk_gdis_step of a block.  Sequence state that
+   targets keep per disassemble_info (and ARM's IT/VPT state, by a patch)
+   starts afresh with each request. */
 int32_t bk_gdis_begin (bk_gdis *d);
 
 /* Disassembles the instruction at address VMA + OFFSET, where BUF[0..LEN)
