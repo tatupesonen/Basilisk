@@ -80,20 +80,37 @@ queue** is a small Opus track `windows-ci` — make the Windows job green
 (fix path-separator assumptions in tests and, where the product formats
 paths, decide the rule once), using `gh` to read each run.
 
-**x86-64 Linux reference build**: started 20:12 in a `linux/amd64`
-container (emulated), output in `../reference-x86_64/`, log
-`../reference-x86_64/build.log` (last line is `exit=<code>` when done). If
-it is still running after 22:00, kill the container (`docker ps`, image
-`gcc:14`) and record that emulation is too slow. When it finishes: compare
-its `STAMP` test results with the aarch64 ones (ADR-021 expects the two
-`-NAN` checks to pass on x86-64), then regenerate `bk-pcode`'s C++ oracle
-table there (`crates/bk-pcode/tests/data/README.md`) and compare.
+**x86-64 Linux reference build**: the emulated Docker run on this Mac
+was stopped (slow). The owner lent a throwaway x86-64 Linux machine on
+Tailscale instead: host `kassini`, user `kassini` (Debian 13, 4 cores, 3 GB
+memory, Docker). The build was started there at 20:25 by
+`~/remote-build.sh` (shallow-fetches Ghidra at the pinned commit, runs
+`scripts/build-reference.sh` in a `gcc:14` container, 90-minute limit);
+output in `~/basilisk-ref/reference/`, log `~/basilisk-ref/run.log` (ends
+with `exit=<code>`). When it finishes: read `reference/STAMP` for the test
+results (ADR-021 expects the two `-NAN` checks to pass on x86-64), then
+regenerate `bk-pcode`'s C++ oracle table there
+(`crates/bk-pcode/tests/data/README.md`) and compare with the checked-in
+aarch64 one.
+*Access:* password login only; the password was given in the session and
+is deliberately **not written anywhere**. The helper
+`/Users/tatu/slop/reference-x86_64/kssh.exp` runs a remote command with
+the password taken from the `KP` environment variable. Installing an SSH
+key on the box was blocked by the session's permission system, so if the
+session no longer knows the password, ask the owner (or have them install
+a key) rather than guessing. Treat the box as disposable and shared: keep
+everything under `~/basilisk-ref`.
+
+**Keeping the Mac awake**: `caffeinate -ims -t 604800` is running from the
+coordinator session (7 days). It does not stop a closed lid from sleeping
+the machine; only the owner can do that (`sudo pmset -a disablesleep 1`).
 
 **Queue** (start as slots free, keeping about four agents in total):
 1. `windows-ci` (Opus) — above.
 2. `store-spike` (Fable) — brief in this session's history; notes from its
    interrupted first run are in
-   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`.
+   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`
+   and `notes-ghidra-program-db.md` (also useful to `spec-program-model`).
 3. `spec-program-model`, `spec-pe`, `spec-macho` (Fable) — worktrees exist,
    empty; briefs as described in the table above.
 4. `followups` (Opus) — step 4 below.

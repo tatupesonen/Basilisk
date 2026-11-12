@@ -75,6 +75,15 @@ and a sane architecture in mind.
 * **x86-64 Linux results come from Docker emulation on this Mac** (owner,
   2026-11-12): the reference build runs in a `linux/amd64` container into
   `../reference-x86_64/` (ADR-021).
+* **While the owner is away, be inventive** (owner, 2026-11-12: "you can
+  create innovative solutions while I'm away"). Where a better approach
+  than Ghidra's is found, take it without waiting to ask — within ADR-001:
+  deliberate, documented, and measured against Ghidra's behaviour. Owner
+  decisions that cannot be inferred still go to `PROGRESS.md` Blockers.
+* **A throwaway x86-64 Linux box is available** (`kassini` on Tailscale,
+  owner, 2026-11-12) for builds and tests that need x86-64 Linux; details
+  and access notes in `PROGRESS.md`. Credentials are never written to
+  files, commits or notes.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
