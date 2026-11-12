@@ -62,7 +62,7 @@ and a sane architecture in mind.
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
   green gate. Agents commit in their worktrees only and never push.
 * **Brand**: a minimal logo, in the spirit of Ghidra's but its own design
-  (`assets/brand/`).
+  (`assets/brand/`). Colour: ember orange (owner's pick, 2026-11-12).
 * **Feature spec before code.** No implementation agent starts without a
   spec in `docs/features/`.
 * The Ghidra source at `../ghidra` is **read-only reference**. Never modify

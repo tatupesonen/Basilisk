@@ -17,7 +17,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `lang` | `bk-lang` | `features/lang.md` |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` |
-| `logo` | `assets/brand/` (no crates) | brief only: a minimal basilisk logo |
+| `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
 | `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019; started at the owner's request, ahead of M10) |
 
 In a worktree `../ghidra` does not resolve; agents set
@@ -43,6 +43,14 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — logo merged
+* `assets/brand/`: mark (dark, light, mono), logos, app icon and a
+  simplified small-size icon, PNGs at 16–1,024 px, palette and usage in its
+  README. Ember `#FF6A2B` on Soot `#150F0D`; Ember deep `#E8551A` on light
+  backgrounds. Known weak spot: the 16 px icon is soft. Ember is a
+  red-orange (hue 18°), the nearest of the variants to Ghidra's red; the
+  owner chose it knowing that.
 
 ### 2026-11-12 — project set up
 * Surveyed Ghidra at commit `42db038f3c` (`inventory/00-overview.md`).

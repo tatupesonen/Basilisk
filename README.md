@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="420"></p>
+
 # basilisk
 
 A reimplementation of [Ghidra](https://github.com/NationalSecurityAgency/ghidra)
