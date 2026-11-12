@@ -69,9 +69,6 @@ _Static_assert (sizeof (bk_gdis_insn) == 40
 _Static_assert (sizeof (void *) != 8 || sizeof (bk_gdis_arch) == 40,
                 "bk_gdis_arch layout");
 
-/* The disassembler whose static state libopcodes currently holds.  */
-static bk_gdis *bk_owner;
-
 /* ---- Trap ------------------------------------------------------------ */
 
 /* sigsetjmp-free variants where they exist: the signal mask is of no
@@ -305,13 +302,25 @@ bk_abfd (bk_gdis *d)
   return &d->abfd;
 }
 
+/* Frees what the target keeps in D's disassemble_info.  RISC-V's
+   disassemble_free_target also releases the static extension list that
+   disassembler() builds and every RISC-V disassembler shares; that would
+   leave another RISC-V disassembler's open request decoding nothing, so
+   for RISC-V only the per-info data is freed (the list is rebuilt by the
+   next disassembler() call).  */
 static void
 bk_release_info (bk_gdis *d)
 {
   if (d->info_live)
     {
       d->info_live = 0;
-      disassemble_free_target (&d->info);
+      if (d->arch == bfd_arch_riscv)
+        {
+          free (d->info.private_data);
+          d->info.private_data = NULL;
+        }
+      else
+        disassemble_free_target (&d->info);
     }
 }
 
@@ -348,18 +357,13 @@ bk_setup (bk_gdis *d)
   d->info_live = 1;
   disassemble_init_for_target (&d->info);
 
-  /* disassembler() also resets static state of some targets (RISC-V's
-     subset list, C-SKY's ISA flags), so it runs again whenever another
-     disassembler has used libopcodes in between.  */
-  if (bk_owner != d || d->print == NULL)
-    {
-      bk_owner = NULL;
-      d->print = disassembler (d->arch, d->endian == BFD_ENDIAN_BIG, d->mach,
-                               bk_abfd (d));
-      if (d->print == NULL)
-        return BK_GDIS_NO_DISASSEMBLER;
-      bk_owner = d;
-    }
+  /* disassembler() also sets static state of some targets (RISC-V's
+     extension list, C-SKY's ISA flags), so it runs for every request, as
+     gdis runs it for every request.  */
+  d->print = disassembler (d->arch, d->endian == BFD_ENDIAN_BIG, d->mach,
+                           bk_abfd (d));
+  if (d->print == NULL)
+    return BK_GDIS_NO_DISASSEMBLER;
   return BK_GDIS_OK;
 }
 
@@ -466,7 +470,7 @@ bk_gdis_create (uint32_t arch, uint64_t mach, int big_endian,
   BK_GUARD ({
     bk_quarantine (d->arch);
     *status = BK_GDIS_ABORTED;
-    goto fail_unowned;
+    goto fail_after_setup;
   });
   rc = bk_setup (d);
   BK_UNGUARD ();
@@ -475,16 +479,15 @@ bk_gdis_create (uint32_t arch, uint64_t mach, int big_endian,
   if (rc != BK_GDIS_OK)
     {
       *status = rc;
-      goto fail_unowned;
+      goto fail_after_setup;
     }
   *status = BK_GDIS_OK;
   return d;
 
- fail_unowned:
-  if (bk_owner == d)
-    bk_owner = NULL;
-  /* The target state of a setup that did not complete is not released:
-     freeing what an aborted initialisation left behind is not safe.  */
+ fail_after_setup:
+  /* The target data of a setup that did not complete is leaked, not
+     freed: after an abort, freeing it is not safe; otherwise there is
+     next to none (no disassembler, or options refused).  */
  fail:
   free (d->options);
   free (d->options_scratch);
@@ -506,8 +509,6 @@ bk_gdis_begin (bk_gdis *d)
     bk_quarantine (d->arch);
     d->info_live = 0;
     d->print = NULL;
-    if (bk_owner == d)
-      bk_owner = NULL;
     return BK_GDIS_ABORTED;
   });
   rc = bk_setup (d);
@@ -567,8 +568,6 @@ bk_gdis_step (bk_gdis *d, uint8_t *buf, size_t len, uint64_t vma,
     d->text = NULL;
     d->info_live = 0;
     d->print = NULL;
-    if (bk_owner == d)
-      bk_owner = NULL;
     return BK_GDIS_ABORTED;
   });
   n = d->print ((bfd_vma) (vma + offset), &d->info);
@@ -602,8 +601,6 @@ bk_gdis_destroy (bk_gdis *d)
 
   if (d == NULL)
     return BK_GDIS_OK;
-  if (bk_owner == d)
-    bk_owner = NULL;
   /* After an abort in this family, freeing the target's data could touch
      half-updated static state: it is leaked instead.  */
   if (bk_quarantined (d->arch))

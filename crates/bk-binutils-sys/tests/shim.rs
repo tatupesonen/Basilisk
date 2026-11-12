@@ -251,3 +251,27 @@ fn disassemblers_can_be_used_from_several_threads() {
         worker.join().unwrap();
     }
 }
+
+#[test]
+fn every_request_decodes_alike_even_when_another_disassembler_is_dropped() {
+    // RISC-V keeps its extension list in a static that freeing a
+    // disassembler's data used to release: later requests then decoded
+    // nothing (".insn"). "nop" and "li ra,1", checked against GNU objdump.
+    let arch = scan_architecture("riscv:rv64").unwrap().unwrap();
+    let mut first = RawDisassembler::new(arch.arch, arch.mach, false, None).unwrap();
+    let expected = [(4, "nop".to_owned()), (4, "li\tra,1".to_owned())];
+    let code = [0x13, 0, 0, 0, 0x93, 0, 0x10, 0];
+    for _ in 0..3 {
+        assert_eq!(all(&mut first, &code, 0), expected);
+    }
+    let mut request = first.request(&code, 0).unwrap();
+    let second = RawDisassembler::new(arch.arch, arch.mach, false, None);
+    assert_eq!(second.unwrap_err(), RawError::RequestInProgress);
+    drop(request);
+    let second = RawDisassembler::new(arch.arch, arch.mach, false, None).unwrap();
+    request = first.request(&code, 0).unwrap();
+    drop(second);
+    assert_eq!(request.step(0).unwrap().text, b"nop");
+    drop(request);
+    assert_eq!(all(&mut first, &code, 0), expected);
+}
