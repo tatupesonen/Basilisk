@@ -105,6 +105,16 @@ normally has. Requirements:
   `// SAFETY:` comment; `unsafe_code` is allowed here by a crate-level
   attribute with the reason, and nowhere else.
 
+*Decided 2026-11-12 from the track's build evaluation: the libraries are
+compiled with the `cc` crate against a prepared `config.h` (15 s clean
+build), not with binutils' own `configure`/`make`, which was not hermetic
+on this machine (it used the system zlib and picked up Homebrew's zstd),
+needed about 80 MB of vendored source and would need `sh` and `make` on
+Windows. A small C file, `shim/bfd_nofile.c`, stands in for the parts of
+libbfd that need an object file. The crate layout therefore also has
+`config/`, `sources.list` and `src/{real,stub}.rs`. Windows is a stub for
+now (a recorded gap).*
+
 ### 4.3 The safe API (`bk-gnu-disasm`)
 - Create a disassembler from a GNU architecture name (as `bfd_scan_arch`
   accepts, e.g. `i386:x86-64`), optional machine, endianness and an

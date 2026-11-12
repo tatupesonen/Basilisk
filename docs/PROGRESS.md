@@ -12,13 +12,13 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | Track / branch | Crates | Spec |
 |---|---|---|
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
-| `pcode` | `bk-pcode` | `features/pcode.md` |
+| `pcode` | `bk-pcode` | `features/pcode.md` — checkpointed by Fable (library written, 247 tests pass by its report; test porting partial, no property tests or benchmarks); continued by Opus 5.5 |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` |
 | `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
-| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019; started at the owner's request, ahead of M10) |
+| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
 
 In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
