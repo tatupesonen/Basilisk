@@ -176,7 +176,11 @@ Evaluations so far:
   track verifies that every XML file under `../ghidra/Ghidra/Processors`
   and `datatests/` parses, and falls back to porting Ghidra's `xml.cc` if
   any does not.
-- **Object-file parsing: `object`, `goblin` → oracle only.** Ghidra's
+- **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
+  *Being re-examined by the `bin-elf` track after the owner's rule of
+  2026-11-12 (use existing crates unless there is a good reason): the
+  reasoning below is a hypothesis until that track reports what the
+  crates actually expose and how they behave on damaged files.* Ghidra's
   loaders expose format details (every header field, relocation and
   dynamic-table entry, vendor extensions) and tolerate malformed files in
   specific ways that its tests assert. The format crates are ports of
