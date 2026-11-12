@@ -1,0 +1,7 @@
+---
+source: crates/bk-lang/tests/golden.rs
+expression: snapshot
+---
+[languages]
+LanguageDefinition { id: LanguageId("6502:LE:16:default"), processor: "6502", endian: Little, instruction_endian: Little, size: 16, variant: "default", version: LanguageVersion { major: 1, minor: 0 }, sla_file: "6502.sla", processor_spec: "6502.pspec", manual_index_file: Some("../manuals/6502.idx"), deprecated: false, hidden: false, description: "6502 Microcontroller Family", truncated_spaces: [], compilers: [CompilerDefinition { id: CompilerSpecId("default"), name: "default", spec: "6502.cspec" }], external_names: [ExternalName { tool: "IDA-PRO", name: "m6502" }] }
+LanguageDefinition { id: LanguageId("65C02:LE:16:default"), processor: "65C02", endian: Little, instruction_endian: Little, size: 16, variant: "default", version: LanguageVersion { major: 1, minor: 0 }, sla_file: "65c02.sla", processor_spec: "6502.pspec", manual_index_file: Some("../manuals/65c02.idx"), deprecated: false, hidden: false, description: "65C02 Microcontroller Family", truncated_spaces: [], compilers: [CompilerDefinition { id: CompilerSpecId("default"), name: "default", spec: "6502.cspec" }], external_names: [ExternalName { tool: "IDA-PRO", name: "m65c02" }] }

@@ -1,0 +1,192 @@
+---
+source: crates/bk-lang/tests/golden.rs
+expression: snapshot
+---
+[sections]
+Properties
+ProgramCounter
+IncidentalCopy
+ContextData
+RegisterData
+[properties]
+Property { key: "useOperandReferenceAnalyzerSwitchTables", value: "true" }
+Property { key: "assemblyRating:x86:LE:32:default", value: "GOLD" }
+Property { key: "useropLibs", value: "x86" }
+[programcounter]
+"EIP"
+[data_space]
+[inferptrbounds]
+[segmented_address]
+[segmentop]
+[context_data]
+ContextBlock { kind: Context, range: AddressRange { space: "ram", first: None, last: None }, values: [ContextValue { name: "addrsize", val: "1", description: None }, ContextValue { name: "opsize", val: "1", description: None }] }
+ContextBlock { kind: Tracked, range: AddressRange { space: "ram", first: None, last: None }, values: [ContextValue { name: "DF", val: "0", description: None }] }
+[volatile]
+[incidentalcopy]
+Register("ST0")
+Register("ST1")
+Register("ST2")
+Register("ST3")
+Register("ST4")
+Register("ST5")
+Register("ST6")
+Register("ST7")
+[jumpassist]
+[register_data]
+RegisterData { name: "DR0", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR1", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR2", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR3", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR4", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR5", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR6", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DR7", rename: None, alias: None, group: Some("DEBUG"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "CR0", rename: None, alias: None, group: Some("CONTROL"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "CR2", rename: None, alias: None, group: Some("CONTROL"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "CR3", rename: None, alias: None, group: Some("CONTROL"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "CR4", rename: None, alias: None, group: Some("CONTROL"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST0", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST1", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST2", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST3", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST4", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST5", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST6", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ST7", rename: None, alias: None, group: Some("ST"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPUControlWord", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPUStatusWord", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPUTagWord", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPUInstructionPointer", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPULastInstructionOpcode", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "FPUDataPointer", rename: None, alias: None, group: Some("FPU"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM0", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM1", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM2", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM3", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM4", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM5", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM6", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "MM7", rename: None, alias: None, group: Some("MMX"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ZMM0", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM1", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM2", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM3", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM4", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM5", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM6", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM7", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM8", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM9", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM10", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM11", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM12", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM13", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM14", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM15", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM16", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM17", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM18", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM19", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM20", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM21", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM22", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM23", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM24", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM25", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM26", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM27", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM28", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM29", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM30", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "ZMM31", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM0", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM1", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM2", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM3", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM4", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM5", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM6", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM7", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM8", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM9", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM10", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM11", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM12", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM13", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM14", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM15", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM16", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM17", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM18", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM19", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM20", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM21", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM22", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM23", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM24", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM25", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM26", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM27", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM28", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM29", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM30", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "YMM31", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM0", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM1", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM2", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM3", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM4", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM5", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM6", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM7", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM8", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM9", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM10", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM11", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM12", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM13", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM14", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM15", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM16", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM17", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM18", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM19", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM20", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM21", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM22", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM23", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM24", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM25", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM26", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM27", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM28", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM29", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM30", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "XMM31", rename: None, alias: None, group: Some("AVX"), hidden: false, volatile: false, vector_lane_sizes: [1, 2, 4, 8] }
+RegisterData { name: "CF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "F1", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "PF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "F3", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "AF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "F5", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ZF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "SF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "TF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "IF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "DF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "OF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "IOPL", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "NT", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "F15", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "RF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "VM", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "AC", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "VIF", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "VIP", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "ID", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "eflags", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "flags", rename: None, alias: None, group: Some("FLAGS"), hidden: false, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "repneprefx", rename: None, alias: None, group: None, hidden: true, volatile: false, vector_lane_sizes: [] }
+RegisterData { name: "segover", rename: None, alias: None, group: None, hidden: true, volatile: false, vector_lane_sizes: [] }
+[default_symbols]
+[default_memory_blocks]
