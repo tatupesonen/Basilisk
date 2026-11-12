@@ -7,10 +7,8 @@
 //! tables, relocation tables.
 
 mod dynamic;
-// HANDOVER: the next two steps are not written yet. `symbols` is Ghidra's
-// parseSymbolTables / parseDynamicSymbolTable / getExtendedSymbolSectionIndexTable
-// and the GNU-hash walk; `relocs` is parseRelocationTables and friends. The
-// plan for both is in docs/agents/bin-elf.md, "In flight".
+mod relocs;
+mod symbols;
 
 use std::borrow::Cow;
 
@@ -35,6 +33,8 @@ pub(crate) struct Parser<'a> {
     raw: BinaryReader<'a>,
     diags: Diagnostics,
     t: ElfTables,
+    /// The section named `.dynsym`, once looked up.
+    dynsym_section: Option<Option<u32>>,
 }
 
 /// Parses the file behind `raw`; `unlimited` must be a zero-padding view of
@@ -68,12 +68,14 @@ pub(crate) fn parse(
         raw: BinaryReader::new(raw, endian),
         diags,
         t: tables,
+        dynsym_section: None,
     };
     parser.parse_program_headers()?;
     parser.parse_section_headers()?;
     parser.parse_dynamic_table();
     parser.parse_string_tables();
-    // HANDOVER: parse_symbol_tables() and parse_relocation_tables() go here.
+    parser.parse_symbol_tables();
+    parser.parse_relocation_tables();
     let Parser { diags, mut t, .. } = parser;
     t.diagnostics = diags.into_vec();
     Ok(t)
@@ -93,6 +95,27 @@ fn read_prelink_base(reader: &BinaryReader<'_>) -> Option<u32> {
     (crate::strtab::java_trim(&tag) == "PRE").then_some(base)
 }
 
+/// Where the name of `section` starts in the file, if Ghidra would read
+/// one: the section named by `e_shstrndx` must exist (and not be section 0)
+/// with a valid offset, `sh_name` must be non-negative as a Java `int`, and
+/// the name must start inside the file.
+fn section_name_offset(
+    reader: &BinaryReader<'_>,
+    tables: &ElfTables,
+    section: &SectionHeader,
+) -> Option<u64> {
+    let string_table = match tables.header.e_shstrndx {
+        0 => None,
+        index => tables.section(index).filter(|s| !s.is_invalid_offset()),
+    }?;
+    // Java holds sh_name in an int; a "negative" one is never looked up.
+    i32::try_from(section.sh_name).ok()?;
+    let offset = string_table
+        .sh_offset
+        .checked_add(u64::from(section.sh_name))?;
+    (offset < reader.len()).then_some(offset)
+}
+
 /// The name of `section` (Ghidra's `ElfSectionHeader.updateName`): the
 /// string at `sh_name` in the section named by `e_shstrndx`, read up to its
 /// terminator and not trimmed; `SECTION<index>` when there is no usable
@@ -102,17 +125,7 @@ pub(crate) fn section_name<'a>(
     tables: &ElfTables,
     section: &SectionHeader,
 ) -> Cow<'a, str> {
-    let string_table = match tables.header.e_shstrndx {
-        0 => None,
-        index => tables.section(index).filter(|s| !s.is_invalid_offset()),
-    };
-    // Java holds sh_name in an int; a "negative" one is never looked up.
-    if let Some(string_table) = string_table
-        && i32::try_from(section.sh_name).is_ok()
-        && let Some(offset) = string_table
-            .sh_offset
-            .checked_add(u64::from(section.sh_name))
-        && offset < reader.len()
+    if let Some(offset) = section_name_offset(reader, tables, section)
         && let Ok(bytes) = reader.read_terminated_bytes_at(offset, 1)
         && !bytes.is_empty()
     {
@@ -124,6 +137,45 @@ pub(crate) fn section_name<'a>(
     Cow::Owned(format!("SECTION{}", section.index))
 }
 
+/// The longest section name put into a diagnostic message.
+const MAX_DIAGNOSTIC_NAME: usize = 256;
+
+/// [`section_name`] for diagnostic messages: at most 256 bytes are read, so
+/// that a file whose names all run into one long unterminated string costs
+/// no more than a short name per message.
+fn section_name_for_message(
+    reader: &BinaryReader<'_>,
+    tables: &ElfTables,
+    section: &SectionHeader,
+) -> String {
+    if let Some(offset) = section_name_offset(reader, tables, section)
+        && let Ok(bytes) = reader.read_bytes_at(offset, MAX_DIAGNOSTIC_NAME)
+    {
+        let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
+        if let Some(name) = bytes.get(..end)
+            && !name.is_empty()
+        {
+            return String::from_utf8_lossy(name).into_owned();
+        }
+    }
+    format!("SECTION{}", section.index)
+}
+
+/// True when the name of `section` is exactly `name`, reading no more of
+/// the file than `name` is long.
+pub(crate) fn section_name_is(
+    reader: &BinaryReader<'_>,
+    tables: &ElfTables,
+    section: &SectionHeader,
+    name: &str,
+) -> bool {
+    section_name_offset(reader, tables, section)
+        .and_then(|offset| reader.read_bytes_at(offset, name.len() + 1).ok())
+        .is_some_and(|bytes| {
+            bytes.get(..name.len()) == Some(name.as_bytes()) && bytes.get(name.len()) == Some(&0)
+        })
+}
+
 impl Parser<'_> {
     fn diag(&mut self, kind: DiagnosticKind, message: impl Into<String>) {
         self.diags.push(kind, message);
@@ -133,8 +185,14 @@ impl Parser<'_> {
         u64::from(self.t.prelink_base.unwrap_or(0))
     }
 
+    /// The name of `section` for a diagnostic message.
     fn name(&self, section: &SectionHeader) -> String {
-        section_name(&self.reader, &self.t, section).into_owned()
+        section_name_for_message(&self.reader, &self.t, section)
+    }
+
+    /// True when `section` is named `name`.
+    fn name_is(&self, section: &SectionHeader, name: &str) -> bool {
+        section_name_is(&self.reader, &self.t, section, name)
     }
 
     /// The value of the first dynamic entry with `tag`.
