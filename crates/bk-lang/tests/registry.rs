@@ -15,7 +15,7 @@
 mod common;
 
 use bk_lang::{LanguageRegistry, LoadFailure, Mode, RegistryError};
-use common::tree::{id, ids, language, ldefs, registry, tree, write};
+use common::tree::{canonical, id, ids, language, ldefs, registry, tree, write};
 
 #[test]
 fn languages_load_in_ghidras_order() {
@@ -44,7 +44,7 @@ fn languages_load_in_ghidras_order() {
 fn files_resolve_beside_the_ldefs_or_by_name_across_modules() {
     let dir = tree();
     let registry = registry(&dir);
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     let nested = registry.find("Alpha:LE:32:wide").unwrap();
     assert_eq!(nested.files().ldefs, languages.join("a/nested.ldefs"));
     assert_eq!(nested.files().pspec, languages.join("alpha.pspec"));
@@ -78,7 +78,7 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
     // its leading relative part (which, for a name written in the
     // definition, it always does).
     let dir = tempfile::tempdir().unwrap();
-    let processors = dir.path().join("Ghidra/Processors");
+    let processors = canonical(dir.path()).join("Ghidra/Processors");
     for module in ["Gamma", "Beta"] {
         write(processors.join(module).join("Module.manifest"), "");
         write(
@@ -133,7 +133,7 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
 #[test]
 fn a_language_with_a_missing_file_is_reported_and_left_out() {
     let dir = tree();
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     write(
         languages.join("c.ldefs"),
         &ldefs(&[
@@ -221,7 +221,7 @@ fn a_compiled_sla_without_source_still_describes_the_language() {
     // Ghidra falls back to the .sla when there is no .slaspec, so that the
     // language can be described (loading it is another matter).
     let dir = tree();
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     write(languages.join("binary.sla"), "");
     write(
         languages.join("c.ldefs"),
@@ -248,7 +248,7 @@ fn a_compiled_sla_without_source_still_describes_the_language() {
 #[test]
 fn a_repeated_language_id_is_reported_and_the_later_definition_takes_its_place() {
     let dir = tree();
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     write(
         languages.join("z.ldefs"),
         &ldefs(&[language(
@@ -277,7 +277,7 @@ fn a_repeated_language_id_is_reported_and_the_later_definition_takes_its_place()
 #[test]
 fn an_invalid_ldefs_file_is_skipped_whole_in_strict_mode() {
     let dir = tree();
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     write(
         languages.join("c.ldefs"),
         &ldefs(&[language(
@@ -313,7 +313,7 @@ fn an_invalid_ldefs_file_is_skipped_whole_in_strict_mode() {
 #[test]
 fn hidden_languages_need_to_be_asked_for() {
     let dir = tree();
-    let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
+    let languages = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages");
     write(
         languages.join("c.ldefs"),
         // Ghidra skips a hidden language before looking at its files.
@@ -337,7 +337,7 @@ fn hidden_languages_need_to_be_asked_for() {
 #[test]
 fn search_skips_what_ghidra_skips_and_includes_build_output() {
     let dir = tree();
-    let alpha = dir.path().join("Ghidra/Processors/alpha");
+    let alpha = canonical(dir.path()).join("Ghidra/Processors/alpha");
     let extra = |variant: &str| {
         ldefs(&[language(
             &format!("Alpha:LE:8:{variant}"),
@@ -481,16 +481,13 @@ fn compiled_sla_is_found_beside_the_source_or_in_an_overlay() {
     assert_eq!(registry.sla_file(&zeta).unwrap(), None);
 
     // The overlay mirrors the root's layout.
-    let in_overlay = overlay
-        .path()
-        .join("Ghidra/Processors/Zeta/data/languages/zeta.sla");
+    let in_overlay =
+        canonical(overlay.path()).join("Ghidra/Processors/Zeta/data/languages/zeta.sla");
     write(&in_overlay, "");
     assert_eq!(registry.sla_file(&zeta).unwrap(), Some(in_overlay));
 
     // A .sla beside the .slaspec wins, and is seen without rebuilding.
-    let beside = dir
-        .path()
-        .join("Ghidra/Processors/Zeta/data/languages/zeta.sla");
+    let beside = canonical(dir.path()).join("Ghidra/Processors/Zeta/data/languages/zeta.sla");
     write(&beside, "");
     assert_eq!(registry.sla_file(&zeta).unwrap(), Some(beside));
     assert!(matches!(
@@ -502,9 +499,7 @@ fn compiled_sla_is_found_beside_the_source_or_in_an_overlay() {
 #[test]
 fn processor_specs_are_read_on_demand_not_at_scan() {
     let dir = tree();
-    let pspec = dir
-        .path()
-        .join("Ghidra/Processors/alpha/data/languages/alpha.pspec");
+    let pspec = canonical(dir.path()).join("Ghidra/Processors/alpha/data/languages/alpha.pspec");
     write(&pspec, "<processor_spec><bogus/></processor_spec>");
     let registry = registry(&dir);
     assert!(

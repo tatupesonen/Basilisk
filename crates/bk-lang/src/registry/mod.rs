@@ -29,11 +29,22 @@ use crate::{
 /// files.
 pub const SPEC_ROOT_ENV: &str = "BASILISK_GHIDRA_DIR";
 
-/// The spec root: the value of [`SPEC_ROOT_ENV`] if set, otherwise
-/// `../ghidra` relative to the current directory.
+/// The spec root named by [`SPEC_ROOT_ENV`], or `None` when the variable
+/// is unset or empty.
+///
+/// There is deliberately no fallback here. The project's convention,
+/// "`../ghidra` beside the basilisk checkout", is about a source checkout,
+/// which a library cannot locate: a path relative to the current directory
+/// means something different for every process (under `cargo test` it is
+/// the crate's directory), and a path fixed at compile time is wrong for an
+/// installed program. So each caller supplies its own default: a program
+/// its bundled `Processors` data or a command-line option, and the tests
+/// the directory beside the workspace (`crates/bk-lang/tests/common`).
 #[must_use]
-pub fn spec_root_from_env() -> PathBuf {
-    env::var_os(SPEC_ROOT_ENV).map_or_else(|| PathBuf::from("../ghidra"), PathBuf::from)
+pub fn spec_root_from_env() -> Option<PathBuf> {
+    env::var_os(SPEC_ROOT_ENV)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
 }
 
 /// The files a language is made of, as resolved paths.
@@ -367,12 +378,19 @@ impl RegistryBuilder {
     /// Unreadable or inconsistent spec files do not fail the build; they
     /// are listed in [`LanguageRegistry::failures`]. The build fails only
     /// when a root is not a Ghidra tree or two modules share a name.
+    ///
+    /// Every directory given to the builder is first made canonical
+    /// (absolute, `.`, `..` and symbolic links resolved), so the paths the
+    /// registry reports are the same however a root was spelled.
     pub fn build(self) -> Result<LanguageRegistry, RegistryError> {
+        let canonical = |paths: &[PathBuf]| -> Vec<PathBuf> {
+            paths.iter().map(|p| paths::canonical_root(p)).collect()
+        };
         let mut modules = Vec::new();
-        for root in &self.ghidra_roots {
+        for root in &canonical(&self.ghidra_roots) {
             scan::modules_under(root, &mut modules)?;
         }
-        for directory in &self.modules {
+        for directory in &canonical(&self.modules) {
             let name = directory
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned());
@@ -402,7 +420,7 @@ impl RegistryBuilder {
             ldefs_files: found.ldefs_files,
             opinion_files: index.files(".opinion").to_vec(),
             opinions: OnceLock::new(),
-            sla_overlays: self.sla_overlays,
+            sla_overlays: canonical(&self.sla_overlays),
             failures: found.failures,
             mode: self.mode,
         })

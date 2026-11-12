@@ -19,10 +19,10 @@ use bk_lang::LanguageRegistry;
 /// `../ghidra` beside the workspace. `None`, with the reason printed, when
 /// it does not exist — the calling test then skips.
 pub(crate) fn ghidra_dir() -> Option<PathBuf> {
-    let dir = std::env::var_os(bk_lang::SPEC_ROOT_ENV).map_or_else(
-        || Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../ghidra"),
-        PathBuf::from,
-    );
+    // Spelled with `..` on purpose and not canonicalised: the registry
+    // must give the same answers for any spelling of its root.
+    let dir = bk_lang::spec_root_from_env()
+        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../ghidra"));
     if dir.join("Ghidra/Processors").is_dir() {
         Some(dir)
     } else {

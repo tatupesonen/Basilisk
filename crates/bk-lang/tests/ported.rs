@@ -16,7 +16,7 @@
 mod common;
 
 use bk_lang::{LanguageRegistry, opinion::secondary_attribute_matches};
-use common::tree::{id, language, ldefs, write};
+use common::tree::{canonical, id, language, ldefs, write};
 
 // ------------------------------------------- ported: QueryOpinionServiceTest
 
@@ -141,7 +141,7 @@ fn ghidra_provider_from_one_ldefs_file_describes_x86() {
 #[test]
 fn ghidra_language_file_from_sla_filename() {
     let dir = tempfile::tempdir().unwrap();
-    let module = dir.path().join("sleighlockfiletest");
+    let module = canonical(dir.path()).join("sleighlockfiletest");
     let languages = module.join("data/languages");
     write(languages.join("mylang.slaspec"), "slaspec");
     write(languages.join("mylang.sla"), "sla");

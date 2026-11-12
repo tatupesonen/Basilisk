@@ -142,6 +142,14 @@ pub(crate) fn tree() -> TempDir {
     dir
 }
 
+/// The canonical spelling of an existing directory, which is how the
+/// registry reports paths. On macOS a temporary directory under `/var` is
+/// reported under `/private/var`, so expectations are built from this
+/// while the registry is given the path as created.
+pub(crate) fn canonical(path: &Path) -> std::path::PathBuf {
+    path.canonicalize().unwrap()
+}
+
 pub(crate) fn registry(dir: &TempDir) -> LanguageRegistry {
     LanguageRegistry::from_ghidra_root(dir.path()).unwrap()
 }

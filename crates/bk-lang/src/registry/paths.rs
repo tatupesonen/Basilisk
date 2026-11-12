@@ -46,6 +46,23 @@ pub(crate) fn normalize(path: &Path) -> PathBuf {
     out
 }
 
+/// The one spelling the registry uses for a directory it is given: the
+/// canonical path (absolute, with `.`, `..` and symbolic links resolved,
+/// like Java's `getCanonicalFile`), or, for a path that does not exist,
+/// the absolute path with `.` and `..` removed lexically.
+///
+/// Every path the registry stores, compares or hands out is built from
+/// these roots, either by walking them or by joining names to a directory
+/// found by walking and removing `.` and `..` lexically. Both spellings
+/// agree only when the root itself has no `..`, `.` or symbolic link left
+/// to resolve; a root spelled `basilisk/../ghidra` otherwise reaches the
+/// same file under two names.
+pub(crate) fn canonical_root(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_missing| {
+        std::path::absolute(path).map_or_else(|_unsupported| normalize(path), |p| normalize(&p))
+    })
+}
+
 /// The last component of a `/`- or `\`-separated name
 /// (`FilenameUtils.getName`).
 fn file_name(name: &str) -> &str {
