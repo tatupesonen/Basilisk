@@ -47,7 +47,7 @@ use crate::version::{
 ///         }
 ///         let _problems = elf.diagnostics();
 ///     }
-///     Err(error) => assert!(matches!(error, ElfError::UnsupportedClass { .. })),
+///     Err(error) => assert!(matches!(error, ElfError::TooShort { len: 22 })),
 /// }
 /// ```
 #[derive(Debug)]

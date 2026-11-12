@@ -41,12 +41,12 @@ pub fn elf_parse(data: &[u8]) -> usize {
             seen += relocation.relocation_type() as usize & 1;
         }
     }
-    seen += elf.abi_tag().is_some() as usize;
-    seen += elf.build_id().is_some() as usize;
-    seen += elf.gnu_property().is_some() as usize;
-    seen += elf.debug_link().is_some() as usize;
-    seen += elf.debug_alt_link().is_some() as usize;
-    seen += elf.comment().is_some() as usize;
+    seen += usize::from(elf.abi_tag().is_some());
+    seen += usize::from(elf.build_id().is_some());
+    seen += usize::from(elf.gnu_property().is_some());
+    seen += usize::from(elf.debug_link().is_some());
+    seen += usize::from(elf.debug_alt_link().is_some());
+    seen += usize::from(elf.comment().is_some());
     seen += elf.image_base() as usize & 1;
     seen
 }
