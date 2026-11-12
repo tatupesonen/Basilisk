@@ -117,6 +117,22 @@ the machine; only the owner can do that (`sudo pmset -a disablesleep 1`).
 5. Implementation tracks from `spec-sleigh` and `spec-decompiler` as those
    specs are merged.
 
+**Orphaned helper reports.** The four spec agents stopped at 20:10 had
+already started helper subagents, which kept running and hand their
+reports to the coordinator. Their fact sheets are worth keeping for the
+queued specs: save each to the matching worktree as
+`docs/agents/notes-<topic>.md` (uncommitted; the restarted spec agent is
+told to read them) by extracting the `SubagentHandback` message from the
+task's output file with a script — never by printing the file. Saved so
+far: `store-spike/docs/research/notes-ghidra-db-engine.md`,
+`notes-ghidra-program-db.md`; `spec-pe/docs/agents/notes-pe-debug-directory.md`,
+`notes-pe-loadconfig-exception-security.md`. Three more helpers were still
+running at 20:45 (probably PE and Mach-O fact sheets).
+
+**UI shown to the owner** at about 20:40: the `ui` branch's build was
+launched on screen at the owner's request (`target/debug/basilisk` in the
+`ui` worktree). No feedback recorded yet.
+
 ## Blockers
 
 None. Open owner decisions are listed in `DIRECTION.md`.
