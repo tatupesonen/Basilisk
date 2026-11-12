@@ -385,8 +385,42 @@ crates.
   versions; self-contained) with milestone M6 or an earlier wave; DMG and
   the GNU disassembler with M10.
 
-Open point for M10: Ghidra's `gdis` is a 576-line program over binutils'
-libopcodes, which Ghidra does not include (the user builds binutils).
-Porting "the code" there means the wrapper; the disassemblers it calls are
-a far larger body of GPL code outside Ghidra's tree. What basilisk provides
-in its place is decided when M10 is planned.
+Ghidra's `gdis` is a 576-line program over binutils' libopcodes, which
+Ghidra does not include (the user builds binutils 2.41). How basilisk
+provides it is settled by ADR-019.
+
+## ADR-019 — binutils is built from source as its own crate
+(Owner decision, 2026-11-12: "You can clone binutils source yourself and
+build it as its own crate." Resolves the open point of ADR-018.)
+
+Ghidra's GNU disassembler module (`GPL/GnuDisassembler`) lets the user
+compare SLEIGH's disassembly with GNU's. It is a small C program, `gdis`,
+over binutils' libopcodes and libbfd, and Ghidra makes the user fetch and
+build binutils 2.41 themselves. basilisk builds binutils in:
+
+* A crate **`bk-binutils-sys`** compiles the parts of binutils 2.41 the
+  disassembler needs (libopcodes, libbfd, libiberty and their headers)
+  from source and links them statically, so the feature works in the one
+  binary with nothing for the user to install. A safe crate
+  **`bk-gnu-disasm`** on top ports what `gdis` does (`disasm_1.c`,
+  `gdis.h`: pick the architecture and machine, feed bytes, collect
+  instruction text) as a Rust API.
+* The binutils source is pinned to the release Ghidra names
+  (`binutils-2_41`). A reference clone is at `../binutils`; how the source
+  reaches the build (a git submodule under `vendor/`, or a vendored
+  subset) and how it is compiled on every supported platform, Windows
+  included, is specified in the feature doc when the work is scheduled.
+* This is C code and FFI, so it is the exception ADR-005 requires:
+  `unsafe` and the C toolchain are confined to `bk-binutils-sys`, whose
+  whole surface is a handful of documented functions; everything above it
+  is safe Rust. The disassembler is given bytes from binaries under
+  analysis, so the wrapper bounds every length it passes and the crate
+  gets a fuzz target.
+* binutils is GPL-3.0-or-later, which matches the project (ADR-018).
+
+The GNU demangler is a different case: Ghidra carries libiberty's
+demangler source in its own tree (`GPL/DemanglerGnu`), and that is ported
+to Rust (ADR-018), not built from C.
+
+Schedule: milestone M10 with the rest of the comparison tooling, or
+earlier if a differential test wants GNU's disassembly as a second oracle.

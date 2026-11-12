@@ -109,5 +109,5 @@ Ported like any other code, as ordinary crates called directly.
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `bk-demangle-gnu` | M6 | Missing | |
-| GPL/GnuDisassembler (`gdis` over binutils) | to decide | M10 | Missing | Wraps binutils, which is not in Ghidra's tree (open point in ADR-018) |
+| GPL/GnuDisassembler (`gdis` over binutils) | `bk-binutils-sys`, `bk-gnu-disasm` | M10 | Missing | binutils 2.41 built from source as its own crate (ADR-019) |
 | GPL/DMG (DMG/HFS+ reader) | `bk-fs-dmg` | M10 | Missing | |

@@ -176,7 +176,7 @@ with no program database.
 
 ### M10 — Remaining modules
 - [ ] Debugger and trace model, Version Tracking, BSim, file-system browser and container formats, remaining loaders and processors' Java extensions, everything left in `PARITY.md`
-- [ ] Ghidra's remaining GPL modules: DMG, the GNU disassembler (open point in ADR-018)
+- [ ] Ghidra's remaining GPL modules: DMG; the GNU disassembler over binutils built from source (`bk-binutils-sys`, `bk-gnu-disasm`, ADR-019)
 
 ## Working in waves
 
