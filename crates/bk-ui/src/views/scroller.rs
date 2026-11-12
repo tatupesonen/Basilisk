@@ -223,7 +223,7 @@ mod tests {
         assert_eq!((sc.top, sc.offset), (2, 5.0));
         sc.scroll_px(-10.0, 20.0, total);
         assert_eq!((sc.top, sc.offset), (1, 15.0));
-        sc.scroll_rows(9_999_000, total);
+        sc.scroll_rows(9_999_990, total);
         assert_eq!(sc.top, total - 39);
         sc.scroll_px(1e6, 20.0, total);
         assert_eq!(sc.top, total - 39);

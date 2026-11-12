@@ -544,6 +544,7 @@ fn palette_ui(ctx: &egui::Context, env: &Env<'_>, p: &mut Palette) -> Outcome {
                             .margin(egui::Margin::symmetric(space::SM as i8, space::SM as i8))
                             .id(egui::Id::new("bk-palette-input")),
                     );
+                    widgets::name_field(ui, &input, hint);
                     if p.focus {
                         p.focus = false;
                         input.request_focus();

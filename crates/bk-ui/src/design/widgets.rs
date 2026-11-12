@@ -17,6 +17,7 @@ pub fn icon_button(ui: &mut Ui, t: &Tokens, icon: &str, tooltip: &str, enabled: 
     let sense = if enabled { Sense::click() } else { Sense::hover() };
     let (rect, response) = ui.allocate_exact_size(Vec2::splat(side), sense);
     let response = response.on_hover_text(tooltip);
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled, tooltip));
     let p = t.palette;
     let painter = ui.painter_at(rect);
     if enabled && (response.hovered() || response.has_focus()) {
@@ -105,6 +106,7 @@ pub fn filter_field(ui: &mut Ui, t: &Tokens, text: &mut String, hint: &str, id: 
                     .frame(egui::Frame::NONE)
                     .desired_width(ui.available_width() - clear_w);
                 let r = ui.add(edit);
+                name_field(ui, &r, hint);
                 if !text.is_empty() {
                     let clear = ui
                         .add(egui::Label::new(icons::rich(icons::CLOSE).color(p.text_muted)).sense(Sense::click()))
@@ -121,6 +123,13 @@ pub fn filter_field(ui: &mut Ui, t: &Tokens, text: &mut String, hint: &str, id: 
             .inner
         })
         .inner
+}
+
+/// Gives a text field an accessible name (its hint), which egui leaves
+/// empty for fields without a visible label.
+pub fn name_field(ui: &Ui, response: &Response, name: &str) {
+    ui.ctx()
+        .accesskit_node_builder(response.id, |node| node.set_label(name.to_owned()));
 }
 
 /// The strip at the top of a pane holding its filter and buttons.

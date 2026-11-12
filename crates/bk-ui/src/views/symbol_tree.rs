@@ -80,6 +80,8 @@ fn tree_row(
         p.text_secondary,
     );
     x += 18.0;
+    let name = text.text().to_owned();
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &name));
     let galley = egui::WidgetText::from(text).into_galley(
         ui,
         Some(egui::TextWrapMode::Truncate),

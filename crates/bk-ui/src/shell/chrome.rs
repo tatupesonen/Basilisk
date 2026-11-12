@@ -9,15 +9,14 @@ use egui::{RichText, Sense, vec2};
 use super::tool::Tool;
 use crate::actions::{ACTIONS, ActionId, Menu, action};
 use crate::design::{Density, ThemeKind, Tokens, icons, tokens::radius, tokens::space, widgets};
-use crate::views::ViewKind;
 
 fn item(ui: &mut egui::Ui, tool: &Tool, id: ActionId, checked: Option<bool>, run: &mut Vec<ActionId>) {
     let Some(a) = action(id) else { return };
     let cx = tool.action_context();
     let shortcut = tool.prefs.keymap.primary(id).map(|k| k.label(tool.mac)).unwrap_or_default();
     let text = match checked {
-        Some(true) => format!("✓  {}", a.name),
-        Some(false) => format!("     {}", a.name),
+        Some(true) => format!("✓ {}", a.name),
+        Some(false) => format!("   {}", a.name),
         None => a.name.to_owned(),
     };
     let mut resp = ui.add_enabled(a.enabled(&cx), egui::Button::new(text).shortcut_text(shortcut));
@@ -43,14 +42,6 @@ fn menu_items(ui: &mut egui::Ui, tool: &Tool, menu: Menu, run: &mut Vec<ActionId
             ActionId::SwitchTheme => Some(tool.prefs.theme == ThemeKind::Light),
             ActionId::ToggleDensity => Some(tool.prefs.density == Density::Compact),
             _ => None,
-        };
-        let checked = if menu == Menu::Window {
-            ViewKind::ALL
-                .iter()
-                .find(|k| k.show_action() == Some(a.id))
-                .map(|k| tool.ws.as_ref().is_some_and(|w| w.layout.find_kind(*k).is_some()))
-        } else {
-            checked
         };
         item(ui, tool, a.id, checked, run);
     }

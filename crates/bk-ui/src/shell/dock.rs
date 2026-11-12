@@ -106,6 +106,11 @@ impl TabViewer for Viewer<'_> {
     }
 
     fn on_tab_button(&mut self, tab: &mut Tab, response: &egui::Response) {
+        // egui_dock draws tabs without accessibility names; give each its title.
+        if let Some(view) = self.views.get(&tab.id) {
+            let title = view.title(self.shared);
+            response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &title));
+        }
         if response.clicked() || response.drag_started() {
             *self.active = Some(tab.id);
         }

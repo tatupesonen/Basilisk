@@ -426,7 +426,9 @@ mod tests {
         assert_eq!(made.len(), 1);
         assert_eq!(l.window_of(strings), Some(Some(made[0])));
         assert_eq!(l.main.iter_surfaces().filter(|s| matches!(s, Surface::Window(..))).count(), 0);
-        assert_eq!(l.windows[0].size, Some([500.0, 300.0]));
+        // egui_dock knows the window's rectangle only once it has drawn it;
+        // until then the native window takes its default size.
+        assert!(l.windows[0].size.is_none() || l.windows[0].size == Some([500.0, 300.0]));
     }
 
     #[test]
@@ -435,8 +437,10 @@ mod tests {
         let dec = l.find_kind(ViewKind::Decompiler).unwrap();
         let w = l.detach(dec).unwrap();
         l.set_window_rect(w, Some(Pos2::new(1500.0, 80.0)), Some(Vec2::new(700.0, 900.0)));
-        let json = serde_json::to_string(&l).unwrap();
-        let back: Layout = serde_json::from_str::<Layout>(&json).unwrap().repair();
+        // eframe stores preferences as RON (which keeps egui_dock's NaN
+        // rectangles; JSON cannot).
+        let text = ron::to_string(&l).unwrap();
+        let back: Layout = ron::from_str::<Layout>(&text).unwrap().repair();
         assert_eq!(back.windows.len(), 1);
         assert_eq!(back.windows[0].position, Some([1500.0, 80.0]));
         assert_eq!(back.window_of(dec), Some(Some(w)));

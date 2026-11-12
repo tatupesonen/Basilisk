@@ -25,7 +25,10 @@ impl View for ConsoleView {
         let p = t.palette;
         let mut clear = false;
         widgets::pane_toolbar(ui, &t, |ui| {
-            ui.label(RichText::new(format!("{} messages", cx.shared.log.len())).color(p.text_muted).size(t.metrics.small_size));
+            ui.label(RichText::new(match cx.shared.log.len() {
+                1 => "1 message".to_owned(),
+                n => format!("{n} messages"),
+            }).color(p.text_muted).size(t.metrics.small_size));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if widgets::icon_button(ui, &t, icons::CLOSE, "Clear the Console", !cx.shared.log.is_empty()).clicked() {
                     clear = true;

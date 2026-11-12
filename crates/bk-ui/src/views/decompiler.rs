@@ -351,6 +351,9 @@ impl DecompilerView {
             );
             let persistent = cx.shared.highlight.as_ref().is_some_and(|h| h.matches(&s.token));
             let same_as_cursor = cursor_tok.is_some_and(|c| c.matches(&s.token));
+            if s.token.referent.is_some() {
+                super::token_node(ui, ui.id().with(("decomp-token", i, k)), r, &s.token);
+            }
             if persistent {
                 painter.rect_filled(r, CornerRadius::same(2), p.token_highlight);
             } else if same_as_cursor {

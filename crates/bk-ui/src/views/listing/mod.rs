@@ -51,6 +51,10 @@ pub struct ListingView {
     preview: Option<(Address, Pending<SourceResult<Vec<ListingRow>>>)>,
     /// Where the cursor is, for other views and the status bar.
     cursor_address: Option<Address>,
+    /// Horizontal scroll in points (the fields are wider than a narrow pane).
+    hscroll: f32,
+    /// Widest row seen on screen, for the horizontal scroll limit.
+    content_width: f32,
 }
 
 impl ListingView {
@@ -75,6 +79,8 @@ impl ListingView {
             find: None,
             preview: None,
             cursor_address: None,
+            hscroll: 0.0,
+            content_width: 0.0,
         }
     }
 
@@ -247,7 +253,7 @@ impl ListingView {
     }
 
     fn token_at(&self, row: u64, rect: Rect, x: f32) -> Option<usize> {
-        let x = x - rect.left() - GUTTER;
+        let x = x - rect.left() - GUTTER + self.hscroll;
         self.cache_layout(row)?.token_at(x)
     }
 
@@ -295,7 +301,9 @@ impl ListingView {
         if let Some(bg) = bg {
             painter.rect_filled(rect, CornerRadius::ZERO, bg);
         }
-        let origin = pos2(rect.left() + GUTTER, rect.center().y - layout.galley.size().y / 2.0);
+        self.content_width = self.content_width.max(layout.galley.size().x + 2.0 * self.cw);
+        let origin = pos2(rect.left() + GUTTER - self.hscroll, rect.center().y - layout.galley.size().y / 2.0);
+        let painter = painter.with_clip_rect(rect.intersect(ui.clip_rect()).with_min_x(rect.left() + GUTTER - 2.0));
         // Token highlights under the text.
         for (i, s) in layout.spans.iter().enumerate() {
             let hl = cx.shared.highlight.as_ref().is_some_and(|h| h.matches(&s.token));
@@ -305,6 +313,9 @@ impl ListingView {
             );
             if hl {
                 painter.rect_filled(r, CornerRadius::same(2), p.token_highlight);
+            }
+            if s.token.referent.is_some() && rect.contains(r.center()) {
+                super::token_node(ui, ui.id().with(("listing-token", row, i)), r, &s.token);
             }
             if row == self.cursor && self.cursor_token == Some(i) {
                 painter.rect_stroke(
@@ -319,13 +330,13 @@ impl ListingView {
         // Gutter: the cursor marker, and a quiet bar on linked rows.
         if row == self.cursor {
             let c = if cx.focused { p.accent } else { p.text_muted };
-            painter.rect_filled(
+            ui.painter().rect_filled(
                 Rect::from_min_size(pos2(rect.left() + 4.0, rect.top() + 2.0), vec2(3.0, rect.height() - 4.0)),
                 CornerRadius::same(1),
                 c,
             );
         } else if related {
-            painter.rect_filled(
+            ui.painter().rect_filled(
                 Rect::from_min_size(pos2(rect.left() + 5.0, rect.top() + 3.0), vec2(1.5, rect.height() - 6.0)),
                 CornerRadius::ZERO,
                 p.text_muted,
@@ -352,8 +363,8 @@ impl ListingView {
         ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
         // Underline what a double-click would follow.
         let origin_y = rect.top() + (row - self.scroller.top) as f32 * row_h - self.scroller.offset;
-        let x0 = rect.left() + GUTTER + span.x0;
-        let x1 = rect.left() + GUTTER + span.x1;
+        let x0 = rect.left() + GUTTER + span.x0 - self.hscroll;
+        let x1 = rect.left() + GUTTER + span.x1 - self.hscroll;
         ui.painter().hline(
             x0..=x1,
             origin_y + row_h - 3.0,
@@ -395,6 +406,25 @@ impl ListingView {
                 ui.label(format!("Loading {a}…"));
             }
         }
+    }
+
+    /// Horizontal scrolling (shift+wheel or a trackpad) and its thin bar.
+    fn horizontal(&mut self, ui: &egui::Ui, t: &Tokens, rect: Rect) {
+        let view = rect.width() - GUTTER;
+        let max = (self.content_width - view).max(0.0);
+        if ui.rect_contains_pointer(rect) {
+            let dx = ui.input(|i| i.smooth_scroll_delta.x);
+            self.hscroll = (self.hscroll - dx).clamp(0.0, max);
+        }
+        self.hscroll = self.hscroll.clamp(0.0, max);
+        if max > 0.0 {
+            let frac = view / self.content_width;
+            let w = (view * frac).max(24.0);
+            let x = rect.left() + GUTTER + (view - w) * (self.hscroll / max);
+            let bar = Rect::from_min_size(pos2(x, rect.bottom() - 5.0), vec2(w, 3.0));
+            ui.painter().rect_filled(bar, CornerRadius::same(2), t.palette.hairline);
+        }
+        self.content_width = 0.0;
     }
 
     fn start_find(&mut self, cx: &ViewCx<'_>, kind: UnitKind, forward: bool) {
@@ -495,6 +525,7 @@ impl View for ListingView {
         }
         let resp = shown.response;
         let rect = shown.rect;
+        self.horizontal(ui, &t, rect);
         self.hover(ui, cx, &resp, rect, row_h);
         if let Some(pos) = resp.interact_pointer_pos() {
             let row = self.row_at(rect, row_h, pos.y);

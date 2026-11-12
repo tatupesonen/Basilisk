@@ -301,6 +301,14 @@ pub fn new_view(kind: ViewKind, snapshot: Option<Location>) -> Box<dyn View> {
     }
 }
 
+/// Registers a token as an accessibility node (a link with its text), so
+/// screen readers and UI tests can find code tokens by name.
+pub(crate) fn token_node(ui: &egui::Ui, id: egui::Id, rect: egui::Rect, token: &Token) {
+    let resp = ui.interact(rect, id, egui::Sense::hover());
+    let text = token.text.to_string();
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Link, true, &text));
+}
+
 /// The name Ghidra gives the rename action for what is under the cursor.
 pub fn rename_title(target: Option<&Target>) -> &'static str {
     let Some(t) = target else {

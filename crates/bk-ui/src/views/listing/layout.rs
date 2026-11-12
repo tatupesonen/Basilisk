@@ -20,7 +20,7 @@ use crate::model::{
 pub(crate) const MAX_BYTES: usize = 6;
 
 /// Width of a plate comment box in characters.
-const PLATE_WIDTH: usize = 62;
+const PLATE_WIDTH: usize = 58;
 
 /// Field columns in characters, as Ghidra lays out its default format.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -44,15 +44,15 @@ impl Columns {
         let address = 0;
         let bytes = address + digits + 2;
         let mnemonic = bytes + MAX_BYTES * 3 + 1;
-        let operands = mnemonic + 11;
-        let label = bytes + 8;
+        let operands = mnemonic + 10;
+        let label = bytes + 6;
         Self {
             address,
             bytes,
             label,
             mnemonic,
             operands,
-            comment: operands + 32,
+            comment: operands + 30,
             var_type: bytes - 2,
             var_storage: label + 6,
             var_name: label + 22,

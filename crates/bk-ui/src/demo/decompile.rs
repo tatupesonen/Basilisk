@@ -143,10 +143,9 @@ pub(crate) fn decompile(db: &Db, f: &Func) -> DecompiledFunction {
         let indent = (spaces / 2) as u16;
         if let Some(first) = ranges.first() {
             let a = first.start.0;
-            for kind in [CommentKind::Plate, CommentKind::Pre] {
-                if kind == CommentKind::Plate && a != f.entry {
-                    continue;
-                }
+            // Plate comments go above the signature (below); pre-comments
+            // above the first statement of their instruction.
+            for kind in [CommentKind::Pre] {
                 if let Some(c) = db.comments.get(&(a, kind)) {
                     if commented.insert((a, kind)) && *n != f.source.first().map_or(0, |s| s.0) {
                         for l in c.lines() {
