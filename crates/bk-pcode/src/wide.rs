@@ -12,7 +12,7 @@
 
 use core::cmp::Ordering;
 use core::fmt;
-use core::ops::{BitAnd, BitOr, BitXor, Not};
+use core::ops::{BitAnd, BitOr, BitXor, Not, Shl, Shr};
 
 use num_bigint::{BigInt, BigUint, Sign};
 use primitive_types::U512;
@@ -131,7 +131,7 @@ impl Wide {
         if size >= Wide::BYTES {
             Wide::MAX
         } else {
-            Wide::MAX.shr(Wide::BITS - size * 8)
+            Wide::MAX >> (Wide::BITS - size * 8)
         }
     }
 
@@ -191,18 +191,6 @@ impl Wide {
     /// Unsigned remainder; `None` when `rhs` is zero.
     pub fn checked_rem(self, rhs: Wide) -> Option<Wide> {
         self.0.checked_rem(rhs.0).map(Wide)
-    }
-
-    /// Logical left shift; zero when `bits` is 512 or more.
-    #[must_use]
-    pub fn shl(self, bits: u32) -> Wide {
-        Wide(self.0 << bits)
-    }
-
-    /// Logical right shift; zero when `bits` is 512 or more.
-    #[must_use]
-    pub fn shr(self, bits: u32) -> Wide {
-        Wide(self.0 >> bits)
     }
 
     /// The value as an arbitrary-precision unsigned integer.
@@ -297,6 +285,24 @@ impl BitXor for Wide {
 
     fn bitxor(self, rhs: Wide) -> Wide {
         Wide(self.0 ^ rhs.0)
+    }
+}
+
+impl Shl<u32> for Wide {
+    type Output = Wide;
+
+    /// Logical left shift; zero when `bits` is 512 or more.
+    fn shl(self, bits: u32) -> Wide {
+        Wide(self.0 << bits)
+    }
+}
+
+impl Shr<u32> for Wide {
+    type Output = Wide;
+
+    /// Logical right shift; zero when `bits` is 512 or more.
+    fn shr(self, bits: u32) -> Wide {
+        Wide(self.0 >> bits)
     }
 }
 
