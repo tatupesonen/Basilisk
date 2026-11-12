@@ -75,6 +75,11 @@ fn run() -> Result<(), String> {
     build
         .warnings(false)
         .extra_warnings(false)
+        // No C debug info in any profile: with it the dev library is 40 MB
+        // instead of 19 MB and a clean build about a quarter slower, for
+        // code nobody steps through. `CFLAGS=-g` brings it back (the
+        // sanitizer and fuzz builds pass it).
+        .debug(false)
         // First, so that the vendored sources get the shim's <assert.h>.
         .include(shim.join("include"))
         .include(&config)
