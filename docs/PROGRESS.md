@@ -15,7 +15,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — **merged 2026-11-12** |
 | `lang` | `bk-lang` | `features/lang.md` — **merged 2026-11-12** (second attempt, after the root-path fix) |
-| `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
+| `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — **merged 2026-11-12** |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
 | `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
@@ -52,6 +52,23 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — `bk-bin` and `bk-elf` merged; milestone M0 complete
+* `bk-bin`: providers and `BinaryReader`; 162 tests, 78 of them Ghidra
+  ports. `bk-elf`: 160 tests. Verified against `object` on 35 real files
+  (Ghidra's 18 plus 17 clang/lld fixtures incl. Android and big-endian),
+  packed relocations (RELR, APS2) against lld's unpacked twins with a
+  sensitivity check, 34 tolerance tests, allocation bound measured with
+  `dhat`, 15-minute fuzz run clean. Only self-consistency behind: ABI tag,
+  GNU property, debug links, `SHT_SYMTAB_SHNDX`, `DT_GNU_XHASH`, prelink.
+  No MIPS/PowerPC/SPARC fixtures. Ghidra itself was never run on these.
+* Ghidra has no ELF parser tests; ELF is covered only through the
+  processor emulator tests and three Version Tracking GUI tests (M4+).
+* Gate on the merge: green, 1,529 tests.
+* **M0 is complete**: `bk-core`, `bk-marshal`, `bk-pcode`,
+  `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit` on
+  master, with the shared fuzz crate (5 targets). Still running outside
+  M0: `gnu-disasm`, `ui`. Next: plan wave 2 (see `## Now`).
 
 ### 2026-11-12 — `bk-sleigh-syntax` merged
 * Preprocessor + source map, parser-driven modal lexer, arena AST, parser.

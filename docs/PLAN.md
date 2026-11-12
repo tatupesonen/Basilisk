@@ -105,13 +105,13 @@ unfinished milestone is the next work unless `PROGRESS.md` says otherwise.
 Each milestone is planned in detail (inventory, feature specs, tracks) when
 it is reached; later milestones are intentionally coarse.
 
-### M0 — Foundations (wave 1, in progress)
+### M0 — Foundations (wave 1, complete 2026-11-12)
 - [x] Workspace, lints, gate, CI, licence, docs skeleton, test checklist
 - [x] `bk-core` + `bk-marshal`: address spaces, addresses, varnode data, XML and packed encode/decode (`features/core-marshal.md`)
 - [x] `bk-pcode`: opcodes, op behaviours, float formats, multiprecision (`features/pcode.md`)
 - [x] `bk-sleigh-syntax`: SLEIGH preprocessor, lexer, parser; parses all 150 `.slaspec` files (`features/sleigh-syntax.md`)
 - [x] `bk-lang`: `.ldefs`, `.pspec`, `.opinion`, language registry (`features/lang.md`)
-- [ ] `bk-bin` + `bk-elf`: byte providers, binary reader, ELF parser (`features/bin-elf.md`)
+- [x] `bk-bin` + `bk-elf`: byte providers, binary reader, ELF parser (`features/bin-elf.md`)
 - [x] `bk-testkit` + reference tools: build Ghidra's `sleigh` and `decomp`, compile every `.sla`, oracle wrappers (`features/reference-tools.md`)
 
 ### M1 — SLEIGH runtime

@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang`, `bk-sleigh-syntax` merged).
+Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang`, `bk-sleigh-syntax`, `bk-bin`, `bk-elf` merged; milestone M0 complete).
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -51,8 +51,8 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
-| Base: byte providers, `BinaryReader` | `bk-bin` | M0 | In progress | Wave 1: `bin-elf` |
-| Base: ELF format | `bk-elf` | M0 | In progress | Wave 1: `bin-elf` (parser; loader in M4) |
+| Base: byte providers, `BinaryReader` | `bk-bin` | M0 | Done | Ghidra's reader and provider tests ported. `MemoryByteProvider` needs program memory (M4) |
+| Base: ELF format | `bk-elf` | M0 | Partial | Parser done (tolerant; checked against `object` and lld). Not ported: GNU build attributes, data-type layouts. The ELF loader and relocation handlers are M4 |
 | Base: PE, Mach-O, COFF, OMF, NE, MZ, PEF, SOM, XCOFF, a.out formats | `bk-pe`, `bk-macho`, … | M4, M10 | Missing | PE and Mach-O planned for wave 2 |
 | Base: DWARF, Go | `bk-dwarf`, `bk-golang` | M6 | Missing | |
 | Base: loaders, opinions, importer | `bk-loader*` | M4 | Missing | |

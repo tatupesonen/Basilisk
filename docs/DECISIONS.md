@@ -228,6 +228,20 @@ Evaluations so far:
   library fails one of the three needs. Adopted for the crate:
   `string-interner` (a process-global atom table such as `string_cache`
   is excluded by the no-global-state rule), `rustc-hash`, `num-bigint`.
+- **Lock-file versions follow the two-week rule too** (2026-11-12). When a
+  merge regenerates `Cargo.lock`, a transitive dependency may float to a
+  release only days old; hold it at the newest version that is at least
+  two weeks old (`cargo update -p <crate> --precise <version>`), unless the
+  newer release fixes something we need — check its changelog first, as
+  the `roxmltree` case above shows. Held at the bin-elf merge: `flate2`
+  1.1.10, `itoa` 1.0.18, `smallvec` 1.16.4.
+- **`dhat` 0.3.3 → adopt as a dev-dependency** (`bin-elf`; 15.6 million
+  downloads): heap profiling in a test, used to assert `bk-elf`'s
+  allocation bound on damaged files.
+- **`encoding_rs` → not adopted for `bk-bin`** (tried, 0.8.35): it maps
+  ASCII and Latin-1 labels to windows-1252 and has no UTF-32, and its
+  UTF-8/16 decoding equals the standard library's, so it would replace
+  nothing and break two of the charsets Ghidra's reader defines.
 - **Other adoptions recorded in feature docs**: `num-bigint`,
   `primitive-types`, `libm` (`features/pcode.md`); `walkdir`,
   `wait-timeout`, `insta` (`features/reference-tools.md`,
