@@ -1,0 +1,27 @@
+[package]
+name = "bk-ui"
+description = "basilisk desktop interface: design system, application shell and core views (egui)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+egui.workspace = true
+eframe.workspace = true
+egui_extras.workspace = true
+egui_dock.workspace = true
+egui-phosphor.workspace = true
+image.workspace = true
+serde.workspace = true
+fuzzy-matcher.workspace = true
+parking_lot.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+egui_kittest.workspace = true
+
+[lints]
+workspace = true
