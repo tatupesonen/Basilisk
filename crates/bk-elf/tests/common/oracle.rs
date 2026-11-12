@@ -64,7 +64,7 @@ fn check_class<Elf: FileHeader<Endian = object::Endianness>, P: ByteProvider>(
     for (ours, theirs) in elf.sections().iter().zip(sections.iter()) {
         assert_eq!(ours.sh_name, theirs.sh_name(endian));
         assert_eq!(ours.sh_type.0, theirs.sh_type(endian).0);
-        assert_eq!(ours.sh_flags, u64::from(theirs.sh_flags(endian).0));
+        assert_eq!(ours.sh_flags, theirs.sh_flags(endian).0);
         assert_eq!(ours.sh_addr, theirs.sh_addr(endian).into());
         assert_eq!(ours.sh_offset, theirs.sh_offset(endian).into());
         assert_eq!(ours.sh_size, theirs.sh_size(endian).into());
@@ -128,7 +128,7 @@ fn check_class<Elf: FileHeader<Endian = object::Endianness>, P: ByteProvider>(
             .collect();
         let actual: Vec<String> = elf
             .dynamic_library_names()
-            .map(|n| n.into_owned())
+            .map(std::borrow::Cow::into_owned)
             .collect();
         assert_eq!(actual, expected, "DT_NEEDED of section {index}");
     }

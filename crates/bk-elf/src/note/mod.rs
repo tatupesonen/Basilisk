@@ -118,7 +118,9 @@ pub(crate) fn hex(bytes: &[u8], delimiter: &str) -> String {
         if i > 0 {
             out.push_str(delimiter);
         }
-        out.push_str(&format!("{b:02x}"));
+        for nibble in [b >> 4, b & 0xf] {
+            out.push(char::from_digit(u32::from(nibble), 16).unwrap_or('0'));
+        }
     }
     out
 }

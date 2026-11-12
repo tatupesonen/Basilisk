@@ -174,7 +174,7 @@ impl Parser<'_> {
             has_addend,
             symbol_table: self.t.dynamic_symbol_table,
         };
-        match self.build_relocation_table(spec) {
+        match self.build_relocation_table(&spec) {
             Ok(table) => self.t.relocation_tables.push(table),
             Err(message) => self.diag(
                 DiagnosticKind::RelocationTable,
@@ -254,7 +254,7 @@ impl Parser<'_> {
             has_addend,
             symbol_table,
         };
-        match self.build_relocation_table(spec) {
+        match self.build_relocation_table(&spec) {
             Ok(table) => self.t.relocation_tables.push(table),
             Err(message) => fail(self, message),
         }
@@ -263,24 +263,20 @@ impl Parser<'_> {
     /// The index of the first section named `.dynsym` (Ghidra's
     /// `getSection(".dynsym")`, which throws when two sections share the
     /// name), looked up once.
-    fn dynsym_section(&mut self) -> Option<u32> {
-        if let Some(found) = self.dynsym_section {
-            return found;
-        }
-        let found = self
-            .t
-            .sections
-            .iter()
-            .find(|s| self.name_is(s, DOT_DYNSYM))
-            .map(|s| s.index);
-        self.dynsym_section = Some(found);
-        found
+    fn dynsym_section(&self) -> Option<u32> {
+        *self.dynsym_section.get_or_init(|| {
+            self.t
+                .sections
+                .iter()
+                .find(|s| self.name_is(s, DOT_DYNSYM))
+                .map(|s| s.index)
+        })
     }
 
     /// Ghidra's `ElfRelocationTable` constructor: checks the entry size and
     /// works out how much of the table the file holds. `Err` is the message
     /// of the exception Ghidra throws.
-    fn build_relocation_table(&mut self, spec: TableSpec) -> Result<RelocationTable, String> {
+    fn build_relocation_table(&mut self, spec: &TableSpec) -> Result<RelocationTable, String> {
         let class = self.t.header.class;
         // `None` is Ghidra's -1; a default table whose entry size is ≤ 0
         // (as Java sees it) gets the standard size.

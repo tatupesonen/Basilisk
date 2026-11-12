@@ -34,7 +34,7 @@ pub(crate) struct Parser<'a> {
     diags: Diagnostics,
     t: ElfTables,
     /// The section named `.dynsym`, once looked up.
-    dynsym_section: Option<Option<u32>>,
+    dynsym_section: std::cell::OnceCell<Option<u32>>,
 }
 
 /// Parses the file behind `raw`; `unlimited` must be a zero-padding view of
@@ -68,7 +68,7 @@ pub(crate) fn parse(
         raw: BinaryReader::new(raw, endian),
         diags,
         t: tables,
-        dynsym_section: None,
+        dynsym_section: std::cell::OnceCell::new(),
     };
     parser.parse_program_headers()?;
     parser.parse_section_headers()?;

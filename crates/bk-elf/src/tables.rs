@@ -219,9 +219,12 @@ impl ElfTables {
             .iter()
             .take(MAX_HEADERS_TO_CHECK_FOR_IMAGEBASE)
             .filter(|h| h.p_type == SegmentType::PT_LOAD)
-            .map(|h| match self.header.is_32bit() {
-                true => u64::from(h.virtual_address() as u32),
-                false => h.virtual_address(),
+            .map(|h| {
+                if self.header.is_32bit() {
+                    u64::from(h.virtual_address() as u32)
+                } else {
+                    h.virtual_address()
+                }
             })
             .min()
             .unwrap_or(0)

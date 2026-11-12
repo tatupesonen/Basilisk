@@ -109,7 +109,7 @@ pub struct ElfHeader {
     pub e_machine: Machine,
     /// Object file version.
     pub e_version: u32,
-    /// Entry point as stored; [`ElfFile::entry`](crate::ElfFile::entry)
+    /// Entry point as stored; [`ElfTables::entry`](crate::ElfTables::entry)
     /// applies the prelink adjustment.
     pub e_entry: u64,
     /// Program header table offset, or 0 if there is none or it is invalid.
@@ -297,7 +297,15 @@ impl ElfHeader {
         let mut phnum_truncated = false;
         if phnum > 0 {
             let expected = class.program_header_size();
-            if u64::from(e_phentsize) != expected {
+            if u64::from(e_phentsize) == expected {
+                let limit = hard_limit(expected);
+                let args = (e_phoff, expected, limit, file_len, "Program Header");
+                let count = constrain_count(phnum, args.0, args.1, args.2, args.3, args.4, diags);
+                phnum_truncated =
+                    has_fragment(phnum, args.0, args.1, args.2, args.3, args.4, diags)
+                        || count != phnum;
+                phnum = count;
+            } else {
                 if shnum == 0 {
                     return Err(ElfError::UnsupportedProgramHeaderSize {
                         actual: e_phentsize,
@@ -312,21 +320,21 @@ impl ElfHeader {
                     ),
                 );
                 phnum = 0;
-            } else {
-                let limit = hard_limit(expected);
-                let args = (e_phoff, expected, limit, file_len, "Program Header");
-                let count = constrain_count(phnum, args.0, args.1, args.2, args.3, args.4, diags);
-                phnum_truncated =
-                    has_fragment(phnum, args.0, args.1, args.2, args.3, args.4, diags)
-                        || count != phnum;
-                phnum = count;
             }
         }
 
         let mut shnum_truncated = false;
         if shnum > 0 {
             let expected = class.section_header_size();
-            if u64::from(e_shentsize) != expected {
+            if u64::from(e_shentsize) == expected {
+                let limit = hard_limit(expected);
+                let args = (e_shoff, expected, limit, file_len, "Section Header");
+                let count = constrain_count(shnum, args.0, args.1, args.2, args.3, args.4, diags);
+                shnum_truncated =
+                    has_fragment(shnum, args.0, args.1, args.2, args.3, args.4, diags)
+                        || count != shnum;
+                shnum = count;
+            } else {
                 if phnum == 0 {
                     return Err(ElfError::UnsupportedSectionHeaderSize {
                         actual: e_shentsize,
@@ -341,14 +349,6 @@ impl ElfHeader {
                     ),
                 );
                 shnum = 0;
-            } else {
-                let limit = hard_limit(expected);
-                let args = (e_shoff, expected, limit, file_len, "Section Header");
-                let count = constrain_count(shnum, args.0, args.1, args.2, args.3, args.4, diags);
-                shnum_truncated =
-                    has_fragment(shnum, args.0, args.1, args.2, args.3, args.4, diags)
-                        || count != shnum;
-                shnum = count;
             }
         }
 
@@ -426,7 +426,7 @@ struct Section0<'a> {
     data: u8,
     e_shoff: u64,
     file_len: u64,
-    loaded: Option<Option<SectionHeader>>,
+    loaded: std::cell::OnceCell<Option<SectionHeader>>,
 }
 
 impl<'a> Section0<'a> {
@@ -443,7 +443,7 @@ impl<'a> Section0<'a> {
             data,
             e_shoff,
             file_len,
-            loaded: None,
+            loaded: std::cell::OnceCell::new(),
         }
     }
 
@@ -457,7 +457,7 @@ impl<'a> Section0<'a> {
             self.file_len,
         );
         self.loaded
-            .get_or_insert_with(|| {
+            .get_or_init(|| {
                 let fits = e_shoff != 0
                     && e_shoff
                         .checked_add(class.section_header_size())

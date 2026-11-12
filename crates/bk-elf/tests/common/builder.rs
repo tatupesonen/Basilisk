@@ -629,10 +629,9 @@ impl Built {
     pub fn set(&mut self, field: Field, value: u64) {
         let w = self.enc.word_size();
         let (offset, size) = match (field, self.enc.is64) {
-            (Field::Phoff, true) => (32, w),
+            (Field::Phoff, true) | (Field::Shoff, false) => (32, w),
             (Field::Phoff, false) => (28, w),
             (Field::Shoff, true) => (40, w),
-            (Field::Shoff, false) => (32, w),
             (Field::Phentsize, true) => (54, 2),
             (Field::Phentsize, false) => (42, 2),
             (Field::Phnum, true) => (56, 2),
@@ -776,7 +775,6 @@ pub fn sample(enc: Enc) -> (ElfBuilder, SampleIndex) {
             size: 8,
             shndx: text as u16,
             other: 2,
-            ..Sym::default()
         },
     ];
     let dynsym = b.symtab(".dynsym", sht::DYNSYM, dynstr_index, &dynsyms);

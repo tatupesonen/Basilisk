@@ -37,7 +37,7 @@ fn strip_section_headers(bytes: &mut [u8]) {
 }
 
 /// (name, value, info, shndx) of every dynamic symbol, then the relocations
-/// as (file offset of table, r_offset, r_info, r_addend).
+/// as (file offset of table, `r_offset`, `r_info`, `r_addend`).
 type Summary = (
     Vec<(String, u64, u8, u16)>,
     Vec<(u64, u64, u64, i64)>,
@@ -64,7 +64,7 @@ fn summary(bytes: &[u8]) -> (Summary, ElfFile<MemoryProvider<Vec<u8>>>) {
         .collect();
     let libraries = elf
         .dynamic_library_names()
-        .map(|n| n.into_owned())
+        .map(std::borrow::Cow::into_owned)
         .collect();
     ((symbols, relocations, libraries), elf)
 }
@@ -95,7 +95,7 @@ fn stripped_file_resolves_through_the_dynamic_table(#[case] name: &str, #[case] 
     assert_eq!(table.section, None);
     assert!(table.is_dynamic);
     assert_eq!(
-        table.entry_size as u64,
+        u64::from(table.entry_size),
         match elf.header().class {
             ElfClass::Elf32 => 16,
             ElfClass::Elf64 => 24,

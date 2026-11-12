@@ -145,16 +145,17 @@ impl Relocation {
 
     /// Ghidra's `toString`.
     pub fn describe(&self) -> String {
-        let mut text = format!(
-            "Offset: 0x{:x} - Type: 0x{:x} - Symbol: 0x{:x}",
+        let addend = if self.has_addend {
+            format!(" - Addend: 0x{:x}", self.r_addend)
+        } else {
+            String::new()
+        };
+        format!(
+            "Offset: 0x{:x} - Type: 0x{:x} - Symbol: 0x{:x}{addend}",
             self.r_offset,
             self.relocation_type(),
             self.symbol_index()
-        );
-        if self.has_addend {
-            text.push_str(&format!(" - Addend: 0x{:x}", self.r_addend));
-        }
-        text
+        )
     }
 }
 
@@ -179,7 +180,7 @@ pub struct RelocationTable {
     pub entry_size: u64,
     /// True when entries carry addends (`RELA`, Android `RELA`).
     pub has_addend: bool,
-    /// Index into [`ElfFile::symbol_tables`](crate::ElfFile::symbol_tables)
+    /// Index into [`ElfFile::symbol_tables`](crate::ElfTables::symbol_tables)
     /// of the symbol table the relocations refer to, if one was found.
     pub symbol_table: Option<usize>,
     /// Index of the section the relocations apply to (`sh_info`), if any.

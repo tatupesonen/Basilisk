@@ -130,7 +130,7 @@ impl Parser<'_> {
             );
             return None;
         }
-        if size % entry_size != 0 {
+        if !size.is_multiple_of(entry_size) {
             self.diag(
                 DiagnosticKind::SymbolTable,
                 format!("{what} has sh_size which is not a multiple of sh_entsize value"),

@@ -232,7 +232,7 @@ pub struct SymbolTable {
     /// True when the table declares more symbols than the file holds, or
     /// its last symbol is only partly in the file.
     pub truncated: bool,
-    /// Index into [`ElfFile::string_tables`](crate::ElfFile::string_tables)
+    /// Index into [`ElfFile::string_tables`](crate::ElfTables::string_tables)
     /// of the table holding the names, if one was found.
     pub string_table: Option<usize>,
     /// The extended section index table linked to this table, if any.
@@ -251,7 +251,7 @@ impl SymbolTable {
     /// True when `entry_size` is usable for a file of class `class`: at
     /// least the standard size, and small enough for a Java `int`.
     pub(crate) fn is_valid_entry_size(class: ElfClass, entry_size: u64) -> bool {
-        entry_size >= class.symbol_size() && entry_size <= i32::MAX as u64
+        entry_size >= class.symbol_size() && i32::try_from(entry_size).is_ok()
     }
 }
 
@@ -336,7 +336,7 @@ mod tests {
         // Elf32_Sym: name, value, size, info, other, shndx.
         let mut b = Vec::new();
         b.extend(0x11u32.to_le_bytes());
-        b.extend(0x8048000u32.to_le_bytes());
+        b.extend(0x0804_8000u32.to_le_bytes());
         b.extend(0x40u32.to_le_bytes());
         b.extend([0x12, 0x02]);
         b.extend(7u16.to_le_bytes());

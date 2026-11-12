@@ -5,11 +5,6 @@ mod rel;
 mod relr;
 mod table;
 
-// HANDOVER: used by the relocation-table parsing step, which is not written yet.
-#[allow(
-    unused_imports,
-    reason = "handover: its caller (parse::relocs) does not exist yet"
-)]
 pub(crate) use android::scan as scan_android;
 pub use android::{
     AndroidIter, RELOCATION_GROUP_HAS_ADDEND_FLAG, RELOCATION_GROUPED_BY_ADDEND_FLAG,

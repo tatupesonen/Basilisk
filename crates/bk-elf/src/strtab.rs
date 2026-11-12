@@ -74,7 +74,7 @@ impl StringTable {
         reader
             .read_terminated_bytes_at(position, 1)
             .map(decode_trimmed)
-            .map_err(|_| failure())
+            .map_err(|_unreadable| failure())
     }
 }
 

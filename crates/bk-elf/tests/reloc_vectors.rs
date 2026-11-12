@@ -222,7 +222,7 @@ fn aps2_rela_bytes_read_as_rel() {
     assert_eq!(decoded, [(0x1008, 0x403, 0), (0x1010, 0x403, 0)]);
 }
 
-/// A `REL` table: 3 relocations, one group sharing the info (R_ARM_RELATIVE
+/// A `REL` table: 3 relocations, one group sharing the info (`R_ARM_RELATIVE`
 /// 0x17) with per-relocation deltas 4, 4, 0x7c from base 0x2000.
 ///
 /// ```text
@@ -331,8 +331,8 @@ fn aps2_count_is_capped_by_the_file_length() {
 
 // ---- MIPS-64 ------------------------------------------------------------------------
 
-/// MIPS-64 `r_info`: r_sym (4 bytes in the file's order), r_ssym, r_type3,
-/// r_type2, r_type, in that byte order in the file.
+/// MIPS-64 `r_info`: `r_sym` (4 bytes in the file's order), `r_ssym`, `r_type3`,
+/// `r_type2`, `r_type`, in that byte order in the file.
 #[test]
 fn mips64_relocation_layout() {
     for enc in [Enc::LE64, Enc::BE64] {

@@ -96,7 +96,7 @@ fn relocations(bytes: &[u8]) -> (BTreeMap<Place, Vec<Kind>>, BTreeMap<String, us
                 let name = symbols
                     .and_then(|t| elf.symbol(t, r.symbol_index()))
                     .and_then(|s| elf.symbol_name(symbols.unwrap(), &s).ok().flatten())
-                    .map(|n| n.into_owned())
+                    .map(std::borrow::Cow::into_owned)
                     .unwrap_or_default();
                 Kind::Other(r.relocation_type(), name, r.r_addend)
             };
@@ -115,7 +115,7 @@ fn without_relative_targets(map: &BTreeMap<Place, Vec<Kind>>) -> BTreeMap<Place,
                 .iter()
                 .map(|k| match k {
                     Kind::Relative(_) => Kind::Relative(None),
-                    other => other.clone(),
+                    other @ Kind::Other(..) => other.clone(),
                 })
                 .collect();
             (place.clone(), kinds)

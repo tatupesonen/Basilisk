@@ -287,14 +287,14 @@ fn header_counts_beyond_the_file() {
         b.set(Field::Phnum, 1000);
         let elf = parse(&b.bytes);
         let available = b.bytes.len() as u64 - b.phoff;
-        let fit = available / ph + u64::from(available % ph != 0);
+        let fit = available / ph + u64::from(!available.is_multiple_of(ph));
         assert_eq!(
             messages(&elf)[0],
             format!("Program Header count 1000 exceeds file capacity {fit}; truncating")
         );
         assert_eq!(
             messages(&elf).contains(&"Program Header has partial entry"),
-            available % ph != 0
+            !available.is_multiple_of(ph)
         );
         assert_eq!(u64::from(elf.header().e_phnum), fit);
         assert!(elf.header().phnum_truncated);

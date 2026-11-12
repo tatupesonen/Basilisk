@@ -6,7 +6,7 @@
 //! delta, `r_info` and addend delta shared by the whole group, or one per
 //! relocation. Offsets and addends accumulate across the table.
 
-use bk_bin::{BinError, BinaryReader};
+use bk_bin::BinaryReader;
 
 use crate::diag::{DiagnosticKind, Diagnostics};
 use crate::header::ElfClass;
@@ -32,7 +32,7 @@ enum Stop {
     /// The file ended in the middle of the table.
     Eof,
     /// A value could not be decoded.
-    Read(BinError),
+    Read,
     /// A group's size is zero or negative.
     BadGroupSize(i64),
     /// A group claims more relocations than remain.
@@ -84,7 +84,7 @@ impl<'a> Decoder<'a> {
     fn sleb(&mut self) -> Result<i64, Stop> {
         self.reader
             .read_sleb128()
-            .map_err(|e| if e.is_eof() { Stop::Eof } else { Stop::Read(e) })
+            .map_err(|e| if e.is_eof() { Stop::Eof } else { Stop::Read })
     }
 
     /// Reads the relocation count and the initial offset. At most
@@ -259,7 +259,7 @@ pub(crate) fn scan(
                 "Truncated Android relocation table due to unexpected EOF",
             );
         }
-        Stop::Read(_) => diags.push(
+        Stop::Read => diags.push(
             DiagnosticKind::RelocationTable,
             "Error reading Android relocation table: Unsupported LEB128 value, too large to fit \
              in 64bit java long variable",

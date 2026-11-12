@@ -161,7 +161,7 @@ fn dynamic_string_table_problems() {
             "Failed to parse DT_STRTAB, missing dynamic dependency"
         );
         let built = variant(enc, true, |b, _| {
-            set_dyn(b, dt::STRTAB, Dyn::Val(dt::STRTAB, 0))
+            set_dyn(b, dt::STRTAB, Dyn::Val(dt::STRTAB, 0));
         });
         let elf = parse(&built.bytes);
         assert_eq!(
@@ -169,7 +169,7 @@ fn dynamic_string_table_problems() {
             "ELF Dynamic String Table of size 54 appears to have been stripped from binary"
         );
         let built = variant(enc, true, |b, _| {
-            set_dyn(b, dt::STRTAB, Dyn::Val(dt::STRTAB, FAR))
+            set_dyn(b, dt::STRTAB, Dyn::Val(dt::STRTAB, FAR));
         });
         let elf = parse(&built.bytes);
         assert_eq!(
@@ -265,7 +265,7 @@ fn symbol_table_size_problems() {
         let elf = parse(&built.bytes);
         let offset = elf.sections()[index.symtab as usize].sh_offset;
         let available = elf.file_len() - offset;
-        let fit = available / entry + u64::from(available % entry != 0);
+        let fit = available / entry + u64::from(!available.is_multiple_of(entry));
         assert_eq!(
             messages(&elf)[0],
             format!("Symbol count 100000 exceeds file capacity {fit}; truncating")
@@ -415,7 +415,8 @@ fn extended_section_index_tables() {
 #[test]
 fn dynamic_symbol_table_problems() {
     for enc in Enc::ALL {
-        let cases: Vec<(Box<dyn Fn(&mut ElfBuilder, &SampleIndex)>, String)> = vec![
+        type Edit = Box<dyn Fn(&mut ElfBuilder, &SampleIndex)>;
+        let cases: Vec<(Edit, String)> = vec![
             (
                 Box::new(|b, _| remove_dyn(b, dt::SYMTAB)),
                 "ELF does not contain a dynamic symbol table (DT_SYMTAB)".into(),
@@ -632,7 +633,7 @@ fn dynamic_relocation_table_problems() {
 #[test]
 fn plt_relocations_follow_dt_pltrel() {
     let built = variant(Enc::LE64, true, |b, _| {
-        set_dyn(b, dt::PLTREL, Dyn::Val(dt::PLTREL, 17))
+        set_dyn(b, dt::PLTREL, Dyn::Val(dt::PLTREL, 17));
     });
     let elf = parse(&built.bytes);
     // A RELA table read as REL: 48 bytes of 16-byte entries.
@@ -701,11 +702,11 @@ fn relocation_tables_past_the_end_of_the_file() {
         let elf = parse(&built.bytes);
         let table = elf.relocation_table_for_section(index.reladyn).unwrap();
         let available = elf.file_len() - table.file_offset;
-        let fit = available / entry + u64::from(available % entry != 0);
+        let fit = available / entry + u64::from(!available.is_multiple_of(entry));
         let mut expected = vec![format!(
             "Relocation Table count 1000 exceeds file capacity {fit}; truncating"
         )];
-        if available % entry != 0 {
+        if !available.is_multiple_of(entry) {
             expected.push("Relocation Table has partial entry".into());
             expected.push("Truncated ELF Relocation table due to unexpected EOF".into());
         }
