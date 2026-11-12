@@ -1,0 +1,104 @@
+# Rules for implementation agents
+
+Several agents work at once, each in its own git worktree and branch, and
+the coordinator merges their branches into `master` (ADR-015). Follow these
+rules so merges are clean and the result is shippable.
+
+## Read first
+
+1. `docs/DIRECTION.md` — the owner's decisions.
+2. `docs/LOOP.md` — engineering rules, testing rules, the quality gate.
+3. `docs/DECISIONS.md` — at least ADR-001 (port behaviour, improvements
+   allowed and documented), ADR-006 (test parity), ADR-007 (differential
+   testing), ADR-009 (panic-free), ADR-011 (existing crates), ADR-012
+   (performance), ADR-013 (crates and file size).
+4. Your feature spec, `docs/features/<feature>.md`. It is your contract.
+5. The Ghidra sources your spec cites, under `../ghidra` (relative to the
+   main checkout; the absolute path is in your brief). **Read-only: never
+   modify, build inside, or write files into the Ghidra tree.**
+
+## Your worktree
+
+- Work only inside the worktree directory named in your brief, on the
+  branch already checked out there. Do not touch the main checkout or
+  other agents' worktrees.
+- Commit locally, often. Never push, never add remotes, never rebase or
+  merge other branches.
+
+## Ownership (avoid merge conflicts)
+
+- You own the crates your spec assigns. Do not edit other crates.
+- Do not depend on crates that another track is writing in the same wave
+  (your spec lists them). Where you need something from one, cut the
+  dependency as your spec says (usually a small trait or a deferred item),
+  and list it under "Follow-ups" in your status report.
+- Shared files — keep edits minimal and append-only:
+  - root `Cargo.toml`: your internal crates are already listed in
+    `[workspace.dependencies]`; add third-party dependencies there with
+    exact versions, each at least two weeks old, after an ADR-011
+    evaluation. Check what the workspace already has before adding.
+  - `docs/inventory/tests/*.md`: mark only the lines for your tests.
+  - `docs/features/<feature>.md`: append to "Differences from Ghidra" and
+    fill in "Status". Do not rewrite the spec; if the spec is wrong or
+    unimplementable, say so in your status report and implement the
+    closest correct thing.
+  - `docs/PERF.md`: append your benchmark numbers under your crate.
+- Do not edit `docs/PLAN.md`, `docs/PROGRESS.md`, `docs/PARITY.md`,
+  `docs/DECISIONS.md` or `docs/DIRECTION.md`; propose changes (including
+  ADRs you think are needed) in your status report.
+- Write your status report to `docs/agents/<track>.md`.
+
+## Build hygiene (shared 8-core, 16 GB machine; several agents at once)
+
+- Prefix every cargo command with `CARGO_BUILD_JOBS=2`.
+- While developing, build and test only your crates
+  (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
+- Before your final commit run the full gate exactly as
+  `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` — never
+  pipe it — and fix everything it reports. `gate.log` is git-ignored.
+- Temporary files go in your worktree's `target/` or a directory you
+  create with a unique name; never in the Ghidra tree.
+
+## Quality bar
+
+- **Behaviour from Ghidra, structure from Rust** (ADR-001). Read the
+  Ghidra code until you understand what it does and why, then write the
+  Rust that does it well. Do not transliterate. If you find a better way,
+  take it and record it under "Differences from Ghidra".
+- **Crates and files** (ADR-013): one module per concept; split a file
+  when it passes about 600 lines; the gate rejects files over 1,000.
+- **Rust best practices** as listed in `LOOP.md`: newtypes and typed
+  indices, enums for closed sets, `thiserror` errors with context, no
+  `unwrap`/`expect`/indexing panics outside tests, no `unsafe`, no global
+  state, documented public items, `tracing` for logs.
+- **Performance** (ADR-012): design the data layout first; no per-item
+  allocation in hot loops; add a benchmark for each hot path and record
+  the numbers.
+- **Tests** (ADR-006, `LOOP.md` Testing rules): port every Ghidra test
+  your spec lists and mark the checklist; add differential, property and
+  fuzz tests as the spec says. Tests that need `../ghidra` or
+  `../reference` must skip with a printed reason when it is absent.
+- Do not leave `todo!()`, stubs or silently ignored cases. Something you
+  could not finish is listed under "Gaps" in your status report.
+
+## Commits
+
+Conventional messages (`feat(elf): …`), small and frequent, each ending
+with
+
+    Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+
+## Final report
+
+Write `docs/agents/<track>.md` and repeat its substance in your final
+message:
+
+- **Built**: crates, modules, public API in brief.
+- **Tests**: counts by kind; which Ghidra tests were ported, which were
+  marked not applicable and why; the gate's final result line.
+- **Benchmarks**: numbers and the commands that produce them.
+- **Differences from Ghidra**: each deliberate departure.
+- **Gaps**: anything in the spec not done, stated plainly.
+- **Follow-ups**: what the next wave needs to know (cut dependencies,
+  proposed ADRs, things found in Ghidra that the plan missed).
+- **Commits**: `git log --oneline master..HEAD`.

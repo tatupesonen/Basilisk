@@ -1,0 +1,158 @@
+# Development protocol
+
+basilisk is built by a coordinator and implementation agents (ADR-015).
+Every session starts from zero conversational memory and must be able to
+continue purely from the files in this repository. This document is the
+contract every session follows.
+
+## State files (source of truth)
+
+| File | Purpose |
+|------|---------|
+| `docs/DIRECTION.md` | The owner's standing decisions and working rules. Read first. |
+| `docs/LOOP.md` | This protocol. Change only when the process itself needs to change. |
+| `docs/PLAN.md` | Architecture, crate map, milestones and the task checklist (`- [ ]` / `- [x]`). |
+| `docs/PROGRESS.md` | `## Now` (current wave and next steps), `## Blockers`, and an append-only `## Log` (newest first). |
+| `docs/DECISIONS.md` | Architecture decision records (ADR-NNN). Append; never silently rewrite. |
+| `docs/PARITY.md` | Status of every Ghidra module against basilisk. |
+| `docs/PERF.md` | Performance budgets, benchmark commands and measured numbers. |
+| `docs/features/*.md` | One document per feature: the spec before it is built, the reference after. |
+| `docs/inventory/*.md` | What Ghidra contains, by area. `inventory/tests/` is the test-parity checklist. |
+| `docs/agents/RULES.md` | Rules for implementation agents; `docs/agents/<track>.md` is each track's status report. |
+
+The Ghidra source at `../ghidra` is **read-only reference**. Never modify it.
+
+## The coordinator's loop
+
+1. **Orient**: read `DIRECTION.md`, then `PROGRESS.md` `## Now` and
+   `## Blockers`, then the `PLAN.md` milestone that holds the current work.
+   `git log --oneline -10` and `git worktree list` show where things stand.
+2. **Baseline**: `master` must pass the gate. If it is red, fixing it is the
+   task.
+3. **Plan a wave**: pick the next unchecked tasks. For each track, read the
+   Ghidra sources, write or update the inventory section and the feature
+   spec (`docs/features/<feature>.md`, format below), and assign disjoint
+   crates. Record an ADR for every non-obvious decision.
+4. **Start agents**: one per track, each in its own worktree
+   (`git worktree add ../basilisk-wt/<track> -b <track>`), briefed with its
+   spec and `agents/RULES.md`.
+5. **Review and merge** each finished branch: read the diff against the
+   spec, check the test-checklist marks are honest, run the gate on the
+   merge result, merge to `master`. Send work back if it misses the spec.
+6. **Record**: tick `PLAN.md`, update `PARITY.md`, update `## Now`, prepend
+   a dated `## Log` entry (what landed, test counts, what was learned).
+7. **Continue** with the next wave. Stop only when every milestone is
+   complete or a blocker needs the owner; record blockers under
+   `## Blockers` and continue with unblocked work.
+
+## Feature documents
+
+`docs/features/<feature>.md` is written by the coordinator **before** the
+code and kept true afterwards; it is the comprehensive documentation of the
+feature. Sections:
+
+1. **Purpose** — what the feature is for, in two or three sentences.
+2. **Ghidra sources** — the files and classes it derives from (paths under
+   `../ghidra`), and which is authoritative where Java and C++ both
+   implement it.
+3. **Scope** — what is in this feature, what is explicitly not, crate
+   ownership.
+4. **Behaviour** — the rules, formats, algorithms and edge cases, precise
+   enough to implement and to review against.
+5. **Design** — crate and module layout, public API sketch, data layout
+   and performance notes.
+6. **Tests** — the Ghidra tests to port (checklist ids), differential
+   tests, property and fuzz tests, benchmarks.
+7. **Acceptance** — the conditions for the track to be done.
+8. **Differences from Ghidra** — every deliberate departure (ADR-001).
+   The implementing agent appends to this.
+9. **Status** — filled in after implementation: what was built, gaps.
+
+## Quality gate
+
+Run `scripts/gate.sh` from the repository root (file-size check, fmt check,
+clippy with `-D warnings`, all tests), writing its output to a log file:
+`scripts/gate.sh > gate.log 2>&1; echo $?`. **Never pipe the gate**
+(`gate.sh | tail` returns tail's exit status and hides a red gate). Use
+`cargo check`, `cargo clippy -p <crate>` and the changed crates' tests
+while iterating; run the full gate before every merge to `master`.
+
+## Engineering rules
+
+- **Workspace of focused crates** (ADR-013, `PLAN.md` crate map). A
+  component that can stand alone is its own crate. Dependencies point one
+  way. Library crates never depend on UI crates.
+- **Small files.** One module per concept. Split a source file when it
+  passes about 600 lines; 1,000 lines is a hard ceiling checked by the
+  gate. Never port a large Ghidra file as one Rust file.
+- **Port behaviour, write Rust** (ADR-001). No transliterated class
+  hierarchies: use enums for closed sets (opcodes, symbol kinds, rule
+  results), traits for open extension points, plain data plus functions
+  elsewhere. No global mutable state; pass context explicitly. Improve on
+  Ghidra where it is better, and record the difference in the feature doc.
+- **Types carry meaning.** Newtypes for ids, offsets and sizes that must
+  not be mixed (`SpaceId`, `VarnodeId`, …); typed `u32` indices into
+  arenas; `Option`/`Result` instead of sentinel values; builders for
+  structs with many optional fields; `#[non_exhaustive]` on public enums
+  that will grow.
+- **Errors**: `thiserror` enums in libraries, with enough context to act on
+  (offset, name, what was expected); `anyhow` only in binaries and tests.
+  No `unwrap`/`expect` outside tests; no panics on any input (ADR-009).
+- **No `unsafe`** (`unsafe_code = "forbid"`) unless an ADR names the crate.
+- **Performance** (ADR-012): arenas and indices for graph-shaped data;
+  interned strings; no allocation per instruction or per op in hot loops;
+  borrow instead of clone; iterators instead of intermediate `Vec`s;
+  `Send + Sync` immutable shared data; deterministic parallelism. A hot
+  path lands with a benchmark and its numbers in `PERF.md`.
+- **Logging**: `tracing`. No `println!` in libraries.
+- **Documentation**: every public item has a doc comment that says what it
+  is for; each crate's `lib.rs` opens with what the crate does and which
+  Ghidra code it corresponds to. `missing_docs` is a warning the gate
+  rejects.
+- **Dependencies**: prefer an existing crate when it passes ADR-011;
+  record the evaluation. Exact versions in `[workspace.dependencies]`,
+  each at least two weeks old. Pure Rust; a C dependency needs an ADR.
+- **Metric units** (SI prefixes) and ISO-8601 timestamps in all output.
+
+## Testing rules
+
+- **Test parity with Ghidra** (ADR-006): before a feature is finished,
+  port the tests listed for it in its feature doc and
+  `docs/inventory/tests/`, and mark each line `- [x]` with the Rust test's
+  path after `→`, or `- [-]` with the reason. Port what the test checks,
+  not its text; table-driven tests (`rstest`) are preferred to many
+  near-identical functions.
+- **Differential tests** (ADR-007) wherever Ghidra's output defines
+  correct behaviour, through `bk-testkit`. Tests needing the spec root
+  (`BASILISK_GHIDRA_DIR`, default `../ghidra`) or the reference tools
+  (`../reference/`) skip with a printed reason when those are absent — they
+  never fail for that reason and never pass silently when present.
+- Every public behaviour gets a test. Unit tests sit next to the code;
+  cross-crate behaviour goes in `tests/`.
+- Integration-test crates (`tests/*.rs`) start with
+  `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::print_stderr, reason = "test code")]`
+  because helper functions there are not covered by `clippy.toml`'s test
+  allowances.
+- **Fixtures**: built in Rust test code where possible (builders in
+  `bk-testkit`); small checked-in files under `fixtures/` with provenance
+  recorded in `fixtures/README.md`. Never copy Ghidra's spec files into
+  the repository (ADR-002); test binaries taken from Ghidra's test
+  resources are referenced in place.
+- **Property tests** (`proptest`) for parsers and codecs: never panics,
+  round-trips.
+- **Fuzz targets** (`cargo fuzz`, in `fuzz/`) for every parser of
+  untrusted bytes. Every crash is fixed, its input saved under
+  `fuzz/regressions/<target>/` and replayed by a normal test.
+- **Golden files** for large structured output (disassembly, p-code,
+  decompiled C), regenerated with `UPDATE_GOLDEN=1` and the diff reviewed
+  before committing.
+- **UI**: `egui_kittest` interaction tests for every ported GUI test.
+- **Benchmarks** for hot paths as `#[ignore]` release tests or `divan`
+  benches; commands and results in `PERF.md`.
+
+## Commits
+
+Conventional messages (`feat(sleigh): …`, `test(elf): …`, `docs: …`), small
+and frequent, each ending with the Co-Authored-By trailer of the model that
+wrote it. Agents commit in their worktree only and never push or add
+remotes. Nothing is pushed until the owner names a remote (`DIRECTION.md`).

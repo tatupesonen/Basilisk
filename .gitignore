@@ -1,0 +1,8 @@
+/target
+/fuzz/target
+/fuzz/corpus
+/fuzz/artifacts
+/gate.log
+.DS_Store
+/.claude/
+*.swp

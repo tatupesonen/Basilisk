@@ -1,0 +1,103 @@
+# basilisk ↔ Ghidra parity matrix
+
+Status of every Ghidra module against basilisk. Updated by the coordinator
+whenever a branch merges. Module contents are described in
+`inventory/00-overview.md`; test status per class is in `inventory/tests/`.
+
+Last updated: 2026-11-12 (project start; nothing implemented yet).
+
+**Status legend**
+- **Done**: implemented, its Ghidra tests marked, on `master`.
+- **Partial**: some of it exists; the Notes say what is missing.
+- **In progress**: a track is working on it now.
+- **Missing**: nothing on `master` yet.
+- **Replaced**: basilisk provides the function by different means, by
+  decision; Notes name the ADR.
+- **Out of scope**: excluded by an owner decision (`DIRECTION.md`). None so far.
+
+## Framework
+
+| Ghidra module | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | In progress | Wave 1: `core-marshal`, `pcode` |
+| SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | In progress | Wave 1: `lang`. `.cspec` arrives with the decompiler (M3) |
+| SoftwareModeling: SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
+| SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | In progress | Wave 1: `sleigh-syntax` (front end only) |
+| SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
+| SoftwareModeling: disassembler | `bk-disasm` | M5 | Missing | |
+| SoftwareModeling: assembler | `bk-asm` | M6 | Missing | |
+| DB | `bk-store` | M4 | Missing | Own format (ADR-003) |
+| Emulation | `bk-emu` | M6 | Missing | |
+| Generic, Utility | — | — | Replaced | Rust std and crates; parts land where used. Tests ported or marked N/A per class (ADR-006) |
+| Project, FileSystem | `bk-project` | M8 | Missing | |
+| Docking, Gui, Help | `bk-ui` | M7 | Replaced | egui (ADR-008); user-visible behaviour reproduced |
+| Graph | `bk-graph`, `bk-ui` | M5, M7 | Missing | |
+| Pty | `bk-debug-*` | M10 | Missing | |
+
+## Decompiler (C++)
+
+| Ghidra part | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | In progress | Wave 1 |
+| SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
+| SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
+| Decompiler engine (DECCORE) | `bk-decomp`, `bk-decomp-print` | M3 | Missing | |
+| Ghidra pipe protocol (GHIDRA) | trait in `bk-decomp` | M5 | Replaced | In process (ADR-004) |
+| Console and test runner | `basilisk decompile`, data-test runner | M3 | Missing | |
+| BSim signatures | `bk-bsim` | M10 | Missing | |
+| C++ unit tests (205), data tests (93) | — | M0–M3 | Missing | Float and marshal tests in wave 1 |
+
+## Features
+
+| Ghidra module | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| Base: byte providers, `BinaryReader` | `bk-bin` | M0 | In progress | Wave 1: `bin-elf` |
+| Base: ELF format | `bk-elf` | M0 | In progress | Wave 1: `bin-elf` (parser; loader in M4) |
+| Base: PE, Mach-O, COFF, OMF, NE, MZ, PEF, SOM, XCOFF, a.out formats | `bk-pe`, `bk-macho`, … | M4, M10 | Missing | PE and Mach-O planned for wave 2 |
+| Base: DWARF, Go | `bk-dwarf`, `bk-golang` | M6 | Missing | |
+| Base: loaders, opinions, importer | `bk-loader*` | M4 | Missing | |
+| Base: commands | `bk-program` (operations) | M4–M5 | Missing | |
+| Base: analyzers | `bk-analysis`, `bk-analyzers-*` | M5 | Missing | |
+| Base: headless analyzer | `bk-headless`, `basilisk analyze` | M5 | Missing | |
+| Base: exporters, XML, C parser | `bk-export`, `bk-datatypes` | M6 | Missing | |
+| Base: scripting | `bk-plugin` | M9 | Missing | Python through PyO3 (ADR-014) |
+| Base: UI plugins (87 packages) | `bk-ui` | M7 | Missing | |
+| Base: program merge | `bk-project` | M8 | Missing | |
+| Decompiler (Java): interface, result model, UI | `bk-decomp`, `bk-ui` | M5, M7 | Missing | |
+| DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |
+| PDB | `bk-pdb` | M6 | Missing | |
+| MicrosoftDmang, MicrosoftDemangler | `bk-demangle-ms` | M6 | Missing | Parser planned for wave 2 |
+| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Native Rust demangler instead of the GPL helper (ADR-010) |
+| MicrosoftCodeAnalyzer | `bk-analyzers-msvc` | M6 | Missing | |
+| FunctionID | `bk-fid` | M6 | Missing | |
+| BytePatterns | `bk-analyzers-*` | M5 | Missing | |
+| SystemEmulation | `bk-emu` | M6 | Missing | |
+| Sarif | `bk-export` | M6 | Missing | |
+| Swift, Rust, Objective-C, GhidraGo | `bk-analyzers-*` | M6 | Missing | |
+| WildcardAssembler | `bk-asm` | M6 | Missing | |
+| ProgramDiff, CodeCompare | `bk-ui`, `bk-program` | M7 | Missing | |
+| FunctionGraph, GraphServices, GraphFunctionCalls, ProgramGraph, DataGraph | `bk-ui` | M7 | Missing | |
+| ByteViewer | `bk-ui` | M7 | Missing | |
+| GhidraServer | `bk-server` | M8 | Missing | |
+| PyGhidra | `bk-plugin` | M9 | Missing | The same PyO3 bindings as an importable module (ADR-014) |
+| FileFormats | `bk-fs-*` | M10 | Missing | |
+| VersionTracking, VersionTrackingBSim | `bk-vt` | M10 | Missing | |
+| BSim, BSimFeatureVisualizer | `bk-bsim` | M10 | Missing | |
+| Recognizers, SourceCodeLookup, DebugUtils | as reached | M10 | Missing | |
+
+## Processors
+
+| Ghidra part | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| Language data for 39 processor modules | read in place | M0–M2 | Reused | ADR-002 |
+| Relocation handlers | `bk-loader-*` | M4 | Missing | |
+| Processor analyzers and extensions | `bk-analyzers-*` | M5, M10 | Missing | |
+| Emulator tests (126 classes) | `bk-emu` tests | M6 | Missing | |
+
+## Debug, Extensions
+
+| Ghidra module | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| Framework-TraceModeling, Debugger, Debugger-api, Debugger-rmi-trace, agents, ISF, TaintAnalysis, ProposedUtils | `bk-debug-*` | M10 | Missing | |
+| Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
+| Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | |
