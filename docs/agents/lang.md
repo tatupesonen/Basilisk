@@ -404,10 +404,14 @@ dependencies).
 
 ## Commits
 
-`git log --oneline master..HEAD` before this report's own commit (which
-follows as `docs(lang): final report for the lang track`):
+`git log --oneline master..HEAD` at the time of writing; the commit adding
+this list (`docs(lang): commit list in the final report`) follows it.
 
 ```text
+ac42c37 docs(lang): root canonicalisation, spec-root default and fuzz crate in the report and spec
+a070cc6 fix(lang): one spelling for every registry root
+6982ebd Merge branch 'master' into lang
+32dd4c8 docs(lang): final report for the lang track
 13d660a docs(lang): fuzzing result in the lang spec's status
 ba6b3c9 docs(lang): differences from Ghidra and status in the lang spec
 10f55df test(lang): cargo-fuzz target for the three readers
