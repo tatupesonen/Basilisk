@@ -35,6 +35,13 @@ pub enum SpaceError {
     /// The constant space must have index 0, and only it may.
     #[error("const space must be assigned index 0")]
     ConstantSpaceIndex,
+    /// Index 0 belongs to the constant space (a basilisk rule; see
+    /// [`SpaceManager::insert_space`](crate::SpaceManager::insert_space)).
+    #[error("Space {name} cannot take index 0, which is reserved for the const space")]
+    ReservedIndexZero {
+        /// The name of the offending space.
+        name: String,
+    },
     /// The `OTHER` space must have index 1.
     #[error("OTHER space must be assigned index 1")]
     OtherSpaceIndex,

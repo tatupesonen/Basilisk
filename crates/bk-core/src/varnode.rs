@@ -25,16 +25,28 @@ pub struct VarnodeData {
 
 impl VarnodeData {
     /// A location in no space, of size 0.
-    pub const NONE: Self = Self { space: SpaceKey::NONE, offset: 0, size: 0 };
+    pub const NONE: Self = Self {
+        space: SpaceKey::NONE,
+        offset: 0,
+        size: 0,
+    };
 
     /// A location given by its space, offset and size.
     pub const fn new(space: SpaceId, offset: u64, size: u32) -> Self {
-        Self { space: SpaceKey::of(space), offset, size }
+        Self {
+            space: SpaceKey::of(space),
+            offset,
+            size,
+        }
     }
 
     /// The location of `size` bytes starting at `address`.
     pub const fn from_address(address: Address, size: u32) -> Self {
-        Self { space: address.key(), offset: address.offset(), size }
+        Self {
+            space: address.key(),
+            offset: address.offset(),
+            size,
+        }
     }
 
     /// The address space, if the location has one.
@@ -58,26 +70,29 @@ impl VarnodeData {
     ///
     /// Ghidra stores the host pointer to the space in the constant; basilisk
     /// stores the space's index (see
-    /// [`SpaceManager::create_const_from_space`]).
+    /// [`Address::const_from_space`]).
     pub fn space_from_const(&self) -> Option<SpaceId> {
         u32::try_from(self.offset).ok().map(SpaceId::new)
     }
 
     /// Whether this location, as a range of bytes, contains `other`.
-    pub const fn contains(&self, other: &VarnodeData) -> bool {
+    pub const fn contains(&self, other: &Self) -> bool {
         if self.space.raw() != other.space.raw() || other.offset < self.offset {
             return false;
         }
         let last = self.offset.wrapping_add((self.size as u64).wrapping_sub(1));
-        let other_last = other.offset.wrapping_add((other.size as u64).wrapping_sub(1));
+        let other_last = other
+            .offset
+            .wrapping_add((other.size as u64).wrapping_sub(1));
         last >= other_last
     }
 
     /// Whether this location and `lo` are adjacent, with this one holding the
     /// more significant bytes: `lo` follows it in a big-endian space and
     /// precedes it in a little-endian one.
-    pub fn is_contiguous(&self, manager: &SpaceManager, lo: &VarnodeData) -> bool {
-        self.addr().is_contiguous(manager, self.size, lo.addr(), lo.size)
+    pub fn is_contiguous(&self, manager: &SpaceManager, lo: &Self) -> bool {
+        self.addr()
+            .is_contiguous(manager, self.size, lo.addr(), lo.size)
     }
 
     /// Reads a location from the next element, which may be `<addr>`,
@@ -126,6 +141,14 @@ impl VarnodeData {
         manager: &SpaceManager,
     ) -> Result<(), SpaceError> {
         self.addr().encode_sized(encoder, manager, self.size)
+    }
+}
+
+impl VarnodeData {
+    /// A value that prints the location as a register name or as the
+    /// space's shortcut and raw offset (Ghidra `printRaw`).
+    pub fn raw(self, manager: &SpaceManager) -> crate::address::RawAddress<'_> {
+        self.addr().raw_sized(manager, self.size)
     }
 }
 
