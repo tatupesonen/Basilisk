@@ -23,7 +23,7 @@ pub enum Mode {
 /// The kind of a [`Token`].
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum TokenKind {
-    /// An identifier, keyword or reserved word; [`Token::symbol`] is its name.
+    /// An identifier, keyword or reserved word; [`Token::ident`] gives its name.
     Ident,
     /// `_` on its own: the wildcard of identifier and value lists.
     Underscore,
@@ -165,10 +165,7 @@ impl TokenKind {
     pub const fn is_error(self) -> bool {
         matches!(
             self,
-            TokenKind::CppComment
-                | TokenKind::BadString
-                | TokenKind::UnterminatedString
-                | TokenKind::Unknown
+            Self::CppComment | Self::BadString | Self::UnterminatedString | Self::Unknown
         )
     }
 
@@ -176,7 +173,7 @@ impl TokenKind {
     pub const fn is_int(self) -> bool {
         matches!(
             self,
-            TokenKind::DecInt | TokenKind::HexInt | TokenKind::BinInt | TokenKind::PrefixedDecInt
+            Self::DecInt | Self::HexInt | Self::BinInt | Self::PrefixedDecInt
         )
     }
 
@@ -184,72 +181,69 @@ impl TokenKind {
     /// backquotes when it has only one, otherwise what it is.
     pub const fn describe(self) -> &'static str {
         match self {
-            TokenKind::Ident => "identifier",
-            TokenKind::Underscore => "`_`",
-            TokenKind::DecInt
-            | TokenKind::HexInt
-            | TokenKind::BinInt
-            | TokenKind::PrefixedDecInt => "integer",
-            TokenKind::QString => "string",
-            TokenKind::LBrace => "`{`",
-            TokenKind::RBrace => "`}`",
-            TokenKind::LBracket => "`[`",
-            TokenKind::RBracket => "`]`",
-            TokenKind::LParen => "`(`",
-            TokenKind::RParen => "`)`",
-            TokenKind::Ellipsis => "`...`",
-            TokenKind::Colon => "`:`",
-            TokenKind::Comma => "`,`",
-            TokenKind::Exclaim => "`!`",
-            TokenKind::Tilde => "`~`",
-            TokenKind::Semi => "`;`",
-            TokenKind::Assign => "`=`",
-            TokenKind::Equal => "`==`",
-            TokenKind::NotEqual => "`!=`",
-            TokenKind::Less => "`<`",
-            TokenKind::Great => "`>`",
-            TokenKind::LessEqual => "`<=`",
-            TokenKind::GreatEqual => "`>=`",
-            TokenKind::BoolOr => "`||`",
-            TokenKind::BoolXor => "`^^`",
-            TokenKind::BoolAnd => "`&&`",
-            TokenKind::Pipe => "`|`",
-            TokenKind::Caret => "`^`",
-            TokenKind::Ampersand => "`&`",
-            TokenKind::Left => "`<<`",
-            TokenKind::Right => "`>>`",
-            TokenKind::Plus => "`+`",
-            TokenKind::Minus => "`-`",
-            TokenKind::Asterisk => "`*`",
-            TokenKind::Slash => "`/`",
-            TokenKind::Percent => "`%`",
-            TokenKind::SpecOr => "`$or`",
-            TokenKind::SpecAnd => "`$and`",
-            TokenKind::SpecXor => "`$xor`",
-            TokenKind::FEqual => "`f==`",
-            TokenKind::FNotEqual => "`f!=`",
-            TokenKind::FLess => "`f<`",
-            TokenKind::FGreat => "`f>`",
-            TokenKind::FLessEqual => "`f<=`",
-            TokenKind::FGreatEqual => "`f>=`",
-            TokenKind::FPlus => "`f+`",
-            TokenKind::FMinus => "`f-`",
-            TokenKind::FMult => "`f*`",
-            TokenKind::FDiv => "`f/`",
-            TokenKind::SLess => "`s<`",
-            TokenKind::SGreat => "`s>`",
-            TokenKind::SLessEqual => "`s<=`",
-            TokenKind::SGreatEqual => "`s>=`",
-            TokenKind::SRight => "`s>>`",
-            TokenKind::SDiv => "`s/`",
-            TokenKind::SRem => "`s%`",
-            TokenKind::Whitespace => "whitespace",
-            TokenKind::DispChar => "display character",
-            TokenKind::Hash => "`#`",
-            TokenKind::CppComment => "`//`",
-            TokenKind::BadString | TokenKind::UnterminatedString => "malformed string",
-            TokenKind::Unknown => "unexpected character",
-            TokenKind::Eof => "end of input",
+            Self::Ident => "identifier",
+            Self::Underscore => "`_`",
+            Self::DecInt | Self::HexInt | Self::BinInt | Self::PrefixedDecInt => "integer",
+            Self::QString => "string",
+            Self::LBrace => "`{`",
+            Self::RBrace => "`}`",
+            Self::LBracket => "`[`",
+            Self::RBracket => "`]`",
+            Self::LParen => "`(`",
+            Self::RParen => "`)`",
+            Self::Ellipsis => "`...`",
+            Self::Colon => "`:`",
+            Self::Comma => "`,`",
+            Self::Exclaim => "`!`",
+            Self::Tilde => "`~`",
+            Self::Semi => "`;`",
+            Self::Assign => "`=`",
+            Self::Equal => "`==`",
+            Self::NotEqual => "`!=`",
+            Self::Less => "`<`",
+            Self::Great => "`>`",
+            Self::LessEqual => "`<=`",
+            Self::GreatEqual => "`>=`",
+            Self::BoolOr => "`||`",
+            Self::BoolXor => "`^^`",
+            Self::BoolAnd => "`&&`",
+            Self::Pipe => "`|`",
+            Self::Caret => "`^`",
+            Self::Ampersand => "`&`",
+            Self::Left => "`<<`",
+            Self::Right => "`>>`",
+            Self::Plus => "`+`",
+            Self::Minus => "`-`",
+            Self::Asterisk => "`*`",
+            Self::Slash => "`/`",
+            Self::Percent => "`%`",
+            Self::SpecOr => "`$or`",
+            Self::SpecAnd => "`$and`",
+            Self::SpecXor => "`$xor`",
+            Self::FEqual => "`f==`",
+            Self::FNotEqual => "`f!=`",
+            Self::FLess => "`f<`",
+            Self::FGreat => "`f>`",
+            Self::FLessEqual => "`f<=`",
+            Self::FGreatEqual => "`f>=`",
+            Self::FPlus => "`f+`",
+            Self::FMinus => "`f-`",
+            Self::FMult => "`f*`",
+            Self::FDiv => "`f/`",
+            Self::SLess => "`s<`",
+            Self::SGreat => "`s>`",
+            Self::SLessEqual => "`s<=`",
+            Self::SGreatEqual => "`s>=`",
+            Self::SRight => "`s>>`",
+            Self::SDiv => "`s/`",
+            Self::SRem => "`s%`",
+            Self::Whitespace => "whitespace",
+            Self::DispChar => "display character",
+            Self::Hash => "`#`",
+            Self::CppComment => "`//`",
+            Self::BadString | Self::UnterminatedString => "malformed string",
+            Self::Unknown => "unexpected character",
+            Self::Eof => "end of input",
         }
     }
 }

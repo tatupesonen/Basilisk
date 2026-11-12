@@ -27,7 +27,7 @@
 //! assert_eq!((at.line, at.column), (1, 1));
 //! ```
 //!
-//! The pieces can be used on their own: [`preprocess`] runs only the
+//! The pieces can be used on their own: [`preprocess()`] runs only the
 //! preprocessor, [`lex::Lexer`] only the lexer, and
 //! [`parse_semantic_body`] parses a standalone p-code snippet (the
 //! statement language of a semantic section without a constructor).

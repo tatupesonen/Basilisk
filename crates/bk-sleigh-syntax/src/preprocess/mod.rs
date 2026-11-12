@@ -5,7 +5,7 @@
 //!
 //! * A line whose first character is `@` is a directive: `@include`,
 //!   `@define`, `@undef`, `@ifdef`, `@ifndef`, `@if`, `@elif`, `@else`,
-//!   `@endif` (forms in [`directive`]).
+//!   `@endif` (forms in the `directive` module).
 //! * A line that is only a `#` comment is blanked.
 //! * In every other line, `$(NAME)` is replaced by the value of `NAME`.
 //!   Replacement is textual and not recursive.

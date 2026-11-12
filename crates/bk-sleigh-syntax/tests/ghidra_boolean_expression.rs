@@ -5,7 +5,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -14,7 +17,7 @@ use rstest::rstest;
 
 /// The environment of `BooleanExpressionTest`: every name is defined and
 /// its value is the name itself.
-#[allow(
+#[expect(
     clippy::unnecessary_wraps,
     reason = "the environment signature returns Option"
 )]

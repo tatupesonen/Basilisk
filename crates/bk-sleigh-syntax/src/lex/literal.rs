@@ -25,9 +25,9 @@ impl Radix {
     /// The numeric base: 2, 10 or 16.
     pub const fn base(self) -> u32 {
         match self {
-            Radix::Binary => 2,
-            Radix::Decimal => 10,
-            Radix::Hex => 16,
+            Self::Binary => 2,
+            Self::Decimal => 10,
+            Self::Hex => 16,
         }
     }
 }
@@ -64,11 +64,11 @@ enum Repr {
 
 impl IntValue {
     /// The value zero.
-    pub const ZERO: IntValue = IntValue(Repr::Small(0));
+    pub const ZERO: Self = Self(Repr::Small(0));
 
     /// A value that fits in 64 bits.
     pub const fn from_u64(value: u64) -> Self {
-        IntValue(Repr::Small(value))
+        Self(Repr::Small(value))
     }
 
     /// The value, if it fits in 64 bits.
@@ -128,10 +128,10 @@ impl IntValue {
             }
         }
         if fits {
-            return Ok(IntValue::from_u64(small));
+            return Ok(Self::from_u64(small));
         }
         let big = BigUint::parse_bytes(digits.as_bytes(), base).ok_or(IntError::BadDigit)?;
-        Ok(IntValue(Repr::Big(Box::new(big))))
+        Ok(Self(Repr::Big(Box::new(big))))
     }
 
     /// Writes the value in `radix`, without a prefix.
@@ -147,7 +147,7 @@ impl IntValue {
 
 impl From<u64> for IntValue {
     fn from(value: u64) -> Self {
-        IntValue::from_u64(value)
+        Self::from_u64(value)
     }
 }
 

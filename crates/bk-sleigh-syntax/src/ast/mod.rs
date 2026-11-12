@@ -104,10 +104,10 @@ impl Item {
     /// The extent of the item.
     pub fn span(&self) -> Span {
         match self {
-            Item::Definition(d) => d.span(),
-            Item::Macro(m) => m.span,
-            Item::With(w) => w.span,
-            Item::Constructor(c) => c.span,
+            Self::Definition(d) => d.span(),
+            Self::Macro(m) => m.span,
+            Self::With(w) => w.span,
+            Self::Constructor(c) => c.span,
         }
     }
 }
@@ -192,10 +192,10 @@ impl DisplayPiece {
     /// The extent of the piece.
     pub fn span(&self) -> Span {
         match self {
-            DisplayPiece::Ident(i) => i.span,
-            DisplayPiece::Whitespace(s) | DisplayPiece::Concat(s) => *s,
-            DisplayPiece::Literal { span, .. } => *span,
-            DisplayPiece::Quoted(s) => s.span,
+            Self::Ident(i) => i.span,
+            Self::Whitespace(s) | Self::Concat(s) => *s,
+            Self::Literal { span, .. } => *span,
+            Self::Quoted(s) => s.span,
         }
     }
 }
@@ -213,8 +213,8 @@ impl ConstructorBody {
     /// The extent of the body.
     pub fn span(&self) -> Span {
         match self {
-            ConstructorBody::Unimpl(span) => *span,
-            ConstructorBody::Semantic(body) => body.span,
+            Self::Unimpl(span) => *span,
+            Self::Semantic(body) => body.span,
         }
     }
 }

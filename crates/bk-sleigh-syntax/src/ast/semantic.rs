@@ -229,19 +229,19 @@ impl Statement {
     /// The extent of the statement.
     pub fn span(&self) -> Span {
         match self {
-            Statement::Assign { span, .. }
-            | Statement::Declare { span, .. }
-            | Statement::Apply { span, .. }
-            | Statement::Build { span, .. }
-            | Statement::CrossBuild { span, .. }
-            | Statement::Goto { span, .. }
-            | Statement::If { span, .. }
-            | Statement::Call { span, .. }
-            | Statement::Return { span, .. }
-            | Statement::Export { span, .. }
-            | Statement::Label { span, .. }
-            | Statement::Section { span, .. }
-            | Statement::Error(span) => *span,
+            Self::Assign { span, .. }
+            | Self::Declare { span, .. }
+            | Self::Apply { span, .. }
+            | Self::Build { span, .. }
+            | Self::CrossBuild { span, .. }
+            | Self::Goto { span, .. }
+            | Self::If { span, .. }
+            | Self::Call { span, .. }
+            | Self::Return { span, .. }
+            | Self::Export { span, .. }
+            | Self::Label { span, .. }
+            | Self::Section { span, .. }
+            | Self::Error(span) => *span,
         }
     }
 }
@@ -344,42 +344,42 @@ impl BinaryOp {
     /// The operator as written in source.
     pub const fn as_str(self) -> &'static str {
         match self {
-            BinaryOp::BoolOr => "||",
-            BinaryOp::BoolAnd => "&&",
-            BinaryOp::BoolXor => "^^",
-            BinaryOp::Or => "|",
-            BinaryOp::Xor => "^",
-            BinaryOp::And => "&",
-            BinaryOp::Equal => "==",
-            BinaryOp::NotEqual => "!=",
-            BinaryOp::FEqual => "f==",
-            BinaryOp::FNotEqual => "f!=",
-            BinaryOp::Less => "<",
-            BinaryOp::GreatEqual => ">=",
-            BinaryOp::LessEqual => "<=",
-            BinaryOp::Great => ">",
-            BinaryOp::SLess => "s<",
-            BinaryOp::SGreatEqual => "s>=",
-            BinaryOp::SLessEqual => "s<=",
-            BinaryOp::SGreat => "s>",
-            BinaryOp::FLess => "f<",
-            BinaryOp::FGreatEqual => "f>=",
-            BinaryOp::FLessEqual => "f<=",
-            BinaryOp::FGreat => "f>",
-            BinaryOp::Left => "<<",
-            BinaryOp::Right => ">>",
-            BinaryOp::SRight => "s>>",
-            BinaryOp::Add => "+",
-            BinaryOp::Sub => "-",
-            BinaryOp::FAdd => "f+",
-            BinaryOp::FSub => "f-",
-            BinaryOp::Mult => "*",
-            BinaryOp::Div => "/",
-            BinaryOp::Rem => "%",
-            BinaryOp::SDiv => "s/",
-            BinaryOp::SRem => "s%",
-            BinaryOp::FMult => "f*",
-            BinaryOp::FDiv => "f/",
+            Self::BoolOr => "||",
+            Self::BoolAnd => "&&",
+            Self::BoolXor => "^^",
+            Self::Or => "|",
+            Self::Xor => "^",
+            Self::And => "&",
+            Self::Equal => "==",
+            Self::NotEqual => "!=",
+            Self::FEqual => "f==",
+            Self::FNotEqual => "f!=",
+            Self::Less => "<",
+            Self::GreatEqual => ">=",
+            Self::LessEqual => "<=",
+            Self::Great => ">",
+            Self::SLess => "s<",
+            Self::SGreatEqual => "s>=",
+            Self::SLessEqual => "s<=",
+            Self::SGreat => "s>",
+            Self::FLess => "f<",
+            Self::FGreatEqual => "f>=",
+            Self::FLessEqual => "f<=",
+            Self::FGreat => "f>",
+            Self::Left => "<<",
+            Self::Right => ">>",
+            Self::SRight => "s>>",
+            Self::Add => "+",
+            Self::Sub => "-",
+            Self::FAdd => "f+",
+            Self::FSub => "f-",
+            Self::Mult => "*",
+            Self::Div => "/",
+            Self::Rem => "%",
+            Self::SDiv => "s/",
+            Self::SRem => "s%",
+            Self::FMult => "f*",
+            Self::FDiv => "f/",
         }
     }
 
@@ -387,33 +387,33 @@ impl BinaryOp {
     /// same number associate to the left.
     pub const fn precedence(self) -> u8 {
         match self {
-            BinaryOp::BoolOr => 1,
-            BinaryOp::BoolAnd | BinaryOp::BoolXor => 2,
-            BinaryOp::Or => 3,
-            BinaryOp::Xor => 4,
-            BinaryOp::And => 5,
-            BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::FEqual | BinaryOp::FNotEqual => 6,
-            BinaryOp::Less
-            | BinaryOp::GreatEqual
-            | BinaryOp::LessEqual
-            | BinaryOp::Great
-            | BinaryOp::SLess
-            | BinaryOp::SGreatEqual
-            | BinaryOp::SLessEqual
-            | BinaryOp::SGreat
-            | BinaryOp::FLess
-            | BinaryOp::FGreatEqual
-            | BinaryOp::FLessEqual
-            | BinaryOp::FGreat => 7,
-            BinaryOp::Left | BinaryOp::Right | BinaryOp::SRight => 8,
-            BinaryOp::Add | BinaryOp::Sub | BinaryOp::FAdd | BinaryOp::FSub => 9,
-            BinaryOp::Mult
-            | BinaryOp::Div
-            | BinaryOp::Rem
-            | BinaryOp::SDiv
-            | BinaryOp::SRem
-            | BinaryOp::FMult
-            | BinaryOp::FDiv => 10,
+            Self::BoolOr => 1,
+            Self::BoolAnd | Self::BoolXor => 2,
+            Self::Or => 3,
+            Self::Xor => 4,
+            Self::And => 5,
+            Self::Equal | Self::NotEqual | Self::FEqual | Self::FNotEqual => 6,
+            Self::Less
+            | Self::GreatEqual
+            | Self::LessEqual
+            | Self::Great
+            | Self::SLess
+            | Self::SGreatEqual
+            | Self::SLessEqual
+            | Self::SGreat
+            | Self::FLess
+            | Self::FGreatEqual
+            | Self::FLessEqual
+            | Self::FGreat => 7,
+            Self::Left | Self::Right | Self::SRight => 8,
+            Self::Add | Self::Sub | Self::FAdd | Self::FSub => 9,
+            Self::Mult
+            | Self::Div
+            | Self::Rem
+            | Self::SDiv
+            | Self::SRem
+            | Self::FMult
+            | Self::FDiv => 10,
         }
     }
 }
@@ -516,18 +516,18 @@ impl Expr {
     /// The extent of the expression.
     pub fn span(&self) -> Span {
         match self {
-            Expr::Int(lit) => lit.span,
-            Expr::Ident(ident) => ident.span,
-            Expr::SizedInt { value, size } => value.span.to(size.span),
-            Expr::Truncate { name, size } => name.span.to(size.span),
-            Expr::BitRange { span, .. }
-            | Expr::AddressOf { span, .. }
-            | Expr::Paren { span, .. }
-            | Expr::Apply { span, .. }
-            | Expr::Unary { span, .. }
-            | Expr::Deref { span, .. }
-            | Expr::Binary { span, .. }
-            | Expr::Error(span) => *span,
+            Self::Int(lit) => lit.span,
+            Self::Ident(ident) => ident.span,
+            Self::SizedInt { value, size } => value.span.to(size.span),
+            Self::Truncate { name, size } => name.span.to(size.span),
+            Self::BitRange { span, .. }
+            | Self::AddressOf { span, .. }
+            | Self::Paren { span, .. }
+            | Self::Apply { span, .. }
+            | Self::Unary { span, .. }
+            | Self::Deref { span, .. }
+            | Self::Binary { span, .. }
+            | Self::Error(span) => *span,
         }
     }
 }

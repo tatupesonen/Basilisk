@@ -174,7 +174,7 @@ impl SourceMap {
     /// A map over `text` that came from a single in-memory source with no
     /// directives, named `name`. Used for standalone snippets.
     pub fn from_text(name: &str, text: &str) -> Self {
-        let mut map = SourceMap::default();
+        let mut map = Self::default();
         let file = map.add_file(PathBuf::from(name), text.to_owned());
         let include = map.add_include(file, None);
         map.start_run(include, 1);

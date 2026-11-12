@@ -21,7 +21,7 @@ fn lex(src: &str, mode: Mode) -> Vec<(TokenKind, &str)> {
             return out;
         }
         assert!(!token.span.is_empty(), "empty token at {:?}", token.span);
-        let text = &src[token.span.range()];
+        let text = src.get(token.span.range()).unwrap();
         if token.kind == Ident {
             assert_eq!(names.resolve(token.ident().unwrap()), text);
         } else {

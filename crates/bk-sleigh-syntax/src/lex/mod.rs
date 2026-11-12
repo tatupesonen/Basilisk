@@ -109,7 +109,7 @@ impl<'a> Lexer<'a> {
             if self.byte(0) != Some(b'#') {
                 return;
             }
-            self.pos += memchr::memchr(b'\n', self.rest()).unwrap_or(self.rest().len());
+            self.pos += memchr::memchr(b'\n', self.rest()).unwrap_or_else(|| self.rest().len());
         }
     }
 
@@ -172,7 +172,7 @@ impl<'a> Lexer<'a> {
                 let len = if mode == Mode::Display {
                     2
                 } else {
-                    memchr::memchr(b'\n', self.rest()).unwrap_or(self.rest().len())
+                    memchr::memchr(b'\n', self.rest()).unwrap_or_else(|| self.rest().len())
                 };
                 (TokenKind::CppComment, len)
             }

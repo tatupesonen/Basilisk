@@ -15,8 +15,8 @@ impl Severity {
     /// Lower-case name, as printed in rendered diagnostics.
     pub const fn as_str(self) -> &'static str {
         match self {
-            Severity::Error => "error",
-            Severity::Warning => "warning",
+            Self::Error => "error",
+            Self::Warning => "warning",
         }
     }
 }

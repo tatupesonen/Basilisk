@@ -41,16 +41,16 @@ impl Definition {
     /// The extent of the statement, up to but not including its `;`.
     pub fn span(&self) -> Span {
         match self {
-            Definition::Alignment(d) => d.span,
-            Definition::Token(d) => d.span,
-            Definition::Context(d) => d.span,
-            Definition::Space(d) => d.span,
-            Definition::Varnode(d) => d.span,
-            Definition::Bitrange(d) => d.span,
-            Definition::PcodeOp(d) => d.span,
-            Definition::AttachValues(d) => d.span,
-            Definition::AttachNames(d) => d.span,
-            Definition::AttachVariables(d) => d.span,
+            Self::Alignment(d) => d.span,
+            Self::Token(d) => d.span,
+            Self::Context(d) => d.span,
+            Self::Space(d) => d.span,
+            Self::Varnode(d) => d.span,
+            Self::Bitrange(d) => d.span,
+            Self::PcodeOp(d) => d.span,
+            Self::AttachValues(d) => d.span,
+            Self::AttachNames(d) => d.span,
+            Self::AttachVariables(d) => d.span,
         }
     }
 }
@@ -155,8 +155,8 @@ impl IdentOrWild {
     /// The extent of the entry.
     pub fn span(&self) -> Span {
         match self {
-            IdentOrWild::Ident(i) => i.span,
-            IdentOrWild::Wildcard(s) => *s,
+            Self::Ident(i) => i.span,
+            Self::Wildcard(s) => *s,
         }
     }
 }

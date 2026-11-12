@@ -95,13 +95,13 @@ impl Equation {
     /// The extent of the equation.
     pub fn span(&self) -> Span {
         match self {
-            Equation::Binary { span, .. }
-            | Equation::EllipsisLeft { span, .. }
-            | Equation::EllipsisRight { span, .. }
-            | Equation::Paren { span, .. }
-            | Equation::Constraint { span, .. }
-            | Equation::Error(span) => *span,
-            Equation::Symbol(ident) => ident.span,
+            Self::Binary { span, .. }
+            | Self::EllipsisLeft { span, .. }
+            | Self::EllipsisRight { span, .. }
+            | Self::Paren { span, .. }
+            | Self::Constraint { span, .. }
+            | Self::Error(span) => *span,
+            Self::Symbol(ident) => ident.span,
         }
     }
 }
@@ -197,13 +197,13 @@ impl PatExpr {
     /// The extent of the expression.
     pub fn span(&self) -> Span {
         match self {
-            PatExpr::Int(lit) => lit.span,
-            PatExpr::Ident(ident) => ident.span,
-            PatExpr::Paren { span, .. }
-            | PatExpr::Apply { span, .. }
-            | PatExpr::Unary { span, .. }
-            | PatExpr::Binary { span, .. }
-            | PatExpr::Error(span) => *span,
+            Self::Int(lit) => lit.span,
+            Self::Ident(ident) => ident.span,
+            Self::Paren { span, .. }
+            | Self::Apply { span, .. }
+            | Self::Unary { span, .. }
+            | Self::Binary { span, .. }
+            | Self::Error(span) => *span,
         }
     }
 }
@@ -247,7 +247,7 @@ impl ContextStmt {
     /// The extent of the statement.
     pub fn span(&self) -> Span {
         match self {
-            ContextStmt::Assign { span, .. } | ContextStmt::Apply { span, .. } => *span,
+            Self::Assign { span, .. } | Self::Apply { span, .. } => *span,
         }
     }
 }
