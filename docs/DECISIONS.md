@@ -156,6 +156,10 @@ and disassembler wrappers, DMG) are not ported from their GPL sources;
 their function is provided by permissively licensed Rust code. Enforced
 with `cargo-deny` once it joins the gate.
 
+*The treatment of Ghidra's GPL modules in this record is superseded by
+ADR-016 (2026-11-12): they are ported, as separately licensed helpers.
+The rest of this record stands.*
+
 ## ADR-011 — Prefer existing crates when they meet requirements
 For every component, first evaluate existing crates against: behavioural
 parity with Ghidra (the tests in `docs/inventory/tests/` must be
@@ -268,3 +272,38 @@ specs from what was learned. Tracks in one wave must not depend on each
 other's unmerged code; a dependency between them is cut with a small trait
 or deferred to the next wave. Rules: `docs/agents/RULES.md`; protocol:
 `docs/LOOP.md`.
+
+## ADR-016 — Ghidra's GPL helpers are ported, as separate GPL programs
+(Owner decision, 2026-11-12: "just port the ghidras gpl helpers."
+Supersedes the GPL clause of ADR-010.)
+
+Ghidra keeps three GPL-licensed modules under `GPL/`, apart from its
+Apache-2.0 code, and runs them as separate programs:
+
+| Ghidra module | What it is | basilisk |
+|---|---|---|
+| `GPL/DemanglerGnu` | The GNU demangler from binutils' libiberty (two versions, 2.24 and 2.41; 34,000 lines of C), built as `demangler_gnu_v2_24`/`v2_41` executables that Ghidra feeds mangled names over a pipe | `gpl/bk-gpl-demangler-gnu` |
+| `GPL/GnuDisassembler` | `gdis`, a small C program over binutils' libopcodes that the user builds, used as an external disassembler for comparison | `gpl/bk-gpl-gdis` |
+| `GPL/DMG` | A Java program over the GPL HFSExplorer libraries that reads Apple DMG/HFS+ images for the file-system browser | `gpl/bk-gpl-dmg` |
+
+basilisk ports them and keeps Ghidra's separation, which is what lets the
+rest stay Apache-2.0 (ADR-010):
+
+* They live in a top-level `gpl/` directory, outside `crates/`, each crate
+  with `license = "GPL-3.0-or-later"` and the GPL text beside it. A Rust
+  port of GPL code is a derivative work and carries the GPL.
+* Each builds a **separate helper executable**. The Apache-2.0 crates talk
+  to it as a subprocess over a pipe, as Ghidra does, and never link it:
+  no `bk-*` crate under `crates/` may depend on a crate under `gpl/`
+  (checked by `cargo-deny` and a gate script when the first one lands).
+  Linking them in would put the whole distributed binary under GPL-3.0.
+* The Apache-2.0 side of each feature — Ghidra's `Features/GnuDemangler`
+  (the parser of demangler output and the analyzer), the external
+  disassembler field, the DMG file system client — is ported in `crates/`
+  as usual and works when the helper is absent by reporting that it is
+  missing, as Ghidra does.
+* Release archives ship the helpers with their source offer and licence
+  texts; a build without `gpl/` is still a complete Apache-2.0 product.
+
+Schedule: the GNU demangler with milestone M6 (it is self-contained and a
+candidate for an earlier wave); `gdis` and DMG with M10.

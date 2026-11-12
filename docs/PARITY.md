@@ -67,7 +67,7 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |
 | PDB | `bk-pdb` | M6 | Missing | |
 | MicrosoftDmang, MicrosoftDemangler | `bk-demangle-ms` | M6 | Missing | Parser planned for wave 2 |
-| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Native Rust demangler instead of the GPL helper (ADR-010) |
+| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Parser of demangler output and the analyzer; talks to the GPL helper over a pipe (ADR-016) |
 | MicrosoftCodeAnalyzer | `bk-analyzers-msvc` | M6 | Missing | |
 | FunctionID | `bk-fid` | M6 | Missing | |
 | BytePatterns | `bk-analyzers-*` | M5 | Missing | |
@@ -101,3 +101,14 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | Framework-TraceModeling, Debugger, Debugger-api, Debugger-rmi-trace, agents, ISF, TaintAnalysis, ProposedUtils | `bk-debug-*` | M10 | Missing | |
 | Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
 | Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | |
+
+## GPL helpers (ADR-016)
+
+Separate GPL-3.0-or-later helper programs under `gpl/`, never linked into
+the Apache-2.0 crates.
+
+| Ghidra module | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `gpl/bk-gpl-demangler-gnu` | M6 | Missing | |
+| GPL/GnuDisassembler (`gdis` over binutils) | `gpl/bk-gpl-gdis` | M10 | Missing | |
+| GPL/DMG (DMG/HFS+ reader) | `gpl/bk-gpl-dmg` | M10 | Missing | |
