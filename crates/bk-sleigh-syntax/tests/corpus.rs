@@ -41,6 +41,7 @@ struct Totals {
     equations: usize,
     spans_checked: usize,
     spans_in_expansions: usize,
+    spans_after_expansions: usize,
 }
 
 /// Checks that `span` starts, in its original file, with `expected`.
@@ -57,12 +58,10 @@ fn check_span(parsed: &Parsed, span: Span, expected: &str, totals: &mut Totals) 
     }
     let line = file.line(loc.line).unwrap();
     let rest: String = line.chars().skip(loc.column as usize - 1).collect();
-    // Text before the token on the same line may itself hold an expansion,
-    // in which case the original line has `$(NAME)` where the token text
-    // was assembled; only check lines without one.
+    // A token after a `$(NAME)` reference on the same line is mapped back
+    // past the reference, so the original line has it at that column.
     if line.contains("$(") {
-        totals.spans_in_expansions += 1;
-        return;
+        totals.spans_after_expansions += 1;
     }
     assert!(
         rest.starts_with(expected),
@@ -180,9 +179,10 @@ fn every_shipped_slaspec_parses_cleanly() {
         totals.equations
     );
     eprintln!(
-        "corpus: {} spans checked against the original files ({} more lie in or after a \
-         $(NAME) expansion); {:.2} s in this build profile",
+        "corpus: {} spans checked against the original files ({} of them on a line with a \
+         $(NAME) reference; {} more lie inside an expanded value); {:.2} s in this build profile",
         totals.spans_checked,
+        totals.spans_after_expansions,
         totals.spans_in_expansions,
         elapsed.as_secs_f64()
     );
