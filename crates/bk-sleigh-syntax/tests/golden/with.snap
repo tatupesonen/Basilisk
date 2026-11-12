@@ -1,0 +1,58 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+with : mode=1 [ phase=1; ] {
+  :a is rd unimpl
+  with sub : op=1 & rd {
+    :b is rs unimpl
+    other: c is epsilon unimpl
+    with : [ phase=2; ] {
+      :d is epsilon unimpl
+    }
+  }
+  define pcodeop inside;
+  macro m() { }
+}
+with tbl : { tbl: e is epsilon unimpl }
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (with @fragment.slaspec:2:1
+    (pattern (= mode 1))
+    (context (= phase 1))
+    (constructor @fragment.slaspec:3:3
+      (display a ws)
+      (pattern rd)
+      unimpl)
+    (with sub @fragment.slaspec:4:3
+      (pattern (& (= op 1) rd))
+      (constructor @fragment.slaspec:5:5
+        (display b ws)
+        (pattern rs)
+        unimpl)
+      (constructor other @fragment.slaspec:6:5
+        (display ws c ws)
+        (pattern epsilon)
+        unimpl)
+      (with @fragment.slaspec:7:5
+        (context (= phase 2))
+        (constructor @fragment.slaspec:8:7
+          (display d ws)
+          (pattern epsilon)
+          unimpl)
+      )
+    )
+    (pcodeop [inside] @fragment.slaspec:11:3)
+    (macro m [] @fragment.slaspec:12:3)
+  )
+  (with tbl @fragment.slaspec:14:1
+    (constructor tbl @fragment.slaspec:14:14
+      (display ws e ws)
+      (pattern epsilon)
+      unimpl)
+  )
+)

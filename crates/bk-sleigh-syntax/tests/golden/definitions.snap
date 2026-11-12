@@ -1,0 +1,47 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=little;
+define alignment=2;
+define space ram type=ram_space size=4 wordsize=2 default;
+define space register type=register_space size=4;
+define register offset=0x100 size=4 [ r0 _ r2 sp ];
+define register offset=0 size=1 contextreg;
+define bitrange zf=flags[0,1] cf=flags[1,1] lo=r0[0,16];
+define token instr(16) endian=big op=(10,15) rd=(0,4) signed hex imm=(0,7) signed dec;
+define token data8(8) d8=(0,7);
+define context contextreg mode=(0,0) noflow phase=(1,2) signed;
+define pcodeop sync;
+define pcodeop [ a b ];
+attach variables [ rd ] [ r0 r1 _ sp ];
+attach names rd [ "a" b _ "x y" ];
+attach values [ imm d8 ] [ -1 0x2 _ 0b11 7 ];
+attach values imm 5;
+
+--- tree
+(spec
+  (endian little) @fragment.slaspec:1:1
+  (alignment 2 @fragment.slaspec:2:1)
+  (space ram (type ram_space) (size 4) (wordsize 2) default @fragment.slaspec:3:1)
+  (space register (type register_space) (size 4) @fragment.slaspec:4:1)
+  (varnode register (offset 0x100) (size 4) [r0 _ r2 sp] @fragment.slaspec:5:1)
+  (varnode register (offset 0) (size 1) [contextreg] @fragment.slaspec:6:1)
+  (bitrange (zf flags[0,1]) (cf flags[1,1]) (lo r0[0,16]) @fragment.slaspec:7:1)
+  (token instr 16 (endian big) @fragment.slaspec:8:1
+    (field op (10 15))
+    (field rd (0 4) signed hex)
+    (field imm (0 7) signed dec))
+  (token data8 8 @fragment.slaspec:9:1
+    (field d8 (0 7)))
+  (context contextreg @fragment.slaspec:10:1
+    (field mode (0 0) noflow)
+    (field phase (1 2) signed))
+  (pcodeop [sync] @fragment.slaspec:11:1)
+  (pcodeop [a b] @fragment.slaspec:12:1)
+  (attach-variables [rd] [r0 r1 _ sp] @fragment.slaspec:13:1)
+  (attach-names [rd] ["a" b _ "x y"] @fragment.slaspec:14:1)
+  (attach-values [imm d8] [-1 0x2 _ 0b11 7] @fragment.slaspec:15:1)
+  (attach-values [imm] [5] @fragment.slaspec:16:1)
+)

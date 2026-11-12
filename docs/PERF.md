@@ -140,3 +140,27 @@ What basilisk's SLEIGH compiler, decoder and decompiler are held against
 
 Not measured: a per-function decompile time with the optimised
 `bin/decomp`.
+
+### `bk-sleigh-syntax`
+
+2026-11-12, Apple M1 Pro, macOS, rustc 1.97.1, `--release` (thin LTO), one
+test thread, other agents' builds running on the machine (indicative,
+±15 %). Preprocess + lex + parse, reading the files from disk each run;
+median of 11 runs (5 for the corpus). Command:
+
+    BASILISK_GHIDRA_DIR=../ghidra CARGO_BUILD_JOBS=2 cargo test --release -p bk-sleigh-syntax --test bench -- --ignored --nocapture --test-threads=1
+
+| Input | Preprocessed lines | Tokens | Preprocess | Preprocess + parse | Lines/s | Peak RSS |
+|---|---:|---:|---:|---:|---:|---:|
+| x86-64 (`x86-64.slaspec` and includes, 1.6 MB) | 39,229 | 399,631 | 3.5 ms | 15.6 ms | 2.5 M | 69 MB |
+| AARCH64 (1.6 MB) | 62,046 | 454,486 | 3.0 ms | 16.7 ms | 3.7 M | 43 MB |
+| PowerPC (`ppc_64_isa_altivec_vle_be`, 0.4 MB) | 14,481 | 105,092 | 1.0 ms | 5.4 ms | 2.7 M | 17 MB |
+| All 150 shipped specs, one after another (28.7 MB) | 1,117,804 | 7,821,930 | 98 ms | 325 ms | 3.4 M | 49 MB |
+
+Budget (spec): the whole corpus in under 10 s single-threaded; measured
+0.33 s. Peak RSS is the process maximum from `/usr/bin/time -l` running one
+benchmark (`--exact bench_x86_64`, …) on the test binary; it includes the
+test harness and memory the allocator kept after earlier runs, so it is an
+upper bound on the parse's own peak. Hot node sizes are asserted in
+`ast::tests::hot_node_sizes`: `Expr` 72 bytes, `Statement` 88, `PatExpr`
+32, `Equation` 36, `IntLit` 24, `DisplayPiece` 16.

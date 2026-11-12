@@ -1,0 +1,25 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+define space token type=ram_space size=4;
+define token offset=0 size=4 [ size type default ];
+define token instr(8) is=(0,3) unimpl=(4,7);
+define context ctx signed=(0,0) hex=(1,1) noflow=(2,2) noflow;
+define pcodeop export;
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (space token (type ram_space) (size 4) @fragment.slaspec:2:1)
+  (varnode token (offset 0) (size 4) [size type default] @fragment.slaspec:3:1)
+  (context ctx @fragment.slaspec:5:1
+    (field signed (0 0))
+    (field hex (1 1))
+    (field noflow (2 2) noflow))
+  (pcodeop [export] @fragment.slaspec:6:1)
+)
+--- diagnostics
+fragment.slaspec:4:32: error: `unimpl` is a keyword and cannot name a token field

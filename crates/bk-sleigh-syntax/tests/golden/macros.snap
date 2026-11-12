@@ -1,0 +1,25 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+macro none() { }
+macro one(a) { a = a + 1; }
+macro two(dst, src) {
+  local t:4 = src;
+  dst = zext(t);
+  <done>
+}
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (macro none [] @fragment.slaspec:2:1)
+  (macro one [a] @fragment.slaspec:3:1
+    (= a (+ a 1)))
+  (macro two [dst src] @fragment.slaspec:4:1
+    (local= t:4 src)
+    (= dst (apply zext t))
+    (label done))
+)

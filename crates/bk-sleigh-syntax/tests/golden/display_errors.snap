@@ -1,0 +1,34 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+:a _ b is epsilon unimpl
+:a 0n12 is epsilon unimpl
+:a with is epsilon unimpl
+:a "unterminated is epsilon unimpl
+:b is epsilon unimpl
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (constructor @fragment.slaspec:2:1
+    (display a ws ws b ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:3:1
+    (display a ws ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:4:1
+    (display a ws ws)
+    (pattern epsilon)
+    unimpl)
+)
+--- diagnostics
+fragment.slaspec:2:4: error: a lone `_` is not a print piece; quote it to print it
+fragment.slaspec:3:4: error: a `0n` integer is not a print piece; quote it to print it
+fragment.slaspec:4:4: error: `with` is a reserved word; quote it to print it
+fragment.slaspec:5:4: error: unterminated string
+fragment.slaspec:6:22: error: expected `is` to end the display section

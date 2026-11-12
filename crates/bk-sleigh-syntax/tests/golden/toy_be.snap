@@ -1,0 +1,499 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: tree
+---
+(spec
+  (endian big) @toy.sinc:12:1
+  (alignment 1 @toy.sinc:13:1)
+  (space ram (type ram_space) (size 4) (wordsize 1) default @toy.sinc:16:1)
+  (space register (type register_space) (size 2) @toy.sinc:18:1)
+  (varnode register (offset 0x1000) (size 4) [r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 sp lr pc] @toy.sinc:20:1)
+  (varnode ram (offset 0x0) (size 4) [mmr0] @toy.sinc:25:1)
+  (varnode register (offset 0x1100) (size 1) [C Z N V] @toy.sinc:35:1)
+  (varnode register (offset 0x1000) (size 2) [r0h r0l r1h r1l r2h r2l r3h r3l r4h r4l r5h r5l r6h r6l r7h r7l r8h r8l r9h r9l r10h r10l r11h r11l r12h r12l sph spl lrh lrl pch pcl] @toy.sinc:53:1)
+  (token instr 16 @toyInstructions.sinc:75:1
+    (field op1515 (15 15))
+    (field op1415 (14 15))
+    (field op1215 (12 15))
+    (field op1111 (11 11))
+    (field op0811 (8 11))
+    (field op0407 (4 7))
+    (field op0007 (0 7))
+    (field op0003 (0 3))
+    (field op0303 (3 3))
+    (field rd (8 11))
+    (field rs (4 7))
+    (field rt (0 3))
+    (field imm1213 (12 13))
+    (field imm0007 (0 7))
+    (field imm0003 (0 3))
+    (field simm1213 (12 13) signed)
+    (field simm0010 (0 10) signed)
+    (field simm0411 (4 11) signed)
+    (field simm0007 (0 7) signed)
+    (field simm0003 (0 3) signed)
+    (field cc0911 (9 11))
+    (field cc0002 (0 2)))
+  (attach-variables [rd rs rt] [r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 sp lr pc] @toyInstructions.sinc:100:1)
+  (constructor Simm4 @toyInstructions.sinc:107:1
+    (display ws q"#" ^ simm0003 ws)
+    (pattern simm0003)
+    (body
+      (export (deref[const]:4 simm0003))))
+  (constructor Simm10 @toyInstructions.sinc:108:1
+    (display ws q"#" ^ computed ws)
+    (pattern (& simm1213 imm0007))
+    (context (= computed ($or (paren (<< simm1213 8)) imm0007)))
+    (body
+      (export (deref[const]:4 computed))))
+  (constructor Imm4 @toyInstructions.sinc:110:1
+    (display ws q"#" ^ imm0003 ws)
+    (pattern imm0003)
+    (body
+      (export (deref[const]:4 imm0003))))
+  (constructor Imm10 @toyInstructions.sinc:111:1
+    (display ws q"#" ^ computed ws)
+    (pattern (& imm1213 imm0007))
+    (context (= computed ($or (paren (<< imm1213 8)) imm0007)))
+    (body
+      (export (deref[const]:4 computed))))
+  (constructor Rel8 @toyInstructions.sinc:113:1
+    (display ws addr ws)
+    (pattern simm0007)
+    (context (= addr (+ inst_start simm0007)))
+    (body
+      (export (deref:4 addr))))
+  (constructor Rel82 @toyInstructions.sinc:114:1
+    (display ws addr ws)
+    (pattern simm0411)
+    (context (= addr (+ inst_start simm0411)))
+    (body
+      (export (deref:4 addr))))
+  (constructor Rel11 @toyInstructions.sinc:115:1
+    (display ws addr ws)
+    (pattern simm0010)
+    (context (= addr (+ inst_start simm0010)))
+    (body
+      (export (deref:4 addr))))
+  (constructor RS @toyInstructions.sinc:117:1
+    (display ws "[" rs "]" ws)
+    (pattern rs)
+    (body
+      (export (deref[ram]:4 rs))))
+  (constructor RT @toyInstructions.sinc:118:1
+    (display ws "[" rt "]" ws)
+    (pattern rt)
+    (body
+      (export (deref[ram]:4 rt))))
+  (constructor CC @toyInstructions.sinc:120:1
+    (display ws q"eq" ws)
+    (pattern (= cc0002 0x0))
+    (body
+      (export Z)))
+  (constructor CC @toyInstructions.sinc:121:1
+    (display ws q"ne" ws)
+    (pattern (= cc0002 0x1))
+    (body
+      (= tmp (not Z))
+      (export tmp)))
+  (constructor CC @toyInstructions.sinc:122:1
+    (display ws q"lt" ws)
+    (pattern (= cc0002 0x2))
+    (body
+      (= tmp (!= N V))
+      (export tmp)))
+  (constructor CC @toyInstructions.sinc:123:1
+    (display ws q"le" ws)
+    (pattern (= cc0002 0x3))
+    (body
+      (= tmp (|| Z (paren (!= N V))))
+      (export tmp)))
+  (constructor CC @toyInstructions.sinc:124:1
+    (display ws q"lo" ws)
+    (pattern (= cc0002 0x4))
+    (body
+      (export C)))
+  (constructor CC @toyInstructions.sinc:125:1
+    (display ws q"mi" ws)
+    (pattern (= cc0002 0x5))
+    (body
+      (export N)))
+  (constructor CC @toyInstructions.sinc:126:1
+    (display ws q"vs" ws)
+    (pattern (= cc0002 0x6))
+    (body
+      (export V)))
+  (constructor CC @toyInstructions.sinc:127:1
+    (display ws q"" ws)
+    (pattern (= cc0002 0x7))
+    (body
+      (export 1:1)))
+  (constructor COND @toyInstructions.sinc:129:1
+    (display ws CC ws)
+    (pattern CC)
+    (body
+      (if (paren (not CC)) (goto inst_next))))
+  (constructor COND @toyInstructions.sinc:130:1
+    (display ws CC ws)
+    (pattern (& CC (= cc0002 0x7)))
+    (body))
+  (macro resultflags [result] @toyInstructions.sinc:132:1
+    (= N (s< result 0))
+    (= Z (== result 0)))
+  (macro addflags [a b] @toyInstructions.sinc:136:1
+    (= C (apply carry a b))
+    (= V (apply scarry a b)))
+  (macro subflags [a b] @toyInstructions.sinc:140:1
+    (= C (s< a b))
+    (= V (apply sborrow a b)))
+  (macro logicflags [] @toyInstructions.sinc:144:1
+    (= C 0)
+    (= V 0))
+  (pcodeop [pcodeop_one] @toyInstructions.sinc:149:1)
+  (pcodeop [pcodeop_two] @toyInstructions.sinc:150:1)
+  (pcodeop [pcodeop_three] @toyInstructions.sinc:151:1)
+  (constructor @toyInstructions.sinc:155:1
+    (display imm ws rd "," ws Imm10 ws)
+    (pattern (& (& (= op1515 0x0) rd) Imm10))
+    (body
+      (apply logicflags)
+      (= rd Imm10)
+      (apply resultflags rd)))
+  (constructor @toyInstructions.sinc:156:1
+    (display simm ws rd "," ws Simm10 ws)
+    (pattern (& (& (= op1415 0x2) rd) Simm10))
+    (body
+      (apply logicflags)
+      (= rd Simm10)
+      (apply resultflags rd)))
+  (constructor @toyInstructions.sinc:158:1
+    (display add ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x0)) rs) rt))
+    (body
+      (apply addflags rs rt)
+      (= rs (+ rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:159:1
+    (display sub ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x1)) rs) rt))
+    (body
+      (apply subflags rs rt)
+      (= rs (- rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:160:1
+    (display rsub ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x2)) rs) rt))
+    (body
+      (apply subflags rt rs)
+      (= rs (- rt rs))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:161:1
+    (display mul ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x3)) rs) rt))
+    (body
+      (= rs (* rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:162:1
+    (display div ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x4)) rs) rt))
+    (body
+      (= rs (/ rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:163:1
+    (display mod ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x5)) rs) rt))
+    (body
+      (= rs (% rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:164:1
+    (display cmp ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x6)) rs) rt))
+    (body
+      (apply subflags rs rt)
+      (= tmp:4 (- rs rt))
+      (apply resultflags tmp)))
+  (constructor @toyInstructions.sinc:165:1
+    (display ucmp ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x7)) rs) rt))
+    (body
+      (apply logicflags)
+      (= N (< rs rt))
+      (= Z (== rs rt))))
+  (constructor @toyInstructions.sinc:167:1
+    (display add ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x8)) rs) Simm4))
+    (body
+      (apply addflags rs Simm4)
+      (= rs (+ rs Simm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:168:1
+    (display sub ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0x9)) rs) Simm4))
+    (body
+      (apply subflags rs Simm4)
+      (= rs (- rs Simm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:169:1
+    (display rsub ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xa)) rs) Simm4))
+    (body
+      (apply subflags Simm4 rs)
+      (= rs (- Simm4 rs))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:170:1
+    (display mul ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xb)) rs) Simm4))
+    (body
+      (= rs (* rs Simm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:171:1
+    (display div ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xc)) rs) Simm4))
+    (body
+      (= rs (/ rs Simm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:172:1
+    (display mod ws rs "," ws Imm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xd)) rs) Imm4))
+    (body
+      (= rs (% rs Imm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:173:1
+    (display cmp ws rs "," ws Simm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xe)) rs) Simm4))
+    (body
+      (apply subflags rs Simm4)
+      (= tmp:4 (- rs Simm4))
+      (apply resultflags tmp)))
+  (constructor @toyInstructions.sinc:174:1
+    (display ucmp ws rs "," ws Imm4 ws)
+    (pattern (& (& (& (= op1215 0xc) (= op0811 0xf)) rs) Imm4))
+    (body
+      (apply logicflags)
+      (= N (< rs Imm4))
+      (= Z (== rs Imm4))))
+  (constructor @toyInstructions.sinc:176:1
+    (display and ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x0)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (& rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:177:1
+    (display or ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x1)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (| rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:178:1
+    (display xor ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x2)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (^ rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:179:1
+    (display lsr ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x3)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (>> rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:180:1
+    (display asr ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x4)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (s>> rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:181:1
+    (display lsl ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x5)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (<< rs rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:192:1
+    (display saa ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x8)) rs) rt))
+    (body
+      (apply logicflags)
+      (= rs (| (paren (<< rs 11)) rt))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:194:1
+    (display lsr ws rs "," ws Imm4 ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xb)) rs) Imm4))
+    (body
+      (apply logicflags)
+      (= rs (>> rs Imm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:195:1
+    (display asr ws rs "," ws Imm4 ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xc)) rs) Imm4))
+    (body
+      (apply logicflags)
+      (= rs (s>> rs Imm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:196:1
+    (display lsl ws rs "," ws Imm4 ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xd)) rs) Imm4))
+    (body
+      (apply logicflags)
+      (= rs (<< rs Imm4))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:197:1
+    (display inv ws rs ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xe)) rs) (= op0003 0x0)))
+    (body
+      (apply logicflags)
+      (= rs (inv rs))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:198:1
+    (display neg ws rs ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xe)) rs) (= op0003 0x1)))
+    (body
+      (apply logicflags)
+      (= rs (neg rs))
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:200:1
+    (display load ws rs "," ws RT ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x6)) rs) RT))
+    (body
+      (= rs RT)
+      (apply logicflags)
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:201:1
+    (display store ws RS "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0x7)) RS) rt))
+    (body
+      (= RS rt)
+      (apply logicflags)
+      (apply resultflags rt)))
+  (constructor @toyInstructions.sinc:202:1
+    (display mov ws rs "," ws rt ws)
+    (pattern (& (& (& (= op1215 0xd) (= op0811 0xf)) rs) rt))
+    (body
+      (= rs rt)
+      (apply logicflags)
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:204:1
+    (display sk ^ CC ws)
+    (pattern (& (& (& (& (& (= op1215 0x8) (= op0811 0x0)) (= op0407 0x0)) (= op0303 0x0)) CC) Rel82))
+    (body
+      (if (paren CC) (goto inst_next2))))
+  (constructor @toyInstructions.sinc:206:1
+    (display br ^ COND ws Rel82 ws)
+    (pattern (& (& (& (= op1215 0xe) (= op0303 0x0)) COND) Rel82))
+    (body
+      (build COND)
+      (goto Rel82)))
+  (constructor @toyInstructions.sinc:207:1
+    (display brds ^ COND ws Rel82 ws)
+    (pattern (& (& (& (= op1215 0xe) (= op0303 0x1)) COND) Rel82))
+    (body
+      (build COND)
+      (apply delayslot 1)
+      (goto Rel82)))
+  (constructor @toyInstructions.sinc:208:1
+    (display br ^ COND ws rs ws)
+    (pattern (& (& (& (& (= op1215 0xf) (= op0811 0x0)) COND) rs) (= op0303 0x0)))
+    (body
+      (build COND)
+      (goto (dynamic rs))))
+  (constructor @toyInstructions.sinc:209:1
+    (display brds ^ COND ws rs ws)
+    (pattern (& (& (& (& (= op1215 0xf) (= op0811 0x1)) COND) rs) (= op0303 0x0)))
+    (body
+      (build COND)
+      (= temp:4 rs)
+      (apply delayslot 1)
+      (goto (dynamic temp))))
+  (constructor @toyInstructions.sinc:214:1
+    (display push ws rs ws)
+    (pattern (& (& (& (= op1215 0xf) (= op0811 0x2)) rs) (= op0003 0x0)))
+    (body
+      (= (deref[ram]:4 sp) rs)
+      (= sp (- sp 4))
+      (apply logicflags)
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:215:1
+    (display pop ws rs ws)
+    (pattern (& (& (& (= op1215 0xf) (= op0811 0x3)) rs) (= op0003 0x0)))
+    (body
+      (= sp (+ sp 4))
+      (= rs (deref[ram]:4 sp))
+      (apply logicflags)
+      (apply resultflags rs)))
+  (constructor @toyInstructions.sinc:217:1
+    (display ret ws)
+    (pattern (& (& (= op1215 0xf) (= op0811 0x4)) (= op0007 0x0)))
+    (body
+      (return lr)))
+  (constructor @toyInstructions.sinc:218:1
+    (display callds ws Rel8 ws)
+    (pattern (& (& (= op1215 0xf) (= op0811 0x5)) Rel8))
+    (body
+      (apply delayslot 1)
+      (= lr inst_next)
+      (call Rel8)))
+  (constructor @toyInstructions.sinc:219:1
+    (display call ws rs ws)
+    (pattern (& (& (& (= op1215 0xf) (= op0811 0x6)) rs) (= op0003 0x0)))
+    (body
+      (= lr inst_next)
+      (call (dynamic rs))))
+  (constructor @toyInstructions.sinc:220:1
+    (display call ws Rel11 ws)
+    (pattern (& (& (= op1215 0xf) (= op1111 0x1)) Rel11))
+    (body
+      (= lr inst_next)
+      (call Rel11)))
+  (constructor @toyInstructions.sinc:223:1
+    (display call ^ COND ws rs ws)
+    (pattern (& (& (& (& (= op1215 0xf) (= op0811 0x6)) rs) (= op0303 0x1)) COND))
+    (body
+      (build COND)
+      (= lr inst_next)
+      (call (dynamic rs))))
+  (constructor @toyInstructions.sinc:225:1
+    (display user_one ws rs ws)
+    (pattern (& (& (& (= op1215 0xa) (= op0811 0x1)) rs) (= op0003 0x0)))
+    (body
+      (apply pcodeop_one rs)))
+  (constructor @toyInstructions.sinc:226:1
+    (display user_two ws rs ws)
+    (pattern (& (& (& (= op1215 0xa) (= op0811 0x2)) rs) (= op0003 0x0)))
+    (body
+      (apply pcodeop_two rs)
+      (apply pcodeop_three)))
+  (constructor @toyInstructions.sinc:227:1
+    (display user_three ws)
+    (pattern (& (& (= op1215 0xa) (= op0811 0x3)) (= op0007 0x0)))
+    (body
+      (apply pcodeop_three)))
+  (constructor @toyInstructions.sinc:228:1
+    (display user_four ws rs ws rt ws)
+    (pattern (& (& (& (= op1215 0xa) (= op0811 0x4)) rs) rt))
+    (body
+      (apply pcodeop_one rs)
+      (call (dynamic rt))
+      (apply pcodeop_three)))
+  (constructor @toyInstructions.sinc:229:1
+    (display user_five ws Rel8 ws)
+    (pattern (& (& (= op1215 0xa) (= op0811 0x5)) Rel8))
+    (body
+      (= lr inst_next)
+      (call Rel8)
+      (apply pcodeop_three)))
+  (constructor @toyInstructions.sinc:230:1
+    (display user_six ws rs ws)
+    (pattern (& (& (& (= op1215 0xa) (= op0811 0x6)) rs) (= op0003 0x0)))
+    (body
+      (= r1 (apply pcodeop_one rs))
+      (call (dynamic r1))))
+  (constructor @toyInstructions.sinc:232:1
+    (display unimpl ws)
+    (pattern (& (& (= op1215 0xa) (= op0811 0x8)) (= op0007 0)))
+    unimpl)
+)

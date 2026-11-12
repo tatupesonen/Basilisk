@@ -1,0 +1,43 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+:a is op=1 & rd=2 | op=3 ; imm unimpl
+:b is (op=1 ; rd) ... & imm < 4 unimpl
+:c is ... imm >= 0x10 & op != 0b1 unimpl
+:d is op=1 [ mode = 1; phase = (rd << 2) | 1 + 2 * 3; globalset(inst_next, mode); ] unimpl
+:e is imm=-1 & rd = (imm $and 0xf) $or ~op unimpl
+:f is epsilon [ disp = inst_start + (imm << 2); ] unimpl
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (constructor @fragment.slaspec:2:1
+    (display a ws)
+    (pattern (| (& (= op 1) (= rd 2)) (; (= op 3) imm)))
+    unimpl)
+  (constructor @fragment.slaspec:3:1
+    (display b ws)
+    (pattern (& (ellipsis-right (paren (; (= op 1) rd))) (< imm 4)))
+    unimpl)
+  (constructor @fragment.slaspec:4:1
+    (display c ws)
+    (pattern (& (ellipsis-left (>= imm 0x10)) (!= op 0b1)))
+    unimpl)
+  (constructor @fragment.slaspec:5:1
+    (display d ws)
+    (pattern (= op 1))
+    (context (= mode 1) (= phase ($or (paren (<< rd 2)) (+ 1 (* 2 3)))) (apply globalset inst_next mode))
+    unimpl)
+  (constructor @fragment.slaspec:6:1
+    (display e ws)
+    (pattern (& (= imm (neg 1)) (= rd ($or (paren ($and imm 0xf)) (inv op)))))
+    unimpl)
+  (constructor @fragment.slaspec:7:1
+    (display f ws)
+    (pattern epsilon)
+    (context (= disp (+ inst_start (paren (<< imm 2)))))
+    unimpl)
+)
