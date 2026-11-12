@@ -41,7 +41,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
-use bk_sleigh_syntax::{FsLoader, parse_file};
+use bk_sleigh_syntax::{Defines, FsLoader, parse_file};
 
 /// The reference compiler, or `None` (with a printed reason) if absent.
 fn reference_sleigh() -> Option<PathBuf> {
@@ -190,4 +190,149 @@ fn trees_agree_with_ghidras_compiled_sla() {
     if filter.is_none() {
         assert_eq!(t.specs, 150);
     }
+}
+
+/// Small hand-written specifications on which the two Ghidra front ends,
+/// or this crate and Ghidra's C++ front end, could disagree. Each case
+/// records whether this crate accepts it and whether Ghidra's C++
+/// compiler does; the test runs both and checks the record. Where they
+/// differ, this crate follows Ghidra's Java front end (the authority,
+/// which cannot be run here), as the comment on each case says.
+#[test]
+fn edge_cases_against_ghidras_cpp_compiler() {
+    let Some(sleigh) = reference_sleigh() else {
+        return;
+    };
+    let base = "define endian=little;\n\
+                define space ram type=ram_space size=4 default;\n\
+                define space register type=register_space size=4;\n\
+                define register offset=0 size=4 [ r0 r1 r2 ];\n\
+                define token instr(8) opc=(4,7) reg=(0,3);\n\
+                :Z reg is opc=15 & reg { r0 = 1; }\n";
+    // (name, text, accepted here, accepted by the C++ compiler)
+    let cases: [(&str, &str, bool, bool); 15] = [
+        ("plain", ":A reg is opc=0 & reg { r0 = 1; }", true, true),
+        // A prefix without digits is `0` then a name in both front ends'
+        // longest-match lexers, a syntax error here.
+        (
+            "hex-without-digits",
+            ":A reg is opc=0 & reg { r0 = 0xg; }",
+            false,
+            false,
+        ),
+        // Display: a lone `_` and `0n12` are not print pieces in Java's
+        // DisplayParser.g; C++ makes them operands, which are undefined.
+        (
+            "display-underscore",
+            ":A _ reg is opc=0 & reg { r0 = 1; }",
+            false,
+            false,
+        ),
+        (
+            "display-0n",
+            ":A 0n12 reg is opc=0 & reg { r0 = 1; }",
+            false,
+            false,
+        ),
+        (
+            "display-with",
+            ":A with reg is opc=0 & reg { r0 = 1; }",
+            false,
+            false,
+        ),
+        // Java prints `0x10` literally; C++ splits it into `0` and the
+        // operand `x10`.
+        (
+            "display-hex",
+            ":A 0x10 reg is opc=0 & reg { r0 = 1; }",
+            true,
+            false,
+        ),
+        (
+            "display-leading-space",
+            ":  A reg is opc=0 & reg { r0 = 1; }",
+            true,
+            true,
+        ),
+        // `0n` decimal operands exist only in Java's SemanticLexer.g.
+        (
+            "semantic-0n",
+            ":A reg is opc=0 & reg { r0 = 0n12; }",
+            true,
+            false,
+        ),
+        // Nested unary operators: C++ accepts them, Java does not; accepted.
+        (
+            "nested-unary",
+            ":A reg is opc=0 & reg { r0 = - - r1; }",
+            true,
+            true,
+        ),
+        // Comparisons are left-associative in Java, non-associative in C++.
+        (
+            "comparison-chain",
+            ":A reg is opc=0 & reg { r0 = zext(r1 < r2 < r0); }",
+            true,
+            false,
+        ),
+        // Java strings accept backslash escapes; C++ strings do not.
+        (
+            "string-escape",
+            ":\"a\\\"b\" reg is opc=1 & reg { r0 = 1; }",
+            true,
+            false,
+        ),
+        // `!` in `@if` exists only in Java's BooleanExpression.g, and only
+        // before a parenthesised expression.
+        (
+            "if-not-paren",
+            "@if !(defined(X))\n:A reg is opc=0 & reg { r0 = 1; }\n@endif",
+            true,
+            false,
+        ),
+        (
+            "if-not-bare",
+            "@if !defined(X)\n:A reg is opc=0 & reg { r0 = 1; }\n@endif",
+            false,
+            false,
+        ),
+        // An `@if` left open at the end of a file is closed silently.
+        (
+            "open-conditional",
+            "@ifdef X\n:A reg is opc=0 & reg { r0 = 1; }",
+            true,
+            true,
+        ),
+        // Directives start in column one.
+        (
+            "indented-directive",
+            " @define Y 1\n:A reg is opc=0 & reg { r0 = 1; }",
+            false,
+            false,
+        ),
+    ];
+    let dir = tempfile::tempdir().unwrap();
+    let mut wrong = Vec::new();
+    for (name, text, ours_expected, cpp_expected) in cases {
+        let source = format!("{base}{text}\n");
+        let path = dir.path().join(format!("{name}.slaspec"));
+        std::fs::write(&path, &source).unwrap();
+        let ours = parse_file(&path, &Defines::new(), &mut FsLoader)
+            .diagnostics
+            .is_empty();
+        let out = Command::new(&sleigh)
+            .arg(&path)
+            .arg(dir.path().join(format!("{name}.sla")))
+            .output()
+            .unwrap();
+        let log = String::from_utf8_lossy(&out.stderr).into_owned()
+            + &String::from_utf8_lossy(&out.stdout);
+        let cpp = !log.contains("ERROR");
+        if (ours, cpp) != (ours_expected, cpp_expected) {
+            wrong.push(format!(
+                "{name}: here {ours} (expected {ours_expected}), C++ {cpp} (expected {cpp_expected}): {log}"
+            ));
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
