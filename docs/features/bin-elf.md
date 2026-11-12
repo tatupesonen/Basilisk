@@ -210,6 +210,118 @@ cheap and nothing is copied that is not asked for.
 
 (The implementing agent appends further differences here.)
 
+Appended by the first `bin-elf` agent (2026-11-12). Entries marked *(planned)*
+describe code that is designed but not yet written — see
+`docs/agents/bin-elf.md`.
+
+### `bk-bin`
+
+- **One bounds rule for every provider.** A read of zero bytes succeeds at
+  any offset up to and including the length. Ghidra is inconsistent:
+  `ByteProviderWrapper.readBytes(len, 0)` throws while `isValidRange(len, 0)`
+  is true, and `EmptyByteProvider.isValidRange` is always false although
+  `readBytes(0, 0)` succeeds.
+- **Borrowing reads.** `ByteProvider::read_bytes` and
+  `BinaryReader::read_bytes` return `Cow<[u8]>`: borrowed when the provider
+  is in memory (`as_slice`), copied otherwise. Ghidra always copies.
+- **`BinaryReader` is a `Copy` value with a slice fast path**, and can be
+  created over a bare slice (`from_slice`) without a provider.
+- **Signedness is in the type.** `read_u32`/`read_i32` and friends replace
+  `readInt`/`readUnsignedInt`-returning-`long`; `read_uint`/`read_sint`
+  replace `readUnsignedValue`/`readValue`. A length outside 1–8 is an error
+  value (Ghidra: `IndexOutOfBoundsException`).
+- **No `DataConverter` overloads.** `reader.with_endian(e)` gives a copy in
+  another byte order; `set_endian` changes the reader.
+- **The character size follows from the character set.** Ghidra's
+  `readString(index, charset, charLen)` lets the caller pass a `charLen`
+  that does not match the charset; `Charset` fixes it (1 for ASCII, Latin-1,
+  UTF-8; 2 for UTF-16; 4 for UTF-32).
+- **`read_u32_count`** is `readNextUnsignedIntExact`; the generic
+  `readNext(ReaderFunction)` / `readNextVarInt` helpers have no counterpart
+  (a closure taking `&mut BinaryReader` needs no adapter in Rust).
+  `Leb128Info::as_u32`/`as_i32` carry the range checks.
+- **File cache.** `FileProvider` keeps at most 64 blocks of 64 KiB in a
+  direct-mapped cache with one reader-writer lock per slot, and bypasses the
+  cache for reads of a block or more. Ghidra keeps every buffer the garbage
+  collector has not reclaimed (soft references plus four pinned) and
+  serialises reads on one monitor. Read-only: Ghidra's write support
+  (`MutableByteProvider`) is not ported.
+- **`RangeMappedProvider` bug not reproduced.** Ghidra marks a sparse range
+  with offset −1, so a real range starting at `sparse_len − 1` passes its
+  "continues the previous range" test and is merged into the sparse range
+  (its bytes then read as zeros). basilisk keeps the two ranges apart.
+  `add_range` with length 0 is ignored instead of throwing.
+- **`SubProvider` names** use `<unnamed>` where Java prints `null` for a
+  parent without a name.
+- **`UnlimitedProvider`** rejects offsets above `i64::MAX` (Java's negative
+  indexes) and otherwise behaves as `UnlimitedByteProviderWrapper`.
+- **Not ported:** `InputStreamByteProvider` (forward-only stream — read it
+  into memory), `ObfuscatedFileByteProvider` (belongs with the file-system
+  cache, M10), `SynchronizedByteProvider` (not needed), `MemoryByteProvider`
+  and `MemBufferByteProvider` (need program memory, M4).
+- **Existing crates used and not used** (owner rule; figures in
+  `docs/agents/bin-elf.md`): `memchr` for terminator search, `thiserror`;
+  integer decoding and UTF-8/16/32 decoding are the standard library's
+  (`from_le_bytes`, `from_utf8_lossy`, `char::decode_utf16`). `leb128` is not
+  used because Ghidra's ported test fixes the cursor position after an
+  overflow and its signed rule accepts ten-byte values that crate rejects.
+  `encoding_rs` is not used because it has no UTF-32 and decodes "ASCII" as
+  windows-1252 (Java yields U+FFFD above 0x7f). A cache crate (`lru`, `moka`)
+  is not used for the 64-slot block cache: `lru` needs an exclusive lock per
+  read, `moka` is a large dependency for it.
+
+### `bk-elf`
+
+- **Unknown values are kept.** Types, tags and machines are newtypes with
+  constants and name lookup, not enums.
+- **Symbol binding.** `Symbol::bind()` returns the upper four bits of
+  `st_info`; Ghidra's `getBind()` shifts a signed byte, so bindings ≥ 8
+  (`STB_GNU_UNIQUE` = 10) come out negative there.
+- **Section and symbol names are read on demand**, not stored: a hostile
+  file can point every section name (or `DT_NEEDED` entry) at the same long
+  unterminated string, which makes Ghidra's eager copies quadratic in the
+  file size.
+- **`ProgramHeader::offset_of`** returns an error where Ghidra's
+  `getOffset(long)` throws `UnsupportedOperationException` /
+  `ArithmeticException` (a `PT_LOAD` with no file bytes, a segment whose size
+  the processor extension scales, a zero load size). In Ghidra these
+  unchecked exceptions abort the import; here the affected table is skipped
+  with a diagnostic (`UnlocatedAddress`).
+- **A dynamic table at an offset Java sees as negative** is skipped with a
+  diagnostic; in Ghidra the `IOException` ends `parse()`.
+- **Prelinked files.** Ghidra compares `DT_STRTAB` (adjusted once) with a
+  string-table section address that it adjusts twice, so on a prelinked file
+  it never matches and a duplicate dynamic string table is created. basilisk
+  adjusts once and matches the section.
+- **Compressed sections.** Ghidra logs problems with a compression header
+  through `Msg.warn`, not the error consumer; basilisk reports them as
+  diagnostics of kind `Compression`. Inflation grows its buffer with the
+  data produced, never with `ch_size` alone (bound: 1040× the compressed
+  size).
+- **Android packed relocations are capped** at one relocation per byte of
+  the file. A group that shares offset delta and info costs no bytes per
+  relocation, so Ghidra can be made to allocate without bound.
+- *(planned)* **The GNU hash walk stops at the end of the file.** Ghidra
+  bounds it by the containing section's `sh_size`, which the file controls.
+- *(planned)* **`section_by_name` returns the first match**; Ghidra's
+  `getSection(String)` throws `RuntimeException` when two sections share the
+  name (reachable from relocation parsing with `sh_link` = 0 and two
+  `.dynsym` sections).
+- *(planned)* **String-table offsets are unsigned.** Ghidra widens the `int`
+  `st_name` with sign extension, so a name offset ≥ 2³¹ reads *before* the
+  table.
+- *(planned)* **Diagnostics of lazy reads** (a symbol name that cannot be
+  read, a `DT_NEEDED` string) are returned by the call that performs the
+  read, not stored in the file's diagnostics list.
+- *(planned)* **Android relocations on MIPS-64.** Ghidra builds them with a
+  constructor its MIPS relocation class does not override, so symbol index
+  and type read as 0; basilisk uses the standard 64-bit split.
+
 ## 9. Status
 
-Not implemented yet.
+**Handover on 2026-11-12, track not finished.** `bk-bin` is complete against
+sections 4.1 and 4.2 and its Ghidra tests are ported and marked. `bk-elf` has
+its building blocks and the first half of the parser; the second half
+(symbol and relocation tables), the `ElfFile` type, GNU versioning, notes,
+the fixture builder and nearly all ELF tests are not written. The state, the
+crate evaluation and the remaining work are in `docs/agents/bin-elf.md`.

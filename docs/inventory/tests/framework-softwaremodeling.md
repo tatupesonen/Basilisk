@@ -74,7 +74,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.program.model.data.Float10DataTypeTest` (unit, 2 tests)
 - [ ] `ghidra.program.model.data.IntegerDataTypeTest` (unit, 10 tests)
 - [ ] `ghidra.program.model.data.LEB128DataTypeTest` (unit, 4 tests)
-- [ ] `ghidra.program.model.data.LEB128Test` (unit, 5 tests)
+- [x] `ghidra.program.model.data.LEB128Test` (unit, 5 tests) → `crates/bk-bin/tests/leb128.rs`
 - [ ] `ghidra.program.model.data.NoisyStructureBuilderTest` (unit, 3 tests)
 - [ ] `ghidra.program.model.data.StringDataTypeTest` (unit, 50 tests)
 - [ ] `ghidra.program.model.data.StringRenderBuilderTest` (unit, 21 tests)
