@@ -41,8 +41,27 @@ read a table with one `read_bytes` call and decode from the slice.
 
 ### bk-elf
 
-Not measured: the symbol-table benchmark the spec asks for needs the fixture
-builder and `ElfFile`, which do not exist yet (see `docs/agents/bin-elf.md`).
+2026-11-12, Apple M1 Pro (8 cores, 16 GiB), macOS, Rust 1.97.1, release
+profile, best of 3–20 runs; a fuzzer was running on two cores at the time
+(indicative figures). Command:
+`cargo test -p bk-elf --release --test bench -- --ignored --nocapture --test-threads=1`.
+Input: a 64-bit file of 41 MB with one `.symtab` of 1,000,001 symbols
+named `function_NNNNNNN`, written by the test fixture builder.
+
+| Benchmark | Time | Per symbol |
+|---|---:|---:|
+| `ElfFile::parse` (header, header tables, tables located; no symbol read) | 1.3 µs | — |
+| decode every symbol (`MemoryProvider`) | 3.8 ms | 3.8 ns |
+| decode every symbol and borrow its name (`MemoryProvider`) | 27.8 ms | 27.8 ns |
+| decode every symbol and collect owned names | 50.5 ms | 50.5 ns |
+| decode every symbol (`FileProvider`) | 23.8 ms | 23.8 ns |
+| decode every symbol and read its name (`FileProvider`) | 215 ms | 215 ns |
+
+Opening is independent of the symbol count because symbols, names and
+relocations are read on demand. Through `FileProvider` each name costs a
+block-cache lookup and a copy (a name may cross a block); a caller that
+reads every name of a large table should read the string table once with
+`section_data` and resolve names from that slice.
 
 ### `bk-pcode`
 

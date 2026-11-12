@@ -13,7 +13,11 @@
     reason = "test code"
 )]
 
-#[allow(dead_code, unreachable_pub, reason = "each test crate uses part of the support code")]
+#[allow(
+    dead_code,
+    unreachable_pub,
+    reason = "each test crate uses part of the support code"
+)]
 mod common;
 
 #[allow(dead_code, unreachable_pub, reason = "shared with the fuzz target")]

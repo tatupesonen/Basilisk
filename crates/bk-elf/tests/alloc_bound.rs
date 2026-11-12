@@ -21,7 +21,11 @@
     reason = "test code"
 )]
 
-#[allow(dead_code, unreachable_pub, reason = "each test crate uses part of the support code")]
+#[allow(
+    dead_code,
+    unreachable_pub,
+    reason = "each test crate uses part of the support code"
+)]
 mod common;
 
 use bk_bin::MemoryProvider;
@@ -85,7 +89,11 @@ fn heap_use_is_a_fixed_multiple_of_the_input() {
     let check = |data: &[u8]| {
         let limit = PER_BYTE * data.len() as u64 + FIXED;
         let used = peak(data);
-        assert!(used <= limit, "{used} bytes of heap for {} bytes of input", data.len());
+        assert!(
+            used <= limit,
+            "{used} bytes of heap for {} bytes of input",
+            data.len()
+        );
     };
 
     // Real files and the builder sample.

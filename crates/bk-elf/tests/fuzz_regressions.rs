@@ -18,7 +18,8 @@ mod elf_target;
 
 #[test]
 fn elf_parse_regressions_do_not_panic() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fuzz/regressions/bk_elf_parse");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../fuzz/regressions/bk_elf_parse");
     let mut replayed = 0;
     for entry in std::fs::read_dir(&dir).unwrap() {
         let path = entry.unwrap().path();
