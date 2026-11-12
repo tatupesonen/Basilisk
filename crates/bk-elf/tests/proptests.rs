@@ -17,8 +17,8 @@
 mod common;
 
 #[allow(dead_code, unreachable_pub, reason = "shared with the fuzz target")]
-#[path = "../../../fuzz/fuzz_targets/bin_elf/mod.rs"]
-mod bin_elf;
+#[path = "../../../fuzz/fuzz_targets/bk_elf/mod.rs"]
+mod elf_target;
 
 use common::builder::{Enc, sample};
 use proptest::prelude::*;
@@ -58,25 +58,25 @@ proptest! {
         data in 0u8..4,
         rest in prop::collection::vec(any::<u8>(), 0..2048),
     ) {
-        bin_elf::elf_parse(&with_ident(class, data, &rest));
+        elf_target::elf_parse(&with_ident(class, data, &rest));
     }
 
     #[test]
     fn mutated_builder_files_never_panic(enc in 0usize..4, edits in edits()) {
         let bytes = sample(Enc::ALL[enc]).0.build().bytes;
-        bin_elf::elf_parse(&mutate(bytes, &edits));
+        elf_target::elf_parse(&mutate(bytes, &edits));
     }
 
     #[test]
     fn mutated_fixtures_never_panic(file in 0usize..17, edits in edits()) {
         let files = common::files::fixture_files();
         let bytes = std::fs::read(&files[file % files.len()]).unwrap();
-        bin_elf::elf_parse(&mutate(bytes, &edits));
+        elf_target::elf_parse(&mutate(bytes, &edits));
     }
 
     #[test]
     fn truncated_files_never_panic(enc in 0usize..4, keep in 0usize..2048) {
         let bytes = sample(Enc::ALL[enc]).0.build().bytes;
-        bin_elf::elf_parse(&bytes[..keep.min(bytes.len())]);
+        elf_target::elf_parse(&bytes[..keep.min(bytes.len())]);
     }
 }

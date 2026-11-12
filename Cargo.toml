@@ -23,6 +23,7 @@ bk-elf = { path = "crates/bk-elf" }
 bk-testkit = { path = "crates/bk-testkit" }
 bk-binutils-sys = { path = "crates/bk-binutils-sys" }
 bk-gnu-disasm = { path = "crates/bk-gnu-disasm" }
+bk-ui = { path = "crates/bk-ui" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"
@@ -37,6 +38,11 @@ roxmltree = "0.21.1"
 flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
 # Pinned exactly: 0.1.5 was under two weeks old when this was added (2026-11-12).
 unicode-properties = { version = "=0.1.4", default-features = false, features = ["general-category"] }
+num-bigint = "0.4.8"
+primitive-types = { version = "0.14.0", default-features = false, features = ["std"] }
+libm = "0.2.16"
+wait-timeout = "0.2.1"
+walkdir = "2.5.0"
 
 # Test support
 proptest = "1.12.0"

@@ -93,9 +93,9 @@ rules so merges are clean and the result is shippable.
 ## Commits
 
 Conventional messages (`feat(elf): …`), small and frequent, each ending
-with
+with the Co-Authored-By trailer of the model you are, for example
 
-    Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ## Final report
 

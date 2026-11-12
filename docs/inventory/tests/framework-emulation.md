@@ -21,43 +21,43 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.pcode.exec.SleighProgramCompilerTest` (unit, 3 tests)
 - [ ] `ghidra.pcode.exec.SleighUtilsTest` (unit, 29 tests)
 - [ ] `ghidra.pcode.memstate.UniqueMemoryBankTest` (unit, 16 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorBoolAndTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorBoolNegateTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorBoolOrTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorBoolXorTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatAbsTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatAddTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatCeilTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatDivTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatEqualTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatFloat2FloatTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatFloorTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatInt2FloatTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatLessEqualTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatLessTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatMultTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatNanTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatNegTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatNotEqualTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatRoundTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatSqrtTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatSubTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorFloatTruncTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorInt2CompTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntAddTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntAndTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntCarryTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntDivTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntLeftTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntLessEqualTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntLessTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntMultTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntNegateTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntOrTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntRemTest` (unit, 4 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntRightTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntSLessEqualTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntSLessTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorIntSRightTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorLzcountTest` (unit, 2 tests)
-- [ ] `ghidra.pcode.opbehavior.OpBehaviorPopcountTest` (unit, 2 tests)
+- [x] `ghidra.pcode.opbehavior.OpBehaviorBoolAndTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorBoolNegateTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorBoolOrTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorBoolXorTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatAbsTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatAddTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatCeilTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatDivTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatEqualTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatFloat2FloatTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatFloorTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatInt2FloatTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatLessEqualTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatLessTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatMultTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatNanTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatNegTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatNotEqualTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatRoundTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatSqrtTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatSubTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorFloatTruncTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_float_conv.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorInt2CompTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntAddTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntAndTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntCarryTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntDivTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntLeftTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntLessEqualTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntLessTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntMultTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntNegateTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntOrTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntRemTest` (unit, 4 tests) → `crates/bk-pcode/tests/java_opbehavior_int_arith.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntRightTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntSLessEqualTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs` (the Java class tests the other operation; ported as written)
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntSLessTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs` (the Java class tests the other operation; ported as written)
+- [x] `ghidra.pcode.opbehavior.OpBehaviorIntSRightTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_int_shift_cmp.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorLzcountTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`
+- [x] `ghidra.pcode.opbehavior.OpBehaviorPopcountTest` (unit, 2 tests) → `crates/bk-pcode/tests/java_opbehavior_bool_misc.rs`

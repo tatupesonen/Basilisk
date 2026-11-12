@@ -108,11 +108,11 @@ it is reached; later milestones are intentionally coarse.
 ### M0 — Foundations (wave 1, in progress)
 - [x] Workspace, lints, gate, CI, licence, docs skeleton, test checklist
 - [ ] `bk-core` + `bk-marshal`: address spaces, addresses, varnode data, XML and packed encode/decode (`features/core-marshal.md`)
-- [ ] `bk-pcode`: opcodes, op behaviours, float formats, multiprecision (`features/pcode.md`)
+- [x] `bk-pcode`: opcodes, op behaviours, float formats, multiprecision (`features/pcode.md`)
 - [ ] `bk-sleigh-syntax`: SLEIGH preprocessor, lexer, parser; parses all 150 `.slaspec` files (`features/sleigh-syntax.md`)
 - [ ] `bk-lang`: `.ldefs`, `.pspec`, `.opinion`, language registry (`features/lang.md`)
 - [ ] `bk-bin` + `bk-elf`: byte providers, binary reader, ELF parser (`features/bin-elf.md`)
-- [ ] `bk-testkit` + reference tools: build Ghidra's `sleigh` and `decomp`, compile every `.sla`, oracle wrappers (`features/reference-tools.md`)
+- [x] `bk-testkit` + reference tools: build Ghidra's `sleigh` and `decomp`, compile every `.sla`, oracle wrappers (`features/reference-tools.md`)
 
 ### M1 — SLEIGH runtime
 - [ ] `.sla` loader (format 4) into arena-based symbol tables and decision trees

@@ -494,3 +494,28 @@ and check that all code with miri that does need unsafe." Tightens the
   Miri does run.
 
 Currently no crate on `master` contains `unsafe`.
+
+## ADR-021 — Where Ghidra's result depends on the host, basilisk takes x86-64's
+(Proposed by the `pcode` track, accepted 2026-11-12.)
+
+Some of Ghidra's C++ behaviour is not defined by its source but by the
+machine it runs on: the sign of a NaN an operation creates, conversions of
+out-of-range floats to integers, and decimal printing of floats through the
+C++ standard library. Ghidra's own tests show it: on macOS on Apple silicon
+the reference build fails one unit test (`double_decimal_precision`) and
+two `floatprint.xml` checks that pass on x86-64 Linux.
+
+basilisk's results must not depend on the host. Where Ghidra's does,
+basilisk produces **the result Ghidra gives on x86-64 Linux** (its
+reference platform, and the one its tests were written on), on every
+platform — unless a Ghidra test pins a different value, in which case the
+test wins and the case is recorded in the feature doc. Examples in
+`bk-pcode`: a created NaN is negative (so `0.0f/0.0f` prints `-NAN`, as
+`floatprint.xml` expects); out-of-range `FLOAT_TRUNC` saturates, because
+Ghidra's Java tests pin saturation.
+
+Consequence for differential tests (ADR-007): an oracle built on another
+host disagrees with basilisk in exactly these documented cases; tests list
+them rather than loosen the comparison. The x86-64 behaviour that no test
+pins is taken from reading the source until someone runs the oracle on
+x86-64 Linux, which `scripts/build-reference.sh` in a container can do.

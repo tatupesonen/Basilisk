@@ -168,8 +168,8 @@ The Rust API other crates' tests use:
 ## 5. Design
 
 - `bk-testkit` modules: `paths`, `skip`, `tools/{sleigh, decomp,
-  decomp_test, pcodedump}`, `golden`, `datatest/{model, parse}`,
-  `corpus`. Errors use `thiserror`; this is a library, so the workspace
+  decomp_test, pcodedump}`, `datatest/{model, parse}`, `corpus`
+  (no `golden` module: snapshots are `insta`'s). Errors use `thiserror`; this is a library, so the workspace
   lints apply to it like any other crate.
 - The script is POSIX `bash` (macOS ships bash 3.2: no associative
   arrays, no `mapfile`), uses only tools present on a stock developer
@@ -213,6 +213,92 @@ The Rust API other crates' tests use:
 Not applicable (tooling). Patches applied to the copied Ghidra source, if
 any, are listed here by the implementing agent.
 
+**Patch to the copied source** (one, applied by the script to its copy in
+`../reference/src`, never to `../ghidra`):
+`tools/reference/patches/0001-opbehavior-int-min-macro.patch`.
+`CPP/opbehavior.cc` declares a constant named `INT_MIN` (lines 515 and 542
+at Ghidra 42db038f3c). With Apple clang 17.0.0, `<limits.h>` reaches that
+file through the standard headers and `INT_MIN` is a macro there, so the
+unmodified file fails to compile ("expected unqualified-id"), with or
+without the script's flags. The patch adds `#undef INT_MIN` after the
+file's includes. It is a patch to Ghidra's Apache-2.0 source and stays
+under that licence. A patch that no longer applies stops the script.
+
+**Makefile overrides** (on the `make` command line, not patches; reasons in
+`tools/reference/README.md`): `ARCH_TYPE=` (the Makefile forces
+`-arch x86_64` on macOS); `ADDITIONAL_FLAGS="-w -DLOCAL_ZLIB"` and
+`LNK=../zlib/libz.a` (the bundled zlib, built as Ghidra's Gradle build
+`buildNatives.gradle` does — the Makefile itself links the system `-lz`);
+`BFDLIB=`; and `EXTRA` recomputed without the four sources that include the
+BFD load image (`loadimage_bfd.cc`, `bfd_arch.cc`, `codedata.cc`,
+`analyzesigs.cc`), since the Makefile has no switch for BFD. The console
+and test runner therefore lack the `codedata` and signature-analysis
+commands; no data test uses them.
+
+**`pcodedump` against this spec's wording** (4.3), deliberate: a varnode
+prints its raw offset and adds the register name as a fourth element when a
+register is exactly that location, rather than replacing the offset; each
+instruction carries an extra *flow length* field (delay slots); the space
+constant of `LOAD`/`STORE` is printed as the space's index and name instead
+of the host pointer Ghidra holds there; `--context` sets a variable over
+the whole code space, because a `.pspec` sets ranges, not defaults. Only
+the `.pspec`'s `<context_data>` is applied; three Go `.cspec` files also
+carry some.
+
+**Golden files** are `insta` snapshots (4.4). `bk-testkit` has no golden
+module; the only snapshot so far is the `pcodedump` listing test, which
+parses the tool's output and snapshots the same text.
+
 ## 9. Status
 
-Not implemented yet.
+Implemented (2026-11-12). Final report: `docs/agents/reference-tools.md`.
+
+**Built**: `scripts/build-reference.sh`, `tools/reference/pcodedump.cc`
+(format in `tools/reference/README.md`), `tools/reference/measure.sh`, one
+patch under `tools/reference/patches/`, and `crates/bk-testkit` (`paths`,
+`skip`, `tools/{sleigh, decomp, decomp_test, pcodedump}`,
+`datatest/{model, parse}`, `corpus`; golden output is `insta` snapshots, so
+there is no `golden` module).
+
+**Script, macOS** (Darwin 25.5.0 arm64, Apple clang 17.0.0, GNU make
+3.81, bash 3.2; Ghidra 42db038f3c): from a clean state 70 s wall with 4
+jobs while other builds ran; a second run does nothing (about 2 s,
+`STAMP` unchanged); all 150 `.slaspec` compile; `git -C ../ghidra status
+--porcelain` stays empty.
+
+**Script, Linux** (gcc:14 container, aarch64, g++ 14.4.0, GNU make 4.4.1,
+2 CPUs): builds all tools and 150 languages. Built as the Makefile has it,
+`decomp_test` spun at full CPU on every data test (each single file timed
+out at 30 s; the whole run was killed after 193 s) while the unit tests
+passed; with `-fsigned-char` (Ghidra's code assumes a signed `char`, which
+aarch64 Linux does not have) the data tests run normally, so the script
+now always passes it. Linux x86-64 was not tried.
+
+**Baseline: Ghidra's own tests** (recorded in `STAMP`; measured):
+
+| Host | Unit tests | Data-test checks (93 files) | Failing |
+|---|---|---|---|
+| macOS arm64, Apple clang 17 (libc++) | 204 / 205 | 758 / 760 | `double_decimal_precision`; `Float print #6`, `Float print #13` (`floatprint.xml`) |
+| Linux aarch64, g++ 14 (libstdc++) | 205 / 205 | 758 / 760 | `Float print #6`, `Float print #13` |
+
+`double_decimal_precision` (`testfloatemu.cc:187`) expects
+`1.79769313486232e+308` and gets `1.7976931348623157e+308` on macOS:
+Apple's libc++ parses the 15-digit text of `DBL_MAX` to infinity with
+failbit, so `FloatFormat::printDecimal` keeps adding digits (measured). It
+passes with libstdc++ (measured on Linux aarch64). The two `floatprint.xml`
+checks expect `-NAN` and the console prints `NAN` on both hosts; *inference,
+not verified*: the sign of the NaN differs between arm64 and x86-64, and
+both pass on x86-64. These three are host-dependent Ghidra results, not
+basilisk targets: a Rust port should produce Ghidra's intended output
+(`-NAN`, 15 digits).
+
+**Tests**: `bk-testkit` 88 unit, 4 corpus, 13 integration, 2 doc tests;
+all pass with and without `../reference` (19 visible `SKIPPED` lines
+without). Baseline performance numbers are in `PERF.md`.
+
+**Spec corrections found while implementing**: the Makefile links the
+system `-lz` (it is Gradle that compiles `DEC/zlib`); `ruleparse.cc` is
+not in the tree and is not needed; no processor module passes a `-D`, uses
+`$(BaseDir)` or includes another module's files at this commit; sections 5
+and 6 still mention a `golden` module and its tests, which the move to
+`insta` removed.
