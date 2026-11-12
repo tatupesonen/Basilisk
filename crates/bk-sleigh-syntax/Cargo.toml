@@ -1,0 +1,22 @@
+[package]
+name = "bk-sleigh-syntax"
+description = "SLEIGH front end: preprocessor, modal lexer and parser producing a symbol-free syntax tree"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+memchr = { workspace = true }
+num-bigint = { workspace = true }
+rustc-hash = { workspace = true }
+string-interner = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+
+[lints]
+workspace = true

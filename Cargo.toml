@@ -34,6 +34,11 @@ parking_lot = "0.12.5"
 roxmltree = "0.21.1"
 flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
 
+# SLEIGH front end (bk-sleigh-syntax; evaluations in docs/features/sleigh-syntax.md)
+string-interner = { version = "0.20.0", default-features = false, features = ["std", "backends", "inline-more"] }
+rustc-hash = "2.1.3"
+num-bigint = "0.4.8"
+
 # Test support
 proptest = "1.12.0"
 rstest = "0.27.0"
