@@ -18,6 +18,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` |
 | `logo` | `assets/brand/` (no crates) | brief only: a minimal basilisk logo |
+| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019; started at the owner's request, ahead of M10) |
 
 In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
