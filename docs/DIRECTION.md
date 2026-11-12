@@ -43,6 +43,8 @@ and a sane architecture in mind.
 |---|---|
 | **Performant.** Speed and memory are design inputs from the first line, not a later pass (ADR-012, `PERF.md`). | 2026-11-12 |
 | **Best Rust practices** throughout (`LOOP.md`, Engineering rules). | 2026-11-12 |
+| **Lints configured with sensible, strict rules**: clippy (pedantic plus chosen restriction lints), rustdoc, rustfmt, `cargo-deny`, all enforced by the gate (`Cargo.toml` `[workspace.lints]`, `clippy.toml`, `deny.toml`). | 2026-11-12 |
+| **No `unsafe` unless absolutely necessary; any code that needs it is checked with Miri** (ADR-020). | 2026-11-12 |
 | **Use existing crates when they fit.** There is no value in reimplementing something from scratch unless there is a good reason; when there is one, state it (ADR-011 records each evaluation). **Prefer "industry standard" crates** — widely used ones with lots of downloads — over obscure alternatives. | 2026-11-12 |
 | **Separate components live in their own crates**, split sensibly; **no huge Rust files** — split modules as they grow (`LOOP.md`; `scripts/check-file-size.sh` enforces a ceiling). | 2026-11-12 |
 | **Project structure follows postmortem** (`../postmortem`): a workspace of focused crates, ADRs in `DECISIONS.md`, a plan, a parity matrix, inventories, and **comprehensive docs for every feature** (`docs/features/`). | 2026-11-12 |
