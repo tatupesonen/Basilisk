@@ -167,6 +167,13 @@ portable against it), robustness on hostile input (ADR-009), performance
 crate passes; otherwise write it and keep the crate as a dev-only
 differential oracle. Record each evaluation here.
 
+Among crates that pass, **prefer the industry-standard one** (owner rule,
+2026-11-12): the widely used crate with a large download count and many
+dependents on crates.io, over a newer or niche alternative, even where the
+niche one is somewhat nicer. Choosing a little-used crate needs a stated
+reason (the standard one fails a requirement above), and the evaluation
+records the download figures that were compared.
+
 Evaluations so far:
 - **Compression: `flate2` with the `zlib-rs` backend → adopt.** Pure Rust.
   `.sla` files are zlib streams; decompressed content is compared, never
