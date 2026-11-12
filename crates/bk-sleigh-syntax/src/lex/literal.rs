@@ -134,6 +134,22 @@ impl IntValue {
         Ok(Self(Repr::Big(Box::new(big))))
     }
 
+    /// The value split into its inline and boxed forms, for compact storage.
+    pub(crate) fn into_parts(self) -> Result<u64, Box<BigUint>> {
+        match self.0 {
+            Repr::Small(v) => Ok(v),
+            Repr::Big(big) => Err(big),
+        }
+    }
+
+    /// Reassembles a value split by [`Self::into_parts`].
+    pub(crate) fn from_parts(parts: Result<u64, &BigUint>) -> Self {
+        match parts {
+            Ok(v) => Self(Repr::Small(v)),
+            Err(big) => Self(Repr::Big(Box::new(big.clone()))),
+        }
+    }
+
     /// Writes the value in `radix`, without a prefix.
     pub fn to_string_radix(&self, radix: Radix) -> String {
         match (&self.0, radix) {

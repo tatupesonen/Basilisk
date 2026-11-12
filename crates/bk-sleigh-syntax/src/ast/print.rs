@@ -14,7 +14,6 @@ use super::{
     SizedStar, Statement, UnaryOp,
 };
 use crate::intern::Interner;
-use crate::lex::literal::Radix;
 
 /// Prints trees whose nodes live in `nodes` and whose names live in `names`.
 #[derive(Clone, Copy, Debug)]
@@ -375,10 +374,5 @@ impl<'a> Printer<'a> {
 
 /// Writes an integer literal in the radix it was written in.
 fn int(out: &mut String, lit: &IntLit) {
-    out.push_str(match lit.radix {
-        Radix::Hex => "0x",
-        Radix::Binary => "0b",
-        Radix::Decimal => "",
-    });
-    out.push_str(&lit.value.to_string_radix(lit.radix));
+    out.push_str(&lit.to_source());
 }

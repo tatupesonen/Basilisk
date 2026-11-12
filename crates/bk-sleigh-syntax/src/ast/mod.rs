@@ -32,6 +32,8 @@ pub use semantic::{
 };
 
 use crate::intern::Symbol;
+use num_bigint::BigUint;
+
 use crate::lex::literal::{IntValue, Radix};
 use crate::span::Span;
 
@@ -56,14 +58,71 @@ pub struct StrLit {
 }
 
 /// An integer literal.
+///
+/// The value is exact at any width. Values that fit in 64 bits (every
+/// literal in Ghidra's shipped specifications) are stored inline with the
+/// radix packed beside them, so a literal is 24 bytes; wider values are
+/// boxed. Literals are the bulk of the larger expression and statement
+/// nodes, so their size is what keeps [`Expr`] and [`Statement`] small.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct IntLit {
-    /// The value.
-    pub value: IntValue,
-    /// The radix it was written in.
-    pub radix: Radix,
+    repr: IntRepr,
     /// Where it is written.
     pub span: Span,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+enum IntRepr {
+    Small { radix: Radix, value: u64 },
+    Wide { radix: Radix, value: Box<BigUint> },
+}
+
+impl IntLit {
+    /// A literal with `value` written in `radix` at `span`.
+    pub fn new(value: IntValue, radix: Radix, span: Span) -> Self {
+        let repr = match value.into_parts() {
+            Ok(value) => IntRepr::Small { radix, value },
+            Err(value) => IntRepr::Wide { radix, value },
+        };
+        Self { repr, span }
+    }
+
+    /// The exact value. Clones the boxed digits of a wide value.
+    pub fn value(&self) -> IntValue {
+        match &self.repr {
+            IntRepr::Small { value, .. } => IntValue::from_parts(Ok(*value)),
+            IntRepr::Wide { value, .. } => IntValue::from_parts(Err(value)),
+        }
+    }
+
+    /// The value, if it fits in 64 bits.
+    pub const fn to_u64(&self) -> Option<u64> {
+        match &self.repr {
+            IntRepr::Small { value, .. } => Some(*value),
+            IntRepr::Wide { .. } => None,
+        }
+    }
+
+    /// The radix the literal was written in (`0n` literals are decimal).
+    pub const fn radix(&self) -> Radix {
+        match &self.repr {
+            IntRepr::Small { radix, .. } | IntRepr::Wide { radix, .. } => *radix,
+        }
+    }
+
+    /// The value written in its radix with its prefix: `0x1f`, `0b101`, `31`.
+    pub fn to_source(&self) -> String {
+        let prefix = match self.radix() {
+            Radix::Hex => "0x",
+            Radix::Binary => "0b",
+            Radix::Decimal => "",
+        };
+        let digits = match &self.repr {
+            IntRepr::Small { value, radix } => IntValue::from_u64(*value).to_string_radix(*radix),
+            IntRepr::Wide { value, radix } => value.to_str_radix(radix.base()),
+        };
+        format!("{prefix}{digits}")
+    }
 }
 
 /// Byte order.
@@ -216,5 +275,47 @@ impl ConstructorBody {
             Self::Unimpl(span) => *span,
             Self::Semantic(body) => body.span,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::mem::size_of;
+
+    use super::*;
+
+    /// ADR-012: hot node types stay small. A change that grows one of these
+    /// should be deliberate (and update `docs/PERF.md`).
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    fn hot_node_sizes() {
+        assert_eq!(size_of::<IntLit>(), 24);
+        assert_eq!(size_of::<Ident>(), 12);
+        assert_eq!(size_of::<Expr>(), 72);
+        assert_eq!(size_of::<Statement>(), 88);
+        assert_eq!(size_of::<PatExpr>(), 32);
+        assert_eq!(size_of::<Equation>(), 36);
+        assert_eq!(size_of::<DisplayPiece>(), 16);
+        assert_eq!(size_of::<ContextStmt>(), 36);
+    }
+
+    #[test]
+    fn int_lit_keeps_value_and_radix_at_any_width() {
+        let small = IntLit::new(IntValue::from_u64(0x1f), Radix::Hex, Span::new(0, 4));
+        assert_eq!(small.to_u64(), Some(31));
+        assert_eq!(small.radix(), Radix::Hex);
+        assert_eq!(small.to_source(), "0x1f");
+        assert_eq!(small.value(), IntValue::from_u64(31));
+
+        let digits = "123456789abcdef0fedcba9876543210";
+        let wide_value = IntValue::parse(digits, Radix::Hex).unwrap();
+        let wide = IntLit::new(wide_value.clone(), Radix::Hex, Span::new(0, 34));
+        assert_eq!(wide.to_u64(), None);
+        assert_eq!(wide.value(), wide_value);
+        assert_eq!(wide.to_source(), format!("0x{digits}"));
+        assert_eq!(
+            IntLit::new(IntValue::from_u64(5), Radix::Binary, Span::default()).to_source(),
+            "0b101"
+        );
     }
 }

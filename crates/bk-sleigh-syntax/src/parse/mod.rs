@@ -375,11 +375,7 @@ impl<'a> Parser<'a> {
                 IntValue::ZERO
             }
         };
-        IntLit {
-            value,
-            radix,
-            span: token.span,
-        }
+        IntLit::new(value, radix, token.span)
     }
 
     // ----- entry points -----
