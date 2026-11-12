@@ -24,6 +24,13 @@ In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
 `BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`.
 
+**Handover to Opus 5.5** (owner, 2026-11-12): each wave 1 agent was told to
+stop at its first checkpoint — crates building, current tests passing,
+everything committed, `docs/agents/<track>.md` written with done/remaining.
+When a track checkpoints: read its report, start an Opus 5.5 agent (high
+effort) in the same worktree to finish the spec, beginning with
+`git merge master` (stricter lints, ADR-018 licence, ADR-020 unsafe rule).
+
 Next steps for the coordinator:
 1. As each agent reports, review its branch against its spec
    (`git -C ../basilisk-wt/<track> log --oneline master..HEAD`, read the

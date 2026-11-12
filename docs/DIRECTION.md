@@ -53,12 +53,14 @@ and a sane architecture in mind.
 
 * **Division of labour** (owner, 2026-11-12): the coordinator (Claude Fable)
   writes the docs — ADRs, plan, feature specs, agent rules — and manages
-  **Fable 5.2 subagents** (for now; the owner first named Opus 5.5 and may
-  switch back), which write the code from those docs. **Effort: medium**
-  for every agent started from now on (owner, 2026-11-12); the eight
-  agents already running were started at high effort and finish at it.
-  The coordinator spawns the agents, reviews and merges their branches.
-  Rules for agents: `docs/agents/RULES.md`.
+  subagents, which write the code from those docs. The coordinator spawns
+  the agents, reviews and merges their branches. Rules for agents:
+  `docs/agents/RULES.md`.
+* **Agent model** (owner, 2026-11-12, latest of several changes that day):
+  **Opus 5.5 at high effort.** The first wave was started on Fable 5.2;
+  each of those agents stops at its first checkpoint (work committed, status
+  report written) and its track continues with an Opus 5.5 agent at high
+  effort in the same worktree. New agents start on Opus 5.5 at high effort.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
