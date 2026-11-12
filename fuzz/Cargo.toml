@@ -1,0 +1,17 @@
+# The one fuzz crate for the whole workspace (docs/LOOP.md, "Fuzzing").
+# Every fuzz target of every crate lives here: add the crate under
+# [dependencies] and one [[bin]] entry, both in alphabetical order, and put
+# the target in fuzz_targets/<crate>_<what>.rs. Do not create a fuzz crate
+# anywhere else.
+[package]
+name = "basilisk-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
