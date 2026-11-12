@@ -1,0 +1,42 @@
+---
+source: crates/bk-testkit/tests/reference.rs
+expression: text
+---
+H	1	x86:LE:64:default	ram	0x1000	17
+I	0x1000	1	1	55	PUSH	RBP
+P	COPY	(unique,0x4f900,8)	(register,0x28,8,RBP)
+P	INT_SUB	(register,0x20,8,RSP)	(register,0x20,8,RSP)	(const,0x8,8)
+P	STORE	-	(const,0x3,8,ram)	(register,0x20,8,RSP)	(unique,0x4f900,8)
+I	0x1001	3	3	4889e5	MOV	RBP,RSP
+P	COPY	(register,0x28,8,RBP)	(register,0x20,8,RSP)
+I	0x1004	3	3	8b45fc	MOV	EAX,dword ptr [RBP + -0x4]
+P	INT_ADD	(unique,0x8e00,8)	(register,0x28,8,RBP)	(const,0xfffffffffffffffc,8)
+P	LOAD	(unique,0x23c00,4)	(const,0x3,8,ram)	(unique,0x8e00,8)
+P	COPY	(register,0x0,4,EAX)	(unique,0x23c00,4)
+P	INT_ZEXT	(register,0x0,8,RAX)	(register,0x0,4,EAX)
+I	0x1007	3	3	83c001	ADD	EAX,0x1
+P	INT_CARRY	(register,0x200,1,CF)	(register,0x0,4,EAX)	(const,0x1,4)
+P	INT_SCARRY	(register,0x20b,1,OF)	(register,0x0,4,EAX)	(const,0x1,4)
+P	INT_ADD	(register,0x0,4,EAX)	(register,0x0,4,EAX)	(const,0x1,4)
+P	INT_ZEXT	(register,0x0,8,RAX)	(register,0x0,4,EAX)
+P	INT_SLESS	(register,0x207,1,SF)	(register,0x0,4,EAX)	(const,0x0,4)
+P	INT_EQUAL	(register,0x206,1,ZF)	(register,0x0,4,EAX)	(const,0x0,4)
+P	INT_AND	(unique,0x58300,4)	(register,0x0,4,EAX)	(const,0xff,4)
+P	POPCOUNT	(unique,0x58400,1)	(unique,0x58300,4)
+P	INT_AND	(unique,0x58500,1)	(unique,0x58400,1)	(const,0x1,1)
+P	INT_EQUAL	(register,0x202,1,PF)	(unique,0x58500,1)	(const,0x0,1)
+I	0x100a	1	1	5d	POP	RBP
+P	COPY	(unique,0xa9a00,8)	(const,0x0,8)
+P	LOAD	(unique,0xa9a00,8)	(const,0x3,8,ram)	(register,0x20,8,RSP)
+P	INT_ADD	(register,0x20,8,RSP)	(register,0x20,8,RSP)	(const,0x8,8)
+P	COPY	(register,0x28,8,RBP)	(unique,0xa9a00,8)
+I	0x100b	1	1	c3	RET	
+P	LOAD	(register,0x288,8,RIP)	(const,0x3,8,ram)	(register,0x20,8,RSP)
+P	INT_ADD	(register,0x20,8,RSP)	(register,0x20,8,RSP)	(const,0x8,8)
+P	RETURN	-	(register,0x288,8,RIP)
+I	0x100c	2	2	0f0b	UD2	
+P	CALLOTHER	(unique,0xd6300,8)	(const,0x57,4)
+P	BRANCHIND	-	(unique,0xd6300,8)
+E	0x100e	1	06	bad-data	r0x0000100e: Unable to resolve constructor
+E	0x100f	2	e800	truncated	instruction extends past the end of the input
+T	7	2
