@@ -71,7 +71,23 @@ def doc(text: str, indent: str = "    ") -> str:
     text = " ".join(text.split())
     # Keep rustdoc from reading brackets and angle brackets as links or HTML.
     text = re.sub(r"([\[\]<>`])", r"\\\1", text)
-    return f"{indent}/// {text}\n"
+    return f"{indent}/// {code_spans(text)}\n"
+
+
+def code_spans(text: str) -> str:
+    """Puts identifiers in Ghidra's descriptions (`SHT_ARM_EXIDX`, `GotPlt`,
+    `x86_64`) in code spans, as rustdoc's `doc_markdown` lint asks. The
+    descriptions are Ghidra's text and are otherwise kept as they are."""
+    words = []
+    for word in text.split(" "):
+        m = re.fullmatch(r"([(\"']*)(.*?)([).,;:\"']*)", word)
+        lead, core, trail = m.groups() if m else ("", word, "")
+        if "\\" not in core and re.search(r"_|[a-z][A-Z]|[A-Z][a-z]+[A-Z]|[A-Z]{2,}[a-z]|[A-Z][a-z]*\d+[a-z]|::|\w\.\w|\w\($", core):
+            if core.endswith("(") and trail.startswith(")"):
+                core, trail = core + ")", trail[1:]
+            word = f"{lead}`{core}`{trail}"
+        words.append(word)
+    return " ".join(words)
 
 
 def constants(source: str, prefix: str):
@@ -253,6 +269,8 @@ def main() -> None:
     for _, value, name, desc, kind in tags:
         out += tag_info(value, name, desc, kind)
     out += "];\n"
+    out = ("// bk:allow-long-file: generated from Ghidra's tables by gen/gen_tables.py; "
+           "one constant and one table row per value Ghidra names\n" + out)
     (CRATE / "src/constants/generated.rs").write_text(out, encoding="utf-8")
 
     machine_values = {name: value for name, value, _ in machines}

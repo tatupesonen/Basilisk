@@ -20,7 +20,7 @@ pub const SHT_ARM_ATTRIBUTES: SectionType = SectionType(0x7000_0003);
 pub const SHT_ARM_DEBUGOVERLAY: SectionType = SectionType(0x7000_0004);
 /// See Debugging Overlaid Programs (DBGOVL) for details
 pub const SHT_ARM_OVERLAYSECTION: SectionType = SectionType(0x7000_0005);
-/// Size in bytes of the DT_SYMTAB symbol table
+/// Size in bytes of the `DT_SYMTAB` symbol table
 pub const DT_HEXAGON_SYMSZ: DynamicTag = DynamicTag(0x7000_0000);
 /// Version of interface with dynamic linker
 pub const DT_HEXAGON_VER: DynamicTag = DynamicTag(0x7000_0001);

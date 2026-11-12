@@ -6,7 +6,7 @@
 use crate::constants::{DynamicTag, DynamicTagInfo, DynamicValueKind, Machine};
 use crate::machine::MachineExtension;
 
-/// Specify the value of _GLOBAL_OFFSET_TABLE_
+/// Specify the value of `_GLOBAL_OFFSET_TABLE_`
 pub const DT_PPC_GOT: DynamicTag = DynamicTag(0x7000_0000);
 /// Specify that tls descriptors should be optimized
 pub const DT_PPC_OPT: DynamicTag = DynamicTag(0x7000_0001);

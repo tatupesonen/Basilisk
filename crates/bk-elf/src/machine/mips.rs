@@ -12,7 +12,7 @@ use crate::machine::MachineExtension;
 pub const PT_MIPS_REGINFO: SegmentType = SegmentType(0x7000_0000);
 /// Runtime procedure table
 pub const PT_MIPS_RTPROC: SegmentType = SegmentType(0x7000_0001);
-/// .MIPS.options section
+/// `.MIPS.options` section
 pub const PT_MIPS_OPTIONS: SegmentType = SegmentType(0x7000_0002);
 /// Records ABI related flags
 pub const PT_MIPS_ABIFLAGS: SegmentType = SegmentType(0x7000_0003);
@@ -22,7 +22,7 @@ pub const PT_MIPS_PSPREL1: SegmentType = SegmentType(0x7000_00a0);
 pub const PT_MIPS_PSPREL2: SegmentType = SegmentType(0x7000_00a1);
 /// Section contains the set of dynamic shared objects used when statically linking
 pub const SHT_MIPS_LIBLIST: SectionType = SectionType(0x7000_0000);
-/// SHT_MIPS_MSYM
+/// `SHT_MIPS_MSYM`
 pub const SHT_MIPS_MSYM: SectionType = SectionType(0x7000_0001);
 /// Section contains list of symbols whose definitions conflict with symbols defined in shared objects
 pub const SHT_MIPS_CONFLICT: SectionType = SectionType(0x7000_0002);
@@ -34,37 +34,37 @@ pub const SHT_MIPS_UCODE: SectionType = SectionType(0x7000_0004);
 pub const SHT_MIPS_DEBUG: SectionType = SectionType(0x7000_0005);
 /// Section contains register usage information
 pub const SHT_MIPS_REGINFO: SectionType = SectionType(0x7000_0006);
-/// SHT_MIPS_PACKAGE
+/// `SHT_MIPS_PACKAGE`
 pub const SHT_MIPS_PACKAGE: SectionType = SectionType(0x7000_0007);
-/// SHT_MIPS_PACKSYM
+/// `SHT_MIPS_PACKSYM`
 pub const SHT_MIPS_PACKSYM: SectionType = SectionType(0x7000_0008);
-/// SHT_MIPS_RELD
+/// `SHT_MIPS_RELD`
 pub const SHT_MIPS_RELD: SectionType = SectionType(0x7000_0009);
 /// Section contains description of contents of another section
 pub const SHT_MIPS_CONTENT: SectionType = SectionType(0x7000_000c);
 /// Section contains miscellaneous options
 pub const SHT_MIPS_OPTIONS: SectionType = SectionType(0x7000_000d);
-/// SHT_MIPS_SHDR
+/// `SHT_MIPS_SHDR`
 pub const SHT_MIPS_SHDR: SectionType = SectionType(0x7000_0010);
-/// SHT_MIPS_FDESC
+/// `SHT_MIPS_FDESC`
 pub const SHT_MIPS_FDESC: SectionType = SectionType(0x7000_0011);
-/// SHT_MIPS_EXTSYM
+/// `SHT_MIPS_EXTSYM`
 pub const SHT_MIPS_EXTSYM: SectionType = SectionType(0x7000_0012);
-/// SHT_MIPS_DENSE
+/// `SHT_MIPS_DENSE`
 pub const SHT_MIPS_DENSE: SectionType = SectionType(0x7000_0013);
-/// SHT_MIPS_PDESC
+/// `SHT_MIPS_PDESC`
 pub const SHT_MIPS_PDESC: SectionType = SectionType(0x7000_0014);
-/// SHT_MIPS_LOCSYM
+/// `SHT_MIPS_LOCSYM`
 pub const SHT_MIPS_LOCSYM: SectionType = SectionType(0x7000_0015);
-/// SHT_MIPS_AUXSYM
+/// `SHT_MIPS_AUXSYM`
 pub const SHT_MIPS_AUXSYM: SectionType = SectionType(0x7000_0016);
-/// SHT_MIPS_OPTSYM
+/// `SHT_MIPS_OPTSYM`
 pub const SHT_MIPS_OPTSYM: SectionType = SectionType(0x7000_0017);
-/// SHT_MIPS_LOCSTR
+/// `SHT_MIPS_LOCSTR`
 pub const SHT_MIPS_LOCSTR: SectionType = SectionType(0x7000_0018);
-/// SHT_MIPS_LINE
+/// `SHT_MIPS_LINE`
 pub const SHT_MIPS_LINE: SectionType = SectionType(0x7000_0019);
-/// SHT_MIPS_RFDESC
+/// `SHT_MIPS_RFDESC`
 pub const SHT_MIPS_RFDESC: SectionType = SectionType(0x7000_001a);
 /// Delta C++: symbol table
 pub const SHT_MIPS_DELTASYM: SectionType = SectionType(0x7000_001b);
@@ -80,7 +80,7 @@ pub const SHT_MIPS_DELTADECL: SectionType = SectionType(0x7000_001f);
 pub const SHT_MIPS_SYMBOL_LIB: SectionType = SectionType(0x7000_0020);
 /// Events section
 pub const SHT_MIPS_EVENTS: SectionType = SectionType(0x7000_0021);
-/// SHT_MIPS_TRANSLATE
+/// `SHT_MIPS_TRANSLATE`
 pub const SHT_MIPS_TRANSLATE: SectionType = SectionType(0x7000_0022);
 /// Special pixie sections
 pub const SHT_MIPS_PIXIE: SectionType = SectionType(0x7000_0023);
@@ -112,7 +112,7 @@ pub const DT_MIPS_IVERSION: DynamicTag = DynamicTag(0x7000_0004);
 pub const DT_MIPS_FLAGS: DynamicTag = DynamicTag(0x7000_0005);
 /// Base address of the segment
 pub const DT_MIPS_BASE_ADDRESS: DynamicTag = DynamicTag(0x7000_0006);
-/// DT_MIPS_MSYM
+/// `DT_MIPS_MSYM`
 pub const DT_MIPS_MSYM: DynamicTag = DynamicTag(0x7000_0007);
 /// Address of .conflict section
 pub const DT_MIPS_CONFLICT: DynamicTag = DynamicTag(0x7000_0008);
@@ -136,29 +136,29 @@ pub const DT_MIPS_HIPAGENO: DynamicTag = DynamicTag(0x7000_0014);
 pub const DT_MIPS_RLD_MAP: DynamicTag = DynamicTag(0x7000_0016);
 /// Delta C++ class definition
 pub const DT_MIPS_DELTA_CLASS: DynamicTag = DynamicTag(0x7000_0017);
-/// Number of entries in DT_MIPS_DELTA_CLASS
+/// Number of entries in `DT_MIPS_DELTA_CLASS`
 pub const DT_MIPS_DELTA_CLASS_NO: DynamicTag = DynamicTag(0x7000_0018);
 /// Delta C++ class instances
 pub const DT_MIPS_DELTA_INSTANCE: DynamicTag = DynamicTag(0x7000_0019);
-/// Number of entries in DT_MIPS_DELTA_INSTANCE
+/// Number of entries in `DT_MIPS_DELTA_INSTANCE`
 pub const DT_MIPS_DELTA_INSTANCE_NO: DynamicTag = DynamicTag(0x7000_001a);
 /// Delta relocations
 pub const DT_MIPS_DELTA_RELOC: DynamicTag = DynamicTag(0x7000_001b);
-/// Number of entries in DT_MIPS_DELTA_RELOC
+/// Number of entries in `DT_MIPS_DELTA_RELOC`
 pub const DT_MIPS_DELTA_RELOC_NO: DynamicTag = DynamicTag(0x7000_001c);
 /// Delta symbols that Delta relocations refer to
 pub const DT_MIPS_DELTA_SYM: DynamicTag = DynamicTag(0x7000_001d);
-/// Number of entries in DT_MIPS_DELTA_SYM
+/// Number of entries in `DT_MIPS_DELTA_SYM`
 pub const DT_MIPS_DELTA_SYM_NO: DynamicTag = DynamicTag(0x7000_001e);
 /// Delta symbols that hold class declarations
 pub const DT_MIPS_DELTA_CLASSSYM: DynamicTag = DynamicTag(0x7000_0020);
-/// Number of entries in DT_MIPS_DELTA_CLASSSYM
+/// Number of entries in `DT_MIPS_DELTA_CLASSSYM`
 pub const DT_MIPS_DELTA_CLASSSYM_NO: DynamicTag = DynamicTag(0x7000_0021);
 /// Flags indicating information about C++ flavor
 pub const DT_MIPS_CXX_FLAGS: DynamicTag = DynamicTag(0x7000_0022);
 /// Pixie information
 pub const DT_MIPS_PIXIE_INIT: DynamicTag = DynamicTag(0x7000_0023);
-/// Address of .MIPS.symlib
+/// Address of `.MIPS.symlib`
 pub const DT_MIPS_SYMBOL_LIB: DynamicTag = DynamicTag(0x7000_0024);
 /// The GOT index of the first PTE for a segment
 pub const DT_MIPS_LOCALPAGE_GOTIDX: DynamicTag = DynamicTag(0x7000_0025);
@@ -172,17 +172,17 @@ pub const DT_MIPS_PROTECTED_GOTIDX: DynamicTag = DynamicTag(0x7000_0028);
 pub const DT_MIPS_OPTIONS: DynamicTag = DynamicTag(0x7000_0029);
 /// Address of \`.interface'
 pub const DT_MIPS_INTERFACE: DynamicTag = DynamicTag(0x7000_002a);
-/// DT_MIPS_DYNSTR_ALIGN
+/// `DT_MIPS_DYNSTR_ALIGN`
 pub const DT_MIPS_DYNSTR_ALIGN: DynamicTag = DynamicTag(0x7000_002b);
 /// Size of the .interface section
 pub const DT_MIPS_INTERFACE_SIZE: DynamicTag = DynamicTag(0x7000_002c);
-/// Size of rld_text_resolve function stored in the GOT
+/// Size of `rld_text_resolve` function stored in the GOT
 pub const DT_MIPS_RLD_TEXT_RESOLVE_ADDR: DynamicTag = DynamicTag(0x7000_002d);
-/// Default suffix of DSO to be added by rld on dlopen() calls
+/// Default suffix of DSO to be added by rld on `dlopen()` calls
 pub const DT_MIPS_PERF_SUFFIX: DynamicTag = DynamicTag(0x7000_002e);
 /// Size of compact relocation section (O32)
 pub const DT_MIPS_COMPACT_SIZE: DynamicTag = DynamicTag(0x7000_002f);
-/// GP value for auxiliary GOTs
+/// GP value for auxiliary `GOTs`
 pub const DT_MIPS_GP_VALUE: DynamicTag = DynamicTag(0x7000_0030);
 /// Address of auxiliary .dynamic
 pub const DT_MIPS_AUX_DYNAMIC: DynamicTag = DynamicTag(0x7000_0031);

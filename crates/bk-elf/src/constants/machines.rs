@@ -35,9 +35,9 @@ impl Machine {
     pub const EM_SPARC32PLUS: Self = Self(18);
     /// Intel 80960
     pub const EM_960: Self = Self(19);
-    /// PowerPC
+    /// `PowerPC`
     pub const EM_PPC: Self = Self(20);
-    /// PowerPC 64-bit
+    /// `PowerPC` 64-bit
     pub const EM_PPC64: Self = Self(21);
     /// IBM S390
     pub const EM_S390: Self = Self(22);
@@ -83,7 +83,7 @@ impl Machine {
     pub const EM_MMA: Self = Self(54);
     /// Siemens PCP
     pub const EM_PCP: Self = Self(55);
-    /// Sony nCPU embedded RISC
+    /// Sony `nCPU` embedded RISC
     pub const EM_NCPU: Self = Self(56);
     /// Denso NDR1 microprocessor
     pub const EM_NDR1: Self = Self(57);
@@ -91,9 +91,9 @@ impl Machine {
     pub const EM_STARCORE: Self = Self(58);
     /// Toyota ME16 processor
     pub const EM_ME16: Self = Self(59);
-    /// STMicroelectronic ST100 processor
+    /// `STMicroelectronic` ST100 processor
     pub const EM_ST100: Self = Self(60);
-    /// Advanced Logic Corp. Tinyj emb.fam
+    /// Advanced Logic Corp. Tinyj `emb.fam`
     pub const EM_TINYJ: Self = Self(61);
     /// AMD x86-64 architecture
     pub const EM_X86_64: Self = Self(62);
@@ -105,9 +105,9 @@ impl Machine {
     pub const EM_PDP11: Self = Self(65);
     /// Siemens FX66 microcontroller
     pub const EM_FX66: Self = Self(66);
-    /// STMicroelectronics ST9+ 8/16 mc
+    /// `STMicroelectronics` ST9+ 8/16 mc
     pub const EM_ST9PLUS: Self = Self(67);
-    /// STmicroelectronics ST7 8 bit mc
+    /// `STmicroelectronics` ST7 8 bit mc
     pub const EM_ST7: Self = Self(68);
     /// Motorola MC68HC16 microcontroller
     pub const EM_68HC16: Self = Self(69);
@@ -117,9 +117,9 @@ impl Machine {
     pub const EM_68HC08: Self = Self(71);
     /// Motorola MC68HC05 microcontroller
     pub const EM_68HC05: Self = Self(72);
-    /// Silicon Graphics SVx
+    /// Silicon Graphics `SVx`
     pub const EM_SVX: Self = Self(73);
-    /// STMicroelectronics ST19 8 bit mc
+    /// `STMicroelectronics` ST19 8 bit mc
     pub const EM_ST19: Self = Self(74);
     /// Digital VAX
     pub const EM_VAX: Self = Self(75);
@@ -135,7 +135,7 @@ impl Machine {
     pub const EM_MMIX: Self = Self(80);
     /// Harvard University machine-independent object files
     pub const EM_HUANY: Self = Self(81);
-    /// SiTera Prism
+    /// `SiTera` Prism
     pub const EM_PRISM: Self = Self(82);
     /// Atmel AVR 8-bit microcontroller
     pub const EM_AVR: Self = Self(83);
@@ -153,15 +153,15 @@ impl Machine {
     pub const EM_MN10300: Self = Self(89);
     /// Matsushita MN10200
     pub const EM_MN10200: Self = Self(90);
-    /// picoJava
+    /// `picoJava`
     pub const EM_PJ: Self = Self(91);
-    /// OpenRISC 32-bit embedded processor
+    /// `OpenRISC` 32-bit embedded processor
     pub const EM_OPENRISC: Self = Self(92);
     /// ARC Cores Tangent-A5
     pub const EM_ARC_A5: Self = Self(93);
     /// Tensilica Xtensa Architecture
     pub const EM_XTENSA: Self = Self(94);
-    /// Alphamosaic VideoCore processor
+    /// Alphamosaic `VideoCore` processor
     pub const EM_VIDEOCORE: Self = Self(95);
     /// Thompson Multimedia General Purpose Processor
     pub const EM_TMM_GPP: Self = Self(96);
@@ -171,13 +171,13 @@ impl Machine {
     pub const EM_TPC: Self = Self(98);
     /// Trebia SNP 1000 processor
     pub const EM_SNP1K: Self = Self(99);
-    /// STMicroelectronics (www.st.com) ST200
+    /// `STMicroelectronics` (`www.st.com`) ST200
     pub const EM_ST200: Self = Self(100);
-    /// Ubicom IP2xxx microcontroller family
+    /// Ubicom `IP2xxx` microcontroller family
     pub const EM_IP2K: Self = Self(101);
     /// MAX Processor
     pub const EM_MAX: Self = Self(102);
-    /// National Semiconductor CompactRISC microprocessor
+    /// National Semiconductor `CompactRISC` microprocessor
     pub const EM_CR: Self = Self(103);
     /// Fujitsu F2MC16
     pub const EM_F2MC16: Self = Self(104);
@@ -193,21 +193,21 @@ impl Machine {
     pub const EM_ARCA: Self = Self(109);
     /// Microprocessor series from PKU-Unity Ltd. and MPRC of Peking University
     pub const EM_UNICORE: Self = Self(110);
-    /// eXcess: 16/32/64-bit configurable embedded CPU
+    /// `eXcess`: 16/32/64-bit configurable embedded CPU
     pub const EM_EXCESS: Self = Self(111);
     /// Icera Semiconductor Inc. Deep Execution Processor
     pub const EM_DXP: Self = Self(112);
     /// Altera Nios II soft-core processor
     pub const EM_ALTERA_NIOS2: Self = Self(113);
-    /// National Semiconductor CompactRISC CRX
+    /// National Semiconductor `CompactRISC` CRX
     pub const EM_CRX: Self = Self(114);
     /// Motorola XGATE embedded processor
     pub const EM_XGATE: Self = Self(115);
-    /// Infineon C16x/XC16x processor
+    /// Infineon `C16x/XC16x` processor
     pub const EM_C166: Self = Self(116);
     /// Renesas M16C series microprocessors
     pub const EM_M16C: Self = Self(117);
-    /// Microchip Technology dsPIC30F Digital Signal Controller
+    /// Microchip Technology `dsPIC30F` Digital Signal Controller
     pub const EM_DSPIC30F: Self = Self(118);
     /// Freescale Communication Engine RISC core
     pub const EM_CE: Self = Self(119);
@@ -219,13 +219,13 @@ impl Machine {
     pub const EM_RS08: Self = Self(132);
     /// Analog Devices SHARC family of 32-bit DSP processors
     pub const EM_SHARC: Self = Self(133);
-    /// Cyan Technology eCOG2 microprocessor
+    /// Cyan Technology `eCOG2` microprocessor
     pub const EM_ECOG2: Self = Self(134);
     /// Sunplus S+core7 RISC processor
     pub const EM_SCORE7: Self = Self(135);
     /// New Japan Radio (NJR) 24-bit DSP Processor
     pub const EM_DSP24: Self = Self(136);
-    /// Broadcom VideoCore III processor
+    /// Broadcom `VideoCore` III processor
     pub const EM_VIDEOCORE3: Self = Self(137);
     /// RISC processor for Lattice FPGA architecture
     pub const EM_LATTICEMICO32: Self = Self(138);
@@ -235,29 +235,29 @@ impl Machine {
     pub const EM_TI_C6000: Self = Self(140);
     /// The Texas Instruments TMS320C2000 DSP family
     pub const EM_TI_C2000: Self = Self(141);
-    /// The Texas Instruments TMS320C55x DSP family
+    /// The Texas Instruments `TMS320C55x` DSP family
     pub const EM_TI_C5500: Self = Self(142);
     /// Texas Instruments Programmable Realtime Unit
     pub const EM_TI_PRU: Self = Self(144);
-    /// STMicroelectronics 64bit VLIW Data Signal Processor
+    /// `STMicroelectronics` 64bit VLIW Data Signal Processor
     pub const EM_MMDSP_PLUS: Self = Self(160);
     /// Cypress M8C microprocessor
     pub const EM_CYPRESS_M8C: Self = Self(161);
     /// Renesas R32C series microprocessors
     pub const EM_R32C: Self = Self(162);
-    /// NXP Semiconductors TriMedia architecture family
+    /// NXP Semiconductors `TriMedia` architecture family
     pub const EM_TRIMEDIA: Self = Self(163);
     /// Qualcomm Hexagon processor
     pub const EM_HEXAGON: Self = Self(164);
     /// Intel 8051 and variants
     pub const EM_8051: Self = Self(165);
-    /// STMicroelectronics STxP7x family of RISC processors
+    /// `STMicroelectronics` `STxP7x` family of RISC processors
     pub const EM_STXP7X: Self = Self(166);
     /// Andes Technology compact code size embedded RISC processor family
     pub const EM_NDS32: Self = Self(167);
-    /// Cyan Technology eCOG1X family
+    /// Cyan Technology `eCOG1X` family
     pub const EM_ECOG1: Self = Self(168);
-    /// Cyan Technology eCOG1X family
+    /// Cyan Technology `eCOG1X` family
     pub const EM_ECOG1X: Self = Self(168);
     /// Dallas Semiconductor MAXQ30 Core Micro-controllers
     pub const EM_MAXQ30: Self = Self(169);
@@ -273,9 +273,9 @@ impl Machine {
     pub const EM_METAG: Self = Self(174);
     /// MCST Elbrus general purpose hardware architecture
     pub const EM_MCST_ELBRUS: Self = Self(175);
-    /// Cyan Technology eCOG16 family
+    /// Cyan Technology `eCOG16` family
     pub const EM_ECOG16: Self = Self(176);
-    /// National Semiconductor CompactRISC CR16 16-bitmicroprocessor
+    /// National Semiconductor `CompactRISC` CR16 16-bitmicroprocessor
     pub const EM_CR16: Self = Self(177);
     /// Freescale Extended Time Processing Unit
     pub const EM_ETPU: Self = Self(178);
@@ -289,29 +289,29 @@ impl Machine {
     pub const EM_AARCH64: Self = Self(183);
     /// Atmel Corporation 32-bit microprocessor family
     pub const EM_AVR32: Self = Self(185);
-    /// STMicroeletronics STM8 8-bit microcontroller
+    /// `STMicroeletronics` STM8 8-bit microcontroller
     pub const EM_STM8: Self = Self(186);
     /// Tilera TILE64 multicore architecture family
     pub const EM_TILE64: Self = Self(187);
-    /// Tilera TILEPro multicore architecture family
+    /// Tilera `TILEPro` multicore architecture family
     pub const EM_TILEPRO: Self = Self(188);
     /// NVIDIA CUDA architecture
     pub const EM_CUDA: Self = Self(190);
     /// Tilera TILE-Gx multicore architecture family
     pub const EM_TILEGX: Self = Self(191);
-    /// CloudShield architecture family
+    /// `CloudShield` architecture family
     pub const EM_CLOUDSHIELD: Self = Self(192);
     /// KIPO-KAIST Core-A 1st generation processor family
     pub const EM_COREA_1ST: Self = Self(193);
     /// KIPO-KAIST Core-A 2nd generation processor family
     pub const EM_COREA_2ND: Self = Self(194);
-    /// Synopsys ARCompact V2
+    /// Synopsys `ARCompact` V2
     pub const EM_ARC_COMPACT2: Self = Self(195);
     /// Open8 8-bit RISC soft processor core
     pub const EM_OPEN8: Self = Self(196);
     /// Renesas RL78 family
     pub const EM_RL78: Self = Self(197);
-    /// Broadcom VideoCore V processor
+    /// Broadcom `VideoCore` V processor
     pub const EM_VIDEOCORE5: Self = Self(198);
     /// Renesas 78KOR family
     pub const EM_78KOR: Self = Self(199);
@@ -321,7 +321,7 @@ impl Machine {
     pub const EM_BA1: Self = Self(201);
     /// Beyond BA2 CPU
     pub const EM_BA2: Self = Self(202);
-    /// XMOS xCORE processor family
+    /// XMOS `xCORE` processor family
     pub const EM_XCORE: Self = Self(203);
     /// Microchip 8-bit PIC(r) family
     pub const EM_MCHP_PIC: Self = Self(204);
@@ -341,7 +341,7 @@ impl Machine {
     pub const EM_CDP: Self = Self(215);
     /// Cognitive Smart Memory Processor
     pub const EM_COGE: Self = Self(216);
-    /// iCelero CoolEngine
+    /// `iCelero` `CoolEngine`
     pub const EM_COOL: Self = Self(217);
     /// Nanoradio Optimized RISC
     pub const EM_NORC: Self = Self(218);
@@ -349,7 +349,7 @@ impl Machine {
     pub const EM_CSR_KALIMBA: Self = Self(219);
     /// Zilog Z80
     pub const EM_Z80: Self = Self(220);
-    /// Controls and Data Services VISIUMcore processor
+    /// Controls and Data Services `VISIUMcore` processor
     pub const EM_VISIUM: Self = Self(221);
     /// FTDI Chip FT32 high performance 32-bit RISC architecture
     pub const EM_FT32: Self = Self(222);
@@ -377,19 +377,19 @@ impl Machine {
     pub const EM_VE: Self = Self(251);
     /// C-SKY processor family.
     pub const EM_CSKY: Self = Self(252);
-    /// Synopsys ARCv2.3 64-bit
+    /// Synopsys `ARCv2.3` 64-bit
     pub const EM_ARC_COMPACT3_64: Self = Self(253);
     /// MOS Technology MCS 6502 processor
     pub const EM_MCS6502: Self = Self(254);
-    /// Synopsys ARCv2.3 32-bit
+    /// Synopsys `ARCv2.3` 32-bit
     pub const EM_ARC_COMPACT3: Self = Self(255);
     /// Kalray VLIW core of the MPPA processor family
     pub const EM_KVX: Self = Self(256);
     /// WDC 65816/65C816
     pub const EM_65816: Self = Self(257);
-    /// LoongArch
+    /// `LoongArch`
     pub const EM_LOONGARCH: Self = Self(258);
-    /// ChipON KungFu32
+    /// `ChipON` `KungFu32`
     pub const EM_KF32: Self = Self(259);
     /// Linux kernel bpf virtual machine
     pub const EM_U16_U8CORE: Self = Self(260);
@@ -397,7 +397,7 @@ impl Machine {
     pub const EM_TACHYUM: Self = Self(261);
     /// NXP 56800EF Digital Signal Controller (DSC)
     pub const EM_56800EF: Self = Self(262);
-    /// used by NetBSD/avr32 - AVR 32-bit
+    /// used by `NetBSD/avr32` - AVR 32-bit
     pub const EM_AVR32_UNOFFICIAL: Self = Self(6317);
 }
 
