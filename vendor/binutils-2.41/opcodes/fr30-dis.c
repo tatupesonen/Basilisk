@@ -662,17 +662,26 @@ print_insn_fr30 (bfd_vma pc, disassemble_info *info)
   if (cd
       && (cgen_bitset_compare (isa, prev_isa) != 0
 	  || mach != prev_mach
-	  || endian != prev_endian))
+	  || endian != prev_endian
+	  /* bk-binutils-sys: instruction byte order is part of the key.  */
+	  || insn_endian != prev_insn_endian))
     {
       cd = 0;
       for (cl = cd_list; cl; cl = cl->next)
 	{
 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
 	      cl->mach == mach &&
-	      cl->endian == endian)
+	      cl->endian == endian &&
+	      cl->insn_endian == insn_endian)
 	    {
 	      cd = cl->cd;
  	      prev_isa = cd->isas;
+	      /* bk-binutils-sys: the cached descriptor now in use is for
+		 this machine and byte order; without these, the next
+		 switch back is missed and the wrong descriptor kept.  */
+	      prev_mach = mach;
+	      prev_endian = endian;
+	      prev_insn_endian = insn_endian;
 	      break;
 	    }
 	}
@@ -706,6 +715,7 @@ print_insn_fr30 (bfd_vma pc, disassemble_info *info)
       cl->isa = prev_isa;
       cl->mach = mach;
       cl->endian = endian;
+      cl->insn_endian = insn_endian;
       cl->next = cd_list;
       cd_list = cl;
 

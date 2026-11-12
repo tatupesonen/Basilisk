@@ -1,0 +1,507 @@
+--- a/opcodes/bpf-dis.c
++++ b/opcodes/bpf-dis.c
+@@ -565,17 +565,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -609,6 +618,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/epiphany-dis.c
++++ b/opcodes/epiphany-dis.c
+@@ -641,17 +641,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -685,6 +694,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/fr30-dis.c
++++ b/opcodes/fr30-dis.c
+@@ -662,17 +662,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -706,6 +715,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/frv-dis.c
++++ b/opcodes/frv-dis.c
+@@ -759,17 +759,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -803,6 +812,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/ip2k-dis.c
++++ b/opcodes/ip2k-dis.c
+@@ -651,17 +651,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -695,6 +704,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/iq2000-dis.c
++++ b/opcodes/iq2000-dis.c
+@@ -552,17 +552,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -596,6 +605,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/lm32-dis.c
++++ b/opcodes/lm32-dis.c
+@@ -510,17 +510,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -554,6 +563,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/m32c-dis.c
++++ b/opcodes/m32c-dis.c
+@@ -1254,17 +1254,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -1298,6 +1307,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/m32r-dis.c
++++ b/opcodes/m32r-dis.c
+@@ -642,17 +642,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -686,6 +695,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/mep-dis.c
++++ b/opcodes/mep-dis.c
+@@ -1564,17 +1564,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -1608,6 +1617,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/mt-dis.c
++++ b/opcodes/mt-dis.c
+@@ -650,17 +650,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -694,6 +703,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/or1k-dis.c
++++ b/opcodes/or1k-dis.c
+@@ -537,17 +537,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -581,6 +590,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
+--- a/opcodes/xstormy16-dis.c
++++ b/opcodes/xstormy16-dis.c
+@@ -531,17 +531,26 @@
+   if (cd
+       && (cgen_bitset_compare (isa, prev_isa) != 0
+ 	  || mach != prev_mach
+-	  || endian != prev_endian))
++	  || endian != prev_endian
++	  /* bk-binutils-sys: instruction byte order is part of the key.  */
++	  || insn_endian != prev_insn_endian))
+     {
+       cd = 0;
+       for (cl = cd_list; cl; cl = cl->next)
+ 	{
+ 	  if (cgen_bitset_compare (cl->isa, isa) == 0 &&
+ 	      cl->mach == mach &&
+-	      cl->endian == endian)
++	      cl->endian == endian &&
++	      cl->insn_endian == insn_endian)
+ 	    {
+ 	      cd = cl->cd;
+  	      prev_isa = cd->isas;
++	      /* bk-binutils-sys: the cached descriptor now in use is for
++		 this machine and byte order; without these, the next
++		 switch back is missed and the wrong descriptor kept.  */
++	      prev_mach = mach;
++	      prev_endian = endian;
++	      prev_insn_endian = insn_endian;
+ 	      break;
+ 	    }
+ 	}
+@@ -575,6 +584,7 @@
+       cl->isa = prev_isa;
+       cl->mach = mach;
+       cl->endian = endian;
++      cl->insn_endian = insn_endian;
+       cl->next = cd_list;
+       cd_list = cl;
+ 
