@@ -30,6 +30,7 @@ and a sane architecture in mind.
 | **Licence: GPL-3.0-or-later** for the whole project (first Apache-2.0; the owner does not mind GPL-3.0). Ghidra stays attributed in `NOTICE` (ADR-018). | 2026-11-12 |
 | **Ghidra's GPL helpers are ported like any other code** (GNU demangler, GNU disassembler wrapper, DMG): plain crates, called directly — no wrappers, helper processes or feature flags (ADR-018). | 2026-11-12 |
 | **basilisk is a single binary.** | 2026-11-12 |
+| **Windows is first-class from now**, alongside macOS and Linux: every track must build and pass on all three before merging, and gaps (such as the GNU disassembler's Windows stub) are fixed now (ADR-022). | 2026-11-12 |
 | **binutils is built from source as its own crate** for the GNU disassembler comparison, so nothing has to be installed separately (ADR-019). Reference clone: `../binutils` (2.41, the version Ghidra names). | 2026-11-12 |
 | **binutils is used as it is, not rewritten**: there is no value in rewriting it. A particular part may be rewritten in Rust only if it is measured to be really slow (benchmark first, numbers in `PERF.md`). | 2026-11-12 |
 
@@ -68,6 +69,12 @@ and a sane architecture in mind.
   assets in the repository. Effort: **high for Fable** research agents,
   **medium for Opus** implementation agents. The coordinator (Fable) writes
   the docs and specs itself.
+* **At most about four agents at once** (owner, 2026-11-12), counting
+  helper subagents that agents start themselves. Start the next track when
+  a slot frees; queue the rest in `PROGRESS.md`.
+* **x86-64 Linux results come from Docker emulation on this Mac** (owner,
+  2026-11-12): the reference build runs in a `linux/amd64` container into
+  `../reference-x86_64/` (ADR-021).
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each

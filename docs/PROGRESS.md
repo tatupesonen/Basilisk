@@ -14,6 +14,12 @@ reference tools in `../reference/`. Per-track history is in the log below.
 subagents: Fable 5.2 research agents (high effort), one per area, each in a
 worktree under `../basilisk-wt/<branch>`, writing only new files:
 
+The owner capped the project at about four agents at once, so only
+`spec-sleigh`, `spec-decompiler` and `decomp-research` are running; the
+other four were stopped minutes after starting (nothing written) and are
+**queued** — restart each with the same brief when a slot frees, in this
+order: `store-spike`, `spec-program-model`, `spec-pe`, `spec-macho`.
+
 | Branch | Writes | For |
 |---|---|---|
 | `spec-sleigh` | `inventory/01-sleigh.md`, runtime and compiler specs, the shared-model crate decision | M1, M2 |

@@ -554,3 +554,32 @@ host disagrees with basilisk in exactly these documented cases; tests list
 them rather than loosen the comparison. The x86-64 behaviour that no test
 pins is taken from reading the source until someone runs the oracle on
 x86-64 Linux, which `scripts/build-reference.sh` in a container can do.
+
+## ADR-022 — Windows, macOS and Linux are all first-class, from now
+(Owner decision, 2026-11-12: Windows is "first-class from now".)
+
+basilisk builds, passes its tests and offers every feature on Windows,
+macOS and Linux. A track does not merge until that holds on all three; a
+feature gap on one platform is fixed in the track, not recorded and
+deferred.
+
+* **How it is checked.** CI (`.github/workflows/ci.yml`) runs the tests on
+  `ubuntu-latest`, `macos-latest` and `windows-latest`; a red job on any of
+  them blocks the merge. Development happens on macOS, where Windows
+  cannot be run, so before reporting a track also cross-checks what can be
+  checked locally (`cargo check --target x86_64-pc-windows-msvc` for
+  crates without C code) and avoids the usual traps: path separators and
+  drive letters, case-insensitive file systems, line endings, file
+  locking and deletion of open files, `std::os::unix` without a Windows
+  counterpart, shell scripts in anything the product or its tests need at
+  run time.
+* **Development-only tooling may stay Unix-only**: the reference build
+  (`scripts/build-reference.sh`), the fuzz crate and the gate script are
+  not part of the product. Tests that need the reference tools skip
+  without them on any platform.
+* **Known gap to close now**: `bk-binutils-sys` (ADR-019) was accepted
+  with a Windows stub; that acceptance is withdrawn. The GNU disassembler
+  must build and work on Windows.
+* Tier definitions: x86-64 and AArch64 on each of the three systems where
+  the Rust toolchain and CI offer them; CI covers what GitHub's hosted
+  runners provide, and anything not covered by CI is stated as unverified.

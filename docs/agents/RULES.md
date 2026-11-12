@@ -90,6 +90,18 @@ rules so merges are clean and the result is shippable.
 - Do not leave `todo!()`, stubs or silently ignored cases. Something you
   could not finish is listed under "Gaps" in your status report.
 
+## Platforms and concurrency
+
+- **Windows, macOS and Linux are all first-class** (ADR-022). Your track
+  must build, pass its tests and work on all three; a platform gap is
+  yours to fix, not to defer. You develop on macOS, so cross-check what
+  you can (`cargo check --target x86_64-pc-windows-msvc` for crates
+  without C code) and say in your report exactly what was verified on
+  which platform and what rests on CI.
+- **Do not fan out.** The owner caps the project at about four agents at
+  once. Work alone; start at most one helper subagent at a time, and only
+  when it saves real time.
+
 ## Commits
 
 Conventional messages (`feat(elf): …`), small and frequent, each ending
