@@ -57,7 +57,7 @@ line:
 | Variable | Value | Why |
 |---|---|---|
 | `ARCH_TYPE` | empty | The Makefile forces `-arch x86_64` on macOS and `-m32` on Linux hosts that are not x86-64; we build for the host |
-| `ADDITIONAL_FLAGS` | `-w -DLOCAL_ZLIB` | No warnings from Ghidra's code; use the bundled `zlib/` as Ghidra's Gradle build does (`buildNatives.gradle`), instead of a system zlib. Drops the Makefile's `-mmacosx-version-min=10.6` |
+| `ADDITIONAL_FLAGS` | `-w -DLOCAL_ZLIB -fsigned-char` | No warnings from Ghidra's code; use the bundled `zlib/` as Ghidra's Gradle build does (`buildNatives.gradle`), instead of a system zlib; `char` signed, as Ghidra's code assumes (on Linux aarch64, where it is unsigned, `decomp_test` otherwise spins on every data test). Drops the Makefile's `-mmacosx-version-min=10.6` |
 | `LNK` | `../zlib/libz.a` | The bundled zlib, compiled with `-DNO_GZIP` as in the Gradle build |
 | `BFDLIB` | empty | No GNU BFD (not on a stock machine, and GPL) |
 | `EXTRA` | the Makefile's expression minus `analyzesigs bfd_arch codedata loadimage_bfd` | The Makefile compiles every `*.cc` into the console; these four include the BFD load image. The console and the test runner lose the `codedata` and signature-analysis commands, which no data test uses |

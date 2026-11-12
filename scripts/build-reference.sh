@@ -197,11 +197,19 @@ HOST=$(uname -sm)
 # What the Makefile gets instead of its own settings:
 #   ARCH_TYPE=            it forces -arch x86_64 on macOS and -m32 on non-x86 Linux; build native
 #   ADDITIONAL_FLAGS      -w (Ghidra's warnings are not ours), LOCAL_ZLIB (use the bundled zlib,
-#                         as Ghidra's Gradle build does); drops -mmacosx-version-min=10.6
+#                         as Ghidra's Gradle build does), -fsigned-char (see below); drops
+#                         -mmacosx-version-min=10.6
 #   BFDLIB=               no GNU BFD
 #   LNK                   the bundled zlib instead of -lz
 #   EXTRA                 as in the Makefile, minus the BFD-dependent sources
-MAKE_FLAGS_DESC="CXX=$CXX_CMD -std=c++11; ARCH_TYPE=; ADDITIONAL_FLAGS=-w -DLOCAL_ZLIB; BFDLIB=; LNK=../zlib/libz.a; EXTRA without: $BFD_NAMES"
+#
+# -fsigned-char: Ghidra's C++ assumes `char` is signed, as it is on x86 and
+# on macOS arm64. On Linux aarch64, where it is unsigned, decomp_test built
+# without the flag spins at full CPU on every data test (measured with
+# g++ 14 in a container; the unit tests pass). The flag changes nothing
+# where `char` is already signed.
+CXX_EXTRA_FLAGS="-w -DLOCAL_ZLIB -fsigned-char"
+MAKE_FLAGS_DESC="CXX=$CXX_CMD -std=c++11; ARCH_TYPE=; ADDITIONAL_FLAGS=$CXX_EXTRA_FLAGS; BFDLIB=; LNK=../zlib/libz.a; EXTRA without: $BFD_NAMES"
 
 tools_fingerprint() {
   {
@@ -292,9 +300,14 @@ build_zlib() {
 build_tools() {
   local log=$LOGS/make.log
   say "  make -j$JOBS sleigh_opt decomp_opt decomp_test_dbg libsla.a (log: $log)"
+  # make does not track flags: when they change, start from no objects.
+  if [ "$(cat "$STATE/make-flags" 2>/dev/null || true)" != "$MAKE_FLAGS_DESC" ]; then
+    make -C "$REF/src/cpp" clean > /dev/null 2>&1 || true
+    rm -f "$REF/src/cpp/libsla.a"
+  fi
   # EXTRA is passed unexpanded: make evaluates it where the Makefile uses it.
   if ! make -C "$REF/src/cpp" -j"$JOBS" sleigh_opt decomp_opt decomp_test_dbg libsla.a \
-      "CXX=$CXX_CMD -std=c++11" ARCH_TYPE= "ADDITIONAL_FLAGS=-w -DLOCAL_ZLIB" BFDLIB= \
+      "CXX=$CXX_CMD -std=c++11" ARCH_TYPE= "ADDITIONAL_FLAGS=$CXX_EXTRA_FLAGS" BFDLIB= \
       LNK=../zlib/libz.a \
       "EXTRA=\$(filter-out $BFD_NAMES \$(CORE) \$(DECCORE) \$(SLEIGH) \$(GHIDRA) \$(SLACOMP) \$(SPECIAL),\$(ALL_NAMES))" \
       > "$log" 2>&1; then
@@ -302,6 +315,7 @@ build_tools() {
     tail -5 "$log" >&2
     die "building Ghidra's tools failed; full log: $log"
   fi
+  printf '%s\n' "$MAKE_FLAGS_DESC" > "$STATE/make-flags"
   local pair
   for pair in sleigh_opt:sleigh decomp_opt:decomp decomp_test_dbg:decomp_test; do
     cp "$REF/src/cpp/${pair%%:*}" "$REF/bin/${pair##*:}.new"
@@ -447,7 +461,7 @@ if [ "$(cat "$STATE/pcodedump.fp" 2>/dev/null || true)" = "$PCODEDUMP_FP" ] && [
   say "  up to date"
 else
   rm -f "$STATE/pcodedump.fp"
-  if ! $CXX_CMD -std=c++11 -O2 -w -DLOCAL_ZLIB -I "$REF/src/cpp" "$PCODEDUMP_SRC" \
+  if ! $CXX_CMD -std=c++11 -O2 $CXX_EXTRA_FLAGS -I "$REF/src/cpp" "$PCODEDUMP_SRC" \
       "$REF/src/cpp/libsla.a" "$REF/src/zlib/libz.a" -o "$REF/bin/pcodedump.new" > "$LOGS/pcodedump.log" 2>&1; then
     cat "$LOGS/pcodedump.log" >&2
     die "building pcodedump failed"
