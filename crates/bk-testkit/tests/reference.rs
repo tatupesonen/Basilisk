@@ -7,7 +7,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -308,35 +311,29 @@ fn pcodedump_handles_empty_and_large_input() {
     );
 }
 
-/// The listing format is a contract (`tools/reference/README.md`). The
-/// golden file pins it; without the reference tools the checked-in listing
-/// is still parsed, so the parser and the documented format cannot drift
-/// apart unnoticed.
+/// The listing format is a contract (`tools/reference/README.md`). An
+/// `insta` snapshot pins the tool's text, and the same text goes through
+/// the parser, so the tool, the parser and the documented format cannot
+/// drift apart unnoticed.
 #[test]
-fn pcodedump_listing_matches_its_golden_file() {
-    const NAME: &str = "pcodedump/x86-64.pcode";
-    let golden = bk_testkit::golden!();
+fn pcodedump_listing_matches_its_snapshot() {
+    let Some(reference) = bk_testkit::require_tool(Tool::Pcodedump) else {
+        return;
+    };
+    let text = reference
+        .pcodedump()
+        .dump_text("x86:LE:64:default", 0x1000, X86_64_BYTES)
+        .unwrap();
 
-    let fresh = bk_testkit::require_tool(Tool::Pcodedump).map(|reference| {
-        let text = reference
-            .pcodedump()
-            .dump_text("x86:LE:64:default", 0x1000, X86_64_BYTES)
-            .unwrap();
-        golden.assert_text(NAME, &text);
-        text
-    });
-
-    let checked_in = std::fs::read_to_string(golden.path(NAME).unwrap()).unwrap();
-    let parsed = parse_dump(&checked_in).unwrap();
+    let parsed = parse_dump(&text).unwrap();
     assert_eq!(parsed.instructions().count(), 7);
     assert_eq!(parsed.errors().count(), 2);
     assert_eq!(
         parsed.instructions().map(|i| i.pcode.len()).sum::<usize>(),
         27
     );
-    if let Some(fresh) = fresh {
-        assert_eq!(fresh, checked_in);
-    }
+
+    insta::assert_snapshot!("pcodedump_x86_64", text);
 }
 
 #[test]

@@ -1,3 +1,7 @@
+---
+source: crates/bk-testkit/tests/reference.rs
+expression: text
+---
 H	1	x86:LE:64:default	ram	0x1000	17
 I	0x1000	1	1	55	PUSH	RBP
 P	COPY	(unique,0x4f900,8)	(register,0x28,8,RBP)

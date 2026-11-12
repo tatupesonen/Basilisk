@@ -63,7 +63,8 @@ impl Pcodedump {
     }
 
     /// Like [`Self::dump`], but return the listing as the tool printed it —
-    /// the form to keep in golden files.
+    /// the form to snapshot with `insta` (it is deterministic, so it needs
+    /// no normalising).
     pub fn dump_text(&self, language: &str, base: u64, bytes: &[u8]) -> Result<String, ToolError> {
         let unsupported = |reason: String| ToolError::Unsupported {
             tool: Tool::Pcodedump,

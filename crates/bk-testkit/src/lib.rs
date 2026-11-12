@@ -16,7 +16,6 @@
 //!   run a test when its oracle is present, skip it visibly when not.
 //! * [`tools`] — typed wrappers that run `sleigh`, `decomp`, `decomp_test`
 //!   and `pcodedump` with a time limit.
-//! * [`golden`] — golden-file comparison with diffs and `UPDATE_GOLDEN=1`.
 //! * [`datatest`] — Ghidra's `<decompilertest>` files as plain data.
 //! * [`corpus`] — every language directory, `.slaspec` and data test.
 //!
@@ -37,14 +36,12 @@
 
 pub mod corpus;
 pub mod datatest;
-pub mod golden;
 pub mod paths;
 pub mod skip;
 pub mod tools;
 
 pub use corpus::{CorpusError, LanguageDir, LanguageFile};
 pub use datatest::{DataTest, DataTestError, parse_data_test, read_data_test};
-pub use golden::{Golden, GoldenError, GoldenOutcome};
 pub use paths::{GhidraDir, ReferenceDir, Tool, ghidra_dir, reference_dir, workspace_root};
 pub use skip::{require_ghidra, require_reference, require_tool};
 pub use tools::{ToolError, ToolOutput};
