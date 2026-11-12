@@ -125,9 +125,9 @@ proptest! {
 enum Gen {
     Name(&'static str),
     Int(u64, bool),
-    Unary(&'static str, &'static str, Box<Gen>),
-    Binary(BinaryOp, Box<Gen>, Box<Gen>),
-    Call(&'static str, Vec<Gen>),
+    Unary(&'static str, &'static str, Box<Self>),
+    Binary(BinaryOp, Box<Self>, Box<Self>),
+    Call(&'static str, Vec<Self>),
 }
 
 const OPS: [BinaryOp; 36] = [
