@@ -186,7 +186,7 @@ impl<T: Clone + Send + 'static> PagedTable<T> {
             let _ = total;
         });
         let total = self.total.unwrap_or(0);
-        egui::Frame::NONE.fill(p.surface).show(ui, |ui| {
+        egui::Frame::NONE.fill(p.surface).inner_margin(egui::Margin { left: 8, right: 4, top: 0, bottom: 0 }).show(ui, |ui| {
             ui.set_min_size(ui.available_size());
             if let Some(e) = &self.error {
                 widgets::empty_state(ui, &t, icons::WARNING, "Could not load", e);

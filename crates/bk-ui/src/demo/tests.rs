@@ -181,3 +181,25 @@ fn search_finds_text_and_bytes() {
     assert!(push_only.total >= 30);
     assert!(push_rbp.total <= push_only.total);
 }
+
+#[test]
+fn every_unit_produces_the_rows_it_counts() {
+    // The row numbering (and so paging) depends on this.
+    let p = licd();
+    let db = p.db.read();
+    for (i, u) in db.units.iter().enumerate() {
+        assert_eq!(rows::unit_rows(&db, i).len(), rows::unit_row_count(&db, u), "unit at {:#x}", u.address);
+    }
+    drop(db);
+    // And paging returns each row once: no row appears on two pages.
+    let n = p.listing_len().unwrap();
+    let mut seen = Vec::new();
+    for start in (0..n).step_by(64) {
+        seen.extend(p.listing_rows(RowIndex(start), 64).unwrap());
+    }
+    assert_eq!(seen.len() as u64, n);
+    let units: Vec<_> = seen.iter().filter(|r| r.is_unit()).map(|r| r.address).collect();
+    let mut dedup = units.clone();
+    dedup.dedup();
+    assert_eq!(units, dedup);
+}

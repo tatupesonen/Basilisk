@@ -51,6 +51,7 @@ pub struct DecompilerView {
     reveal_marked: bool,
     gutter: f32,
     cw: f32,
+    preview: super::preview::Preview,
 }
 
 impl DecompilerView {
@@ -73,6 +74,7 @@ impl DecompilerView {
             reveal_marked: false,
             gutter: 40.0,
             cw: 8.0,
+            preview: super::preview::Preview::default(),
         }
     }
 
@@ -476,13 +478,20 @@ impl View for DecompilerView {
             let tok = s.token_at(line, pos.x - rect.left() - s.gutter);
             (line, tok)
         };
+        let mut hovered = None;
         if let Some(pos) = resp.hover_pos() {
             let (line, tok) = hit(self, pos);
             if let Some(s) = tok.and_then(|k| self.layouts.get(line)?.spans.get(k)) {
-                if s.token.referent.as_ref().and_then(Referent::address).is_some() {
+                hovered = s.token.referent.as_ref().and_then(Referent::address);
+                if hovered.is_some() {
                     ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
                 }
             }
+        }
+        self.preview.want(cx, hovered);
+        if self.preview.active() {
+            let digits = crate::views::listing::layout::address_digits(cx.shared.program.image_base.offset(0xffff_ffff));
+            resp.clone().on_hover_ui_at_pointer(|ui| self.preview.ui(ui, &t, digits));
         }
         if let Some(pos) = resp.interact_pointer_pos() {
             let (line, tok) = hit(self, pos);

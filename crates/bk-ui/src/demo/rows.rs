@@ -21,11 +21,9 @@ fn comment_lines(db: &Db, a: u64, kind: CommentKind) -> Vec<&str> {
 
 fn label_rows(db: &Db, a: u64) -> usize {
     let n = db.xrefs.get(&a).map_or(0, Vec::len);
-    if n <= MAX_XREFS {
-        n.max(1)
-    } else {
-        MAX_XREFS + 1
-    }
+    // The label row, further XREF rows, and "[more]" past MAX_XREFS
+    // (see push_label).
+    if n <= MAX_XREFS { n.max(1) } else { MAX_XREFS }
 }
 
 /// Number of rows `unit` occupies (must agree with [`unit_rows`]).

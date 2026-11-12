@@ -21,7 +21,7 @@ use super::{Request, Target, View, ViewCx, ViewKind};
 use crate::actions::ActionId;
 use crate::design::{Tokens, widgets};
 use crate::model::{
-    Address, ListingRow, Location, Referent, RowContent, RowSpan, SourceResult, Token,
+    Address, Location, Referent, RowSpan, SourceResult, Token,
 };
 use crate::task::Pending;
 
@@ -48,7 +48,7 @@ pub struct ListingView {
     columns: Columns,
     cw: f32,
     find: Option<Pending<Option<Address>>>,
-    preview: Option<(Address, Pending<SourceResult<Vec<ListingRow>>>)>,
+    preview: super::preview::Preview,
     /// Where the cursor is, for other views and the status bar.
     cursor_address: Option<Address>,
     /// Horizontal scroll in points (the fields are wider than a narrow pane).
@@ -77,7 +77,7 @@ impl ListingView {
             columns: Columns::new(8),
             cw: 8.0,
             find: None,
-            preview: None,
+            preview: super::preview::Preview::default(),
             cursor_address: None,
             hscroll: 0.0,
             content_width: 0.0,
@@ -346,7 +346,7 @@ impl ListingView {
 
     fn hover(&mut self, ui: &egui::Ui, cx: &ViewCx<'_>, resp: &egui::Response, rect: Rect, row_h: f32) {
         let Some(pos) = resp.hover_pos() else {
-            self.preview = None;
+            self.preview.want(cx, None);
             return;
         };
         let row = self.row_at(rect, row_h, pos.y);
@@ -354,7 +354,7 @@ impl ListingView {
             .token_at(row, rect, pos.x)
             .and_then(|i| self.cache_layout(row)?.spans.get(i).cloned());
         let Some(span) = target else {
-            self.preview = None;
+            self.preview.want(cx, None);
             return;
         };
         let Some(a) = span.token.referent.as_ref().and_then(Referent::address) else {
@@ -370,42 +370,7 @@ impl ListingView {
             origin_y + row_h - 3.0,
             Stroke::new(1.0, crate::design::syntax::color(&cx.tokens.syntax, span.token.kind)),
         );
-        if self.preview.as_ref().map(|p| p.0) != Some(a) {
-            self.preview = Some((
-                a,
-                cx.client.request(move |s| {
-                    let span = s.rows_for_address(a)?;
-                    s.listing_rows(span.first, 14)
-                }),
-            ));
-        }
-    }
-
-    fn preview_ui(&mut self, ui: &mut egui::Ui, t: &Tokens) {
-        let Some((a, req)) = &mut self.preview else {
-            return;
-        };
-        let a = *a;
-        match req.poll() {
-            Some(Ok(rows)) => {
-                let painter = ui.painter().clone();
-                let cols = Columns::new(self.columns.bytes.saturating_sub(2));
-                for r in rows.iter().filter(|r| !matches!(r.content, RowContent::Blank)).take(12) {
-                    let l = layout::layout(r, &cols, t, self.cw, &painter);
-                    let (rect, _) = ui.allocate_exact_size(
-                        vec2(l.galley.size().x.min(640.0), t.metrics.code_row),
-                        egui::Sense::hover(),
-                    );
-                    painter.with_clip_rect(rect).galley(rect.left_top(), l.galley, t.palette.text);
-                }
-            }
-            Some(Err(e)) => {
-                ui.label(e.to_string());
-            }
-            None => {
-                ui.label(format!("Loading {a}…"));
-            }
-        }
+        self.preview.want(cx, Some(a));
     }
 
     /// Horizontal scrolling (shift+wheel or a trackpad) and its thin bar.
@@ -567,9 +532,10 @@ impl View for ListingView {
                 };
             }
         }
-        if self.preview.is_some() {
+        if self.preview.active() {
+            let digits = self.columns.bytes.saturating_sub(2);
             let resp = resp.clone();
-            resp.on_hover_ui_at_pointer(|ui| self.preview_ui(ui, &t));
+            resp.on_hover_ui_at_pointer(|ui| self.preview.ui(ui, &t, digits));
         }
         let target = self.target();
         resp.context_menu(|ui| super::popup_menu(ui, cx, target.as_ref()));

@@ -51,6 +51,7 @@ fn tree_row(
     caret: Option<bool>,
     icon: &str,
     text: RichText,
+    detail: &str,
     selected: bool,
 ) -> egui::Response {
     let h = t.metrics.table_row;
@@ -88,11 +89,21 @@ fn tree_row(
         rect.right() - x - 4.0,
         egui::TextStyle::Body,
     );
+    let w = galley.size().x;
     ui.painter().galley(
         egui::pos2(x, rect.center().y - galley.size().y / 2.0),
         galley,
         p.text,
     );
+    if !detail.is_empty() {
+        ui.painter().text(
+            egui::pos2(x + w + 8.0, rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            detail,
+            egui::FontId::proportional(t.metrics.small_size),
+            p.text_muted,
+        );
+    }
     resp
 }
 
@@ -138,11 +149,11 @@ impl View for SymbolTreeView {
                 for c in SymbolCategory::ALL {
                     let open = self.open.contains(&c) || filtering;
                     let count = match self.folders.get_mut(&c).and_then(|p| p.poll()) {
-                        Some(Ok(page)) => format!("  {}", page.total),
+                        Some(Ok(page)) => page.total.to_string(),
                         _ => String::new(),
                     };
-                    let label = RichText::new(format!("{}{count}", c.title())).color(p.text);
-                    if tree_row(ui, &t, 0, Some(open), category_icon(c), label, false).clicked() {
+                    let label = RichText::new(c.title()).color(p.text);
+                    if tree_row(ui, &t, 0, Some(open), category_icon(c), label, &count, false).clicked() {
                         if !self.open.remove(&c) {
                             self.open.insert(c);
                         }
@@ -159,12 +170,12 @@ impl View for SymbolTreeView {
                         }
                         None => {
                             ui.ctx().request_repaint_after(std::time::Duration::from_millis(30));
-                            tree_row(ui, &t, 1, None, icons::FOLDER, RichText::new("Loading…").color(p.text_muted), false);
+                            tree_row(ui, &t, 1, None, icons::FOLDER, RichText::new("Loading…").color(p.text_muted), "", false);
                             continue;
                         }
                     };
                     if rows.is_empty() && open {
-                        tree_row(ui, &t, 1, None, "", RichText::new("(empty)").color(p.text_disabled), false);
+                        tree_row(ui, &t, 1, None, "", RichText::new("(empty)").color(p.text_disabled), "", false);
                     }
                     let mut library: Option<String> = None;
                     for s in rows {
@@ -173,7 +184,7 @@ impl View for SymbolTreeView {
                             if library.as_deref() != Some(&*s.namespace) {
                                 library = Some(s.namespace.to_string());
                                 let lib_open = !self.libraries_closed.contains(&*s.namespace);
-                                if tree_row(ui, &t, 1, Some(lib_open), icons::FOLDER, RichText::new(&*s.namespace).color(p.text), false).clicked() {
+                                if tree_row(ui, &t, 1, Some(lib_open), icons::FOLDER, RichText::new(&*s.namespace).color(p.text), "", false).clicked() {
                                     let n = s.namespace.to_string();
                                     if !self.libraries_closed.remove(&n) {
                                         self.libraries_closed.insert(n);
@@ -188,7 +199,7 @@ impl View for SymbolTreeView {
                         let kind = s.kind.token_kind();
                         let selected = Some(s.address) == current_fn && c == SymbolCategory::Functions || s.address == here;
                         let text = RichText::new(&*s.name).monospace().size(t.metrics.code_size - 0.5).color(syntax::color(&t.syntax, kind));
-                        let r = tree_row(ui, &t, depth, None, kind_icon(s.kind), text, selected)
+                        let r = tree_row(ui, &t, depth, None, kind_icon(s.kind), text, "", selected)
                             .on_hover_text(format!("{} at {}", s.name, s.address));
                         if r.clicked() || r.double_clicked() {
                             go = Some(s.address);

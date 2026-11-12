@@ -251,7 +251,8 @@ fn dialog<R>(ctx: &egui::Context, t: &Tokens, title: &str, add: impl FnOnce(&mut
 
 fn buttons(ui: &mut egui::Ui, t: &Tokens, ok: &str) -> (bool, bool) {
     ui.add_space(space::LG);
-    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+    let size = vec2(ui.available_width(), t.metrics.table_row + 4.0);
+    ui.allocate_ui_with_layout(size, egui::Layout::right_to_left(egui::Align::Center), |ui| {
         let ok = widgets::primary_button(ui, t, ok).clicked();
         let cancel = widgets::button(ui, t, "Cancel").clicked();
         (ok, cancel)
@@ -490,7 +491,8 @@ fn about_ui(ctx: &egui::Context, env: &Env<'_>) -> Outcome {
             ui.label(RichText::new(line).color(t.palette.text_secondary));
         }
         ui.add_space(space::LG);
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        let size = vec2(ui.available_width(), t.metrics.table_row + 4.0);
+        ui.allocate_ui_with_layout(size, egui::Layout::right_to_left(egui::Align::Center), |ui| {
             widgets::primary_button(ui, t, "Close").clicked()
         })
         .inner

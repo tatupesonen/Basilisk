@@ -24,6 +24,8 @@ pub struct Scroller {
     /// Rows that fit the last drawn height.
     pub visible: u64,
     drag_start: Option<(f32, u64)>,
+    /// A reveal asked for before the height was known.
+    pending: Option<u64>,
 }
 
 /// What [`Scroller::show`] reports.
@@ -80,6 +82,10 @@ impl Scroller {
     /// Puts `row` a third of the way down the view (Ghidra's go-to
     /// placement), unless it is already comfortably visible.
     pub fn reveal(&mut self, row: u64, total: u64) {
+        if self.visible == 0 {
+            self.pending = Some(row);
+            return;
+        }
         if self.is_visible(row) {
             return;
         }
@@ -125,6 +131,9 @@ impl Scroller {
         let response = ui.allocate_rect(full, Sense::click_and_drag());
         let rect = Rect::from_min_max(full.min, pos2(full.max.x - BAR, full.max.y));
         self.visible = ((rect.height() / row_h).floor() as u64).max(1);
+        if let Some(row) = self.pending.take() {
+            self.reveal(row, total);
+        }
         if response.hovered() || ui.rect_contains_pointer(full) {
             let dy = ui.input(|i| i.smooth_scroll_delta.y);
             if dy != 0.0 {

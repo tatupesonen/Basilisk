@@ -108,7 +108,7 @@ impl Layout {
         let surface = main.main_surface_mut();
         let [rest, left] = surface.split_left(NodeIndex::root(), 0.19, vec![trees]);
         surface.split_below(left, 0.32, vec![symbols]);
-        let [top, _bottom] = surface.split_below(rest, 0.74, bottom);
+        let [top, _bottom] = surface.split_below(rest, 0.79, bottom);
         surface.split_right(top, 0.52, vec![decompiler]);
         Self {
             main,

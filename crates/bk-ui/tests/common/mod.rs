@@ -41,6 +41,7 @@ pub(crate) fn gpu_harness(theme: ThemeKind, density: Density, w: f32, h: f32) ->
     Harness::builder()
         .with_size(egui::vec2(w, h))
         .with_pixels_per_point(2.0)
+        .with_step_dt(1.0 / 60.0)
         .wgpu()
         .build_ui_state(|ui, app: &mut BasiliskApp| app.frame(ui), app)
 }

@@ -7,6 +7,7 @@ pub mod console;
 pub mod decompiler;
 pub mod functions;
 pub mod listing;
+mod preview;
 pub mod program_trees;
 pub mod references;
 pub mod scroller;
@@ -338,6 +339,13 @@ fn menu_item(ui: &mut egui::Ui, cx: &mut ViewCx<'_>, id: ActionId, text: &str) {
     }
 }
 
+/// A submenu item with a Phosphor caret (egui's default arrow glyph is not
+/// in the bundled fonts).
+pub fn submenu(ui: &mut egui::Ui, text: &str, add: impl FnOnce(&mut egui::Ui)) {
+    let button = egui::Button::new(text).right_text(icons::rich(icons::COLLAPSED));
+    egui::containers::menu::SubMenuButton::from_button(button).ui(ui, add);
+}
+
 /// The right-click menu of the Listing and the Decompiler, laid out as
 /// Ghidra's: clipboard, then label and comment edits, then references.
 pub fn popup_menu(ui: &mut egui::Ui, cx: &mut ViewCx<'_>, target: Option<&Target>) {
@@ -353,7 +361,7 @@ pub fn popup_menu(ui: &mut egui::Ui, cx: &mut ViewCx<'_>, target: Option<&Target
         menu_item(ui, cx, ActionId::FollowReference, "Follow Reference");
     }
     menu_item(ui, cx, ActionId::Rename, rename_title(target));
-    ui.menu_button("Comments", |ui| {
+    submenu(ui, "Comments", |ui| {
         menu_item(ui, cx, ActionId::SetComment, "Set...");
         if let Some(t) = target {
             for kind in CommentKind::ALL {
@@ -365,7 +373,7 @@ pub fn popup_menu(ui: &mut egui::Ui, cx: &mut ViewCx<'_>, target: Option<&Target
         }
         menu_item(ui, cx, ActionId::DeleteComment, "Delete");
     });
-    ui.menu_button("References", |ui| {
+    submenu(ui, "References", |ui| {
         let name = target
             .and_then(|t| t.token.as_ref())
             .map_or_else(String::new, |t| format!(" {}", t.text));
