@@ -156,9 +156,8 @@ and disassembler wrappers, DMG) are not ported from their GPL sources;
 their function is provided by permissively licensed Rust code. Enforced
 with `cargo-deny` once it joins the gate.
 
-*The treatment of Ghidra's GPL modules in this record is superseded by
-ADR-016 (2026-11-12): they are ported, as separately licensed helpers.
-The rest of this record stands.*
+*Superseded by ADR-018 (2026-11-12): the project is GPL-3.0-or-later and
+Ghidra's GPL modules are ported like any other code.*
 
 ## ADR-011 — Prefer existing crates when they meet requirements
 For every component, first evaluate existing crates against: behavioural
@@ -274,9 +273,8 @@ or deferred to the next wave. Rules: `docs/agents/RULES.md`; protocol:
 `docs/LOOP.md`.
 
 ## ADR-016 — Ghidra's GPL helpers are ported, as separate GPL programs
-*The separate-program arrangement in this record is superseded by ADR-017
-(2026-11-12): the ports are linked into the one basilisk binary. What is
-ported, and that the ports are GPL-licensed crates under `gpl/`, stands.*
+*Superseded by ADR-018 (2026-11-12). The table of what Ghidra's GPL modules
+are still stands; the separate programs and the `gpl/` directory do not.*
 
 (Owner decision, 2026-11-12: "just port the ghidras gpl helpers."
 Supersedes the GPL clause of ADR-010.)
@@ -313,6 +311,9 @@ Schedule: the GNU demangler with milestone M6 (it is self-contained and a
 candidate for an earlier wave); `gdis` and DMG with M10.
 
 ## ADR-017 — One binary: the GPL ports are linked in, behind a default feature
+*Superseded by ADR-018 (2026-11-12). basilisk is still one binary; the
+`gpl` feature, the `gpl/` directory and the dual licensing do not stand.*
+
 (Owner decision, 2026-11-12: "I want a single binary though." Supersedes
 the separate-program arrangement of ADR-016.)
 
@@ -355,3 +356,37 @@ single binary is possible if the GNU demangler is written from
 permissively licensed sources (the Itanium C++ ABI specification, LLVM's
 demangler) instead of ported from libiberty. The owner chose to port
 Ghidra's helpers.
+
+## ADR-018 — The project is GPL-3.0-or-later; GPL code is ported like any other
+(Owner decisions, 2026-11-12: "Not any wrappers and such. Just port the
+code" and "i dont mind gpl3". Supersedes ADR-010, ADR-016 and ADR-017.)
+
+basilisk is licensed **GPL-3.0-or-later** as a whole, and ships as a
+single binary. Ghidra's GPL modules (`GPL/DemanglerGnu`,
+`GPL/GnuDisassembler`, `GPL/DMG`; described in ADR-016) are ported to Rust
+exactly as Ghidra's Apache-2.0 code is: ordinary crates under `crates/`,
+called directly. There are no helper processes, no pipe protocol, no
+`gpl/` directory, no Cargo feature and no licence boundary between
+crates.
+
+* `LICENSE` is the GPL, version 3. Code ported from Ghidra's Apache-2.0
+  source is included under the terms that licence allows (Apache-2.0 code
+  may be part of a GPL-3.0 work): Ghidra stays attributed in `NOTICE`, and
+  the Apache licence text is kept as `LICENSE-APACHE`.
+* Where Ghidra runs a GPL program over a pipe and parses its text output
+  (`Features/GnuDemangler` drives `demangler_gnu` this way), basilisk
+  calls the ported code as a library and takes structured results;
+  Ghidra's tests of the text protocol are ported against the direct API.
+* Dependencies must be GPL-3.0-compatible: Apache-2.0, MIT, BSD, ISC,
+  Zlib, Unicode, MPL-2.0, LGPL, GPL-2.0-or-later, GPL-3.0. No
+  GPL-2.0-only, no proprietary code. Enforced with `cargo-deny` once it
+  joins the gate.
+* Schedule: the GNU demangler (libiberty's, 34,000 lines of C in two
+  versions; self-contained) with milestone M6 or an earlier wave; DMG and
+  the GNU disassembler with M10.
+
+Open point for M10: Ghidra's `gdis` is a 576-line program over binutils'
+libopcodes, which Ghidra does not include (the user builds binutils).
+Porting "the code" there means the wrapper; the disassemblers it calls are
+a far larger body of GPL code outside Ghidra's tree. What basilisk provides
+in its place is decided when M10 is planned.

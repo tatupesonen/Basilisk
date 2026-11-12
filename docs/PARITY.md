@@ -67,7 +67,7 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |
 | PDB | `bk-pdb` | M6 | Missing | |
 | MicrosoftDmang, MicrosoftDemangler | `bk-demangle-ms` | M6 | Missing | Parser planned for wave 2 |
-| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Parser of demangler output and the analyzer, behind a trait the GPL port implements (ADR-017) |
+| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | The analyzer and result model, calling the ported libiberty demangler directly (ADR-018) |
 | MicrosoftCodeAnalyzer | `bk-analyzers-msvc` | M6 | Missing | |
 | FunctionID | `bk-fid` | M6 | Missing | |
 | BytePatterns | `bk-analyzers-*` | M5 | Missing | |
@@ -102,13 +102,12 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
 | Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | |
 
-## GPL helpers (ADR-016)
+## Ghidra's GPL modules (ADR-018)
 
-GPL-3.0-or-later crates under `gpl/`, linked into the `basilisk` binary by
-the default feature `gpl`; no crate under `crates/` depends on them (ADR-017).
+Ported like any other code, as ordinary crates called directly.
 
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
-| GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `gpl/bk-gpl-demangler-gnu` | M6 | Missing | |
-| GPL/GnuDisassembler (`gdis` over binutils) | `gpl/bk-gpl-gdis` | M10 | Missing | Wraps an external C library; how to provide it in one binary is open (ADR-017) |
-| GPL/DMG (DMG/HFS+ reader) | `gpl/bk-gpl-dmg` | M10 | Missing | |
+| GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `bk-demangle-gnu` | M6 | Missing | |
+| GPL/GnuDisassembler (`gdis` over binutils) | to decide | M10 | Missing | Wraps binutils, which is not in Ghidra's tree (open point in ADR-018) |
+| GPL/DMG (DMG/HFS+ reader) | `bk-fs-dmg` | M10 | Missing | |
