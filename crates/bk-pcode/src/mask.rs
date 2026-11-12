@@ -51,20 +51,18 @@ pub const fn uintb_negate(val: u64, size: u32) -> u64 {
 /// Sign-extends the low `size_in` bytes of `val` to `size_out` bytes, leaving
 /// more significant bytes zero (the three-argument `sign_extend`).
 ///
-/// When `size_in >= size_out` the C++ shifts by a negative amount; this
-/// returns the low `size_in` bytes unchanged, as Java's `Utils.sign_extend`
-/// does.
+/// Sizes above 8 count as 8. When `size_in > size_out` or a size is 0, the
+/// C++ shifts by a negative amount or by 64 (undefined behaviour); here, as
+/// on x86-64 and AArch64, every shift count is taken modulo 64. So shrinking
+/// gives the sign extension of the top `size_out` bytes of the input to 8
+/// bytes, cut to `size_out` bytes, exactly as Ghidra's compiled code does.
 #[inline]
 pub const fn sign_extend(val: u64, size_in: u32, size_out: u32) -> u64 {
-    let val = val & calc_mask(size_in);
-    if size_in >= size_out || size_in == 0 {
-        return val;
-    }
-    if signbit_negative(val, size_in) {
-        val | (calc_mask(size_out) & !calc_mask(size_in))
-    } else {
-        val
-    }
+    let size_in = if size_in < 8 { size_in } else { 8 };
+    let size_out = if size_out < 8 { size_out } else { 8 };
+    let sval = (val as i64) << ((8 - size_in) * 8 % 64);
+    let res = (sval >> (size_out.wrapping_sub(size_in).wrapping_mul(8) % 64)) as u64;
+    res >> ((8 - size_out) * 8 % 64)
 }
 
 /// Sign-extends `val` above bit `bit` (0 is the least significant) to 64 bits
@@ -152,9 +150,14 @@ mod tests {
         assert_eq!(sign_extend(0x1_8000, 2, 4), 0xffff_8000);
         assert_eq!(sign_extend(0x8000_0000, 4, 8), 0xffff_ffff_8000_0000);
         assert_eq!(sign_extend(0x8000_0000, 4, 4), 0x8000_0000);
-        assert_eq!(sign_extend(0x1234_5678, 4, 2), 0x1234_5678);
-        assert_eq!(sign_extend(0xff, 0, 4), 0);
         assert_eq!(sign_extend(1 << 63, 8, 16), 1 << 63);
+        // Shrinking and size 0 follow the C++ with shift counts modulo 64
+        // (checked against Ghidra's compiled code in tests/cpp_oracle.rs).
+        assert_eq!(sign_extend(0x8000, 2, 1), 0xff);
+        assert_eq!(sign_extend(0x7fff, 2, 1), 0);
+        assert_eq!(sign_extend(0x1234_5678, 4, 2), 0);
+        assert_eq!(sign_extend(0x8234_5678, 4, 2), 0xffff);
+        assert_eq!(sign_extend(5, 0, 0), 5);
     }
 
     #[test]
