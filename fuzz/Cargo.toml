@@ -1,0 +1,33 @@
+# cargo-fuzz targets (docs/LOOP.md, Testing rules). Not a workspace member:
+# it needs a nightly toolchain and libFuzzer. Run from the repository root:
+#   cargo +nightly fuzz run <target>
+[package]
+name = "bk-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+bk-marshal = { path = "../crates/bk-marshal" }
+bk-core = { path = "../crates/bk-core" }
+
+[[bin]]
+name = "packed_decode"
+path = "fuzz_targets/packed_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xml_decode"
+path = "fuzz_targets/xml_decode.rs"
+test = false
+doc = false
+bench = false
