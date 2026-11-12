@@ -71,6 +71,66 @@ fn files_resolve_beside_the_ldefs_or_by_name_across_modules() {
 }
 
 #[test]
+fn a_name_found_in_several_modules_resolves_to_the_first_module() {
+    // SleighLanguageFile.findFile: when the file is not beside the .ldefs
+    // and several modules hold a file of that name, Ghidra takes the first
+    // one found, as long as the path it looked for ends with the name minus
+    // its leading relative part (which, for a name written in the
+    // definition, it always does).
+    let dir = tempfile::tempdir().unwrap();
+    let processors = dir.path().join("Ghidra/Processors");
+    for module in ["Gamma", "Beta"] {
+        write(processors.join(module).join("Module.manifest"), "");
+        write(
+            processors.join(module).join("data/languages/shared.cspec"),
+            "",
+        );
+    }
+    let omega = processors.join("Omega");
+    write(omega.join("Module.manifest"), "");
+    let languages = omega.join("data/languages");
+    write(
+        languages.join("omega.ldefs"),
+        &ldefs(&[
+            language(
+                "Omega:LE:32:plain",
+                "",
+                "omega.sla",
+                "omega.pspec",
+                &[("default", "shared.cspec")],
+            ),
+            language(
+                "Omega:LE:32:relative",
+                "",
+                "omega.sla",
+                "omega.pspec",
+                &[("default", "../../../Gamma/data/languages/shared.cspec")],
+            ),
+            language(
+                "Omega:LE:32:dotted",
+                "",
+                "omega.sla",
+                "omega.pspec",
+                &[("default", "./shared.cspec")],
+            ),
+        ]),
+    );
+    write(languages.join("omega.slaspec"), "");
+    write(languages.join("omega.pspec"), "<processor_spec/>");
+
+    let registry = registry(&dir);
+    assert!(registry.failures().is_empty(), "{:?}", registry.failures());
+    let beta = processors.join("Beta/data/languages/shared.cspec");
+    let gamma = processors.join("Gamma/data/languages/shared.cspec");
+    let cspec = |id: &str| registry.find(id).unwrap().compiler_specs()[0].file.clone();
+    // Not beside the definition: the first module in name order wins.
+    assert_eq!(cspec("Omega:LE:32:plain"), beta);
+    assert_eq!(cspec("Omega:LE:32:dotted"), beta);
+    // A relative path that exists is taken as written.
+    assert_eq!(cspec("Omega:LE:32:relative"), gamma);
+}
+
+#[test]
 fn a_language_with_a_missing_file_is_reported_and_left_out() {
     let dir = tree();
     let languages = dir.path().join("Ghidra/Processors/alpha/data/languages");
