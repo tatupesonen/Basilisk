@@ -260,12 +260,14 @@ impl RawDisassembler {
         big_endian: bool,
         options: Option<&str>,
     ) -> Result<Self, RawError> {
-        let options = options
-            .map(CString::new)
-            .transpose()
-            .map_err(|_| RawError::EmbeddedNul {
-                what: "the disassembler option string",
-            })?;
+        let options =
+            options
+                .map(CString::new)
+                .transpose()
+                .map_err(|nul| RawError::EmbeddedNul {
+                    what: "the disassembler option string",
+                    position: nul.nul_position(),
+                })?;
         let mut status = BK_GDIS_OK;
         let held = Access::Locked(exclusive_access()?);
         // SAFETY: `options` is null or a NUL-terminated string that outlives

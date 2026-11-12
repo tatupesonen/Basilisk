@@ -32,12 +32,12 @@
 //! still compiles: [`is_available`] returns `false` and every operation
 //! returns [`RawError::Unavailable`].
 
-#![allow(
-    unsafe_code,
-    reason = "FFI to the vendored binutils; ADR-019 names this crate as the workspace's one exception"
-)]
-
+// All `unsafe` of the crate, and of the workspace, is in this one module.
 #[cfg(bk_binutils_built)]
+#[expect(
+    unsafe_code,
+    reason = "FFI to the vendored binutils (ADR-019); listed no-miri in unsafe-crates.txt (ADR-020)"
+)]
 mod real;
 #[cfg(bk_binutils_built)]
 use real as imp;
@@ -89,10 +89,12 @@ pub enum RawError {
         message: String,
     },
     /// A string handed to binutils contains a NUL byte.
-    #[error("{what} contains a NUL byte")]
+    #[error("{what} contains a NUL byte at byte {position}")]
     EmbeddedNul {
         /// Which string.
         what: &'static str,
+        /// Where the NUL is.
+        position: usize,
     },
     /// [`Request::step`] was asked for an offset outside the request's bytes.
     #[error("offset {offset} is outside the request's {len} bytes")]
