@@ -15,10 +15,45 @@ reference for egui practice.
 basilisk's desktop interface: where a reverse engineer reads disassembly
 and decompiled code, navigates, renames and annotates. The owner's brief:
 **good-looking and intuitive**. Ghidra's interface is powerful and famously
-awkward; basilisk keeps the power — the same views, the same information —
-and is free to rethink how it is presented (ADR-001). This track builds the
+awkward; basilisk keeps the power — the same views, the same information,
+the same arrangement — and improves how it looks and feels (ADR-001; see
+"Familiar to Ghidra users" below). This track builds the
 application shell, the design system and the first core views, against a
 data interface that the real program model will implement later.
+
+### Familiar to Ghidra users (owner rule, 2026-11-12)
+
+"Make the UI somewhat represent old Ghidra; if you are proficient in Ghidra
+it should be easy to work in basilisk." This ranks above the freedom to
+rethink in the paragraph above. Someone who knows Ghidra's CodeBrowser must
+be able to sit down and work at once, so by default basilisk keeps:
+
+- **Ghidra's default layout**: Program Trees, Symbol Tree and Data Type
+  Manager stacked on the left, the Listing in the centre, the Decompiler
+  on the right, the Console at the bottom — the CodeBrowser arrangement
+  (`HELP/CodeBrowserPlugin/images/CodeBrowser.png`).
+- **Ghidra's names** for windows, views, actions and concepts (Listing,
+  Decompiler, Symbol Tree, Defined Strings, Bookmarks, plate comment, EOL
+  comment, XREF, label, …). Do not rename what Ghidra users already know.
+- **Ghidra's menu structure** (File, Edit, Analysis, Navigation, Search,
+  Select, Tools, Window, Help) with actions where a Ghidra user looks for
+  them, and Ghidra's right-click menus on the listing and decompiler.
+- **Ghidra's default key bindings** as basilisk's defaults, not an
+  optional preset: `G`, `L`, `;`, `D`, `C`, `Ctrl+Shift+E`,
+  `Alt+Left`/`Alt+Right` and the rest, from Ghidra's help.
+- **The listing's field layout** as Ghidra draws it — address, bytes,
+  mnemonic, operands, comments, XREFs in the same places — and the
+  decompiler's presentation.
+- **Ghidra's interaction habits**: double-click to follow, the middle-
+  mouse highlight of matching tokens, the navigation history buttons.
+
+What the designer improves is how it *looks and feels*, and what is
+*added* — never where things are: a cleaner visual system (type, colour,
+spacing, icons), legibility, responsiveness, sensible defaults, and
+additions that take nothing away (the command palette, fuzzy go-to,
+non-modal errors). A departure from Ghidra's arrangement or naming needs a
+strong reason, is listed in `ui-design.md`, and where practical keeps the
+Ghidra way available.
 
 ## 2. Sources
 
@@ -106,15 +141,15 @@ free of anything those cannot provide and of anything egui-specific.
   says why.
 - **Command palette** (one shortcut): every action, plus go-to for
   functions, symbols and addresses, fuzzy-matched, with the shortcut
-  shown beside each action. This is the primary way to discover and reach
-  things; menus mirror it rather than hide extra functionality.
+  shown beside each action. It is an addition: Ghidra's menus, toolbar
+  and bindings remain the familiar way in, and the palette reaches the
+  same actions faster.
 - **Actions and key bindings**: one registry of actions (name,
   description, default shortcut, enabled-when); menus, palette, context
   menus and shortcuts all come from it. Bindings are remappable and
-  stored. Offer Ghidra's default bindings for the actions it shares
-  (`G` go to, `L` rename/label, `;` comment, `X` or `Ctrl+Shift+F`
-  references, `Alt+Left/Right` history — take them from Ghidra's help) so
-  Ghidra users are at home, and say where and why basilisk differs.
+  stored. Ghidra's default bindings are basilisk's defaults for
+  every action the two share (take them from Ghidra's help), so Ghidra
+  users are at home; say where and why basilisk differs.
 - **Navigation**: one location model shared by all views; back/forward
   history; views follow the current location according to a clear rule
   (and can be pinned).
@@ -252,8 +287,9 @@ Ghidra with the reason.
 
 ## 8. Differences from Ghidra
 
-- The command palette is the primary way to reach actions and
-  locations; Ghidra has none.
+- A command palette is added as a fast way to reach actions and
+  locations; Ghidra has none. Menus, toolbars and key bindings stay where
+  Ghidra has them.
 - Views consume a paged, asynchronous data interface rather than calling
   the program model on the UI thread.
 
