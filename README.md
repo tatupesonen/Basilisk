@@ -33,4 +33,7 @@ Tests that compare against Ghidra expect its source tree at `../ghidra`
 
 ## Licence
 
-Apache-2.0. basilisk is derived from Ghidra; see `NOTICE`.
+The source under `crates/` is Apache-2.0. basilisk is derived from Ghidra;
+see `NOTICE`. The default binary also links ports of Ghidra's GPL helpers
+(`gpl/`), which makes that binary GPL-3.0-or-later; building without the
+`gpl` feature gives an Apache-2.0 binary (`docs/DECISIONS.md`, ADR-017).

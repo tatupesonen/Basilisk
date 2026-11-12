@@ -274,6 +274,10 @@ or deferred to the next wave. Rules: `docs/agents/RULES.md`; protocol:
 `docs/LOOP.md`.
 
 ## ADR-016 — Ghidra's GPL helpers are ported, as separate GPL programs
+*The separate-program arrangement in this record is superseded by ADR-017
+(2026-11-12): the ports are linked into the one basilisk binary. What is
+ported, and that the ports are GPL-licensed crates under `gpl/`, stands.*
+
 (Owner decision, 2026-11-12: "just port the ghidras gpl helpers."
 Supersedes the GPL clause of ADR-010.)
 
@@ -307,3 +311,47 @@ rest stay Apache-2.0 (ADR-010):
 
 Schedule: the GNU demangler with milestone M6 (it is self-contained and a
 candidate for an earlier wave); `gdis` and DMG with M10.
+
+## ADR-017 — One binary: the GPL ports are linked in, behind a default feature
+(Owner decision, 2026-11-12: "I want a single binary though." Supersedes
+the separate-program arrangement of ADR-016.)
+
+basilisk ships as **one executable**. The ports of Ghidra's GPL helpers
+(ADR-016) are ordinary library crates under `gpl/`, licensed
+GPL-3.0-or-later, and are linked into the `basilisk` binary instead of
+being run as helper processes.
+
+Licensing consequence, stated plainly: **a binary that includes the GPL
+crates is distributed under GPL-3.0-or-later.** Apache-2.0 code may be
+combined into a GPL-3.0 work, so this is permitted, but the combined
+binary carries the GPL's terms (source availability for whoever receives
+the binary). What does not change: every crate under `crates/` remains
+Apache-2.0 source that anyone may reuse under Apache-2.0.
+
+Structure:
+
+* The GPL crates are pulled in only by the `basilisk` binary crate (and
+  `bk-plugin`'s Python module build), through a Cargo feature **`gpl`,
+  on by default**. Library crates under `crates/` never depend on `gpl/`
+  crates: they define the interface (for the demangler, a trait the
+  analyzer calls) and the binary plugs the GPL implementation in. This
+  keeps the Apache-2.0 crates free of GPL dependencies, checked by
+  `cargo-deny` and a gate script when the first `gpl/` crate lands.
+* `cargo build --no-default-features` (without `gpl`) gives an
+  Apache-2.0 binary in which those three functions report that they are
+  not built in. Release archives are the default, GPL-3.0 build; they
+  ship both licence texts and state the binary's licence.
+* `basilisk --version` and the About view say which licence the running
+  binary is under.
+
+Open point for milestone M10: Ghidra's `gdis` is a 576-line wrapper around
+binutils' libopcodes, which Ghidra does not ship (the user builds
+binutils). A single binary cannot wrap an external C library the user must
+build, and porting libopcodes itself is out of proportion to a comparison
+aid. How `gdis` is provided is decided when M10 is planned.
+
+Alternative not taken, recorded so it can be revisited: an Apache-2.0
+single binary is possible if the GNU demangler is written from
+permissively licensed sources (the Itanium C++ ABI specification, LLVM's
+demangler) instead of ported from libiberty. The owner chose to port
+Ghidra's helpers.

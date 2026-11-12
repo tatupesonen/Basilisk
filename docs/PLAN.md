@@ -74,9 +74,10 @@ depend only on `bk-bin`; they know nothing about programs. `bk-sleigh*`
 know nothing about programs. `bk-decomp` depends on the language and
 foundation layers and reaches the program through a trait (ADR-004), so it
 can be tested standalone on Ghidra's data tests. Nothing below `bk-ui`
-depends on it. `bk-testkit` is a dev-dependency only. Ghidra's GPL helpers
-live outside this map, under `gpl/`, as separate programs the crates above
-run as subprocesses and never link (ADR-016).
+depends on it. `bk-testkit` is a dev-dependency only. Ports of Ghidra's GPL
+helpers live outside this map, under `gpl/`: only the `basilisk` binary
+links them (default feature `gpl`), behind traits the crates above define
+(ADR-017). basilisk ships as a single binary.
 
 Crates are split further as components grow (ADR-013); this map is updated
 in the same commit that adds or splits a crate.
@@ -157,7 +158,7 @@ with no program database.
 
 ### M6 — Headless core complete
 - [ ] Exporters (C, XML/SARIF, binary, hex), import/export round trips
-- [ ] DWARF, PDB, GNU and Microsoft demanglers (the GNU one as the GPL helper `gpl/bk-gpl-demangler-gnu`, ADR-016), Function ID
+- [ ] DWARF, PDB, GNU and Microsoft demanglers (the GNU one as the GPL crate `gpl/bk-gpl-demangler-gnu`, ADR-016, ADR-017), Function ID
 - [ ] Emulator (`bk-emu`) and the processor emulator tests (126 classes)
 - [ ] Assembler (`bk-asm`)
 
@@ -176,7 +177,7 @@ with no program database.
 
 ### M10 — Remaining modules
 - [ ] Debugger and trace model, Version Tracking, BSim, file-system browser and container formats, remaining loaders and processors' Java extensions, everything left in `PARITY.md`
-- [ ] Remaining GPL helpers: `gpl/bk-gpl-gdis`, `gpl/bk-gpl-dmg` (ADR-016)
+- [ ] Remaining GPL ports: `gpl/bk-gpl-gdis` (open point in ADR-017), `gpl/bk-gpl-dmg`
 
 ## Working in waves
 

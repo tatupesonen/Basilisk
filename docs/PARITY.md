@@ -67,7 +67,7 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |
 | PDB | `bk-pdb` | M6 | Missing | |
 | MicrosoftDmang, MicrosoftDemangler | `bk-demangle-ms` | M6 | Missing | Parser planned for wave 2 |
-| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Parser of demangler output and the analyzer; talks to the GPL helper over a pipe (ADR-016) |
+| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Parser of demangler output and the analyzer, behind a trait the GPL port implements (ADR-017) |
 | MicrosoftCodeAnalyzer | `bk-analyzers-msvc` | M6 | Missing | |
 | FunctionID | `bk-fid` | M6 | Missing | |
 | BytePatterns | `bk-analyzers-*` | M5 | Missing | |
@@ -104,11 +104,11 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 
 ## GPL helpers (ADR-016)
 
-Separate GPL-3.0-or-later helper programs under `gpl/`, never linked into
-the Apache-2.0 crates.
+GPL-3.0-or-later crates under `gpl/`, linked into the `basilisk` binary by
+the default feature `gpl`; no crate under `crates/` depends on them (ADR-017).
 
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `gpl/bk-gpl-demangler-gnu` | M6 | Missing | |
-| GPL/GnuDisassembler (`gdis` over binutils) | `gpl/bk-gpl-gdis` | M10 | Missing | |
+| GPL/GnuDisassembler (`gdis` over binutils) | `gpl/bk-gpl-gdis` | M10 | Missing | Wraps an external C library; how to provide it in one binary is open (ADR-017) |
 | GPL/DMG (DMG/HFS+ reader) | `gpl/bk-gpl-dmg` | M10 | Missing | |

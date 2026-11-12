@@ -25,7 +25,8 @@ and a sane architecture in mind.
 | **The UI is egui.** | 2026-11-12 |
 | **The plugin API is Python through PyO3**, so users can still build their own plugins (ADR-014). | 2026-11-12 |
 | **Licence: Apache-2.0**, Ghidra attributed in `NOTICE` (ADR-010). | 2026-11-12 |
-| **Ghidra's GPL helpers are ported** (GNU demangler, GNU disassembler wrapper, DMG), kept as separate GPL-licensed helper programs so the rest stays Apache-2.0 (ADR-016). | 2026-11-12 |
+| **Ghidra's GPL helpers are ported** (GNU demangler, GNU disassembler wrapper, DMG) as GPL-licensed crates under `gpl/` (ADR-016). | 2026-11-12 |
+| **basilisk is a single binary.** The GPL ports are linked in (default feature `gpl`), so the released binary is GPL-3.0-or-later; the crates under `crates/` stay Apache-2.0, and a build without the feature is Apache-2.0 (ADR-017). | 2026-11-12 |
 
 ## Tests
 

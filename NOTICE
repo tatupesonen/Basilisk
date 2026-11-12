@@ -5,9 +5,10 @@ Its algorithms, behaviour and test cases are ported from Ghidra's Java and C++ s
 licensed under the Apache License, Version 2.0, and it reads Ghidra's processor specification
 files (SLEIGH, .ldefs, .pspec, .cspec, .opinion) unchanged.
 
-Programs under gpl/ are ports of the GPL-licensed helpers Ghidra keeps under GPL/ and are
-licensed under the GNU General Public License, version 3 or later; they are separate
-executables and are not linked into the Apache-2.0 code.
+Crates under gpl/ are ports of the GPL-licensed helpers Ghidra keeps under GPL/ and are
+licensed under the GNU General Public License, version 3 or later. A basilisk binary built
+with them (the default) is distributed under the GNU General Public License, version 3 or
+later; the crates under crates/ remain licensed under the Apache License, Version 2.0.
 
 Ghidra's own notice follows.
 
