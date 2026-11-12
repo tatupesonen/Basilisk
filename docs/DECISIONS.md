@@ -156,6 +156,9 @@ and disassembler wrappers, DMG) are not ported from their GPL sources;
 their function is provided by permissively licensed Rust code. Enforced
 with `cargo-deny` once it joins the gate.
 
+*Superseded by ADR-018 (2026-11-12): the project is GPL-3.0-or-later and
+Ghidra's GPL modules are ported like any other code.*
+
 ## ADR-011 — Prefer existing crates when they meet requirements
 For every component, first evaluate existing crates against: behavioural
 parity with Ghidra (the tests in `docs/inventory/tests/` must be
@@ -164,16 +167,37 @@ portable against it), robustness on hostile input (ADR-009), performance
 crate passes; otherwise write it and keep the crate as a dev-only
 differential oracle. Record each evaluation here.
 
+Among crates that pass, **prefer the industry-standard one** (owner rule,
+2026-11-12): the widely used crate with a large download count and many
+dependents on crates.io, over a newer or niche alternative, even where the
+niche one is somewhat nicer. Choosing a little-used crate needs a stated
+reason (the standard one fails a requirement above), and the evaluation
+records the download figures that were compared.
+
 Evaluations so far:
 - **Compression: `flate2` with the `zlib-rs` backend → adopt.** Pure Rust.
   `.sla` files are zlib streams; decompressed content is compared, never
   compressed bytes.
-- **XML reading: `roxmltree` → adopt provisionally** for `.ldefs`,
-  `.pspec`, `.cspec`, `.opinion` and decompiler data tests. The foundation
-  track verifies that every XML file under `../ghidra/Ghidra/Processors`
-  and `datatests/` parses, and falls back to porting Ghidra's `xml.cc` if
-  any does not.
-- **Object-file parsing: `object`, `goblin` → oracle only.** Ghidra's
+- **XML reading: `quick-xml` → adopt; `roxmltree` → oracle only**
+  (2026-11-12, from the `core-marshal` track's corpus check, superseding
+  the provisional choice of `roxmltree`). `roxmltree` parses all 501 XML
+  files under Ghidra's processor and data-test trees, but it merges text,
+  entity references and CDATA into one node, so Ghidra's rule of dropping
+  white-space-only content pieces (`xml.y`) cannot be reproduced: three
+  corpus elements decode differently (one `<com>` in
+  `datatests/injectoverride.xml`, two `<body>` in `hexagon.cspec`).
+  `quick-xml`'s events map one-to-one onto `xml.y`'s rules, and it is the
+  more widely used crate (542 million downloads and 2,935 dependents
+  against 104 million and 994). `bk-marshal` builds its own small DOM on
+  `quick-xml` events; `roxmltree` stays as a dev-only oracle in the corpus
+  test. Crates that read Ghidra XML should go through `bk-marshal`'s
+  document rather than a second XML crate; `bk-lang`, written in the same
+  wave on `roxmltree`, moves over after both merge.
+- **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
+  *Being re-examined by the `bin-elf` track after the owner's rule of
+  2026-11-12 (use existing crates unless there is a good reason): the
+  reasoning below is a hypothesis until that track reports what the
+  crates actually expose and how they behave on damaged files.* Ghidra's
   loaders expose format details (every header field, relocation and
   dynamic-table entry, vendor extensions) and tolerate malformed files in
   specific ways that its tests assert. The format crates are ports of
@@ -268,3 +292,191 @@ specs from what was learned. Tracks in one wave must not depend on each
 other's unmerged code; a dependency between them is cut with a small trait
 or deferred to the next wave. Rules: `docs/agents/RULES.md`; protocol:
 `docs/LOOP.md`.
+
+## ADR-016 — Ghidra's GPL helpers are ported, as separate GPL programs
+*Superseded by ADR-018 (2026-11-12). The table of what Ghidra's GPL modules
+are still stands; the separate programs and the `gpl/` directory do not.*
+
+(Owner decision, 2026-11-12: "just port the ghidras gpl helpers."
+Supersedes the GPL clause of ADR-010.)
+
+Ghidra keeps three GPL-licensed modules under `GPL/`, apart from its
+Apache-2.0 code, and runs them as separate programs:
+
+| Ghidra module | What it is | basilisk |
+|---|---|---|
+| `GPL/DemanglerGnu` | The GNU demangler from binutils' libiberty (two versions, 2.24 and 2.41; 34,000 lines of C), built as `demangler_gnu_v2_24`/`v2_41` executables that Ghidra feeds mangled names over a pipe | `gpl/bk-gpl-demangler-gnu` |
+| `GPL/GnuDisassembler` | `gdis`, a small C program over binutils' libopcodes that the user builds, used as an external disassembler for comparison | `gpl/bk-gpl-gdis` |
+| `GPL/DMG` | A Java program over the GPL HFSExplorer libraries that reads Apple DMG/HFS+ images for the file-system browser | `gpl/bk-gpl-dmg` |
+
+basilisk ports them and keeps Ghidra's separation, which is what lets the
+rest stay Apache-2.0 (ADR-010):
+
+* They live in a top-level `gpl/` directory, outside `crates/`, each crate
+  with `license = "GPL-3.0-or-later"` and the GPL text beside it. A Rust
+  port of GPL code is a derivative work and carries the GPL.
+* Each builds a **separate helper executable**. The Apache-2.0 crates talk
+  to it as a subprocess over a pipe, as Ghidra does, and never link it:
+  no `bk-*` crate under `crates/` may depend on a crate under `gpl/`
+  (checked by `cargo-deny` and a gate script when the first one lands).
+  Linking them in would put the whole distributed binary under GPL-3.0.
+* The Apache-2.0 side of each feature — Ghidra's `Features/GnuDemangler`
+  (the parser of demangler output and the analyzer), the external
+  disassembler field, the DMG file system client — is ported in `crates/`
+  as usual and works when the helper is absent by reporting that it is
+  missing, as Ghidra does.
+* Release archives ship the helpers with their source offer and licence
+  texts; a build without `gpl/` is still a complete Apache-2.0 product.
+
+Schedule: the GNU demangler with milestone M6 (it is self-contained and a
+candidate for an earlier wave); `gdis` and DMG with M10.
+
+## ADR-017 — One binary: the GPL ports are linked in, behind a default feature
+*Superseded by ADR-018 (2026-11-12). basilisk is still one binary; the
+`gpl` feature, the `gpl/` directory and the dual licensing do not stand.*
+
+(Owner decision, 2026-11-12: "I want a single binary though." Supersedes
+the separate-program arrangement of ADR-016.)
+
+basilisk ships as **one executable**. The ports of Ghidra's GPL helpers
+(ADR-016) are ordinary library crates under `gpl/`, licensed
+GPL-3.0-or-later, and are linked into the `basilisk` binary instead of
+being run as helper processes.
+
+Licensing consequence, stated plainly: **a binary that includes the GPL
+crates is distributed under GPL-3.0-or-later.** Apache-2.0 code may be
+combined into a GPL-3.0 work, so this is permitted, but the combined
+binary carries the GPL's terms (source availability for whoever receives
+the binary). What does not change: every crate under `crates/` remains
+Apache-2.0 source that anyone may reuse under Apache-2.0.
+
+Structure:
+
+* The GPL crates are pulled in only by the `basilisk` binary crate (and
+  `bk-plugin`'s Python module build), through a Cargo feature **`gpl`,
+  on by default**. Library crates under `crates/` never depend on `gpl/`
+  crates: they define the interface (for the demangler, a trait the
+  analyzer calls) and the binary plugs the GPL implementation in. This
+  keeps the Apache-2.0 crates free of GPL dependencies, checked by
+  `cargo-deny` and a gate script when the first `gpl/` crate lands.
+* `cargo build --no-default-features` (without `gpl`) gives an
+  Apache-2.0 binary in which those three functions report that they are
+  not built in. Release archives are the default, GPL-3.0 build; they
+  ship both licence texts and state the binary's licence.
+* `basilisk --version` and the About view say which licence the running
+  binary is under.
+
+Open point for milestone M10: Ghidra's `gdis` is a 576-line wrapper around
+binutils' libopcodes, which Ghidra does not ship (the user builds
+binutils). A single binary cannot wrap an external C library the user must
+build, and porting libopcodes itself is out of proportion to a comparison
+aid. How `gdis` is provided is decided when M10 is planned.
+
+Alternative not taken, recorded so it can be revisited: an Apache-2.0
+single binary is possible if the GNU demangler is written from
+permissively licensed sources (the Itanium C++ ABI specification, LLVM's
+demangler) instead of ported from libiberty. The owner chose to port
+Ghidra's helpers.
+
+## ADR-018 — The project is GPL-3.0-or-later; GPL code is ported like any other
+(Owner decisions, 2026-11-12: "Not any wrappers and such. Just port the
+code" and "i dont mind gpl3". Supersedes ADR-010, ADR-016 and ADR-017.)
+
+basilisk is licensed **GPL-3.0-or-later** as a whole, and ships as a
+single binary. Ghidra's GPL modules (`GPL/DemanglerGnu`,
+`GPL/GnuDisassembler`, `GPL/DMG`; described in ADR-016) are ported to Rust
+exactly as Ghidra's Apache-2.0 code is: ordinary crates under `crates/`,
+called directly. There are no helper processes, no pipe protocol, no
+`gpl/` directory, no Cargo feature and no licence boundary between
+crates.
+
+* `LICENSE` is the GPL, version 3. Code ported from Ghidra's Apache-2.0
+  source is included under the terms that licence allows (Apache-2.0 code
+  may be part of a GPL-3.0 work): Ghidra stays attributed in `NOTICE`, and
+  the Apache licence text is kept as `LICENSE-APACHE`.
+* Where Ghidra runs a GPL program over a pipe and parses its text output
+  (`Features/GnuDemangler` drives `demangler_gnu` this way), basilisk
+  calls the ported code as a library and takes structured results;
+  Ghidra's tests of the text protocol are ported against the direct API.
+* Dependencies must be GPL-3.0-compatible: Apache-2.0, MIT, BSD, ISC,
+  Zlib, Unicode, MPL-2.0, LGPL, GPL-2.0-or-later, GPL-3.0. No
+  GPL-2.0-only, no proprietary code. Enforced with `cargo-deny` once it
+  joins the gate.
+* Schedule: the GNU demangler (libiberty's, 34,000 lines of C in two
+  versions; self-contained) with milestone M6 or an earlier wave; DMG and
+  the GNU disassembler with M10.
+
+Ghidra's `gdis` is a 576-line program over binutils' libopcodes, which
+Ghidra does not include (the user builds binutils 2.41). How basilisk
+provides it is settled by ADR-019.
+
+## ADR-019 — binutils is built from source as its own crate
+(Owner decision, 2026-11-12: "You can clone binutils source yourself and
+build it as its own crate." Resolves the open point of ADR-018.)
+
+Ghidra's GNU disassembler module (`GPL/GnuDisassembler`) lets the user
+compare SLEIGH's disassembly with GNU's. It is a small C program, `gdis`,
+over binutils' libopcodes and libbfd, and Ghidra makes the user fetch and
+build binutils 2.41 themselves. basilisk builds binutils in:
+
+* A crate **`bk-binutils-sys`** compiles the parts of binutils 2.41 the
+  disassembler needs (libopcodes, libbfd, libiberty and their headers)
+  from source and links them statically, so the feature works in the one
+  binary with nothing for the user to install. A safe crate
+  **`bk-gnu-disasm`** on top ports what `gdis` does (`disasm_1.c`,
+  `gdis.h`: pick the architecture and machine, feed bytes, collect
+  instruction text) as a Rust API.
+* The binutils source is pinned to the release Ghidra names
+  (`binutils-2_41`). A reference clone is at `../binutils`; how the source
+  reaches the build (a git submodule under `vendor/`, or a vendored
+  subset) and how it is compiled on every supported platform, Windows
+  included, is specified in the feature doc when the work is scheduled.
+* This is C code and FFI, so it is the exception ADR-005 requires:
+  `unsafe` and the C toolchain are confined to `bk-binutils-sys`, whose
+  whole surface is a handful of documented functions; everything above it
+  is safe Rust. The disassembler is given bytes from binaries under
+  analysis, so the wrapper bounds every length it passes and the crate
+  gets a fuzz target.
+* binutils is GPL-3.0-or-later, which matches the project (ADR-018).
+
+The GNU demangler is a different case: Ghidra carries libiberty's
+demangler source in its own tree (`GPL/DemanglerGnu`), and that is ported
+to Rust (ADR-018), not built from C.
+
+Schedule: milestone M10 with the rest of the comparison tooling, or
+earlier if a differential test wants GNU's disassembly as a second oracle.
+
+## ADR-020 — `unsafe` only when absolutely necessary, and then checked with Miri
+(Owner rule, 2026-11-12: "do not use unsafe unless absolutely necessary,
+and check that all code with miri that does need unsafe." Tightens the
+`unsafe` clause of ADR-005.)
+
+* **Default: none.** `unsafe_code = "forbid"` is a workspace lint and
+  every crate inherits it. Performance is not by itself a reason: a safe
+  design is tried and measured first, and `unsafe` is considered only when
+  a benchmark shows a safe version cannot meet a budget in `PERF.md`, or
+  when the thing cannot be expressed safely at all (calling C, a
+  memory-mapped file). Prefer a well-used crate that encapsulates the
+  unsafe code (ADR-011) over writing our own.
+* **Opting out is explicit.** A crate that needs `unsafe` is listed in
+  `unsafe-crates.txt` with the reason; `scripts/check-unsafe.sh` (in the
+  gate) rejects `unsafe` anywhere else. In such a crate the unsafe code
+  sits in one small module behind a safe API; every `unsafe` block has a
+  `// SAFETY:` comment stating why it is sound
+  (`clippy::undocumented_unsafe_blocks`), holds one unsafe operation
+  (`multiple_unsafe_ops_per_block`), and `unsafe_op_in_unsafe_fn` is
+  denied.
+* **Miri.** Every crate listed with `miri` has tests that exercise each
+  unsafe path, and `scripts/miri.sh` runs them under Miri (nightly, with
+  strict provenance and symbolic alignment checking). It must pass before
+  the crate merges and whenever its unsafe code changes; CI runs it.
+* **What Miri cannot check.** Miri interprets Rust; it cannot execute
+  foreign code. A crate whose `unsafe` is calls into C — today only
+  `bk-binutils-sys` (ADR-019), later the PyO3 boundary in `bk-plugin`
+  (ADR-014) — is listed `no-miri:<reason>` and is instead checked with
+  AddressSanitizer and UndefinedBehaviorSanitizer builds of its tests and
+  fuzz targets, with the Rust-side wrappers kept thin enough to review by
+  eye. Any pure-Rust unsafe in such a crate is split into a module that
+  Miri does run.
+
+Currently no crate on `master` contains `unsafe`.

@@ -1,0 +1,4 @@
+# Crates allowed to contain `unsafe` (ADR-020). One per line:
+#   <crate>  <miri | no-miri:reason>  — <why unsafe is absolutely necessary>
+# scripts/check-unsafe.sh rejects `unsafe` anywhere else; scripts/miri.sh runs
+# the tests of every crate marked `miri` under Miri.
