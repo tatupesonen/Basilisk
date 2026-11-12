@@ -289,6 +289,16 @@ checklist line stays open. A `cargo-fuzz` target (`fuzz/`,
 seeded with Ghidra's files (2.7 million executions) found no crash or
 panic.
 
+**Roots.** The registry makes every root it is given canonical
+(`fs::canonicalize`, like Ghidra's `getCanonicalFile`) before scanning,
+so its answers and the paths it reports do not depend on how a root is
+spelled (`..`, `.`, trailing slash, symbolic link); `tests/root_spelling.rs`
+checks this on a fixture and on the Ghidra tree.
+`spec_root_from_env()` returns the `BASILISK_GHIDRA_DIR` value or
+`None`: the "`../ghidra`" default of section 4.5 is relative to the
+basilisk checkout, which only the caller can locate (the tests resolve
+it from `CARGO_MANIFEST_DIR`), not to the current directory.
+
 **Benchmark.** Registry scan of the whole Ghidra tree 13–15 ms median on
 an Apple M1 Pro under load (budget 50 ms); details in `docs/PERF.md`.
 
