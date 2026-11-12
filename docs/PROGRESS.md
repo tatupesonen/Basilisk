@@ -14,7 +14,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
 | `pcode` | `bk-pcode` | `features/pcode.md` |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` |
-| `lang` | `bk-lang` | `features/lang.md` |
+| `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
