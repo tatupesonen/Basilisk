@@ -6,7 +6,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Wave 1 (milestone M0) is in progress.** Six implementation agents and one design agent
-(Fable 5.2, high effort), one per track, each in its own worktree under
+(Fable 5.2, started at high effort; agents started from now on run at medium), one per track, each in its own worktree under
 `../basilisk-wt/<track>` on branch `<track>`:
 
 | Track / branch | Crates | Spec |

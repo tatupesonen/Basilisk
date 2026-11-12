@@ -51,8 +51,10 @@ and a sane architecture in mind.
 
 * **Division of labour** (owner, 2026-11-12): the coordinator (Claude Fable)
   writes the docs — ADRs, plan, feature specs, agent rules — and manages
-  **Fable 5.2 subagents at high effort** (for now; the owner first named
-  Opus 5.5 and may switch back), which write the code from those docs.
+  **Fable 5.2 subagents** (for now; the owner first named Opus 5.5 and may
+  switch back), which write the code from those docs. **Effort: medium**
+  for every agent started from now on (owner, 2026-11-12); the eight
+  agents already running were started at high effort and finish at it.
   The coordinator spawns the agents, reviews and merges their branches.
   Rules for agents: `docs/agents/RULES.md`.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
