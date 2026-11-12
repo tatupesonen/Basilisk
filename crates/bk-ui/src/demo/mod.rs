@@ -347,12 +347,24 @@ impl ProgramSource for DemoProgram {
         Ok(page(hits, 0, limit))
     }
 
+    fn comments(&self, address: Address) -> SourceResult<Vec<(CommentKind, String)>> {
+        let db = self.db.read();
+        Ok(CommentKind::ALL
+            .iter()
+            .filter_map(|k| db.comments.get(&(address.0, *k)).map(|c| (*k, c.clone())))
+            .collect())
+    }
+
     fn apply(&self, command: &Command) -> SourceResult<()> {
         let mut db = self.db.write();
         match command {
             Command::RenameSymbol { address, name } => {
                 check_name(name)?;
-                let kind = db.label_for(address.0).1;
+                let kind = match db.label_for(address.0).1 {
+                    // A new name on a plain address becomes a label.
+                    SymbolKind::Data if !db.names.contains_key(&address.0) && db.func_containing(address.0).is_some() => SymbolKind::Label,
+                    k => k,
+                };
                 if db.unit_for_address(address.0).is_none() {
                     return Err(SourceError::NoSuchAddress(*address));
                 }
@@ -363,6 +375,16 @@ impl ProgramSource for DemoProgram {
                         kind,
                     },
                 );
+            }
+            Command::RemoveLabel { address } => {
+                let removable = db
+                    .names
+                    .get(&address.0)
+                    .is_some_and(|n| n.kind == SymbolKind::Label);
+                if !removable {
+                    return Err(SourceError::Rejected(format!("no label at {address}")));
+                }
+                db.names.remove(&address.0);
             }
             Command::RenameVariable {
                 function,

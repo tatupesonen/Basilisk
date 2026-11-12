@@ -11,7 +11,7 @@
 //! tables by [`TableQuery`] windows, searches by a result limit. Nothing
 //! here depends on egui.
 
-use super::commands::Command;
+use super::commands::{Command, CommentKind};
 use super::decomp::DecompiledFunction;
 use super::functions::{
     FunctionColumn, FunctionInfo, Page, Reference, StringColumn, StringInfo, TableQuery,
@@ -136,6 +136,9 @@ pub trait ProgramSource: Send + Sync + std::fmt::Debug {
 
     /// Searches the program, returning at most `limit` hits in address order.
     fn search(&self, query: &SearchQuery, limit: u32) -> SourceResult<Page<SearchHit>>;
+
+    /// The comments at a code unit (for the comment editor).
+    fn comments(&self, address: Address) -> SourceResult<Vec<(CommentKind, String)>>;
 
     /// Applies an edit.
     fn apply(&self, command: &Command) -> SourceResult<()>;

@@ -329,6 +329,10 @@ impl ProgramSource for SyntheticProgram {
         })
     }
 
+    fn comments(&self, _address: Address) -> SourceResult<Vec<(crate::model::CommentKind, String)>> {
+        Ok(Vec::new())
+    }
+
     fn apply(&self, _command: &Command) -> SourceResult<()> {
         Err(SourceError::Rejected("the synthetic program is read-only".into()))
     }

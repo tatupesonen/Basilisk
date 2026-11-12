@@ -12,6 +12,13 @@
 //! paged interface free of egui types, called off the UI thread through
 //! [`task::DataClient`]. [`demo`] implements it for now.
 
+pub mod actions;
 pub mod demo;
+pub mod design;
 pub mod model;
+pub mod nav;
+pub mod shell;
 pub mod task;
+pub mod views;
+
+pub use shell::{BasiliskApp, run_native};

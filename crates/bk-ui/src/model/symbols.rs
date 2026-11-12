@@ -61,6 +61,19 @@ pub enum SymbolKind {
     Library,
 }
 
+impl SymbolKind {
+    /// The token kind a name of this kind is shown as.
+    pub fn token_kind(self) -> super::TokenKind {
+        use super::TokenKind;
+        match self {
+            Self::Function => TokenKind::Function,
+            Self::Import => TokenKind::Import,
+            Self::Data => TokenKind::Global,
+            Self::Label | Self::String | Self::Library => TokenKind::Label,
+        }
+    }
+}
+
 /// A symbol: a name at an address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Symbol {

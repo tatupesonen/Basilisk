@@ -71,12 +71,7 @@ fn name_token(db: &Db, a: u64) -> Token {
 
 /// Token kind used for a symbol of `kind`.
 pub(crate) fn symbol_token_kind(kind: SymbolKind) -> TokenKind {
-    match kind {
-        SymbolKind::Function => TokenKind::Function,
-        SymbolKind::Import => TokenKind::Import,
-        SymbolKind::Data => TokenKind::Global,
-        _ => TokenKind::Label,
-    }
+    kind.token_kind()
 }
 
 fn push_label(db: &Db, a: u64, rows: &mut Vec<ListingRow>) {

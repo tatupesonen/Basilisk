@@ -42,6 +42,11 @@ pub enum Command {
         /// The new name.
         name: String,
     },
+    /// Remove a user label (Ghidra's Remove Label); undoes adding one.
+    RemoveLabel {
+        /// Where the label is.
+        address: Address,
+    },
     /// Rename a local variable or parameter of a function.
     RenameVariable {
         /// Entry address of the function.
@@ -67,6 +72,7 @@ impl Command {
     pub fn describe(&self) -> String {
         match self {
             Self::RenameSymbol { address, name } => format!("Rename {address} to {name}"),
+            Self::RemoveLabel { address } => format!("Remove label at {address}"),
             Self::RenameVariable { name, .. } => format!("Rename variable to {name}"),
             Self::SetComment {
                 address, kind, text, ..
