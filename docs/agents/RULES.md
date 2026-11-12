@@ -69,8 +69,17 @@ rules so merges are clean and the result is shippable.
   when it passes about 600 lines; the gate rejects files over 1,000.
 - **Rust best practices** as listed in `LOOP.md`: newtypes and typed
   indices, enums for closed sets, `thiserror` errors with context, no
-  `unwrap`/`expect`/indexing panics outside tests, no `unsafe`, no global
-  state, documented public items, `tracing` for logs.
+  `unwrap`/`expect`/`panic!`/indexing panics outside tests, no global
+  state, documented public items, `tracing` for logs. The lint
+  configuration (`LOOP.md`, "Lint configuration") is strict and the gate
+  enforces it; suppress a lint only with `#[expect(…, reason = "…")]`.
+- **No `unsafe` unless absolutely necessary** (ADR-020). If you believe
+  your track needs it, the crate goes in `unsafe-crates.txt` with the
+  reason, the unsafe code is isolated and commented, and
+  `scripts/miri.sh <crate>` must pass; report the Miri result. Reaching
+  for `unsafe` to save a bounds check is not a reason.
+- **Existing crates first** (ADR-011): use a maintained, widely used crate
+  when one fits; write your own only for a stated reason.
 - **Performance** (ADR-012): design the data layout first; no per-item
   allocation in hot loops; add a benchmark for each hot path and record
   the numbers.

@@ -70,12 +70,30 @@ feature. Sections:
 
 ## Quality gate
 
-Run `scripts/gate.sh` from the repository root (file-size check, fmt check,
-clippy with `-D warnings`, all tests), writing its output to a log file:
+Run `scripts/gate.sh` from the repository root (file-size check, unsafe
+check, fmt check, clippy with `-D warnings`, rustdoc with `-D warnings`,
+`cargo-deny` for licences and sources, all tests), writing its output to a
+log file:
 `scripts/gate.sh > gate.log 2>&1; echo $?`. **Never pipe the gate**
 (`gate.sh | tail` returns tail's exit status and hides a red gate). Use
 `cargo check`, `cargo clippy -p <crate>` and the changed crates' tests
 while iterating; run the full gate before every merge to `master`.
+
+## Lint configuration
+
+Lint levels live in the root `Cargo.toml` under `[workspace.lints]` and
+every crate inherits them with `[lints] workspace = true`; thresholds and
+test allowances are in `clippy.toml`; licences and sources in `deny.toml`;
+formatting in `rustfmt.toml`. The gate turns every warning into an error.
+
+- To silence a lint in one place use `#[expect(lint, reason = "…")]`, never
+  a bare `#[allow]` (`allow_attributes`, `allow_attributes_without_reason`):
+  the reason is read in review, and `expect` stops compiling when the
+  suppression is no longer needed.
+- Do not weaken the workspace configuration from inside a crate, and do not
+  add crate-level `#![allow(...)]` beyond the test-file line given under
+  Testing rules. If a lint is wrong for the whole project, say so in your
+  report; the coordinator changes it in one place.
 
 ## Engineering rules
 
@@ -98,7 +116,11 @@ while iterating; run the full gate before every merge to `master`.
 - **Errors**: `thiserror` enums in libraries, with enough context to act on
   (offset, name, what was expected); `anyhow` only in binaries and tests.
   No `unwrap`/`expect` outside tests; no panics on any input (ADR-009).
-- **No `unsafe`** (`unsafe_code = "forbid"`) unless an ADR names the crate.
+- **No `unsafe` unless absolutely necessary** (ADR-020). It is forbidden by
+  lint; a crate that cannot do without it is listed in `unsafe-crates.txt`
+  with the reason, keeps the unsafe code in one small module with
+  `// SAFETY:` comments, and passes `scripts/miri.sh`. Code that calls C
+  cannot run under Miri and is checked with sanitizers instead.
 - **Performance** (ADR-012): arenas and indices for graph-shaped data;
   interned strings; no allocation per instruction or per op in hot loops;
   borrow instead of clone; iterators instead of intermediate `Vec`s;
@@ -130,7 +152,7 @@ while iterating; run the full gate before every merge to `master`.
 - Every public behaviour gets a test. Unit tests sit next to the code;
   cross-crate behaviour goes in `tests/`.
 - Integration-test crates (`tests/*.rs`) start with
-  `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::print_stderr, reason = "test code")]`
+  `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]`
   because helper functions there are not covered by `clippy.toml`'s test
   allowances.
 - **Fixtures**: built in Rust test code where possible (builders in
@@ -144,8 +166,10 @@ while iterating; run the full gate before every merge to `master`.
   untrusted bytes. Every crash is fixed, its input saved under
   `fuzz/regressions/<target>/` and replayed by a normal test.
 - **Golden files** for large structured output (disassembly, p-code,
-  decompiled C), regenerated with `UPDATE_GOLDEN=1` and the diff reviewed
-  before committing.
+  decompiled C, parsed models) are `insta` snapshots: `.snap` files beside
+  the tests, updated with `INSTA_UPDATE=always` (or `cargo insta review`)
+  and the diff reviewed before committing — never blindly. `insta` is the
+  widely used crate for this; do not hand-roll golden comparison.
 - **UI**: `egui_kittest` interaction tests for every ported GUI test.
 - **Benchmarks** for hot paths as `#[ignore]` release tests or `divan`
   benches; commands and results in `PERF.md`.
@@ -155,4 +179,5 @@ while iterating; run the full gate before every merge to `master`.
 Conventional messages (`feat(sleigh): …`, `test(elf): …`, `docs: …`), small
 and frequent, each ending with the Co-Authored-By trailer of the model that
 wrote it. Agents commit in their worktree only and never push or add
-remotes. Nothing is pushed until the owner names a remote (`DIRECTION.md`).
+remotes. The coordinator pushes `master` to `origin` after each green gate
+(`DIRECTION.md`).

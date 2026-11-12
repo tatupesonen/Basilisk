@@ -67,7 +67,7 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |
 | PDB | `bk-pdb` | M6 | Missing | |
 | MicrosoftDmang, MicrosoftDemangler | `bk-demangle-ms` | M6 | Missing | Parser planned for wave 2 |
-| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | Native Rust demangler instead of the GPL helper (ADR-010) |
+| GnuDemangler | `bk-demangle-gnu` | M6 | Missing | The analyzer and result model, calling the ported libiberty demangler directly (ADR-018) |
 | MicrosoftCodeAnalyzer | `bk-analyzers-msvc` | M6 | Missing | |
 | FunctionID | `bk-fid` | M6 | Missing | |
 | BytePatterns | `bk-analyzers-*` | M5 | Missing | |
@@ -101,3 +101,13 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 | Framework-TraceModeling, Debugger, Debugger-api, Debugger-rmi-trace, agents, ISF, TaintAnalysis, ProposedUtils | `bk-debug-*` | M10 | Missing | |
 | Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
 | Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | |
+
+## Ghidra's GPL modules (ADR-018)
+
+Ported like any other code, as ordinary crates called directly.
+
+| Ghidra module | basilisk | Milestone | Status | Notes |
+|---|---|---|---|---|
+| GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `bk-demangle-gnu` | M6 | Missing | |
+| GPL/GnuDisassembler (`gdis` over binutils) | `bk-binutils-sys`, `bk-gnu-disasm` | M10 | In progress | binutils 2.41 built from source as its own crate (ADR-019) |
+| GPL/DMG (DMG/HFS+ reader) | `bk-fs-dmg` | M10 | Missing | |
