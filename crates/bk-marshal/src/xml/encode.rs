@@ -313,6 +313,20 @@ mod tests {
         assert_eq!(enc.as_str(), "\n<data>true\n  <input/>\n</data>");
     }
 
+    /// A quirk shared with Ghidra: read back, the content of the element
+    /// above includes the white space written before its child.
+    #[test]
+    fn formatted_content_before_a_child_gains_the_indent() {
+        let mut enc = XmlEncoder::new(true);
+        enc.open_element(ELEM_DATA);
+        enc.write_string(ATTRIB_CONTENT, "text").unwrap();
+        enc.open_element(ELEM_INPUT);
+        enc.close_element(ELEM_INPUT);
+        enc.close_element(ELEM_DATA);
+        let document = crate::xml::Document::parse(enc.as_str()).unwrap();
+        assert_eq!(document.root().content(), "text\n  ");
+    }
+
     #[test]
     fn attribute_forms() {
         let mut enc = XmlEncoder::new(false);
