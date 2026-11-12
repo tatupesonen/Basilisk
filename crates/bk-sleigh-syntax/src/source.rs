@@ -134,12 +134,21 @@ struct LineRun {
     first_src_line: u32,
 }
 
+/// The character the preprocessor puts in front of every expanded value.
+///
+/// Ghidra's preprocessor writes a `\b$(NAME)\b` marker there, which its
+/// lexer skips; the marker therefore ends whatever token precedes the
+/// value (`export$(X)` is the word `export` followed by the tokens of `X`),
+/// while the end of the value joins the text after it. One U+0008 keeps
+/// that behaviour: the lexer skips it everywhere and no token spans it.
+pub const EXPANSION_MARK: char = '\u{8}';
+
 /// One `$(NAME)` reference replaced by its value.
 #[derive(Clone, Copy, Debug)]
 struct Expansion {
-    /// Offset of the value in the preprocessed text.
+    /// Offset of the mark that precedes the value in the preprocessed text.
     out_start: u32,
-    /// Length of the value.
+    /// Length of the mark plus the value.
     out_len: u32,
     /// Byte column of the `$` within its source line.
     src_col: u32,
@@ -228,14 +237,16 @@ impl SourceMap {
     }
 
     /// Appends the value of a `$(NAME)` reference that stood at byte column
-    /// `src_col` of its source line and was `src_len` bytes long.
+    /// `src_col` of its source line and was `src_len` bytes long. The value
+    /// is preceded by [`EXPANSION_MARK`].
     pub(crate) fn push_expansion(&mut self, value: &str, src_col: u32, src_len: u32) {
         self.expansions.push(Expansion {
             out_start: self.text.len() as u32,
-            out_len: value.len() as u32,
+            out_len: value.len() as u32 + 1,
             src_col,
             src_len,
         });
+        self.text.push(EXPANSION_MARK);
         self.text.push_str(value);
     }
 
@@ -259,7 +270,8 @@ impl SourceMap {
 
     // ----- queries -----
 
-    /// The preprocessed text: what the lexer reads.
+    /// The preprocessed text: what the lexer reads. Each expanded
+    /// `$(NAME)` value is preceded by [`EXPANSION_MARK`].
     pub fn text(&self) -> &str {
         &self.text
     }
@@ -346,10 +358,9 @@ impl SourceMap {
             if exp.out_start > offset {
                 break;
             }
-            let exp_end = exp.out_start + exp.out_len;
-            if offset < exp_end || (exp.out_len == 0 && offset == exp.out_start) {
+            if offset < exp.out_start + exp.out_len {
                 column = i64::from(exp.src_col);
-                in_expansion = exp.out_len != 0;
+                in_expansion = true;
                 break;
             }
             column += i64::from(exp.src_len) - i64::from(exp.out_len);
@@ -480,7 +491,8 @@ impl SourceMap {
                         out.push('\u{8}');
                         out.push_str(reference);
                         out.push('\u{8}');
-                        pos = exp_start;
+                        // Skip our own one-character mark.
+                        pos = exp_start + EXPANSION_MARK.len_utf8();
                         expansions.next();
                     }
                     out.push_str(self.text.get(pos..end).unwrap_or(""));

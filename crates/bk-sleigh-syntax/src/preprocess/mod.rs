@@ -14,10 +14,15 @@
 //!   evaluated (so an undefined name in them is still an error), but
 //!   `@include`, `@define` and `@undef` have no effect.
 //! * Conditionals do not span files: each included file starts with a fresh
-//!   conditional stack.
+//!   conditional stack, and one left open at the end of a file is closed
+//!   silently.
 //!
 //! The output is plain text with one line per input line read, plus a
 //! [`SourceMap`] that records where each line and each expansion came from.
+//! Each expanded value is preceded by one U+0008
+//! ([`crate::source::EXPANSION_MARK`]), which the lexer skips: like the
+//! marker Ghidra writes there, it separates the value from the token
+//! before it, so `export$(X)` is `export` followed by the tokens of `X`.
 
 mod defines;
 mod directive;
@@ -186,17 +191,8 @@ impl Preprocessor<'_> {
             }
             line_no += 1;
         }
-        if conditionals.len() > 1 && !self.stopped {
-            let at = Span::at(self.map.current_line_start().saturating_sub(1));
-            let name = source.name();
-            self.diagnostics.push(Diagnostic::warning(
-                at,
-                format!(
-                    "{} conditional(s) not closed by @endif at the end of {name}",
-                    conditionals.len() - 1
-                ),
-            ));
-        }
+        // A conditional still open here is silently closed, as in both of
+        // Ghidra's front ends (ARMv8.sinc relies on it).
         self.stack.pop();
     }
 
