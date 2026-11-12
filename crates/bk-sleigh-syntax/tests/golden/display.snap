@@ -1,0 +1,67 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+:mov^"."^cc rd, [rs + imm] is epsilon unimpl
+:ADD   rd,rs	is epsilon unimpl
+:  lead is epsilon unimpl
+:^x is epsilon unimpl
+:a, is epsilon unimpl
+:"" is epsilon unimpl
+:p #1, @x $y ?z !w ~v *u &t |s =r -q +p /o %n <m >l {k} is epsilon unimpl
+:n 0x10 0b11 12 is epsilon unimpl
+:x.y_z .w is epsilon unimpl
+:multi
+  line is epsilon unimpl
+tab:	t is epsilon unimpl
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (constructor @fragment.slaspec:2:1
+    (display mov ^ q"." ^ cc ws rd "," ws "[" rs ws "+" ws imm "]" ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:3:1
+    (display ADD ws rd "," rs ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:4:1
+    (display ws lead ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:5:1
+    (display ^ x ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:6:1
+    (display a "," ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:7:1
+    (display q"" ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:8:1
+    (display p ws "#" "1" "," ws "@" x ws "$" y ws "?" z ws "!" w ws "~" v ws "*" u ws "&" t ws "|" s ws "=" r ws "-" q ws "+" p ws "/" o ws "%" n ws "<" m ws ">" l ws "{" k "}" ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:9:1
+    (display n ws "0x10" ws "0b11" ws "12" ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:10:1
+    (display x.y_z ws .w ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor @fragment.slaspec:11:1
+    (display multi ws line ws)
+    (pattern epsilon)
+    unimpl)
+  (constructor tab @fragment.slaspec:13:1
+    (display ws t ws)
+    (pattern epsilon)
+    unimpl)
+)

@@ -1,0 +1,47 @@
+---
+source: crates/bk-sleigh-syntax/tests/golden.rs
+expression: text
+---
+--- source
+define endian=big;
+define token t(8) a=(0,3) b=(4;
+:ok1 is a=1 { r0 = 1; }
+:bad is a=1 { r0 = ; r1 = 2; r2 = (3; }
+define space ram type=ram_space size=;
+:ok2 is b=2 { r0 = 2; }
+attach names [ a ] [ ;
+:bad2 is & { }
+:ok3 is epsilon unimpl
+
+--- tree
+(spec
+  (endian big) @fragment.slaspec:1:1
+  (constructor @fragment.slaspec:3:1
+    (display ok1 ws)
+    (pattern (= a 1))
+    (body
+      (= r0 1)))
+  (constructor @fragment.slaspec:4:1
+    (display bad ws)
+    (pattern (= a 1))
+    (body
+      (error)
+      (= r1 2)
+      (error)))
+  (constructor @fragment.slaspec:6:1
+    (display ok2 ws)
+    (pattern (= b 2))
+    (body
+      (= r0 2)))
+  (constructor @fragment.slaspec:9:1
+    (display ok3 ws)
+    (pattern epsilon)
+    unimpl)
+)
+--- diagnostics
+fragment.slaspec:2:31: error: expected `,`, found `;`
+fragment.slaspec:4:20: error: expected an expression, found `;`
+fragment.slaspec:4:37: error: expected `)`, found `;`
+fragment.slaspec:5:38: error: expected integer, found `;`
+fragment.slaspec:7:22: error: expected name or string or `]`, found `;` (forget to close a list above?)
+fragment.slaspec:8:10: error: expected a pattern, found `&`
