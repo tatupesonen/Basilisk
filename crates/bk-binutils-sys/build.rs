@@ -90,10 +90,15 @@ fn run() -> Result<(), String> {
         .include(&shim)
         .define("HAVE_CONFIG_H", None)
         // opcodes/disassemble.c: every disassembler (--enable-targets=all).
-        .define("ARCH_all", None)
-        // abort() and exit() inside binutils end the shim call, not the process.
-        .define("abort", "bk_gdis_abort")
-        .define("exit", "bk_gdis_exit");
+        .define("ARCH_all", None);
+    // abort() and exit() inside binutils end the shim call, not the process
+    // (shim/include/bk_prelude.h).
+    let prelude = shim.join("include/bk_prelude.h");
+    if build.get_compiler().is_like_msvc() {
+        build.flag(format!("/FI{}", prelude.display()));
+    } else {
+        build.flag("-include").flag(prelude.display().to_string());
+    }
     for unit in compilation_units(&list)? {
         let path = vendor.join(&unit);
         if !path.is_file() {
