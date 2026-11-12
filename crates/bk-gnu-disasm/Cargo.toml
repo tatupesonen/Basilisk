@@ -1,0 +1,21 @@
+[package]
+name = "bk-gnu-disasm"
+description = "basilisk: GNU binutils' disassembly of any architecture, in process, as Ghidra's gdis provides it"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-binutils-sys = { workspace = true }
+roxmltree = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+proptest = { workspace = true }
+rstest = { workspace = true }
+
+[lints]
+workspace = true
