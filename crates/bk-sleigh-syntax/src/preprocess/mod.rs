@@ -65,6 +65,16 @@ pub struct Preprocessed {
 /// Preprocesses the specification at `root`, reading it and the files it
 /// includes through `loader`, starting from the definitions in `defines`.
 pub fn preprocess(root: &Path, defines: &Defines, loader: &mut dyn FileLoader) -> Preprocessed {
+    preprocess_limited(root, defines, loader, MAX_OUTPUT_BYTES)
+}
+
+/// [`preprocess`] with a smaller output limit, so tests can reach it.
+pub(crate) fn preprocess_limited(
+    root: &Path,
+    defines: &Defines,
+    loader: &mut dyn FileLoader,
+    max_output: usize,
+) -> Preprocessed {
     let mut pp = Preprocessor {
         map: SourceMap::default(),
         defines: defines.clone(),
@@ -72,6 +82,7 @@ pub fn preprocess(root: &Path, defines: &Defines, loader: &mut dyn FileLoader) -
         loader,
         stack: Vec::new(),
         stopped: false,
+        max_output: max_output.min(MAX_OUTPUT_BYTES),
     };
     pp.file(root.to_path_buf(), None);
     Preprocessed {
@@ -120,6 +131,8 @@ struct Preprocessor<'a> {
     stack: Vec<PathBuf>,
     /// Set when a limit was hit; no more input is read.
     stopped: bool,
+    /// Largest output accepted ([`MAX_OUTPUT_BYTES`] outside tests).
+    max_output: usize,
 }
 
 impl Preprocessor<'_> {
@@ -135,10 +148,10 @@ impl Preprocessor<'_> {
         let file_id = match self.map.find_file(&path) {
             Some(id) => id,
             None => match self.loader.load(&path) {
-                Ok(text) if text.len() >= MAX_OUTPUT_BYTES => {
+                Ok(text) if text.len() >= self.max_output => {
                     let err = LoadError::TooLarge {
                         size: text.len() as u64,
-                        limit: MAX_OUTPUT_BYTES as u64,
+                        limit: self.max_output as u64,
                     };
                     self.load_failed(&path, parent.is_some(), &err);
                     return;
@@ -167,9 +180,8 @@ impl Preprocessor<'_> {
         let mut line_no = 1;
         while line_no <= line_count && !self.stopped {
             let line = source.line(line_no).unwrap_or("");
-            if self.map.out_len() + line.len() >= MAX_OUTPUT_BYTES {
-                self.error("specification is too large to preprocess (over 1 GiB)");
-                self.stopped = true;
+            if self.map.out_len() + line.len() >= self.max_output {
+                self.too_large();
                 break;
             }
             let copying = conditionals.iter().all(|c| c.copy);
@@ -194,6 +206,15 @@ impl Preprocessor<'_> {
         // A conditional still open here is silently closed, as in both of
         // Ghidra's front ends (ARMv8.sinc relies on it).
         self.stack.pop();
+    }
+
+    /// Reports that the output limit was reached and stops reading input.
+    fn too_large(&mut self) {
+        let limit = self.max_output;
+        self.error(format!(
+            "specification is too large to preprocess (over {limit} bytes)"
+        ));
+        self.stopped = true;
     }
 
     fn load_failed(&mut self, path: &Path, is_include: bool, err: &LoadError) {
@@ -341,17 +362,31 @@ impl Preprocessor<'_> {
             map,
             defines,
             diagnostics,
+            max_output,
             ..
         } = self;
         let mut unknown: Vec<(u32, String)> = Vec::new();
+        // Expansion can multiply a line's size (many references to a long
+        // value), so the limit is checked for every piece.
+        let mut overflow = false;
+        let mut fits = |map: &SourceMap, len: usize| {
+            overflow |= map.out_len() + len + 1 >= *max_output;
+            !overflow
+        };
         expand::expand_lenient(line, defines, |piece| match piece {
-            expand::LenientPiece::Text(text) => map.push_text(text),
+            expand::LenientPiece::Text(text) => {
+                if fits(map, text.len()) {
+                    map.push_text(text);
+                }
+            }
             expand::LenientPiece::Value {
                 value,
                 src_col,
                 src_len,
             } => {
-                map.push_expansion(value, src_col, src_len);
+                if fits(map, value.len()) {
+                    map.push_expansion(value, src_col, src_len);
+                }
             }
             expand::LenientPiece::Unknown {
                 name,
@@ -359,7 +394,9 @@ impl Preprocessor<'_> {
                 src_len,
             } => {
                 unknown.push((map.out_len() as u32, name.to_owned()));
-                map.push_expansion("", src_col, src_len);
+                if fits(map, 0) {
+                    map.push_expansion("", src_col, src_len);
+                }
             }
         });
         for (at, name) in unknown {
@@ -368,5 +405,65 @@ impl Preprocessor<'_> {
                 format!("unknown variable: {name}"),
             ));
         }
+        if overflow {
+            self.too_large();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::loader::MemoryLoader;
+
+    fn limited(files: &[(&str, &str)], limit: usize) -> Preprocessed {
+        let mut loader = MemoryLoader::new();
+        for (name, text) in files {
+            loader.add(*name, *text);
+        }
+        preprocess_limited(Path::new(files[0].0), &Defines::new(), &mut loader, limit)
+    }
+
+    #[test]
+    fn output_limit_stops_repeated_inclusion() {
+        let text = "0123456789\n".repeat(30);
+        let p = limited(
+            &[("a", "@include \"b\"\n@include \"b\"\n"), ("b", &text)],
+            500,
+        );
+        assert_eq!(p.diagnostics.len(), 1);
+        assert_eq!(
+            p.diagnostics[0].message,
+            "specification is too large to preprocess (over 500 bytes)"
+        );
+        assert!(p.sources.text().len() < 500);
+    }
+
+    #[test]
+    fn output_limit_bounds_expansion() {
+        // One line whose references multiply a long value: the limit holds
+        // within the line, not only between lines.
+        let value = "x".repeat(100);
+        let refs = "$(V)".repeat(1000);
+        let text = format!("@define V \"{value}\"\n{refs}\nafter\n");
+        let p = limited(&[("a", &text)], 2000);
+        assert_eq!(p.diagnostics.len(), 1, "{:?}", p.diagnostics);
+        assert!(p.diagnostics[0].message.contains("too large"));
+        assert!(p.sources.text().len() < 2000);
+        assert!(!p.sources.text().contains("after"));
+    }
+
+    #[test]
+    fn a_file_over_the_limit_is_not_read() {
+        let text = "x".repeat(600);
+        let p = limited(&[("a", "@include \"b\"\n"), ("b", &text)], 500);
+        assert_eq!(p.diagnostics.len(), 1);
+        assert!(
+            p.diagnostics[0]
+                .message
+                .contains("file is too large (600 bytes; the limit is 500)"),
+            "{}",
+            p.diagnostics[0].message
+        );
     }
 }

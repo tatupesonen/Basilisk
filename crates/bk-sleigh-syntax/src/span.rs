@@ -61,10 +61,11 @@ impl fmt::Debug for Span {
     }
 }
 
-/// Stable index of a source file within one parse, in order of first use.
+/// Index of a source file within one parse, in order of first inclusion.
 ///
-/// This is the index Ghidra's `SourceFileIndexer` assigns: the compiler
-/// records it per constructor instead of repeating the file name.
+/// This is not the index Ghidra's `SourceFileIndexer` writes into a `.sla`,
+/// which numbers files in order of their first constructor; the compiler
+/// builds that with [`crate::SourceFileIndexer`] from [`crate::SourceFile::name`].
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub struct FileId(pub u32);
 
