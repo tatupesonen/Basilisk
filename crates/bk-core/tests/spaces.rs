@@ -524,3 +524,14 @@ fn parse_address_simple() {
         Address::new(SpaceId::new(20), 0x20)
     );
 }
+
+#[test]
+fn shared_types_are_send_and_sync() {
+    fn check<T: Send + Sync>() {}
+    check::<SpaceManager>();
+    check::<Space>();
+    check::<Address>();
+    check::<bk_core::VarnodeData>();
+    check::<bk_core::JoinRecord>();
+    assert_eq!(size_of::<bk_core::VarnodeData>(), 16);
+}
