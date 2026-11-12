@@ -123,10 +123,12 @@ reports to the coordinator. Their fact sheets are worth keeping for the
 queued specs: save each to the matching worktree as
 `docs/agents/notes-<topic>.md` (uncommitted; the restarted spec agent is
 told to read them) by extracting the `SubagentHandback` message from the
-task's output file with a script — never by printing the file. Saved so
+task's output file with `../basilisk-wt/save-handback.py <task-id> <file>` —
+never by printing the transcript. Saved so
 far: `store-spike/docs/research/notes-ghidra-db-engine.md`,
 `notes-ghidra-program-db.md`; `spec-pe/docs/agents/notes-pe-debug-directory.md`,
-`notes-pe-loadconfig-exception-security.md`. Three more helpers were still
+`notes-pe-loadconfig-exception-security.md`,
+`notes-pe-resources-rich-header.md`. Two more helpers were still
 running at 20:45 (probably PE and Mach-O fact sheets).
 
 **UI shown to the owner** at about 20:40: the `ui` branch's build was
