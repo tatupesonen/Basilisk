@@ -1,0 +1,26 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 e10e0b16         "mulhi\t5643, r1, r1"
+00010004  4 c6461706         "andi\t1559, r6, r8"
+00010008  4 1a5f6e0a         "ld.b\t2670[r26], r11"
+0001000c  4 e74610df         "mulhi\t-8432, r7, r8"
+00010010  2 32ca             "satadd\t-14, r25"
+00010012  2 742a             "cmp\t-12, r5"
+00010014  4 96b7405b         "jarl\t0x00175b54, r22"
+00010018  2 50a3             "sld.b\t80[ep], r20"
+0001001a  2 f99c             "sst.h\tr19, 242[ep]"
+0001001c  2 c7c2             "shl\t7, r24"
+0001001e  4 a7af4acc         "jarl\t0xffffffffffe8cc68, r21"
+00010022  2 75d1             "tst\tr21, r26"
+00010024  2 4908             "divh\tr9, r1"
+00010026  4 e84e32b1         "mulhi\t-20174, r8, r9"
+0001002a  4 70bf9812         "st.h\tr23, 4760[r16]"
+0001002e  4 5e5fa31e         "st.b\tr11, 7843[ep]"
+00010032  2 c271             "add\tr2, r14"
+00010034  2 1079             "or\tr16, r15"
+00010036  4 b6575c77         "jarl\t0xfffffffffff77792, r10"
+0001003a  4 4456770e         "movhi\t3703, gp, r10"
+0001003e  2 48f4             "sld.h\t144[ep], ep"
+end: Complete

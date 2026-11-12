@@ -1,0 +1,6 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  2 bf12             "call\t@r15+\t\t;"
+end: NoInstruction { offset: 2, returned: -1, read_fault: None }

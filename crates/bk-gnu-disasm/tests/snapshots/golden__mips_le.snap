@@ -1,0 +1,23 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 e8ffbd27         "addiu\tsp,sp,-24"  [NonBranch delay=0 size=0 target=0x0]
+00010004  4 1400bfaf         "sw\tra,20(sp)"  [DataReference delay=0 size=0 target=0x0]
+00010008  4 10000034         "li\tzero,0x10"  [NonBranch delay=0 size=0 target=0x0]
+0001000c  4 fab41cdd         "ld\tgp,-19206(t0)"  [DataReference delay=0 size=0 target=0x0]
+00010010  4 9059fe28         "slti\ts8,a3,22928"  [NonBranch delay=0 size=0 target=0x0]
+00010014  4 2641040a         "j\t0x08110498"  [Branch delay=1 size=0 target=0x8110498]
+00010018  4 c8e86f70         ".word\t0x706fe8c8"  [NonInstruction delay=0 size=0 target=0x0]
+0001001c  4 18ba0b34         "li\tt3,0xba18"  [NonBranch delay=0 size=0 target=0x0]
+00010020  4 b6b42ec2         "ll\tt6,-19274(s1)"  [DataReference delay=0 size=0 target=0x0]
+00010024  4 43c3b7d1         "lld\ts7,-15549(t5)"  [DataReference delay=0 size=0 target=0x0]
+00010028  4 8a0c0dd0         "lld\tt5,3210(zero)"  [DataReference delay=0 size=0 target=0x0]
+0001002c  4 0ffaaa6c         "ldr\tt2,-1521(a1)"  [DataReference delay=0 size=0 target=0x0]
+00010030  4 65b8a99e         "lwu\tt1,-18331(s5)"  [DataReference delay=0 size=0 target=0x0]
+00010034  4 a5db24b8         "swr\ta0,-9307(at)"  [DataReference delay=0 size=0 target=0x0]
+00010038  4 953ebb31         "andi\tk1,t5,0x3e95"  [NonBranch delay=0 size=0 target=0x0]
+0001003c  4 66e7046f         "ldr\ta0,-6298(t8)"  [DataReference delay=0 size=0 target=0x0]
+00010040  4 a220117f         ".word\t0x7f1120a2"  [NonInstruction delay=0 size=0 target=0x0]
+00010044  4 84b83be8         "swc2\t$27,-18300(at)"  [DataReference delay=0 size=0 target=0x0]
+end: NoInstruction { offset: 72, returned: -1, read_fault: Some(65608) }

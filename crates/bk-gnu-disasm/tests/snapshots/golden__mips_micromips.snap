@@ -1,0 +1,24 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 f7dea5da         "jal\t0x07bd4bb4"  [Call delay=1 size=0 target=0x7bd4bb4]
+00010004  4 9edaaf28         "lwc1\t$f22,-20696(k0)"  [DataReference delay=0 size=0 target=0x0]
+00010008  4 42383ec8         "bltzals\tt8,0x00017d9c"  [ConditionalCall delay=1 size=0 target=0x17d9c]
+0001000c  4 b7942be6         "bne\ts4,gp,0x000157dc"  [ConditionalBranch delay=1 size=0 target=0x157dc]
+00010010  4 f3f9451d         "jalx\t0x0fe51474"  [Call delay=1 size=0 target=0xfe51474]
+00010014  4 024ea3e6         ".short\t0x24e, 0xa3e6"  [NonInstruction delay=0 size=0 target=0x0]
+00010018  2 29ec             "lhu\tv1,24(a2)"  [DataReference delay=0 size=0 target=0x0]
+0001001a  2 4778             ".short\t0x4778"  [NonInstruction delay=0 size=0 target=0x0]
+0001001c  4 588da421         "shf.b\t$w16,$w20,0x8d"  [NonBranch delay=0 size=0 target=0x0]
+00010020  2 8c62             "beqz\ts0,0x0000ffe6"  [ConditionalBranch delay=1 size=0 target=0xffe6]
+00010022  2 eaef             "sw\ta1,60(a2)"  [DataReference delay=0 size=0 target=0x0]
+00010024  4 83cad917         "bnz.w\t$w10,0x0000b256"  [ConditionalBranch delay=1 size=0 target=0xb256]
+00010028  4 11cccda0         "addi\tt6,t4,-12896"  [NonBranch delay=0 size=0 target=0x0]
+0001002c  2 4e5b             "addiu\tsp,sp,-844"  [NonBranch delay=0 size=0 target=0x0]
+0001002e  4 8360c36a         "bz.d\t$w0,0x00008706"  [ConditionalBranch delay=1 size=0 target=0x8706]
+00010032  4 d3d835b6         "andi\ts8,t8,0x35b6"  [NonBranch delay=0 size=0 target=0x0]
+00010036  4 1d667c13         "lb\tt3,31763(a2)"  [DataReference delay=0 size=0 target=0x0]
+0001003a  2 65ac             "lw\tv1,176(gp)"  [DataReference delay=0 size=0 target=0x0]
+0001003c  2 cdfd             "b\t0x00010438"  [Branch delay=1 size=0 target=0x10438]
+end: NoInstruction { offset: 62, returned: -1, read_fault: Some(65600) }

@@ -1,0 +1,25 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  2 fb7e             ".short 0xfb7e"
+00010002  2 5995             "subql #4,%a5@"
+00010004  2 da5b             "addw %a3@+,%d5"
+00010006  2 fabc             ".short 0xfabc"
+00010008  4 da6c5ff0         "addw %a4@(24560),%d5"
+0001000c  4 3f86d8a0         "movew %d6,%sp@(ffffffffffffffa0,%a5:l)"
+00010010  2 154f             ".short 0x154f"
+00010012  2 8d25             "orb %d6,%a5@-"
+00010014  8 2d8ec58f5404089d "movel %fp,@(0)@(5404089d,%a4:w:4)"
+0001001c  4 0458a698         "subiw #-22888,%a0@+"
+00010020  4 1a3c1d12         "moveb #18,%d5"
+00010024  2 9797             "subl %d3,%sp@"
+00010026  2 7135             ".short 0x7135"
+00010028  2 0394             "bclr %d1,%a4@"
+0001002a  2 70c5             "moveq #-59,%d0"
+0001002c  6 50396297f2f7     "addqb #8,0x6297f2f7"
+00010032  2 b0c0             "cmpaw %d0,%a0"
+00010034  4 dbeb2032         "addal %a3@(8242),%a5"
+00010038  2 d97f             ".short 0xd97f"
+0001003a  2 5845             "addqw #4,%d5"
+end: NoInstruction { offset: 60, returned: -1, read_fault: Some(65598) }
