@@ -474,8 +474,22 @@ run_decomp_test() {
   local name=$1; shift
   local status=0
   TIMEFORMAT=%3R
-  { time "$REF/bin/decomp_test" "$@" > "$LOGS/$name.log" 2>&1; } 2> "$LOGS/$name.time" || status=$?
+  { time "$REF/bin/decomp_test" "$@" > "$LOGS/$name.log" 2>&1; } 2> "$LOGS/$name.time.raw" || status=$?
+  # When the runner is killed, bash writes its job message into the same
+  # stream as `time`; the time is the last line.
+  tail -n 1 "$LOGS/$name.time.raw" > "$LOGS/$name.time"
+  rm -f "$LOGS/$name.time.raw"
   printf '%s\n' "$status" > "$LOGS/$name.status"
+}
+
+# A runner that died from a signal (exit status above 128) has no totals;
+# say so instead of printing empty counts, and do not keep the result.
+test_crash() {
+  local status
+  status=$(cat "$LOGS/$1.status")
+  if [ "$status" -gt 128 ]; then
+    echo "$2_crash: decomp_test $1 killed by signal $((status - 128)) after $(cat "$LOGS/$1.time") s (log: logs/$1.log)"
+  fi
 }
 
 summarize_tests() {
@@ -489,6 +503,7 @@ summarize_tests() {
       /^  fail(:|$)/ { print "unit_failure: " name }
       /^[0-9]+\/[0-9]+ tests passed\.$/ { split($1, n, "/"); print "unit_passed: " n[1]; print "unit_total: " n[2] }
     ' "$LOGS/unittests.log"
+    test_crash unittests unit
     echo "unit_exit: $(cat "$LOGS/unittests.status")"
     echo "unit_seconds: $(cat "$LOGS/unittests.time")"
     # Data tests: one "Success -- NAME" or "FAIL -- NAME" per <stringmatch>,
@@ -502,6 +517,7 @@ summarize_tests() {
       /^Total passing tests = / { print "data_passed: " $5 }
     ' "$LOGS/datatests.log"
     echo "data_files: $(find "$DATATESTS" -maxdepth 1 -name '*.xml' | wc -l | tr -d ' ')"
+    test_crash datatests data
     echo "data_exit: $(cat "$LOGS/datatests.status")"
     echo "data_seconds: $(cat "$LOGS/datatests.time")"
   } > "$out"
@@ -519,17 +535,28 @@ else
   (cd "$LOGS" && run_decomp_test unittests -sleighpath "$REF" unittests)
   (cd "$LOGS" && run_decomp_test datatests -sleighpath "$REF" -path "$DATATESTS" datatests)
   summarize_tests
-  printf '%s\n' "$TESTS_FP" > "$STATE/tests.fp"
+  # A crashed run is not a baseline: run the tests again next time.
+  if ! grep -qE '^(unit|data)_crash: ' "$STATE/tests.summary"; then
+    printf '%s\n' "$TESTS_FP" > "$STATE/tests.fp"
+  fi
   CHANGED=1
 fi
-UNIT_RESULT="$(summary_value unit_passed)/$(summary_value unit_total) passed"
-DATA_RESULT="$(summary_value data_passed)/$(summary_value data_total) passed in $(summary_value data_files) files"
-TEST_PROBLEMS=$(grep -cE '^(unit_failure|data_failure|data_error): ' "$STATE/tests.summary" || true)
+if [ -n "$(summary_value unit_total)" ]; then
+  UNIT_RESULT="$(summary_value unit_passed)/$(summary_value unit_total) passed"
+else
+  UNIT_RESULT="did not finish"
+fi
+if [ -n "$(summary_value data_total)" ]; then
+  DATA_RESULT="$(summary_value data_passed)/$(summary_value data_total) passed in $(summary_value data_files) files"
+else
+  DATA_RESULT="did not finish ($(summary_value data_files) files)"
+fi
+TEST_PROBLEMS=$(grep -cE '^(unit_failure|data_failure|data_error|unit_crash|data_crash): ' "$STATE/tests.summary" || true)
 say "  unit tests: $UNIT_RESULT ($(summary_value unit_seconds) s, exit $(summary_value unit_exit))"
 say "  data tests: $DATA_RESULT ($(summary_value data_seconds) s, exit $(summary_value data_exit))"
 if [ "$TEST_PROBLEMS" -ne 0 ]; then
   say "  $TEST_PROBLEMS failures on this host:"
-  grep -E '^(unit_failure|data_failure|data_error): ' "$STATE/tests.summary" | sed 's/^/    /'
+  grep -E '^(unit_failure|data_failure|data_error|unit_crash|data_crash): ' "$STATE/tests.summary" | sed 's/^/    /'
 fi
 
 # ------------------------------------------------------------ 6. STAMP
@@ -559,7 +586,7 @@ write_stamp() {
     fi
     echo "unit_tests: $UNIT_RESULT"
     echo "data_tests: $DATA_RESULT"
-    grep -E '^(unit_failure|data_failure|data_error|unit_exit|data_exit|unit_seconds|data_seconds): ' "$STATE/tests.summary" || true
+    grep -E '^(unit_failure|data_failure|data_error|unit_crash|data_crash|unit_exit|data_exit|unit_seconds|data_seconds): ' "$STATE/tests.summary" || true
     echo
     echo "== tools: sha256  bytes  path"
     for f in sleigh decomp decomp_test pcodedump; do
