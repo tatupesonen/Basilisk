@@ -190,7 +190,7 @@ impl<'a> BinaryReader<'a> {
         usize::try_from(value)
             .ok()
             .filter(|_| i32::try_from(value).is_ok())
-            .ok_or(BinError::ValueOutOfRange {
+            .ok_or_else(|| BinError::ValueOutOfRange {
                 value: i128::from(value),
                 target: "a count (0..=i32::MAX)",
             })

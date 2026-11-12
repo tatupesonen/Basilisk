@@ -186,7 +186,7 @@ impl Leb128Info {
         u32::try_from(self.as_i64())
             .ok()
             .filter(|&v| i32::try_from(v).is_ok())
-            .ok_or(BinError::ValueOutOfRange {
+            .ok_or_else(|| BinError::ValueOutOfRange {
                 value: if self.signed {
                     i128::from(self.as_i64())
                 } else {
@@ -199,7 +199,7 @@ impl Leb128Info {
     /// The value if it fits a signed 32-bit integer (Ghidra's `asInt32`); an
     /// error otherwise.
     pub fn as_i32(&self) -> Result<i32> {
-        i32::try_from(self.as_i64()).map_err(|_| BinError::ValueOutOfRange {
+        i32::try_from(self.as_i64()).map_err(|_out_of_range| BinError::ValueOutOfRange {
             value: i128::from(self.as_i64()),
             target: "a signed 32-bit integer",
         })
