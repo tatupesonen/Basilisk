@@ -70,6 +70,51 @@ every module of the Ghidra tree (39 processor modules plus the rest of
 | 2026-11-12 | Apple M1 Pro, macOS, Rust 1.97.1; load average 10 on 8 cores (other agents building, a fuzzer running) | 13.05 / 14.97 ms | 16.77 / 21.40 ms | 21.58 / 25.60 ms | 6.0 / 6.1 µs |
 | 2026-11-12 | same machine, other agents building | 11.8 / 12.8 ms | — / 15.6 ms | — / 22.1 ms | — / 5.8 µs |
 
+### bk-bin
+
+2026-11-12, Apple M1 Pro (8 cores, 16 GiB), macOS, Rust 1.97.1, release profile.
+Command: `cargo test -p bk-bin --release --test bench -- --ignored --nocapture`
+(best of three runs; MB = 10⁶ bytes).
+
+| Benchmark | Throughput | Per item |
+|---|---:|---:|
+| `read_u32` over 64 MiB, reader on a slice (`from_slice`) | 39,740 MB/s | 0.10 ns/read |
+| `read_u32`, `MemoryProvider` (slice fast path) | 8,840 MB/s | 0.45 ns/read |
+| `read_u32` big-endian, `MemoryProvider` | 7,058 MB/s | 0.57 ns/read |
+| `read_u32_array_at` (one call for 16 M values), `MemoryProvider` | 17,598 MB/s | 0.23 ns/value |
+| `read_u32`, provider without a slice (through `read_into`) | 8,241 MB/s | 0.49 ns/read |
+| `read_u32`, `FileProvider` (block cache, one thread) | 265 MB/s | 15.1 ns/read |
+| `read_terminated_bytes_at`, 4 M 15-byte strings, borrowed | 1,477 MB/s | 10.8 ns/string |
+| `read_utf8`, same strings, allocating a `String` each | 470 MB/s | 34 ns/string |
+
+No budget is set for these yet. The `FileProvider` figure is the cost of a
+shared slot lock plus a copy per read; table parsers that need more should
+read a table with one `read_bytes` call and decode from the slice.
+
+### bk-elf
+
+2026-11-12, Apple M1 Pro (8 cores, 16 GiB), macOS, Rust 1.97.1, release
+profile, best of 3–20 runs; a fuzzer was running on two cores at the time
+(indicative figures). Command:
+`cargo test -p bk-elf --release --test bench -- --ignored --nocapture --test-threads=1`.
+Input: a 64-bit file of 41 MB with one `.symtab` of 1,000,001 symbols
+named `function_NNNNNNN`, written by the test fixture builder.
+
+| Benchmark | Time | Per symbol |
+|---|---:|---:|
+| `ElfFile::parse` (header, header tables, tables located; no symbol read) | 1.3 µs | — |
+| decode every symbol (`MemoryProvider`) | 3.8 ms | 3.8 ns |
+| decode every symbol and borrow its name (`MemoryProvider`) | 27.8 ms | 27.8 ns |
+| decode every symbol and collect owned names | 50.5 ms | 50.5 ns |
+| decode every symbol (`FileProvider`) | 23.8 ms | 23.8 ns |
+| decode every symbol and read its name (`FileProvider`) | 215 ms | 215 ns |
+
+Opening is independent of the symbol count because symbols, names and
+relocations are read on demand. Through `FileProvider` each name costs a
+block-cache lookup and a copy (a name may cross a block); a caller that
+reads every name of a large table should read the string table once with
+`section_data` and resolve names from that slice.
+
 ### `bk-pcode`
 
 2026-11-12, Apple M1 Pro, macOS, rustc 1.97.1, `--release` (thin LTO), one

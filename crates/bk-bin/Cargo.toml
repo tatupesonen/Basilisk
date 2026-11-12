@@ -1,0 +1,20 @@
+[package]
+name = "bk-bin"
+description = "basilisk: byte providers and the typed, endian-aware binary reader shared by all format parsers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+memchr.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

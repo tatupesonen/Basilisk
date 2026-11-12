@@ -38,6 +38,8 @@ roxmltree = "0.21.2"
 quick-xml = "0.42.0"
 flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
 walkdir = "2.5.0"
+# Pinned exactly: 0.1.5 was under two weeks old when this was added (2026-11-12).
+unicode-properties = { version = "=0.1.4", default-features = false, features = ["general-category"] }
 num-bigint = "0.4.8"
 primitive-types = { version = "0.14.0", default-features = false, features = ["std"] }
 libm = "0.2.16"
@@ -53,6 +55,9 @@ proptest = "1.12.0"
 rstest = "0.27.0"
 insta = "1.49.0"
 tempfile = "3.27.0"
+object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "std"] }
+# Heap measurement in tests (bk-elf allocation bound; ADR-011 evaluation in docs/agents/bin-elf.md).
+dhat = "0.3.3"
 
 [workspace.lints.rust]
 # `unsafe` is forbidden everywhere; a crate that truly needs it opts out by

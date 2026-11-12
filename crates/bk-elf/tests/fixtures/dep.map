@@ -1,0 +1,2 @@
+DEP_1.0 { global: ext_func; local: *; };
+DEP_2.0 { global: ext_value; } DEP_1.0;
