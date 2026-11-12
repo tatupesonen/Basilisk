@@ -17,6 +17,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
+| `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
 | `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
 
