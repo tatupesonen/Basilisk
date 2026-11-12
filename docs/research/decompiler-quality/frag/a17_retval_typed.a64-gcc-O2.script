@@ -25,20 +25,23 @@ parse line extern int4 inc(int4 *p);
 parse line extern int4 find_idx(int4 *a, int4 n, int4 key);
 parse line extern int4 after_call(char *s);
 load function inc
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C
 load function find_idx
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C
 load function after_call
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C

@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/r06_canary.a64-gcc-O2.xml
 
 [decomp]> load function greet
-Function greet: 0x00401000
-[decomp]> override flow r0x401080 callreturn
+Function greet: 0x00400120
+[decomp]> override flow r0x4001c8 callreturn
 Successfully added flow override
-[decomp]> override flow r0x40109a callreturn
+[decomp]> override flow r0x4001cc callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001f0 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling greet
@@ -16,16 +18,20 @@ Decompiling greet
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void greet(void)
+int4 greet(char *param_1)
 
 {
-  xunknown1 in_z2 [32];
-  xunknown1 in_z8 [32];
-  xunknown4 in_p6;
+  int4 iVar1;
+  char acStack_58 [64];
+  int8 iStack_18;
   
-  SVE_fmsb(in_z8,in_p6,in_z2,in_z8);
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  iStack_18 = iRam000000000041ffe8;
+  builtin_strncpy(acStack_58,"hello, ",8);
+  strcpy(acStack_58 + 7,param_1);
+  iVar1 = puts(acStack_58);
+  if (iStack_18 != iRam000000000041ffe8) {
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+  return iVar1;
 }

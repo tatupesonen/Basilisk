@@ -22,8 +22,9 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function add_arrays
-override flow r0x4010b6 callreturn
-override flow r0x4010d0 callreturn
+override flow r0x400204 callreturn
+override flow r0x400208 callreturn
+override flow r0x40022c callreturn
 decompile
 decompile
 print C

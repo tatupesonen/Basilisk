@@ -1,7 +1,7 @@
 # Decompiler quality — experiment inputs and outputs
 
 Evidence for `../decompiler-quality.md`: 36 small C files (104 functions),
-compiled for up to four targets (67 builds, 188 decompiled functions) and run
+compiled for up to four targets (74 builds, 209 decompiled functions) and run
 through Ghidra's reference `decomp` console (Ghidra commit `42db038f3c`, built by `scripts/build-reference.sh`).
 It is laid out so that the weakness catalogue can become a test corpus.
 
@@ -18,8 +18,9 @@ It is laid out so that the weakness catalogue can become a test corpus.
 | `build/` | Objects and executables; not checked in |
 
 A target is `<arch>-<compiler>-<level>`: `x64`, `x86`, `a64` (and `arm`) with
-`clang` (LLVM 20, cross) or `gcc` (GCC 14 from the `gcc:14` container, whose
-native target here is AArch64), at `O0`…`O3`.
+`clang` (Homebrew clang 20.1.8, cross-compiling) or `gcc` (GCC 14.4.0 from the
+`gcc:14` container image: `linux/arm64` for `a64`, `linux/amd64` under
+emulation for `x64`), at `O0`…`O3`.
 
 ## Reproduce
 
@@ -33,8 +34,17 @@ tools/metrics.py                                   # counters over out/
 
 Needs: `clang`, `ld.lld` and `llvm-objdump` (paths in `BK_CLANG`, `BK_LLD`,
 `BK_OBJDUMP`; the defaults are Homebrew's `llvm@20` and `lld@20`), Docker with
-a `gcc:14` image for the `gcc` targets (`BK_GCC_IMAGE`), Python 3. The reference
-tools are found beside the basilisk checkout or through `BK_REFERENCE`.
+the `gcc:14` image for the `gcc` targets, Python 3. The reference tools are
+found beside the basilisk checkout or through `BK_REFERENCE`.
+
+The runner always passes `--platform` to Docker. With Docker's classic image
+store a tag names one platform at a time, and asking for the other platform
+pulls it and **moves the tag**. On a machine where others use the same tag,
+name the two images by id instead, which never touches a tag:
+`BK_GCC_IMAGE_A64=<arm64 image id> BK_GCC_IMAGE_X64=<amd64 image id> tools/run.py`
+(the checked-in output was produced that way). The runner checks the ELF
+machine of everything it builds, so an image of the wrong platform is an
+error and not a page of nonsense.
 
 ## What the harness does and does not model
 
@@ -64,6 +74,6 @@ Two details of the console matter when reading the scripts:
 
 ## Limits
 
-No x86-64 GCC (no cross compiler on the machine), no MSVC, C only. The cases
-are written to show weaknesses, so counts over them are not rates for real
-programs.
+GCC for x86-64 only on the seven cases where the compiler's middle end matters
+most (it runs under emulation); no MSVC; C only. The cases are written to show
+weaknesses, so counts over them are not rates for real programs.

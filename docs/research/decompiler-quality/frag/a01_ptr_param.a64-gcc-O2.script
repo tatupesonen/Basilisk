@@ -22,20 +22,23 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function get
-override flow r0x401090 callreturn
-override flow r0x4010aa callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001bc callreturn
+override flow r0x4001e0 callreturn
 decompile
 decompile
 print C
 load function sum_array
-override flow r0x401090 callreturn
-override flow r0x4010aa callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001bc callreturn
+override flow r0x4001e0 callreturn
 decompile
 decompile
 print C
 load function list_sum
-override flow r0x401090 callreturn
-override flow r0x4010aa callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001bc callreturn
+override flow r0x4001e0 callreturn
 decompile
 decompile
 print C

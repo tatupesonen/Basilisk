@@ -2,12 +2,14 @@
 // Ghidra reference decomp output; inputs: frag/a06_tailcall.a64-gcc-O2.xml
 
 [decomp]> load function direct_tail
-Function direct_tail: 0x00401000
-[decomp]> override flow r0x401003 callreturn
+Function direct_tail: 0x00400120
+[decomp]> override flow r0x400124 callreturn
 Successfully added flow override
-[decomp]> override flow r0x401060 callreturn
+[decomp]> override flow r0x40019c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40107a callreturn
+[decomp]> override flow r0x4001a0 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling direct_tail
@@ -18,21 +20,21 @@ Decompiling direct_tail
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void direct_tail(void)
+void direct_tail(int4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  ext_i(param_1 + 1);
+  return;
 }
 [decomp]> load function indirect_tail
-Function indirect_tail: 0x00401010
-[decomp]> override flow r0x401003 callreturn
+Function indirect_tail: 0x00400128
+[decomp]> override flow r0x400124 callreturn
 Successfully added flow override
-[decomp]> override flow r0x401060 callreturn
+[decomp]> override flow r0x40019c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40107a callreturn
+[decomp]> override flow r0x4001a0 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling indirect_tail
@@ -43,21 +45,23 @@ Decompiling indirect_tail
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void indirect_tail(void)
+void indirect_tail(code *UNRECOVERED_JUMPTABLE,int4 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+                    /* WARNING: Could not recover jumptable at 0x00400134. Too many branches */
+                    /* WARNING: Treating indirect jump as call */
+  (*UNRECOVERED_JUMPTABLE)(param_2 + 1);
+  return;
 }
 [decomp]> load function dispatch
-Function dispatch: 0x00401020
-[decomp]> override flow r0x401003 callreturn
+Function dispatch: 0x00400140
+[decomp]> override flow r0x400124 callreturn
 Successfully added flow override
-[decomp]> override flow r0x401060 callreturn
+[decomp]> override flow r0x40019c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40107a callreturn
+[decomp]> override flow r0x4001a0 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling dispatch
@@ -68,11 +72,17 @@ Decompiling dispatch
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void dispatch(void)
+void dispatch(xunknown8 *param_1,int4 param_2,xunknown4 param_3)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  if (param_2 == 0) {
+                    /* WARNING: Could not recover jumptable at 0x00400160. Too many branches */
+                    /* WARNING: Treating indirect jump as call */
+    (*(code *)*param_1)(param_3);
+    return;
+  }
+                    /* WARNING: Could not recover jumptable at 0x00400154. Too many branches */
+                    /* WARNING: Treating indirect jump as call */
+  (*(code *)param_1[1])();
+  return;
 }

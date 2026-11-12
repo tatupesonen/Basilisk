@@ -22,8 +22,9 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function interp
-override flow r0x4010e8 callreturn
-override flow r0x401102 callreturn
+override flow r0x400304 callreturn
+override flow r0x400308 callreturn
+override flow r0x40032c callreturn
 decompile
 decompile
 print C

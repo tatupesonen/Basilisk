@@ -23,29 +23,32 @@ option noreturn abort
 option noreturn __stack_chk_fail
 parse line extern int4 ext_i(int4 x);
 load function classify
-override flow r0x40101e callreturn
-override flow r0x401034 callreturn
-override flow r0x401052 callreturn
-override flow r0x4011de callreturn
-override flow r0x4011f8 callreturn
+override flow r0x400158 callreturn
+override flow r0x40016c callreturn
+override flow r0x400184 callreturn
+override flow r0x400348 callreturn
+override flow r0x40034c callreturn
+override flow r0x400370 callreturn
 decompile
 decompile
 print C
 load function parse_kv
-override flow r0x40101e callreturn
-override flow r0x401034 callreturn
-override flow r0x401052 callreturn
-override flow r0x4011de callreturn
-override flow r0x4011f8 callreturn
+override flow r0x400158 callreturn
+override flow r0x40016c callreturn
+override flow r0x400184 callreturn
+override flow r0x400348 callreturn
+override flow r0x40034c callreturn
+override flow r0x400370 callreturn
 decompile
 decompile
 print C
 load function cleanup
-override flow r0x40101e callreturn
-override flow r0x401034 callreturn
-override flow r0x401052 callreturn
-override flow r0x4011de callreturn
-override flow r0x4011f8 callreturn
+override flow r0x400158 callreturn
+override flow r0x40016c callreturn
+override flow r0x400184 callreturn
+override flow r0x400348 callreturn
+override flow r0x40034c callreturn
+override flow r0x400370 callreturn
 decompile
 decompile
 print C

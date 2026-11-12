@@ -22,44 +22,51 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function udiv7
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function sdiv7
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function umod10
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function sdiv64
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function divisible3
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function digits
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C
 load function to_hms
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x40026c callreturn
+override flow r0x400270 callreturn
+override flow r0x400294 callreturn
 decompile
 decompile
 print C

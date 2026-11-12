@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/a16_retval.a64-gcc-O2.xml
 
 [decomp]> load function inc
-Function inc: 0x00401000
-[decomp]> override flow r0x40108a callreturn
+Function inc: 0x00400120
+[decomp]> override flow r0x4001e4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a4 callreturn
+[decomp]> override flow r0x4001e8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x40020c callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling inc
@@ -16,19 +18,19 @@ Decompiling inc
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void inc(void)
+void inc(int4 *param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  *param_1 = *param_1 + 1;
+  return;
 }
 [decomp]> load function find_idx
-Function find_idx: 0x00401010
-[decomp]> override flow r0x40108a callreturn
+Function find_idx: 0x00400140
+[decomp]> override flow r0x4001e4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a4 callreturn
+[decomp]> override flow r0x4001e8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x40020c callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling find_idx
@@ -39,19 +41,32 @@ Decompiling find_idx
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void find_idx(void)
+uint8 find_idx(int8 param_1,int4 param_2,int4 param_3)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  int4 iVar1;
+  uint8 uVar2;
+  
+  if (param_2 < 1) {
+    return 0;
+  }
+  uVar2 = 0;
+  do {
+    iVar1 = (int4)uVar2;
+    if (*(int4 *)(param_1 + uVar2 * 4) == param_3) {
+      return uVar2 & 0xffffffff;
+    }
+    uVar2 = uVar2 + 1;
+  } while (uVar2 != (int8)param_2);
+  return (uint8)(iVar1 + 1);
 }
 [decomp]> load function after_call
-Function after_call: 0x00401040
-[decomp]> override flow r0x40108a callreturn
+Function after_call: 0x00400188
+[decomp]> override flow r0x4001e4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a4 callreturn
+[decomp]> override flow r0x4001e8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x40020c callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling after_call
@@ -62,11 +77,13 @@ Decompiling after_call
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void after_call(void)
+int4 after_call(char *param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  int4 iVar1;
+  char acStack_20 [32];
+  
+  strcpy(acStack_20,param_1);
+  iVar1 = puts(acStack_20);
+  return iVar1;
 }

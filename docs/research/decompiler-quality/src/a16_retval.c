@@ -1,6 +1,6 @@
 // Return values the decompiler drops: the returned register is also used
 // inside the function, or comes straight from the last call.
-//! targets: x64-clang-O2 a64-gcc-O2
+//! targets: x64-clang-O2 a64-gcc-O2 x64-gcc-O2
 //! funcs: inc find_idx after_call
 #include "libc.h"
 int inc(int *p) { return ++*p; }

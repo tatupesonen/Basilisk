@@ -21,8 +21,9 @@ Directives in a case file (lines starting with `//!`):
     //! tailcalls: no                        do not mark jumps to function entries as calls
     //! vectorize: yes                       leave the compiler's auto-vectoriser on
 
-Environment: `BK_REFERENCE` (default: `reference/` beside the basilisk
-checkout, where `scripts/build-reference.sh` puts the tools), `BK_CLANG`, `BK_LLD`, `BK_GCC_IMAGE`.
+Environment: `BK_GCC_IMAGE_A64`, `BK_GCC_IMAGE_X64` (container images for the
+`gcc` targets), `BK_REFERENCE` (default: `reference/` beside the basilisk
+checkout, where `scripts/build-reference.sh` puts the tools), `BK_CLANG`, `BK_LLD`, `BK_OBJDUMP`.
 """
 
 import os
@@ -39,15 +40,20 @@ if not (REFERENCE / "bin" / "decomp").exists():
     REFERENCE = HERE.parents[4] / "reference"
 CLANG = os.environ.get("BK_CLANG", "/opt/homebrew/opt/llvm@20/bin/clang")
 LLD = os.environ.get("BK_LLD", "/opt/homebrew/opt/lld@20/bin/ld.lld")
-GCC_IMAGE = os.environ.get("BK_GCC_IMAGE", "gcc:14")
+# GCC runs in a container, one image and platform per architecture. The
+# platform is always passed: an image tag can point at either platform.
+GCC = {
+    "a64": (os.environ.get("BK_GCC_IMAGE_A64", "gcc:14"), "linux/arm64"),
+    "x64": (os.environ.get("BK_GCC_IMAGE_X64", "gcc:14"), "linux/amd64"),
+}
 OBJDUMP = os.environ.get("BK_OBJDUMP", "/opt/homebrew/opt/llvm@20/bin/llvm-objdump")
 
-# arch -> (clang triple, Ghidra language id, pointer size in bytes)
+# arch -> (clang triple, Ghidra language id, pointer size in bytes, ELF e_machine)
 ARCHES = {
-    "x64": ("x86_64-unknown-linux-gnu", "x86:LE:64:default:gcc", 8),
-    "x86": ("i686-unknown-linux-gnu", "x86:LE:32:default:gcc", 4),
-    "a64": ("aarch64-unknown-linux-gnu", "AARCH64:LE:64:v8A:default", 8),
-    "arm": ("armv7a-unknown-linux-gnueabi", "ARM:LE:32:v7:default", 4),
+    "x64": ("x86_64-unknown-linux-gnu", "x86:LE:64:default:gcc", 8, 62),
+    "x86": ("i686-unknown-linux-gnu", "x86:LE:32:default:gcc", 4, 3),
+    "a64": ("aarch64-unknown-linux-gnu", "AARCH64:LE:64:v8A:default", 8, 183),
+    "arm": ("armv7a-unknown-linux-gnueabi", "ARM:LE:32:v7:default", 4, 40),
 }
 COMMON = ["-fno-pic", "-fno-pie", "-fno-asynchronous-unwind-tables", "-fno-stack-protector", "-w"]
 # Auto-vectorisation is switched off unless a case asks for it (`//! vectorize: yes`),
@@ -73,7 +79,7 @@ def run(cmd, **kwargs):
 
 def build(case, target, cflags, entry):
     arch, compiler, opt = target.split("-")
-    triple, _lang, _ptr = ARCHES[arch]
+    triple, _lang, _ptr, machine = ARCHES[arch]
     BUILD.mkdir(exist_ok=True)
     elf = BUILD / ("%s.%s.elf" % (case, target))
     flags = COMMON + ["-" + opt] + cflags
@@ -91,9 +97,18 @@ def build(case, target, cflags, entry):
             "gcc -c {f} -fno-builtin -O1 -I/w/src /w/src/stubs.c -o /w/build/stubs.{t}.o && "
             "ld -static -e {e} -o /w/build/{c}.{t}.elf /w/build/{c}.{t}.o /w/build/stubs.{t}.o"
         ).format(f=" ".join(flags), c=case, t=target, e=entry)
-        run(["docker", "run", "--rm", "-v", "%s:/w" % HERE, GCC_IMAGE, "sh", "-c", inner])
+        if arch not in GCC:
+            raise SystemExit("no GCC container configured for " + arch)
+        image, platform = GCC[arch]
+        run(["docker", "run", "--rm", "--platform", platform, "-v", "%s:/w" % HERE, image, "sh", "-c", inner])
     else:
         raise SystemExit("unknown compiler in target " + target)
+    # A container image of the wrong platform would silently give code for
+    # another processor; the decompiler would then print nonsense.
+    header = elf.read_bytes()[:20]
+    found = int.from_bytes(header[18:20], "little" if header[5] == 1 else "big")
+    if found != machine:
+        raise SystemExit("%s: ELF machine %d, expected %d for %s" % (elf.name, found, machine, arch))
     return elf
 
 
@@ -118,7 +133,7 @@ def undefined_type(size):
 
 def one(case, target, info):
     arch = target.split("-")[0]
-    _triple, lang, ptr = ARCHES[arch]
+    _triple, lang, ptr, _machine = ARCHES[arch]
     funcs = " ".join(info["funcs"]).split()
     cflags = " ".join(info.get("cflags", [])).split()
     if info.get("vectorize", ["no"])[0] != "yes":

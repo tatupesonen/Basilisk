@@ -25,14 +25,16 @@ parse line struct item { int4 id; char name[20]; float8 w; };
 parse line extern float8 total(item *v, int4 n);
 parse line extern item *find(item *v, int4 n, int4 id);
 load function total
-override flow r0x4010c2 callreturn
-override flow r0x4010dc callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001dc callreturn
+override flow r0x400200 callreturn
 decompile
 decompile
 print C
 load function find
-override flow r0x4010c2 callreturn
-override flow r0x4010dc callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001dc callreturn
+override flow r0x400200 callreturn
 decompile
 decompile
 print C

@@ -21,72 +21,76 @@ parse line extern void __stack_chk_fail(void);
 option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
-map addr r0x402040 xunknown1 CSWTCH.4[40]
+map addr r0x4002e0 xunknown1 CSWTCH.4[40]
 load function dense
-override flow r0x401015 callreturn
-override flow r0x401025 callreturn
-override flow r0x401035 callreturn
-override flow r0x401045 callreturn
-override flow r0x401055 callreturn
-override flow r0x401065 callreturn
-override flow r0x40108c callreturn
-override flow r0x4010a7 callreturn
-override flow r0x4010c5 callreturn
-override flow r0x4010d5 callreturn
-override flow r0x4010e5 callreturn
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x400144 callreturn
+override flow r0x40015c callreturn
+override flow r0x40016c callreturn
+override flow r0x400174 callreturn
+override flow r0x40017c callreturn
+override flow r0x400184 callreturn
+override flow r0x4001ac callreturn
+override flow r0x4001c4 callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e4 callreturn
+override flow r0x400264 callreturn
+override flow r0x400268 callreturn
+override flow r0x40028c callreturn
 decompile
 decompile
 print C
 load function sparse
-override flow r0x401015 callreturn
-override flow r0x401025 callreturn
-override flow r0x401035 callreturn
-override flow r0x401045 callreturn
-override flow r0x401055 callreturn
-override flow r0x401065 callreturn
-override flow r0x40108c callreturn
-override flow r0x4010a7 callreturn
-override flow r0x4010c5 callreturn
-override flow r0x4010d5 callreturn
-override flow r0x4010e5 callreturn
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x400144 callreturn
+override flow r0x40015c callreturn
+override flow r0x40016c callreturn
+override flow r0x400174 callreturn
+override flow r0x40017c callreturn
+override flow r0x400184 callreturn
+override flow r0x4001ac callreturn
+override flow r0x4001c4 callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e4 callreturn
+override flow r0x400264 callreturn
+override flow r0x400268 callreturn
+override flow r0x40028c callreturn
 decompile
 decompile
 print C
 load function bittest
-override flow r0x401015 callreturn
-override flow r0x401025 callreturn
-override flow r0x401035 callreturn
-override flow r0x401045 callreturn
-override flow r0x401055 callreturn
-override flow r0x401065 callreturn
-override flow r0x40108c callreturn
-override flow r0x4010a7 callreturn
-override flow r0x4010c5 callreturn
-override flow r0x4010d5 callreturn
-override flow r0x4010e5 callreturn
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x400144 callreturn
+override flow r0x40015c callreturn
+override flow r0x40016c callreturn
+override flow r0x400174 callreturn
+override flow r0x40017c callreturn
+override flow r0x400184 callreturn
+override flow r0x4001ac callreturn
+override flow r0x4001c4 callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e4 callreturn
+override flow r0x400264 callreturn
+override flow r0x400268 callreturn
+override flow r0x40028c callreturn
 decompile
 decompile
 print C
 load function lookup
-override flow r0x401015 callreturn
-override flow r0x401025 callreturn
-override flow r0x401035 callreturn
-override flow r0x401045 callreturn
-override flow r0x401055 callreturn
-override flow r0x401065 callreturn
-override flow r0x40108c callreturn
-override flow r0x4010a7 callreturn
-override flow r0x4010c5 callreturn
-override flow r0x4010d5 callreturn
-override flow r0x4010e5 callreturn
-override flow r0x401154 callreturn
-override flow r0x40116e callreturn
+override flow r0x400144 callreturn
+override flow r0x40015c callreturn
+override flow r0x40016c callreturn
+override flow r0x400174 callreturn
+override flow r0x40017c callreturn
+override flow r0x400184 callreturn
+override flow r0x4001ac callreturn
+override flow r0x4001c4 callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e4 callreturn
+override flow r0x400264 callreturn
+override flow r0x400268 callreturn
+override flow r0x40028c callreturn
 decompile
 decompile
 print C

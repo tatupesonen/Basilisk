@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/r08_cmov.a64-gcc-O2.xml
 
 [decomp]> load function max3
-Function max3: 0x00401000
-[decomp]> override flow r0x4010aa callreturn
+Function max3: 0x00400120
+[decomp]> override flow r0x4001f8 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c4 callreturn
+[decomp]> override flow r0x4001fc callreturn
+Successfully added flow override
+[decomp]> override flow r0x400220 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling max3
@@ -16,19 +18,24 @@ Decompiling max3
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void max3(void)
+int4 max3(int4 param_1,int4 param_2,int4 param_3)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  if (param_1 < param_3) {
+    param_1 = param_3;
+  }
+  if (param_1 < param_2) {
+    param_1 = param_2;
+  }
+  return param_1;
 }
 [decomp]> load function iabs
-Function iabs: 0x00401010
-[decomp]> override flow r0x4010aa callreturn
+Function iabs: 0x00400140
+[decomp]> override flow r0x4001f8 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c4 callreturn
+[decomp]> override flow r0x4001fc callreturn
+Successfully added flow override
+[decomp]> override flow r0x400220 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling iabs
@@ -39,20 +46,24 @@ Decompiling iabs
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void iabs(void)
+int4 iabs(int4 param_1)
 
 {
-  Hint_Prefetch(0x3f0f20,1,0,1);
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  int4 iVar1;
+  
+  iVar1 = -param_1;
+  if (-1 < param_1) {
+    iVar1 = param_1;
+  }
+  return iVar1;
 }
 [decomp]> load function clamp
-Function clamp: 0x00401020
-[decomp]> override flow r0x4010aa callreturn
+Function clamp: 0x0040014c
+[decomp]> override flow r0x4001f8 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c4 callreturn
+[decomp]> override flow r0x4001fc callreturn
+Successfully added flow override
+[decomp]> override flow r0x400220 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling clamp
@@ -63,19 +74,24 @@ Decompiling clamp
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void clamp(void)
+int4 clamp(int4 param_1,int4 param_2,int4 param_3)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  if (param_1 < param_2) {
+    return param_2;
+  }
+  if (param_3 < param_1) {
+    param_1 = param_3;
+  }
+  return param_1;
 }
 [decomp]> load function sign
-Function sign: 0x00401030
-[decomp]> override flow r0x4010aa callreturn
+Function sign: 0x00400168
+[decomp]> override flow r0x4001f8 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c4 callreturn
+[decomp]> override flow r0x4001fc callreturn
+Successfully added flow override
+[decomp]> override flow r0x400220 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling sign
@@ -86,24 +102,46 @@ Decompiling sign
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void sign(void)
+int4 sign(int4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return (uint4)(0 < param_1) + (param_1 >> 0x1f);
 }
 [decomp]> load function count_if
-Low-level ERROR: Bytes at 0x004fef10 are not mapped
-Unable to proceed with function: count_if
-[decomp]> override flow r0x4010aa callreturn
-Execution error: No function selected
-[decomp]> override flow r0x4010c4 callreturn
-Execution error: No function selected
+Function count_if: 0x00400180
+[decomp]> override flow r0x4001f8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
+Successfully added flow override
+[decomp]> override flow r0x400220 callreturn
+Successfully added flow override
 [decomp]> decompile
-Execution error: No function selected
+Decompiling count_if
+Decompilation complete
 [decomp]> decompile
-Execution error: No function selected
+Clearing old decompilation
+Decompiling count_if
+Decompilation complete
 [decomp]> print C
-Execution error: No function selected
+
+int4 count_if(int4 *param_1,uint4 param_2,int4 param_3)
+
+{
+  int4 iVar1;
+  int4 *piVar3;
+  int4 *piVar2;
+  
+  if ((int4)param_2 < 1) {
+    return 0;
+  }
+  iVar1 = 0;
+  piVar2 = param_1;
+  do {
+    piVar3 = piVar2 + 1;
+    if (param_3 <= *piVar2) {
+      iVar1 = iVar1 + 1;
+    }
+    piVar2 = piVar3;
+  } while (piVar3 != param_1 + param_2);
+  return iVar1;
+}

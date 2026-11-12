@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/r09_bits.a64-gcc-O2.xml
 
 [decomp]> load function bswap
-Function bswap: 0x00401000
-[decomp]> override flow r0x4010a0 callreturn
+Function bswap: 0x00400120
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling bswap
@@ -16,31 +18,21 @@ Decompiling bswap
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void bswap(void)
+uint4 bswap(uint4 param_1)
 
 {
-  bool bVar1;
-  xunknown8 *in_x4;
-  xunknown8 in_x9;
-  xunknown8 in_d6;
-  xunknown8 in_d22;
+  uint4 uVar1;
   
-  bVar1 = (bool)ExclusiveMonitorPass(in_x4,0x10);
-  if (bVar1) {
-    *in_x4 = in_x9;
-    ExclusiveMonitorsStatus();
-  }
-  NEON_umax(in_d22,in_d6,2);
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  uVar1 = (param_1 & 0xff00ff00) >> 8 | (param_1 & 0xff00ff) << 8;
+  return uVar1 >> 0x10 | uVar1 << 0x10;
 }
 [decomp]> load function rotl
-Function rotl: 0x00401010
-[decomp]> override flow r0x4010a0 callreturn
+Function rotl: 0x00400128
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling rotl
@@ -51,19 +43,18 @@ Decompiling rotl
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void rotl(void)
+uint4 rotl(uint4 param_1,int4 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 >> (-param_2 & 0x1fU) | param_1 << 0x20 - (-param_2 & 0x1fU);
 }
 [decomp]> load function popcnt
-Function popcnt: 0x00401020
-[decomp]> override flow r0x4010a0 callreturn
+Function popcnt: 0x00400140
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling popcnt
@@ -74,24 +65,21 @@ Decompiling popcnt
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void popcnt(void)
+char popcnt(xunknown8 param_1)
 
 {
-  xunknown8 in_x17;
-  xunknown1 in_z17 [32];
-  xunknown4 in_p4;
-  
-  SVE_ld1rw(in_z17,in_p4,in_x17,0x20);
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return POPCOUNT((char)param_1) + POPCOUNT((char)((uint8)param_1 >> 8)) +
+         POPCOUNT((char)((uint8)param_1 >> 0x10)) + POPCOUNT((char)((uint8)param_1 >> 0x18)) +
+         POPCOUNT((char)((uint8)param_1 >> 0x20)) + POPCOUNT((char)((uint8)param_1 >> 0x28)) +
+         POPCOUNT((char)((uint8)param_1 >> 0x30)) + POPCOUNT((char)((uint8)param_1 >> 0x38));
 }
 [decomp]> load function clz
-Function clz: 0x00401040
-[decomp]> override flow r0x4010a0 callreturn
+Function clz: 0x00400160
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling clz
@@ -102,20 +90,18 @@ Decompiling clz
 Decompilation complete
 [decomp]> print C
 
-void clz(void)
+int8 clz(xunknown4 param_1)
 
 {
-  code *pcVar1;
-  
-                    /* WARNING: Does not return */
-  pcVar1 = (code *)UndefinedInstructionException(0x20b8,0x401040);
-  (*pcVar1)();
+  return LZCOUNT(param_1);
 }
 [decomp]> load function align_up
-Function align_up: 0x00401050
-[decomp]> override flow r0x4010a0 callreturn
+Function align_up: 0x00400168
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling align_up
@@ -126,19 +112,18 @@ Decompiling align_up
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void align_up(void)
+uint8 align_up(int8 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 + 0xfU & 0xfffffffffffffff0;
 }
 [decomp]> load function is_pow2
-Function is_pow2: 0x00401060
-[decomp]> override flow r0x4010a0 callreturn
+Function is_pow2: 0x00400180
+[decomp]> override flow r0x4001d4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010ba callreturn
+[decomp]> override flow r0x4001d8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001fc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling is_pow2
@@ -149,11 +134,11 @@ Decompiling is_pow2
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void is_pow2(void)
+bool is_pow2(uint4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  if (param_1 == 0) {
+    return false;
+  }
+  return (param_1 - 1 & param_1) == 0;
 }

@@ -22,8 +22,9 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function greet
-override flow r0x401080 callreturn
-override flow r0x40109a callreturn
+override flow r0x4001c8 callreturn
+override flow r0x4001cc callreturn
+override flow r0x4001f0 callreturn
 decompile
 decompile
 print C

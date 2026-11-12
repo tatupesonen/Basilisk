@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/a10_struct_copy.a64-gcc-O2.xml
 
 [decomp]> load function copy_struct
-Function copy_struct: 0x00401000
-[decomp]> override flow r0x401086 callreturn
+Function copy_struct: 0x00400120
+[decomp]> override flow r0x4001b0 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a0 callreturn
+[decomp]> override flow r0x4001b4 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001d8 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling copy_struct
@@ -16,19 +18,35 @@ Decompiling copy_struct
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void copy_struct(void)
+void copy_struct(xunknown8 *param_1,xunknown8 *param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  xunknown8 xVar1;
+  xunknown8 xVar2;
+  xunknown8 xVar3;
+  xunknown8 xVar4;
+  xunknown8 xVar5;
+  
+  xVar5 = param_2[5];
+  xVar4 = param_2[1];
+  xVar3 = *param_2;
+  xVar2 = param_2[3];
+  xVar1 = param_2[2];
+  param_1[4] = param_2[4];
+  param_1[5] = xVar5;
+  param_1[1] = xVar4;
+  *param_1 = xVar3;
+  param_1[3] = xVar2;
+  param_1[2] = xVar1;
+  return;
 }
 [decomp]> load function zero_init
-Function zero_init: 0x00401020
-[decomp]> override flow r0x401086 callreturn
+Function zero_init: 0x00400140
+[decomp]> override flow r0x4001b0 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a0 callreturn
+[decomp]> override flow r0x4001b4 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001d8 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling zero_init
@@ -38,26 +56,33 @@ Clearing old decompilation
 Decompiling zero_init
 Decompilation complete
 [decomp]> print C
-
-/* WARNING: Control flow encountered bad instruction data */
 
 void zero_init(void)
 
 {
-  xunknown1 in_w12;
-  xunknown1 *unaff_x26;
+  xunknown8 xStack_30;
+  xunknown8 xStack_28;
+  xunknown8 xStack_20;
+  xunknown8 xStack_18;
+  xunknown8 xStack_10;
+  xunknown8 xStack_8;
   
-  LOAcquire();
-  *unaff_x26 = in_w12;
-  LORelease();
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  xStack_18 = 0;
+  xStack_30 = 0;
+  xStack_28 = 0;
+  xStack_20 = 7;
+  xStack_10 = 0;
+  xStack_8 = 0;
+  ext_p(&xStack_30);
+  return;
 }
 [decomp]> load function copy16
-Function copy16: 0x00401050
-[decomp]> override flow r0x401086 callreturn
+Function copy16: 0x0040016c
+[decomp]> override flow r0x4001b0 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010a0 callreturn
+[decomp]> override flow r0x4001b4 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001d8 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling copy16
@@ -68,11 +93,13 @@ Decompiling copy16
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void copy16(void)
+void copy16(xunknown8 *param_1,xunknown8 *param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  xunknown8 xVar1;
+  
+  xVar1 = param_2[1];
+  *param_1 = *param_2;
+  param_1[1] = xVar1;
+  return;
 }

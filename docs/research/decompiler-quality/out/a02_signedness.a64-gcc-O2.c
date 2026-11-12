@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/a02_signedness.a64-gcc-O2.xml
 
 [decomp]> load function half
-Function half: 0x00401000
-[decomp]> override flow r0x401082 callreturn
+Function half: 0x00400120
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x40109c callreturn
+[decomp]> override flow r0x4001c8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001ec callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling half
@@ -16,19 +18,18 @@ Decompiling half
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void half(void)
+int4 half(int4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 / 2;
 }
 [decomp]> load function avg
-Function avg: 0x00401010
-[decomp]> override flow r0x401082 callreturn
+Function avg: 0x0040012c
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x40109c callreturn
+[decomp]> override flow r0x4001c8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001ec callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling avg
@@ -39,19 +40,18 @@ Decompiling avg
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void avg(void)
+int4 avg(int4 param_1,int4 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return (param_1 + param_2) / 2;
 }
 [decomp]> load function is_upper
-Function is_upper: 0x00401020
-[decomp]> override flow r0x401082 callreturn
+Function is_upper: 0x00400140
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x40109c callreturn
+[decomp]> override flow r0x4001c8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001ec callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling is_upper
@@ -62,19 +62,18 @@ Decompiling is_upper
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void is_upper(void)
+bool is_upper(char param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return (uint1)(param_1 + 0xbfU) < 0x1a;
 }
 [decomp]> load function count_neg
-Function count_neg: 0x00401030
-[decomp]> override flow r0x401082 callreturn
+Function count_neg: 0x00400160
+[decomp]> override flow r0x4001c4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x40109c callreturn
+[decomp]> override flow r0x4001c8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001ec callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling count_neg
@@ -85,11 +84,22 @@ Decompiling count_neg
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void count_neg(void)
+int4 count_neg(char *param_1,uint4 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  int4 iVar1;
+  char *pcVar3;
+  char *pcVar2;
+  
+  if (param_2 == 0) {
+    return 0;
+  }
+  iVar1 = 0;
+  pcVar3 = param_1;
+  do {
+    pcVar2 = pcVar3 + 1;
+    iVar1 = iVar1 - ((int4)*pcVar3 >> 0x1f);
+    pcVar3 = pcVar2;
+  } while (pcVar2 != param_1 + param_2);
+  return iVar1;
 }

@@ -22,32 +22,37 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function fmin2
-override flow r0x4010a8 callreturn
-override flow r0x4010c2 callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function fabs2
-override flow r0x4010a8 callreturn
-override flow r0x4010c2 callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function to_int
-override flow r0x4010a8 callreturn
-override flow r0x4010c2 callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function lerp
-override flow r0x4010a8 callreturn
-override flow r0x4010c2 callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function below
-override flow r0x4010a8 callreturn
-override flow r0x4010c2 callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C

@@ -22,26 +22,30 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function fill
-override flow r0x401122 callreturn
-override flow r0x40113c callreturn
+override flow r0x40023c callreturn
+override flow r0x400240 callreturn
+override flow r0x400264 callreturn
 decompile
 decompile
 print C
 load function find_first
-override flow r0x401122 callreturn
-override flow r0x40113c callreturn
+override flow r0x40023c callreturn
+override flow r0x400240 callreturn
+override flow r0x400264 callreturn
 decompile
 decompile
 print C
 load function count_pairs
-override flow r0x401122 callreturn
-override flow r0x40113c callreturn
+override flow r0x40023c callreturn
+override flow r0x400240 callreturn
+override flow r0x400264 callreturn
 decompile
 decompile
 print C
 load function my_strlen
-override flow r0x401122 callreturn
-override flow r0x40113c callreturn
+override flow r0x40023c callreturn
+override flow r0x400240 callreturn
+override flow r0x400264 callreturn
 decompile
 decompile
 print C

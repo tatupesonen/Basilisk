@@ -1,6 +1,6 @@
 // Switch statements in the shapes compilers lower them to: jump table,
 // sparse compare tree, bit test, lookup table.
-//! targets: x64-clang-O2 a64-gcc-O2
+//! targets: x64-clang-O2 a64-gcc-O2 x64-gcc-O2
 //! funcs: dense sparse bittest lookup
 #include "libc.h"
 int dense(int x) {

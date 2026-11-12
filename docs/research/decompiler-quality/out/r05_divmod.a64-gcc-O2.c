@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/r05_divmod.a64-gcc-O2.xml
 
 [decomp]> load function udiv7
-Function udiv7: 0x00401000
-[decomp]> override flow r0x401154 callreturn
+Function udiv7: 0x00400120
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling udiv7
@@ -16,19 +18,18 @@ Decompiling udiv7
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void udiv7(void)
+uint8 udiv7(uint4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return (uint8)param_1 / 7;
 }
 [decomp]> load function sdiv7
-Function sdiv7: 0x00401020
-[decomp]> override flow r0x401154 callreturn
+Function sdiv7: 0x00400140
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling sdiv7
@@ -39,26 +40,18 @@ Decompiling sdiv7
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void sdiv7(void)
+int4 sdiv7(int4 param_1)
 
 {
-  xunknown1 in_z3 [32];
-  xunknown1 in_z19 [32];
-  xunknown4 in_p0;
-  xunknown4 in_p9;
-  
-  LOAcquire();
-  SVE_cmphs(in_p9,in_p0,in_z3,in_z19);
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 / 7;
 }
 [decomp]> load function umod10
-Function umod10: 0x00401040
-[decomp]> override flow r0x401154 callreturn
+Function umod10: 0x00400160
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling umod10
@@ -69,19 +62,18 @@ Decompiling umod10
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void umod10(void)
+uint4 umod10(uint4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 % 10;
 }
 [decomp]> load function sdiv64
-Function sdiv64: 0x00401060
-[decomp]> override flow r0x401154 callreturn
+Function sdiv64: 0x00400180
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling sdiv64
@@ -92,19 +84,18 @@ Decompiling sdiv64
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void sdiv64(void)
+int8 sdiv64(int8 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 / 1000;
 }
 [decomp]> load function divisible3
-Function divisible3: 0x00401080
-[decomp]> override flow r0x401154 callreturn
+Function divisible3: 0x004001a0
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling divisible3
@@ -115,19 +106,18 @@ Decompiling divisible3
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void divisible3(void)
+bool divisible3(int4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return (uint4)(param_1 * -0x55555555) < 0x55555556;
 }
 [decomp]> load function digits
-Function digits: 0x004010a0
-[decomp]> override flow r0x401154 callreturn
+Function digits: 0x004001c0
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling digits
@@ -138,19 +128,27 @@ Decompiling digits
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void digits(void)
+int4 digits(uint4 param_1)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  bool bVar1;
+  int4 iVar2;
+  
+  iVar2 = 0;
+  do {
+    iVar2 = iVar2 + 1;
+    bVar1 = 9 < param_1;
+    param_1 = param_1 / 10;
+  } while (bVar1);
+  return iVar2;
 }
 [decomp]> load function to_hms
-Function to_hms: 0x004010e0
-[decomp]> override flow r0x401154 callreturn
+Function to_hms: 0x004001ec
+[decomp]> override flow r0x40026c callreturn
 Successfully added flow override
-[decomp]> override flow r0x40116e callreturn
+[decomp]> override flow r0x400270 callreturn
+Successfully added flow override
+[decomp]> override flow r0x400294 callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling to_hms
@@ -161,11 +159,11 @@ Decompiling to_hms
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void to_hms(void)
+void to_hms(uint4 param_1,uint4 *param_2,uint4 *param_3,uint4 *param_4)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  *param_2 = param_1 / 0xe10;
+  *param_3 = (param_1 % 0xe10) / 0x3c;
+  *param_4 = param_1 % 0x3c;
+  return;
 }

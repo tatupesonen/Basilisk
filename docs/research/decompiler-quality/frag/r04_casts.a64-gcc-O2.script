@@ -22,26 +22,30 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function widen
-override flow r0x401082 callreturn
-override flow r0x40109c callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function index8
-override flow r0x401082 callreturn
-override flow r0x40109c callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function mulhi
-override flow r0x401082 callreturn
-override flow r0x40109c callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C
 load function pack
-override flow r0x401082 callreturn
-override flow r0x40109c callreturn
+override flow r0x4001b4 callreturn
+override flow r0x4001b8 callreturn
+override flow r0x4001dc callreturn
 decompile
 decompile
 print C

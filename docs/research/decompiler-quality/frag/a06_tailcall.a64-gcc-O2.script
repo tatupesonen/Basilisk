@@ -22,23 +22,26 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function direct_tail
-override flow r0x401003 callreturn
-override flow r0x401060 callreturn
-override flow r0x40107a callreturn
+override flow r0x400124 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001a0 callreturn
+override flow r0x4001c4 callreturn
 decompile
 decompile
 print C
 load function indirect_tail
-override flow r0x401003 callreturn
-override flow r0x401060 callreturn
-override flow r0x40107a callreturn
+override flow r0x400124 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001a0 callreturn
+override flow r0x4001c4 callreturn
 decompile
 decompile
 print C
 load function dispatch
-override flow r0x401003 callreturn
-override flow r0x401060 callreturn
-override flow r0x40107a callreturn
+override flow r0x400124 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001a0 callreturn
+override flow r0x4001c4 callreturn
 decompile
 decompile
 print C

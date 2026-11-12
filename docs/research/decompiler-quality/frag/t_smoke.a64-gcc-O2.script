@@ -21,10 +21,11 @@ parse line extern void __stack_chk_fail(void);
 option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
-map addr r0x403020 xunknown1 table[64]
+map addr r0x41fff0 xunknown1 table[64]
 load function sum
-override flow r0x401082 callreturn
-override flow r0x40109c callreturn
+override flow r0x4001e0 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x400208 callreturn
 decompile
 decompile
 print C

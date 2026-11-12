@@ -2,10 +2,12 @@
 // Ghidra reference decomp output; inputs: frag/a13_float.a64-gcc-O2.xml
 
 [decomp]> load function fmin2
-Function fmin2: 0x00401000
-[decomp]> override flow r0x4010a8 callreturn
+Function fmin2: 0x00400120
+[decomp]> override flow r0x4001b4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c2 callreturn
+[decomp]> override flow r0x4001b8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001dc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling fmin2
@@ -16,19 +18,25 @@ Decompiling fmin2
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void fmin2(void)
+xunknown1  [16] fmin2(float8 param_1,float8 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  xunknown1 axVar1 [16];
+  
+  if (param_2 <= param_1) {
+    param_1 = param_2;
+  }
+  axVar1._8_8_ = 0;
+  axVar1._0_8_ = param_1;
+  return axVar1;
 }
 [decomp]> load function fabs2
-Function fabs2: 0x00401010
-[decomp]> override flow r0x4010a8 callreturn
+Function fabs2: 0x0040012c
+[decomp]> override flow r0x4001b4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c2 callreturn
+[decomp]> override flow r0x4001b8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001dc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling fabs2
@@ -39,30 +47,25 @@ Decompiling fabs2
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void fabs2(void)
+xunknown1  [16] fabs2(xunknown1 param_1 [16])
 
 {
-  bool bVar1;
-  xunknown8 in_x3;
-  xunknown8 *unaff_x27;
+  xunknown1 axVar1 [16];
   
-  Hint_Prefetch(0x451200,0,3,0);
-  bVar1 = (bool)ExclusiveMonitorPass(unaff_x27,0x10);
-  if (bVar1) {
-    *unaff_x27 = 0x787b000000000000;
-    unaff_x27[1] = in_x3;
-    ExclusiveMonitorsStatus();
+  if (0.0 <= param_1._0_8_) {
+    return param_1;
   }
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  axVar1._0_8_ = -param_1._0_8_;
+  axVar1._8_8_ = 0;
+  return axVar1;
 }
 [decomp]> load function to_int
-Function to_int: 0x00401040
-[decomp]> override flow r0x4010a8 callreturn
+Function to_int: 0x00400140
+[decomp]> override flow r0x4001b4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c2 callreturn
+[decomp]> override flow r0x4001b8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001dc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling to_int
@@ -73,23 +76,18 @@ Decompiling to_int
 Decompilation complete
 [decomp]> print C
 
-void to_int(void)
+int4 to_int(float4 param_1)
 
 {
-  code *pcVar1;
-  xunknown1 in_z19 [32];
-  xunknown4 in_p9;
-  
-  SVE_cpy(in_z19,in_p9,0x7f,0);
-                    /* WARNING: Does not return */
-  pcVar1 = (code *)UndefinedInstructionException(0xfc8,0x401044);
-  (*pcVar1)();
+  return (int4)(param_1 * 100.0 + 0.5);
 }
 [decomp]> load function lerp
-Function lerp: 0x00401060
-[decomp]> override flow r0x4010a8 callreturn
+Function lerp: 0x00400160
+[decomp]> override flow r0x4001b4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c2 callreturn
+[decomp]> override flow r0x4001b8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001dc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling lerp
@@ -100,19 +98,18 @@ Decompiling lerp
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void lerp(void)
+float4 lerp(float4 param_1,float4 param_2,float4 param_3)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 + param_3 * (param_2 - param_1);
 }
 [decomp]> load function below
-Function below: 0x00401070
-[decomp]> override flow r0x4010a8 callreturn
+Function below: 0x0040016c
+[decomp]> override flow r0x4001b4 callreturn
 Successfully added flow override
-[decomp]> override flow r0x4010c2 callreturn
+[decomp]> override flow r0x4001b8 callreturn
+Successfully added flow override
+[decomp]> override flow r0x4001dc callreturn
 Successfully added flow override
 [decomp]> decompile
 Decompiling below
@@ -123,11 +120,8 @@ Decompiling below
 Decompilation complete
 [decomp]> print C
 
-/* WARNING: Control flow encountered bad instruction data */
-
-void below(void)
+bool below(float8 param_1,float8 param_2)
 
 {
-                    /* WARNING: Bad instruction - Truncating control flow here */
-  halt_baddata();
+  return param_1 < param_2;
 }

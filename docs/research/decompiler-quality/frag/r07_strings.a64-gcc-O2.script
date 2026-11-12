@@ -22,23 +22,26 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function log_it
-override flow r0x401020 callreturn
-override flow r0x4010aa callreturn
-override flow r0x4010c4 callreturn
+override flow r0x40014c callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e0 callreturn
+override flow r0x400204 callreturn
 decompile
 decompile
 print C
 load function stack_string
-override flow r0x401020 callreturn
-override flow r0x4010aa callreturn
-override flow r0x4010c4 callreturn
+override flow r0x40014c callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e0 callreturn
+override flow r0x400204 callreturn
 decompile
 decompile
 print C
 load function is_yes
-override flow r0x401020 callreturn
-override flow r0x4010aa callreturn
-override flow r0x4010c4 callreturn
+override flow r0x40014c callreturn
+override flow r0x4001dc callreturn
+override flow r0x4001e0 callreturn
+override flow r0x400204 callreturn
 decompile
 decompile
 print C

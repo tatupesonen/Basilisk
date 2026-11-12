@@ -1,6 +1,6 @@
 // A switch that is compiled to a jump table, inside a loop (a small
 // interpreter): the shape Ghidra's switch recovery is built for.
-//! targets: x64-clang-O2 a64-gcc-O2
+//! targets: x64-clang-O2 a64-gcc-O2 x64-gcc-O2
 //! funcs: interp
 #include "libc.h"
 long interp(const unsigned char *code, long acc) {

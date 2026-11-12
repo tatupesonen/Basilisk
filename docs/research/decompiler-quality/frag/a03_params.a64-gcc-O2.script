@@ -22,26 +22,30 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function third
-override flow r0x40109c callreturn
-override flow r0x4010b6 callreturn
+override flow r0x400198 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001c0 callreturn
 decompile
 decompile
 print C
 load function mixed
-override flow r0x40109c callreturn
-override flow r0x4010b6 callreturn
+override flow r0x400198 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001c0 callreturn
 decompile
 decompile
 print C
 load function area
-override flow r0x40109c callreturn
-override flow r0x4010b6 callreturn
+override flow r0x400198 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001c0 callreturn
 decompile
 decompile
 print C
 load function mkpair
-override flow r0x40109c callreturn
-override flow r0x4010b6 callreturn
+override flow r0x400198 callreturn
+override flow r0x40019c callreturn
+override flow r0x4001c0 callreturn
 decompile
 decompile
 print C

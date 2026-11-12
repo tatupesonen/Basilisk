@@ -22,20 +22,23 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function inc
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C
 load function find_idx
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C
 load function after_call
-override flow r0x40108a callreturn
-override flow r0x4010a4 callreturn
+override flow r0x4001e4 callreturn
+override flow r0x4001e8 callreturn
+override flow r0x40020c callreturn
 decompile
 decompile
 print C

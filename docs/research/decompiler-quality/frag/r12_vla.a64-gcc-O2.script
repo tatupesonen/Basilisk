@@ -22,8 +22,9 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function reverse_print
-override flow r0x401096 callreturn
-override flow r0x4010b0 callreturn
+override flow r0x4001c0 callreturn
+override flow r0x4001c4 callreturn
+override flow r0x4001e8 callreturn
 decompile
 decompile
 print C

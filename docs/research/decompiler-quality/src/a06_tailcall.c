@@ -1,5 +1,5 @@
 // Tail calls: direct, and through a function pointer.
-//! targets: x64-clang-O2 a64-gcc-O2
+//! targets: x64-clang-O2 a64-gcc-O2 x64-gcc-O2
 //! funcs: direct_tail indirect_tail dispatch
 #include "libc.h"
 typedef int (*handler)(int);

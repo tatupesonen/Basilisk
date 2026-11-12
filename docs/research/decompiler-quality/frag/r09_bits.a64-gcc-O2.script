@@ -22,38 +22,44 @@ option noreturn exit
 option noreturn abort
 option noreturn __stack_chk_fail
 load function bswap
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C
 load function rotl
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C
 load function popcnt
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C
 load function clz
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C
 load function align_up
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C
 load function is_pow2
-override flow r0x4010a0 callreturn
-override flow r0x4010ba callreturn
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
 decompile
 decompile
 print C

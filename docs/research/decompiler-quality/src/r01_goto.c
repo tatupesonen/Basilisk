@@ -1,6 +1,6 @@
 // Structured source (no goto) that compilers turn into shapes Ghidra prints
 // with goto: shared tails, short-circuit conditions, error paths.
-//! targets: x64-clang-O2 a64-gcc-O2
+//! targets: x64-clang-O2 a64-gcc-O2 x64-gcc-O2
 //! funcs: classify parse_kv cleanup
 //! pre: parse line extern int4 ext_i(int4 x);
 #include "libc.h"
