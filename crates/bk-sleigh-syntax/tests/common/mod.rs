@@ -49,22 +49,14 @@ pub(crate) fn slaspec_files(ghidra: &Path) -> Vec<PathBuf> {
     specs
 }
 
-/// Definitions Ghidra's build passes with `-dMODULE`: each processor
-/// module's name mapped to its directory.
-pub(crate) fn module_defines(ghidra: &Path) -> bk_sleigh_syntax::Defines {
-    let mut defines = bk_sleigh_syntax::Defines::new();
-    for entry in std::fs::read_dir(ghidra.join("Ghidra/Processors"))
-        .unwrap()
-        .flatten()
-    {
-        if entry.path().is_dir() {
-            defines.set(
-                entry.file_name().to_string_lossy(),
-                entry.path().to_string_lossy(),
-            );
-        }
-    }
-    defines
+/// The preprocessor definitions Ghidra's build compiles the shipped
+/// specifications with: none. `gradle/processorProject.gradle` passes each
+/// module's `sleighCompileOptions`, and no shipped module sets a `-D` or
+/// `-d` option (they set only `-l` and `-t`). Passing module definitions
+/// anyway would be wrong: the module names `HCS08` and `HCS12` are also
+/// conditional symbols inside the HCS08 specifications.
+pub(crate) fn build_defines() -> bk_sleigh_syntax::Defines {
+    bk_sleigh_syntax::Defines::new()
 }
 
 /// Parses `source` (a whole specification without its endian line) and

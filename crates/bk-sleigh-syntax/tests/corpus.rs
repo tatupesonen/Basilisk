@@ -123,7 +123,7 @@ fn every_shipped_slaspec_parses_cleanly() {
     };
     let specs = common::slaspec_files(&ghidra);
     assert_eq!(specs.len(), 150, "Ghidra ships 150 .slaspec files");
-    let defines = common::module_defines(&ghidra);
+    let defines = common::build_defines();
 
     let mut totals = Totals::default();
     let mut unique_files = BTreeSet::new();
