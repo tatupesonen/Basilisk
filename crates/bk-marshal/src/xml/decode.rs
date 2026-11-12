@@ -142,7 +142,7 @@ impl<'a> XmlDecoder<'a> {
         }
         element
             .attribute(attribute.name())
-            .ok_or(DecodeError::AttributeMissing {
+            .ok_or_else(|| DecodeError::AttributeMissing {
                 name: attribute.name(),
             })
     }
@@ -184,7 +184,7 @@ impl<'a> Decoder<'a> for XmlDecoder<'a> {
     }
 
     fn open_element_expecting(&mut self, expected: ElementId) -> Result<ElemCode, DecodeError> {
-        let element = self.take_next().ok_or(DecodeError::NoElement {
+        let element = self.take_next().ok_or_else(|| DecodeError::NoElement {
             expected: expected.name(),
         })?;
         if element.name() != expected.name() {

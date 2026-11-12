@@ -147,7 +147,7 @@ pub enum DecodeError {
     /// A packed string is not valid UTF-8.
     #[error("String attribute is not valid UTF-8 (at byte {offset})")]
     InvalidUtf8 {
-        /// Offset of the first byte of the string.
+        /// Offset of the first byte that is not valid UTF-8.
         offset: usize,
     },
     /// The XML text could not be parsed.

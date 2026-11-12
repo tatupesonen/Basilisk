@@ -6,7 +6,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -91,7 +94,7 @@ struct Node {
     /// Indexed strings (`piece1`, `piece2`, …), written after the attributes.
     pieces: Vec<String>,
     content: Option<String>,
-    children: Vec<Node>,
+    children: Vec<Self>,
 }
 
 /// Any text the packed form can hold: no NUL.

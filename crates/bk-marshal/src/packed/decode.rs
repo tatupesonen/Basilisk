@@ -122,9 +122,9 @@ impl<'a> PackedDecoder<'a> {
         let eof = DecodeError::UnexpectedEof {
             offset: self.bytes.len(),
         };
-        let count = usize::try_from(count).map_err(|_| eof.clone())?;
-        let target = pos
-            .checked_add(count)
+        let target = usize::try_from(count)
+            .ok()
+            .and_then(|count| pos.checked_add(count))
             .filter(|&target| target <= self.bytes.len())
             .ok_or(eof)?;
         *pos = target;
@@ -335,7 +335,9 @@ impl<'a> PackedDecoder<'a> {
         self.advance(&mut pos, length)?;
         self.cur = pos;
         let bytes = self.bytes.get(begin..pos).unwrap_or_default();
-        std::str::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8 { offset: begin })
+        std::str::from_utf8(bytes).map_err(|err| DecodeError::InvalidUtf8 {
+            offset: begin.saturating_add(err.valid_up_to()),
+        })
     }
 
     fn space_value(&mut self) -> Result<SpaceId, DecodeError> {

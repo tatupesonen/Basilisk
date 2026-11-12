@@ -121,8 +121,8 @@ impl<'a> ElementRef<'a> {
             .unwrap_or_default()
     }
 
-    fn at(&self, index: u32) -> Option<ElementRef<'a>> {
-        (index != NONE).then_some(ElementRef {
+    fn at(&self, index: u32) -> Option<Self> {
+        (index != NONE).then_some(Self {
             doc: self.doc,
             index,
         })
@@ -169,22 +169,22 @@ impl<'a> ElementRef<'a> {
     }
 
     /// The child elements, in document order.
-    pub fn children(&self) -> impl Iterator<Item = ElementRef<'a>> + use<'a> {
-        std::iter::successors(self.first_child(), ElementRef::next_sibling)
+    pub fn children(&self) -> impl Iterator<Item = Self> + use<'a> {
+        std::iter::successors(self.first_child(), Self::next_sibling)
     }
 
     /// The first child element.
-    pub fn first_child(&self) -> Option<ElementRef<'a>> {
+    pub fn first_child(&self) -> Option<Self> {
         self.at(self.data()?.first_child)
     }
 
     /// The next element with the same parent.
-    pub fn next_sibling(&self) -> Option<ElementRef<'a>> {
+    pub fn next_sibling(&self) -> Option<Self> {
         self.at(self.data()?.next_sibling)
     }
 
     /// The parent element; `None` for the root.
-    pub fn parent(&self) -> Option<ElementRef<'a>> {
+    pub fn parent(&self) -> Option<Self> {
         self.at(self.data()?.parent)
     }
 
