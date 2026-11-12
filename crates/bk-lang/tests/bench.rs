@@ -51,7 +51,7 @@ fn bench_registry() {
 
     let (fastest, median) = measure(30, scan);
     eprintln!(
-        "registry scan (114 modules, 52 .ldefs, 202 languages): fastest {}, median {}",
+        "registry scan (whole Ghidra tree: 52 .ldefs, 202 languages): fastest {}, median {}",
         ms(fastest),
         ms(median)
     );
