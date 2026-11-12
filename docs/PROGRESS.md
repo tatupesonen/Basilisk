@@ -6,32 +6,40 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Wave 1 (milestone M0) is in progress.** Six implementation agents and one design agent
-(Fable 5.2, high effort), one per track, each in its own worktree under
+(Fable 5.2, started at high effort; agents started from now on run at medium), one per track, each in its own worktree under
 `../basilisk-wt/<track>` on branch `<track>`:
 
 | Track / branch | Crates | Spec |
 |---|---|---|
-| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` |
-| `pcode` | `bk-pcode` | `features/pcode.md` |
+| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
+| `pcode` | `bk-pcode` | `features/pcode.md` — checkpointed by Fable (library written, 247 tests pass by its report; test porting partial, no property tests or benchmarks); continued by Opus 5.5 |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` |
-| `lang` | `bk-lang` | `features/lang.md` |
+| `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
-| `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` |
-| `logo` | `assets/brand/` (no crates) | brief only: a minimal basilisk logo |
-| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019; started at the owner's request, ahead of M10) |
+| `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
+| `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
+| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
 
 In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
 `BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`.
+
+**Handover to Opus 5.5** (owner, 2026-11-12): each wave 1 agent was told to
+stop at its first checkpoint — crates building, current tests passing,
+everything committed, `docs/agents/<track>.md` written with done/remaining.
+When a track checkpoints: read its report, start an Opus 5.5 agent (medium
+effort) in the same worktree to finish the spec, beginning with
+`git merge master` (stricter lints, ADR-018 licence, ADR-020 unsafe rule).
 
 Next steps for the coordinator:
 1. As each agent reports, review its branch against its spec
    (`git -C ../basilisk-wt/<track> log --oneline master..HEAD`, read the
    diff and `docs/agents/<track>.md`), run the gate on the merge, merge to
    `master`, remove the worktree.
-2. After `core-marshal` and `pcode` are both merged, add the opcode
-   attribute helpers to `bk-marshal` (`read_opcode`/`write_opcode`, cut out
-   of wave 1 so the two tracks stay independent).
+2. After `core-marshal` and `lang` are both merged, move `bk-lang`'s XML
+   reading from `roxmltree` onto `bk-marshal`'s document (ADR-011). The
+   opcode attribute needs no glue: `bk-marshal` has generic
+   `read_enum`/`write_enum`.
 3. Tick M0 in `PLAN.md`, update `PARITY.md`, log the wave below.
 4. Plan wave 2 (`PLAN.md`, "Working in waves"): write the inventory
    sections and feature specs for the SLEIGH runtime, the SLEIGH compiler's
@@ -43,6 +51,14 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — logo merged
+* `assets/brand/`: mark (dark, light, mono), logos, app icon and a
+  simplified small-size icon, PNGs at 16–1,024 px, palette and usage in its
+  README. Ember `#FF6A2B` on Soot `#150F0D`; Ember deep `#E8551A` on light
+  backgrounds. Known weak spot: the 16 px icon is soft. Ember is a
+  red-orange (hue 18°), the nearest of the variants to Ghidra's red; the
+  owner chose it knowing that.
 
 ### 2026-11-12 — project set up
 * Surveyed Ghidra at commit `42db038f3c` (`inventory/00-overview.md`).

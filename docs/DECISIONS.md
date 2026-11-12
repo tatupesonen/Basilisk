@@ -167,16 +167,37 @@ portable against it), robustness on hostile input (ADR-009), performance
 crate passes; otherwise write it and keep the crate as a dev-only
 differential oracle. Record each evaluation here.
 
+Among crates that pass, **prefer the industry-standard one** (owner rule,
+2026-11-12): the widely used crate with a large download count and many
+dependents on crates.io, over a newer or niche alternative, even where the
+niche one is somewhat nicer. Choosing a little-used crate needs a stated
+reason (the standard one fails a requirement above), and the evaluation
+records the download figures that were compared.
+
 Evaluations so far:
 - **Compression: `flate2` with the `zlib-rs` backend → adopt.** Pure Rust.
   `.sla` files are zlib streams; decompressed content is compared, never
   compressed bytes.
-- **XML reading: `roxmltree` → adopt provisionally** for `.ldefs`,
-  `.pspec`, `.cspec`, `.opinion` and decompiler data tests. The foundation
-  track verifies that every XML file under `../ghidra/Ghidra/Processors`
-  and `datatests/` parses, and falls back to porting Ghidra's `xml.cc` if
-  any does not.
-- **Object-file parsing: `object`, `goblin` → oracle only.** Ghidra's
+- **XML reading: `quick-xml` → adopt; `roxmltree` → oracle only**
+  (2026-11-12, from the `core-marshal` track's corpus check, superseding
+  the provisional choice of `roxmltree`). `roxmltree` parses all 501 XML
+  files under Ghidra's processor and data-test trees, but it merges text,
+  entity references and CDATA into one node, so Ghidra's rule of dropping
+  white-space-only content pieces (`xml.y`) cannot be reproduced: three
+  corpus elements decode differently (one `<com>` in
+  `datatests/injectoverride.xml`, two `<body>` in `hexagon.cspec`).
+  `quick-xml`'s events map one-to-one onto `xml.y`'s rules, and it is the
+  more widely used crate (542 million downloads and 2,935 dependents
+  against 104 million and 994). `bk-marshal` builds its own small DOM on
+  `quick-xml` events; `roxmltree` stays as a dev-only oracle in the corpus
+  test. Crates that read Ghidra XML should go through `bk-marshal`'s
+  document rather than a second XML crate; `bk-lang`, written in the same
+  wave on `roxmltree`, moves over after both merge.
+- **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
+  *Being re-examined by the `bin-elf` track after the owner's rule of
+  2026-11-12 (use existing crates unless there is a good reason): the
+  reasoning below is a hypothesis until that track reports what the
+  crates actually expose and how they behave on damaged files.* Ghidra's
   loaders expose format details (every header field, relocation and
   dynamic-table entry, vendor extensions) and tolerate malformed files in
   specific ways that its tests assert. The format crates are ports of
@@ -424,3 +445,38 @@ to Rust (ADR-018), not built from C.
 
 Schedule: milestone M10 with the rest of the comparison tooling, or
 earlier if a differential test wants GNU's disassembly as a second oracle.
+
+## ADR-020 — `unsafe` only when absolutely necessary, and then checked with Miri
+(Owner rule, 2026-11-12: "do not use unsafe unless absolutely necessary,
+and check that all code with miri that does need unsafe." Tightens the
+`unsafe` clause of ADR-005.)
+
+* **Default: none.** `unsafe_code = "forbid"` is a workspace lint and
+  every crate inherits it. Performance is not by itself a reason: a safe
+  design is tried and measured first, and `unsafe` is considered only when
+  a benchmark shows a safe version cannot meet a budget in `PERF.md`, or
+  when the thing cannot be expressed safely at all (calling C, a
+  memory-mapped file). Prefer a well-used crate that encapsulates the
+  unsafe code (ADR-011) over writing our own.
+* **Opting out is explicit.** A crate that needs `unsafe` is listed in
+  `unsafe-crates.txt` with the reason; `scripts/check-unsafe.sh` (in the
+  gate) rejects `unsafe` anywhere else. In such a crate the unsafe code
+  sits in one small module behind a safe API; every `unsafe` block has a
+  `// SAFETY:` comment stating why it is sound
+  (`clippy::undocumented_unsafe_blocks`), holds one unsafe operation
+  (`multiple_unsafe_ops_per_block`), and `unsafe_op_in_unsafe_fn` is
+  denied.
+* **Miri.** Every crate listed with `miri` has tests that exercise each
+  unsafe path, and `scripts/miri.sh` runs them under Miri (nightly, with
+  strict provenance and symbolic alignment checking). It must pass before
+  the crate merges and whenever its unsafe code changes; CI runs it.
+* **What Miri cannot check.** Miri interprets Rust; it cannot execute
+  foreign code. A crate whose `unsafe` is calls into C — today only
+  `bk-binutils-sys` (ADR-019), later the PyO3 boundary in `bk-plugin`
+  (ADR-014) — is listed `no-miri:<reason>` and is instead checked with
+  AddressSanitizer and UndefinedBehaviorSanitizer builds of its tests and
+  fuzz targets, with the Rust-side wrappers kept thin enough to review by
+  eye. Any pure-Rust unsafe in such a crate is split into a module that
+  Miri does run.
+
+Currently no crate on `master` contains `unsafe`.
