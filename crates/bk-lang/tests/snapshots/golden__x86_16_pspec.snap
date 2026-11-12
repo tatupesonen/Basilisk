@@ -1,0 +1,30 @@
+---
+source: crates/bk-lang/tests/golden.rs
+expression: snapshot
+---
+[sections]
+Properties
+ProgramCounter
+SegmentedAddress
+SegmentOp
+ContextData
+[properties]
+Property { key: "useOperandReferenceAnalyzerSwitchTables", value: "true" }
+Property { key: "useropLibs", value: "x86" }
+[programcounter]
+"EIP"
+[data_space]
+[inferptrbounds]
+[segmented_address]
+SegmentedAddress { space: "ram", segment_type: Some("protected") }
+[segmentop]
+SegmentOp { space: "ram", userop: Some("segment"), far_pointer: Some(true), pcode: PcodeInject { param_shift: 0, dynamic: false, incidental_copy: false, inputs: [InjectParameter { name: "base", size: 2 }, InjectParameter { name: "inner", size: 2 }], outputs: [InjectParameter { name: "res", size: 4 }], body: Some("\n        res = (zext(base) << 16) + zext(inner);\n      ") }, const_resolve: Some(Register("DS")) }
+[context_data]
+ContextBlock { kind: Context, range: AddressRange { space: "ram", first: None, last: None }, values: [ContextValue { name: "addrsize", val: "0", description: None }, ContextValue { name: "opsize", val: "0", description: None }, ContextValue { name: "protectedMode", val: "1", description: None }] }
+ContextBlock { kind: Tracked, range: AddressRange { space: "ram", first: None, last: None }, values: [ContextValue { name: "DF", val: "0", description: None }] }
+[volatile]
+[incidentalcopy]
+[jumpassist]
+[register_data]
+[default_symbols]
+[default_memory_blocks]

@@ -15,8 +15,16 @@ cargo-fuzz = true
 
 [dependencies]
 bk-core = { path = "../crates/bk-core" }
+bk-lang = { path = "../crates/bk-lang" }
 bk-marshal = { path = "../crates/bk-marshal" }
 libfuzzer-sys = "0.4.13"
+
+[[bin]]
+name = "bk_lang_readers"
+path = "fuzz_targets/bk_lang_readers.rs"
+test = false
+doc = false
+bench = false
 
 [[bin]]
 name = "bk_marshal_packed_decode"

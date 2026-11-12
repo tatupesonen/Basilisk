@@ -1,0 +1,27 @@
+---
+source: crates/bk-lang/tests/golden.rs
+expression: snapshot
+---
+[sections]
+ProgramCounter
+DefaultSymbols
+DefaultMemoryBlocks
+[properties]
+[programcounter]
+"PC"
+[data_space]
+[inferptrbounds]
+[segmented_address]
+[segmentop]
+[context_data]
+[volatile]
+[incidentalcopy]
+[jumpassist]
+[register_data]
+[default_symbols]
+DefaultSymbol { name: "NMI", address: At(AddressSpec("FFFA")), symbol_type: Some(CodePtr), entry: true, size: None, volatile: None, description: None }
+DefaultSymbol { name: "RES", address: At(AddressSpec("FFFC")), symbol_type: Some(CodePtr), entry: true, size: None, volatile: None, description: None }
+DefaultSymbol { name: "IRQ", address: At(AddressSpec("FFFE")), symbol_type: Some(CodePtr), entry: true, size: None, volatile: None, description: None }
+[default_memory_blocks]
+MemoryBlock { name: "ZERO_PAGE", start_address: AddressSpec("0x0000"), length: 256, kind: Default { initialized: false }, mode: "rw", overlay: false }
+MemoryBlock { name: "STACK", start_address: AddressSpec("0x0100"), length: 256, kind: Default { initialized: false }, mode: "rw", overlay: false }

@@ -74,7 +74,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.app.util.opinion.IntelHexRecordReaderTest` (unit, 1 tests)
 - [ ] `ghidra.app.util.opinion.IntelHexRecordTest` (unit, 2 tests)
 - [ ] `ghidra.app.util.opinion.OrdinalFileSymbolLoadTest` (unit, 1 tests)
-- [ ] `ghidra.app.util.opinion.QueryOpinionServiceTest` (unit, 4 tests)
+- [x] `ghidra.app.util.opinion.QueryOpinionServiceTest` (unit, 4 tests) → crates/bk-lang/tests/ported.rs
 - [ ] `ghidra.app.util.template.TemplateSimplifierTest` (unit, 8 tests)
 - [ ] `ghidra.app.util.viewer.listingpanel.ProgramBigListingModelOpenDataTest` (unit, 2 tests)
 - [ ] `ghidra.app.util.viewer.listingpanel.ProgramBigListingModelTest` (unit, 4 tests)
