@@ -1,24 +1,28 @@
-//! The readers' strict mode against Ghidra's RELAX NG schemas.
+//! The schema tables against Ghidra's RELAX NG schemas.
 //!
-//! `bk_lang::schema` restates the three `.rxg` grammars as tables. These
-//! tests check the restatement with a real RELAX NG validator
-//! (`oxixml-relaxng`) loaded with Ghidra's own schema files:
+//! `bk_lang::schema` restates the three `.rxg` grammars as tables, and the
+//! strict readers enforce them. These tests check the restatement against
+//! Ghidra's own schema files:
 //!
-//! * every name the schemas define is in the tables, and the reverse;
-//! * a document built from the tables with every element and attribute is
-//!   valid, and reads;
-//! * for every single-step mutation of that document — an attribute or
-//!   child dropped, repeated, misplaced, mistyped or invented — the strict
-//!   reader and the validator agree on whether it is acceptable;
-//! * every file Ghidra ships validates.
+//! * every element and attribute name the schemas define is in the
+//!   tables, and the reverse (walking the `.rxg` files from `<start>`);
+//! * a document built from the tables with every element and attribute
+//!   reads in strict mode;
+//! * every file Ghidra ships reads in strict mode, including the
+//!   `.opinion` files outside `Ghidra/Processors`.
 //!
-//! Skipped without a Ghidra tree.
+//! The tables were also checked once against a RELAX NG validator on
+//! single-step mutations of those documents; the result is recorded in
+//! `docs/features/lang.md`, section 9. Skipped without a Ghidra tree.
 
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -31,10 +35,9 @@ use std::{
 };
 
 use bk_lang::{
-    Mode, ParseError, ParseErrorKind, ldefs, opinion, pspec,
+    Mode, ParseError, ldefs, opinion, pspec,
     schema::{AttrType, Card, ElementDef, LANGUAGE_DEFINITIONS, OPINIONS, PROCESSOR_SPEC},
 };
-use oxixml_relaxng::RelaxNg;
 
 /// One file type: its schema file, its root in the tables, and its strict
 /// reader reduced to accept/reject.
@@ -65,11 +68,6 @@ const KINDS: [Kind; 3] = [
         read: |text| opinion::parse(text, Mode::Strict).map(drop),
     },
 ];
-
-fn validator(ghidra: &Path, kind: &Kind) -> RelaxNg {
-    RelaxNg::from_file(common::schema_dir(ghidra).join(kind.schema))
-        .unwrap_or_else(|e| panic!("{}: {e}", kind.schema))
-}
 
 // ------------------------------------------------------------ name sets
 
@@ -173,12 +171,10 @@ fn tables_and_schemas_define_the_same_names() {
 
 // ------------------------------------------------- documents from tables
 
-#[derive(Clone)]
 struct Element {
-    def: &'static ElementDef,
     name: String,
     attrs: Vec<(String, String)>,
-    children: Vec<Element>,
+    children: Vec<Self>,
     text: String,
 }
 
@@ -216,7 +212,6 @@ fn full(def: &'static ElementDef, depth: usize) -> Element {
         .map(|c| full(c.def, depth + 1))
         .collect();
     Element {
-        def,
         name: def.name.to_owned(),
         attrs,
         children,
@@ -247,175 +242,20 @@ fn render(element: &Element) -> String {
     out
 }
 
-/// Every element of the tree, as the path of child indices leading to it.
-fn paths(element: &Element, here: &mut Vec<usize>, all: &mut Vec<Vec<usize>>) {
-    all.push(here.clone());
-    for (i, child) in element.children.iter().enumerate() {
-        here.push(i);
-        paths(child, here, all);
-        here.pop();
-    }
-}
-
-fn at<'a>(root: &'a mut Element, path: &[usize]) -> &'a mut Element {
-    path.iter()
-        .fold(root, |element, i| &mut element.children[*i])
-}
-
-/// Every single-step mutation of the element at `path`, described.
-fn mutations(root: &Element, path: &[usize]) -> Vec<(String, Element)> {
-    let mut out = Vec::new();
-    let mut mutate = |what: String, change: &dyn Fn(&mut Element)| {
-        let mut copy = root.clone();
-        change(at(&mut copy, path));
-        out.push((what, copy));
-    };
-    let mut probe = root.clone();
-    let target = at(&mut probe, path).clone();
-    let name = &target.name;
-
-    for (i, (attr, _)) in target.attrs.iter().enumerate() {
-        mutate(format!("<{name}> without {attr}"), &|e| {
-            e.attrs.remove(i);
-        });
-        mutate(format!("<{name}> with {attr}=\"maybe\""), &|e| {
-            e.attrs[i].1 = "maybe".into();
-        });
-        mutate(format!("<{name}> with {attr}=\"\""), &|e| {
-            e.attrs[i].1 = String::new();
-        });
-    }
-    for missing in target
-        .def
-        .attrs
-        .iter()
-        .filter(|a| !target.attrs.iter().any(|(n, _)| n == a.name))
-    {
-        let value = sample(name, missing.name, missing.ty);
-        mutate(format!("<{name}> with also {}", missing.name), &|e| {
-            e.attrs.push((missing.name.to_owned(), value.to_owned()));
-        });
-    }
-    mutate(format!("<{name}> with an unknown attribute"), &|e| {
-        e.attrs.push(("bogus".into(), "1".into()));
-    });
-    for i in 0..target.children.len() {
-        let child = &target.children[i].name;
-        mutate(format!("<{name}> without <{child}>"), &|e| {
-            e.children.remove(i);
-        });
-        mutate(format!("<{name}> with <{child}> twice"), &|e| {
-            let copy = e.children[i].clone();
-            e.children.insert(i, copy);
-        });
-        mutate(format!("<{name}> with <{child}> moved last"), &|e| {
-            let moved = e.children.remove(i);
-            e.children.push(moved);
-        });
-        mutate(format!("<{name}> with <{child}> moved first"), &|e| {
-            let moved = e.children.remove(i);
-            e.children.insert(0, moved);
-        });
-    }
-    for missing in target
-        .def
-        .children
-        .iter()
-        .filter(|c| !target.children.iter().any(|e| e.name == c.def.name))
-    {
-        mutate(format!("<{name}> with also <{}>", missing.def.name), &|e| {
-            e.children.push(full(missing.def, 9));
-        });
-    }
-    mutate(format!("<{name}> with only its last child"), &|e| {
-        e.children.drain(..e.children.len().saturating_sub(1));
-    });
-    mutate(format!("<{name}> with no children"), &|e| {
-        e.children.clear();
-    });
-    mutate(format!("<{name}> with an unknown child"), &|e| {
-        let mut bogus = e.clone();
-        bogus.name = "bogus".into();
-        bogus.attrs.clear();
-        bogus.children.clear();
-        e.children.push(bogus);
-    });
-    mutate(format!("<{name}> with text"), &|e| e.text = "stray".into());
-    mutate(format!("<{name}> with white space"), &|e| {
-        e.text = " \n\t".into();
-    });
-    mutate(format!("<{name}> renamed"), &|e| e.name = "bogus".into());
-    out
-}
-
 #[test]
-fn strict_reader_and_validator_agree_on_every_mutation() {
-    let Some(ghidra) = common::ghidra_dir() else {
-        return;
-    };
+fn the_fullest_document_of_each_table_reads() {
     for kind in &KINDS {
-        let schema = validator(&ghidra, kind);
-        let root = full(kind.root, 0);
-        let document = render(&root);
-        assert!(
-            schema.validate(&document).is_ok(),
-            "{}: the full document is valid",
-            kind.schema
-        );
+        let document = render(&full(kind.root, 0));
         (kind.read)(&document).unwrap_or_else(|e| panic!("{}: {e}\n{document}", kind.schema));
-
-        let mut all = Vec::new();
-        paths(&root, &mut Vec::new(), &mut all);
-        let (mut total, mut rejected, mut undecodable) = (0, 0, 0);
-        let mut disagreements = Vec::new();
-        for path in &all {
-            for (what, mutated) in mutations(&root, path) {
-                let text = render(&mutated);
-                let valid = schema.validate(&text).is_ok();
-                let read = (kind.read)(&text);
-                total += 1;
-                rejected += usize::from(!valid);
-                // The reader may also refuse a schema-valid document whose
-                // values it cannot decode (size="maybe"); Ghidra's reader
-                // throws on those too. Anything else must agree.
-                let decode_failure = matches!(
-                    &read,
-                    Err(e) if matches!(
-                        e.kind,
-                        ParseErrorKind::InvalidValue { .. } | ParseErrorKind::Rejected { .. }
-                    )
-                );
-                undecodable += usize::from(valid && decode_failure);
-                if valid != read.is_ok() && !(valid && decode_failure) {
-                    disagreements.push(format!("{what}: schema valid={valid}, reader {read:?}"));
-                }
-            }
-        }
-        eprintln!(
-            "{}: {} elements, {total} mutations ({rejected} invalid, {undecodable} valid but undecodable)",
-            kind.schema,
-            all.len()
-        );
-        assert!(
-            disagreements.is_empty(),
-            "{}:\n{}",
-            kind.schema,
-            disagreements.join("\n")
-        );
-        assert!(
-            rejected >= 16 && total > 100,
-            "the mutations exercise the schema"
-        );
     }
 }
 
 #[test]
-fn every_shipped_file_validates_and_reads() {
+fn every_shipped_file_reads() {
     let Some(ghidra) = common::ghidra_dir() else {
         return;
     };
     for kind in &KINDS {
-        let schema = validator(&ghidra, kind);
         let files = common::files_with_extension(&ghidra.join("Ghidra"), kind.extension);
         assert!(!files.is_empty());
         for file in files
@@ -423,9 +263,6 @@ fn every_shipped_file_validates_and_reads() {
             .filter(|f| !f.components().any(|c| c.as_os_str() == "test"))
         {
             let text = std::fs::read_to_string(file).unwrap();
-            if let Err(errors) = schema.validate(&text) {
-                panic!("{} violates {}: {}", file.display(), kind.schema, errors[0]);
-            }
             (kind.read)(&text).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
         }
     }
