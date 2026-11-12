@@ -14,4 +14,20 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
+bk-core = { path = "../crates/bk-core" }
+bk-marshal = { path = "../crates/bk-marshal" }
 libfuzzer-sys = "0.4.13"
+
+[[bin]]
+name = "bk_marshal_packed_decode"
+path = "fuzz_targets/bk_marshal_packed_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_marshal_xml_decode"
+path = "fuzz_targets/bk_marshal_xml_decode.rs"
+test = false
+doc = false
+bench = false

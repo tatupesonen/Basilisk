@@ -1,0 +1,20 @@
+[package]
+name = "bk-core"
+description = "basilisk: address spaces, addresses, ranges, varnode data and bit helpers (Ghidra's space, address, pcoderaw and translate)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-marshal.workspace = true
+bitflags.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true

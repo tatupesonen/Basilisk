@@ -238,6 +238,154 @@ behaviour at sizes 0 and above 8 bytes.
 
 (The implementing agent appends further differences here.)
 
+Appended by the `core-marshal` track:
+
+**`bk-marshal`**
+
+- XML is tokenised by `quick-xml` and checked by `xml/parse.rs`: one root,
+  only white space or comments around it, every element closed, no
+  DOCTYPE, known entities only. Element content follows `xml.y`: character
+  data, each reference and each CDATA section are separate pieces, and a
+  piece that is only white space is dropped. Relative to `xml.y`: character
+  references give the Unicode character (Ghidra's C++ truncates to one
+  byte; its Java side does what basilisk does); an unknown entity, a
+  mismatched end tag and a repeated attribute are errors (Ghidra accepts
+  them); processing instructions, comments after the root, a byte order
+  mark and `standalone` are accepted (Ghidra rejects them; they are legal
+  XML). Not checked, where Ghidra rejects: `<` inside an attribute value,
+  `]]>` in character data, non-ASCII or malformed names.
+- `XmlDecoder::close_element` always checks for unread children and a
+  matching id (Ghidra: debug builds only), so both forms fail alike.
+- A read with no current attribute is `NoCurrentAttribute` in both forms
+  (Ghidra: undefined in XML, reads the next attribute in packed); after an
+  attribute of the wrong type the packed decoder always skips it, booleans
+  included.
+- Packed strings must be valid UTF-8 (`InvalidUtf8`, at the first invalid
+  byte); Ghidra passes bytes through.
+- The packed decoder does not stop at a NUL byte and accepts empty input
+  (Ghidra's ingest ends at NUL and throws on empty input).
+- Both decoders refuse more than `MAX_ELEMENT_DEPTH` (1,000) nested open
+  elements (`TooDeep`); skipping is iterative and unlimited.
+- `patch_integer_attribute` (Java `PatchPackedEncode`) skips a string's
+  length bytes correctly and patches only integer attributes; the Java code
+  misparses a string before the target.
+- Encoders write into memory (`Vec<u8>`, `String`) instead of a stream.
+- `read_enum`/`write_enum` replace `readOpcode`/`writeOpcode` and
+  `readDatatypeMeta`/`writeDatatypeMeta`: the name in XML, a non-negative
+  signed integer in the packed form, as Ghidra writes both.
+- "Nothing there" is `None` rather than id 0 (`peek_element`,
+  `open_element`, `next_attribute`).
+- Bit helpers (`bk_core::bits`): results are defined where the C++ is
+  undefined (shifts of 64 or more, sizes 0 and above 8; each function's
+  documentation says what it returns); `sign_extend` with
+  `size_out < size_in` truncates.
+
+**`bk-core`**
+
+- Index 0 belongs to the constant space alone (`ReservedIndexZero`):
+  Ghidra requires the constant space to be at 0, basilisk also forbids any
+  other space there, so `Address::is_constant` and
+  `JoinRecord::is_pure_padding` compare an index and need no manager.
+- Space indices above `MAX_SPACE_INDEX` (0xffff) are refused
+  (`IndexTooLarge`); Ghidra resizes its table to whatever a document says.
+- The constant, fspec and iop spaces are always little endian; Ghidra
+  gives them the host's endianness, and basilisk takes x86-64's (ADR-021,
+  on `master` since this track branched).
+- `copy_spaces` copies the spaces; Ghidra shares them between managers by
+  reference count, so a later truncation of one shows in the other.
+- `insert_space` checks everything before changing anything; Ghidra sets
+  the special-space pointer (unique, join, …) before the duplicate-index
+  check and leaves it dangling when that check throws.
+- A decoded space must have `name`, `index` and `size` (Ghidra leaves them
+  uninitialised); a missing `delay` reads as 0 (uninitialised in Ghidra).
+  An overlay or join piece naming an unknown space, a gap in a join's
+  piece numbering, a join without a join space and a register name the
+  processor does not have are errors where Ghidra dereferences null or
+  reads uninitialised memory.
+- `SeqNum`: `Eq` and `Ord` both compare the address, then the unique
+  number (Rust requires them to agree; Ghidra's `==` compares only the
+  unique number); `same_time` is Ghidra's `==`; `order` takes part in
+  neither, as in Ghidra. `SeqNum::decode` reads the address from the
+  element's own attributes; Ghidra's reads a child element its encoder
+  never writes, and has no caller.
+- `Address::const_from_space` (Ghidra `createConstFromSpace`) stores the
+  space's index, not a host pointer, and
+  `VarnodeData::space_from_const` reads it back.
+- Where Ghidra returns -1 for "does not overlap" (`overlap`,
+  `justifiedContain`, `overlapJoin`) the result is `Option<u32>`;
+  `BitRange::overlap_test` returns an enum (`BitOverlap`) whose variants
+  name Ghidra's -1, 0, 1, 2, 3 and 4.
+- Address methods that need a space answer `false`/0/`None` for the
+  invalid and maximal addresses instead of dereferencing a null pointer;
+  `printRaw` prints `invalid_addr` or `maximal_addr`, and a join offset
+  without a record prints `{unlinked:0x…}` instead of throwing.
+- Fspec and iop offsets print with the ordinary `printRaw`; Ghidra's
+  `FspecSpace` and `IopSpace` print the call specification or p-code op
+  behind the pointer, which belong to the decompiler.
+- Reading a join address from text (`JoinSpace::read`) recurses through
+  pieces that name the join space by its shortcut; the depth is limited to
+  `MAX_JOIN_READ_DEPTH` (8) (`BadJoinString`).
+- `getNextSpaceInOrder` is `first_space` and `next_space_after`, which
+  returns `None` where Ghidra returns its maximal-space marker;
+  `Range::last_addr_open` turns that into the maximal space at offset 0, as
+  Ghidra does.
+- Registers come from a `RegisterLookup` the manager holds (in Ghidra
+  every space points at its `Translate`). Join records sit behind a
+  read-write lock in the manager, because decoding a join address creates
+  one while the decoder holds the manager by shared reference (Ghidra's
+  `findAddJoin` is `const` with `mutable` members). Join offsets are
+  handed out in creation order, as in Ghidra.
+- Decoding `<spaces>` resolves space references through a
+  `SpaceDirectory` the manager keeps up to date, because a decoder cannot
+  hold the manager being filled; Ghidra's decoder points at the manager
+  itself.
+- `Range` orders by space, first and last offset; `RangeList` keys its
+  ranges by space and first offset only, as Ghidra's `set<Range>` does.
+  `Range::from_properties` reports an unknown space as `UnknownSpaceName`
+  ("Unknown address space", where Ghidra says "Undefined space").
+- `BitRange` arithmetic wraps instead of overflowing, and its mask is 0
+  for a negative bit count or position (Ghidra's shift is undefined there).
+
 ## 9. Status
 
-Not implemented yet.
+Implemented by the `core-marshal` track (2026-11-12); status report
+`docs/agents/core-marshal.md`.
+
+**Built.** `bk-marshal`: element and attribute ids with a per-scope name
+table (`IdTable`), the `Decoder` and `Encoder` traits, `XmlDecoder` over a
+small DOM built from `quick-xml` events, `XmlEncoder` (Ghidra's text
+exactly, with or without formatting), `PackedDecoder` over a borrowed
+`&[u8]`, `PackedEncoder` with `patch_integer_attribute`, C++ `istream`
+number parsing, and the abstract space attributes (`SpaceId`, `SpaceRef`,
+`SpaceResolver`). `bk-core`: `Space` (one struct with a `SpaceKind`),
+`SpaceManager` (insertion rules, lookups by index, name and shortcut,
+special and default spaces, truncation, base registers, no-high-pointer
+ranges, constant resolvers, registers, join records, `<spaces>` decoding),
+`Address`, `SeqNum`, `VarnodeData`, `Range`, `RangeProperties`,
+`RangeList`, `BitRange`, `JoinRecord`, `TruncationTag`, `AddressResolver`,
+the `printRaw`/`read` text forms of every space kind, encode/decode of
+offsets including join pieces, and the bit helpers.
+
+**Tests.** The 18 cases of `testmarshal.cc` (both forms, plus
+`marshal_closemismatch_xml`) and the Java `EncodeDecodeTest`; hand-written
+packed vectors per type code; every decoder error path; property tests
+(round trips in both forms, XML and packed agree, decoders never panic,
+range lists against a byte set); the corpus test over the 501 XML files of
+Ghidra's processor and data-test trees; integration tests of the address
+model; fuzz targets `packed_decode` and `xml_decode`, named
+`bk_marshal_packed_decode` and `bk_marshal_xml_decode` in the shared fuzz
+crate (60 s each without a finding); benchmarks in `docs/PERF.md`.
+
+**Gaps.**
+- The Java program-model address tests (`ghidra.program.model.address.*`,
+  eleven classes) and `VarnodeTest` are not ported: they test Java's
+  program-model API (`AddressSet`, segmented addresses, signed spaces,
+  `addNoWrap`), a different model from the C++ one this spec defines. They
+  belong with the program model.
+- Agreement with Ghidra's encoders is checked against a transliteration
+  of `marshal.cc` (`crates/bk-marshal/tests/gen_marshal_vectors.py`), not
+  against a run of Ghidra's binaries; a differential test against the
+  reference `decomp` waits for `reference-tools`.
+- `Translate`, `PcodeEmit`, `AssemblyEmit` and the `.sla` variant of space
+  decoding (`SleighBase::decodeSlaSpaces`) are left to the SLEIGH runtime
+  (M1), as section 3 says.

@@ -1,0 +1,420 @@
+//! Address spaces.
+//!
+//! Ghidra: `AddrSpace` and its subclasses `ConstantSpace`, `OtherSpace`,
+//! `UniqueSpace`, `JoinSpace`, `OverlaySpace` (`space.hh`, `space.cc`) and
+//! `SpacebaseSpace` (`translate.hh`). Here a space is one plain struct with a
+//! [`SpaceKind`]; what the subclasses override is a `match` on the kind.
+//! Operations that need other spaces, the join records or the registers are
+//! methods of the [`SpaceManager`](crate::SpaceManager), written in this
+//! module's `codec` (marshalling) and `text` (printing and parsing)
+//! submodules.
+
+mod codec;
+mod kind;
+mod new;
+mod text;
+
+use std::num::NonZeroU32;
+
+use bk_marshal::{PackedSpace, SpaceId, SpaceRef};
+
+pub use codec::MAX_JOIN_PIECES;
+pub use kind::{
+    BaseRegister, CONSTANT_SPACE, CONSTANT_SPACE_NAME, FSPEC_SPACE_NAME, IOP_SPACE_NAME,
+    JOIN_SPACE_NAME, MAX_SPACE_INDEX, OTHER_SPACE, OTHER_SPACE_NAME, STACK_SPACE_NAME, SpaceFlags,
+    SpaceKind, SpaceType, UNIQUE_SPACE_NAME, UNIQUE_SPACE_SIZE,
+};
+pub(crate) use new::{checked_index, checked_word_size};
+pub use text::{MAX_JOIN_READ_DEPTH, RawOffset};
+
+use crate::bits::calc_mask;
+use crate::error::SpaceError;
+use crate::varnode::VarnodeData;
+
+/// The values every space is built from (the arguments of Ghidra's
+/// `AddrSpace` constructor), already validated.
+#[derive(Clone, Debug)]
+pub(crate) struct SpaceParts<'a> {
+    pub(crate) kind: SpaceKind,
+    pub(crate) name: &'a str,
+    pub(crate) index: SpaceId,
+    pub(crate) addr_size: u32,
+    pub(crate) word_size: NonZeroU32,
+    pub(crate) flags: SpaceFlags,
+    pub(crate) delay: i32,
+    pub(crate) deadcode_delay: i32,
+}
+
+/// A region where a processor stores data, or one of the special spaces the
+/// analysis uses (Ghidra `AddrSpace`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Space {
+    name: Box<str>,
+    kind: SpaceKind,
+    index: SpaceId,
+    flags: SpaceFlags,
+    /// Shortcut character; a space until the manager assigns one.
+    shortcut: u8,
+    addr_size: u32,
+    word_size: NonZeroU32,
+    minimum_pointer_size: u32,
+    delay: i32,
+    deadcode_delay: i32,
+    highest: u64,
+    pointer_lower_bound: u64,
+    pointer_upper_bound: u64,
+}
+
+impl Space {
+    /// Recomputes the highest offset and the default pointer bounds from the
+    /// address and word sizes (Ghidra `calcScaleMask`).
+    fn calc_scale_mask(&mut self) {
+        let word_size = u64::from(self.word_size.get());
+        self.highest = calc_mask(self.addr_size)
+            .wrapping_mul(word_size)
+            .wrapping_add(word_size - 1);
+        let buffer: u64 = if self.addr_size < 3 { 0x100 } else { 0x1000 };
+        self.pointer_lower_bound = buffer;
+        self.pointer_upper_bound = self.highest.wrapping_sub(buffer);
+    }
+
+    /// The name of the space.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// The kind of the space with its particular data.
+    pub fn kind(&self) -> &SpaceKind {
+        &self.kind
+    }
+
+    /// The fundamental type of the space.
+    pub fn space_type(&self) -> SpaceType {
+        self.kind.space_type()
+    }
+
+    /// The index of the space in its manager, which is also its identity.
+    pub fn id(&self) -> SpaceId {
+        self.index
+    }
+
+    /// The index of the space as a number.
+    pub fn index(&self) -> u32 {
+        self.index.index()
+    }
+
+    /// The attributes of the space.
+    pub fn flags(&self) -> SpaceFlags {
+        self.flags
+    }
+
+    /// The number of heritage passes to wait before tracing data flow.
+    pub fn delay(&self) -> i32 {
+        self.delay
+    }
+
+    /// The number of heritage passes to wait before removing dead code.
+    pub fn deadcode_delay(&self) -> i32 {
+        self.deadcode_delay
+    }
+
+    /// The number of bytes in an addressable unit; almost always 1.
+    pub fn word_size(&self) -> u32 {
+        self.word_size.get()
+    }
+
+    /// The number of bytes needed to hold an offset into the space.
+    pub fn addr_size(&self) -> u32 {
+        self.addr_size
+    }
+
+    /// The highest byte offset in the space.
+    pub fn highest(&self) -> u64 {
+        self.highest
+    }
+
+    /// The offset below which constants are not taken for pointers.
+    pub fn pointer_lower_bound(&self) -> u64 {
+        self.pointer_lower_bound
+    }
+
+    /// The offset above which constants are not taken for pointers.
+    pub fn pointer_upper_bound(&self) -> u64 {
+        self.pointer_upper_bound
+    }
+
+    /// The smallest size of a pointer into the space in bytes; 0 means a
+    /// pointer must match the address size exactly.
+    pub fn minimum_pointer_size(&self) -> u32 {
+        self.minimum_pointer_size
+    }
+
+    /// The shortcut character used when printing addresses in the space, once
+    /// the manager has assigned one.
+    pub fn shortcut(&self) -> Option<char> {
+        (self.shortcut != b' ').then_some(char::from(self.shortcut))
+    }
+
+    /// The shortcut as a byte; a space if unassigned.
+    pub(crate) fn shortcut_byte(&self) -> u8 {
+        self.shortcut
+    }
+
+    /// Whether data flow is traced through the space.
+    pub fn is_heritaged(&self) -> bool {
+        self.flags.contains(SpaceFlags::HERITAGED)
+    }
+
+    /// Whether dead-code analysis is done on the space.
+    pub fn does_deadcode(&self) -> bool {
+        self.flags.contains(SpaceFlags::DOES_DEADCODE)
+    }
+
+    /// Whether the space has readable and writable bytes behind it.
+    pub fn has_physical(&self) -> bool {
+        self.flags.contains(SpaceFlags::HAS_PHYSICAL)
+    }
+
+    /// Whether values in the space are big endian.
+    pub fn is_big_endian(&self) -> bool {
+        self.flags.contains(SpaceFlags::BIG_ENDIAN)
+    }
+
+    /// Whether small values are justified opposite to the endianness.
+    pub fn is_reverse_justified(&self) -> bool {
+        self.flags.contains(SpaceFlags::REVERSE_JUSTIFICATION)
+    }
+
+    /// Whether the space is attached to the formal stack pointer.
+    pub fn is_formal_stack_space(&self) -> bool {
+        self.flags.contains(SpaceFlags::FORMAL_STACKSPACE)
+    }
+
+    /// Whether the space overlays another.
+    pub fn is_overlay(&self) -> bool {
+        self.flags.contains(SpaceFlags::OVERLAY)
+    }
+
+    /// Whether other spaces overlay this one.
+    pub fn is_overlay_base(&self) -> bool {
+        self.flags.contains(SpaceFlags::OVERLAYBASE)
+    }
+
+    /// Whether this is the `OTHER` space.
+    pub fn is_other_space(&self) -> bool {
+        self.flags.contains(SpaceFlags::IS_OTHERSPACE)
+    }
+
+    /// Whether the space is truncated from its original size.
+    pub fn is_truncated(&self) -> bool {
+        self.flags.contains(SpaceFlags::TRUNCATED)
+    }
+
+    /// Whether pointers into the space are known not to exist (Ghidra
+    /// `noHighPtrPossible`).
+    pub fn no_high_ptr_possible(&self) -> bool {
+        self.flags.contains(SpaceFlags::ADDRESSABLE_NONE)
+    }
+
+    /// Whether near (truncated) pointers into the space are possible.
+    pub fn has_near_pointers(&self) -> bool {
+        self.flags.contains(SpaceFlags::HAS_NEARPOINTERS)
+    }
+
+    /// Whether a memory range may wrap from high addresses to low.
+    pub fn allows_wrapped_range(&self) -> bool {
+        self.flags.contains(SpaceFlags::ALLOWS_WRAPPED_RANGE)
+    }
+
+    /// The offset equivalent to `offset` modulo the size of the space.
+    pub fn wrap_offset(&self, offset: u64) -> u64 {
+        if offset <= self.highest {
+            return offset;
+        }
+        // Here `highest` is below `u64::MAX`, so the modulus is not 0.
+        let modulus = self.highest.wrapping_add(1).cast_signed();
+        let mut remainder = offset.cast_signed().checked_rem(modulus).unwrap_or(0);
+        if remainder < 0 {
+            remainder = remainder.wrapping_add(modulus);
+        }
+        remainder.cast_unsigned()
+    }
+
+    /// Scales an offset in addressable units to bytes.
+    pub fn address_to_byte(&self, value: u64) -> u64 {
+        value.wrapping_mul(u64::from(self.word_size.get()))
+    }
+
+    /// Scales an offset in bytes to addressable units.
+    pub fn byte_to_address(&self, value: u64) -> u64 {
+        value / std::num::NonZeroU64::from(self.word_size)
+    }
+
+    /// Scales a signed offset in addressable units to bytes.
+    pub fn address_to_byte_int(&self, value: i64) -> i64 {
+        value.wrapping_mul(i64::from(self.word_size.get()))
+    }
+
+    /// Scales a signed offset in bytes to addressable units.
+    pub fn byte_to_address_int(&self, value: i64) -> i64 {
+        value / i64::from(self.word_size.get())
+    }
+
+    /// The space this one is contained in: the overlaid space of an overlay,
+    /// the indexed space of a register-relative space (Ghidra `getContain`).
+    pub fn contain(&self) -> Option<SpaceId> {
+        match self.kind {
+            SpaceKind::Overlay { base } => Some(base),
+            SpaceKind::Spacebase { contain, .. } => Some(contain),
+            _ => None,
+        }
+    }
+
+    /// The number of base registers attached to the space: 1 for a
+    /// register-relative space whose register is known, else 0.
+    pub fn num_spacebase(&self) -> usize {
+        match self.kind {
+            SpaceKind::Spacebase {
+                base_register: Some(_),
+                ..
+            } => 1,
+            _ => 0,
+        }
+    }
+
+    fn base_register(&self, index: usize) -> Result<&BaseRegister, SpaceError> {
+        match &self.kind {
+            SpaceKind::Spacebase {
+                base_register: Some(register),
+                ..
+            } if index == 0 => Ok(register),
+            SpaceKind::Spacebase { .. } => Err(SpaceError::NoBaseRegister {
+                name: self.name.to_string(),
+            }),
+            _ => Err(SpaceError::NotVirtual {
+                name: self.name.to_string(),
+            }),
+        }
+    }
+
+    /// The `index`-th base register of a register-relative space, truncated
+    /// to the size of the space.
+    pub fn spacebase_register(&self, index: usize) -> Result<VarnodeData, SpaceError> {
+        self.base_register(index).map(|register| register.location)
+    }
+
+    /// The `index`-th base register before truncation.
+    pub fn spacebase_register_full(&self, index: usize) -> Result<VarnodeData, SpaceError> {
+        self.base_register(index).map(|register| register.original)
+    }
+
+    /// Whether a push decreases the base register. True for spaces that are
+    /// not register-relative, as in Ghidra.
+    pub fn stack_grows_negative(&self) -> bool {
+        match self.kind {
+            SpaceKind::Spacebase { negative_stack, .. } => negative_stack,
+            _ => true,
+        }
+    }
+
+    /// What an encoder writes for a reference to this space.
+    pub fn marshal_ref(&self) -> SpaceRef<'_> {
+        let packed = match self.space_type() {
+            SpaceType::Fspec => PackedSpace::Fspec,
+            SpaceType::Iop => PackedSpace::Iop,
+            SpaceType::Join => PackedSpace::Join,
+            SpaceType::Spacebase if self.is_formal_stack_space() => PackedSpace::Stack,
+            SpaceType::Spacebase => PackedSpace::Spacebase,
+            _ => PackedSpace::Index(self.index.index()),
+        };
+        SpaceRef {
+            name: &self.name,
+            packed,
+        }
+    }
+
+    pub(crate) fn insert_flags(&mut self, flags: SpaceFlags) {
+        self.flags.insert(flags);
+    }
+
+    pub(crate) fn remove_flags(&mut self, flags: SpaceFlags) {
+        self.flags.remove(flags);
+    }
+
+    pub(crate) fn set_shortcut(&mut self, shortcut: u8) {
+        self.shortcut = shortcut;
+    }
+
+    pub(crate) fn set_deadcode_delay(&mut self, delay: i32) {
+        self.deadcode_delay = delay;
+    }
+
+    pub(crate) fn set_pointer_bounds(&mut self, lower: u64, upper: u64) {
+        self.pointer_lower_bound = lower;
+        self.pointer_upper_bound = upper;
+    }
+
+    /// Marks near pointers of the given size as possible (Ghidra
+    /// `markNearPointers`).
+    pub(crate) fn mark_near_pointers(&mut self, size: u32) {
+        self.flags.insert(SpaceFlags::HAS_NEARPOINTERS);
+        if self.minimum_pointer_size == 0 && self.addr_size != size {
+            self.minimum_pointer_size = size;
+        }
+    }
+
+    /// Makes the logical space smaller than its actual size: pointers keep
+    /// the original size but their most significant bytes are ignored
+    /// (Ghidra `truncateSpace`).
+    pub(crate) fn truncate(&mut self, new_size: u32) {
+        self.flags.insert(SpaceFlags::TRUNCATED);
+        self.addr_size = new_size;
+        self.minimum_pointer_size = new_size;
+        self.calc_scale_mask();
+    }
+
+    /// Attaches the base register of a register-relative space (Ghidra
+    /// `SpacebaseSpace::setBaseRegister`). `register_big_endian` is the
+    /// endianness of the space the register lives in.
+    pub(crate) fn set_base_register(
+        &mut self,
+        data: VarnodeData,
+        truncated_size: u32,
+        stack_grows_negative: bool,
+        register_big_endian: bool,
+    ) -> Result<(), SpaceError> {
+        let name = &self.name;
+        let SpaceKind::Spacebase {
+            base_register,
+            negative_stack,
+            ..
+        } = &mut self.kind
+        else {
+            return Err(SpaceError::NotVirtual {
+                name: name.to_string(),
+            });
+        };
+        if let Some(existing) = base_register
+            && (existing.location != data || *negative_stack != stack_grows_negative)
+        {
+            return Err(SpaceError::SecondBaseRegister {
+                name: name.to_string(),
+            });
+        }
+        let mut location = data;
+        if truncated_size != location.size {
+            if register_big_endian {
+                location.offset = location
+                    .offset
+                    .wrapping_add(u64::from(location.size.wrapping_sub(truncated_size)));
+            }
+            location.size = truncated_size;
+        }
+        *negative_stack = stack_grows_negative;
+        *base_register = Some(BaseRegister {
+            location,
+            original: data,
+        });
+        Ok(())
+    }
+}
