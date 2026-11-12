@@ -6,7 +6,16 @@
 //!
 //! Update with `INSTA_UPDATE=always` and review the diff before committing.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 

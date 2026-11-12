@@ -185,7 +185,10 @@ fn tokens_inside_and_after_an_expansion() {
     );
     // `source_range` gives the original bytes, and nothing inside expansions.
     let (file, range) = parsed.sources.source_range(idents[1].1).unwrap();
-    assert_eq!(parsed.sources.file(file).unwrap().text().get(range), Some("r2"));
+    assert_eq!(
+        parsed.sources.file(file).unwrap().text().get(range),
+        Some("r2")
+    );
     assert_eq!(parsed.sources.source_range(idents[0].1), None);
     // The snippet is the preprocessed text.
     assert_eq!(parsed.sources.snippet(idents[3].1), "bb");
