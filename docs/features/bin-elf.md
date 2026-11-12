@@ -210,9 +210,7 @@ cheap and nothing is copied that is not asked for.
 
 (The implementing agent appends further differences here.)
 
-Appended by the first `bin-elf` agent (2026-11-12). Entries marked *(planned)*
-describe code that is designed but not yet written — see
-`docs/agents/bin-elf.md`.
+Appended by the `bin-elf` agents (2026-11-12).
 
 ### `bk-bin`
 
@@ -265,10 +263,19 @@ describe code that is designed but not yet written — see
   (`from_le_bytes`, `from_utf8_lossy`, `char::decode_utf16`). `leb128` is not
   used because Ghidra's ported test fixes the cursor position after an
   overflow and its signed rule accepts ten-byte values that crate rejects.
-  `encoding_rs` is not used because it has no UTF-32 and decodes "ASCII" as
-  windows-1252 (Java yields U+FFFD above 0x7f). A cache crate (`lru`, `moka`)
-  is not used for the 64-slot block cache: `lru` needs an exclusive lock per
-  read, `moka` is a large dependency for it.
+  `encoding_rs` is not used, checked by running it (0.8.35, 2026-11-12,
+  program in the track report): every ASCII and Latin-1 label (`us-ascii`,
+  `ascii`, `iso-8859-1`, `latin1`) resolves to windows-1252, so bytes
+  41 80 e9 ff decode as `A€éÿ` without error, where Java's `US_ASCII` gives
+  `A` and three U+FFFD and its `ISO_8859_1` gives U+0080 for 0x80; and there
+  is no UTF-32 encoding at all (`utf-32`, `utf-32le` → none). Its UTF-8 and
+  UTF-16 decoders agree with the standard library on malformed input
+  (U+FFFD per error, unpaired surrogates included), so it would replace
+  nothing the standard library does not already do. It remains the right
+  crate for Ghidra's wider list of Java charsets in string data types (M4).
+  A cache crate (`lru`, `moka`) is not used for the 64-slot block cache:
+  `lru` needs an exclusive lock per read, `moka` is a large dependency for
+  it (judged from their documented APIs, not measured).
 
 ### `bk-elf`
 
@@ -301,27 +308,72 @@ describe code that is designed but not yet written — see
 - **Android packed relocations are capped** at one relocation per byte of
   the file. A group that shares offset delta and info costs no bytes per
   relocation, so Ghidra can be made to allocate without bound.
-- *(planned)* **The GNU hash walk stops at the end of the file.** Ghidra
+- **The GNU hash walk stops at the end of the file.** Ghidra
   bounds it by the containing section's `sh_size`, which the file controls.
-- *(planned)* **`section_by_name` returns the first match**; Ghidra's
+- **`section_by_name` returns the first match**; Ghidra's
   `getSection(String)` throws `RuntimeException` when two sections share the
   name (reachable from relocation parsing with `sh_link` = 0 and two
   `.dynsym` sections).
-- *(planned)* **String-table offsets are unsigned.** Ghidra widens the `int`
+- **String-table offsets are unsigned.** Ghidra widens the `int`
   `st_name` with sign extension, so a name offset ≥ 2³¹ reads *before* the
   table.
-- *(planned)* **Diagnostics of lazy reads** (a symbol name that cannot be
+- **Diagnostics of lazy reads** (a symbol name that cannot be
   read, a `DT_NEEDED` string) are returned by the call that performs the
   read, not stored in the file's diagnostics list.
-- *(planned)* **Android relocations on MIPS-64.** Ghidra builds them with a
+- **Android relocations on MIPS-64.** Ghidra builds them with a
   constructor its MIPS relocation class does not override, so symbol index
   and type read as 0; basilisk uses the standard 64-bit split.
+- **Exceptions that end Ghidra's import are diagnostics here.** An Android
+  table that is missing or not `APS2` (Ghidra's `IOException` escapes
+  `parse()`) is reported as "Failed to process relocation table…: <message>"
+  and skipped; so is an address that `ElfProgramHeader.getOffset` cannot map
+  (Ghidra's unchecked exception) — "Failed to locate <what> in file for
+  address 0x…: <reason>".
+- **Android count cap and the group check.** With the count capped at the
+  file length, a group larger than the capped count is reported against the
+  capped number ("… exceeded total count <file length>").
+- **Diagnostic names are cut at 256 bytes.** Section names in diagnostic
+  messages are read with a 256-byte bound, so a file whose names all run
+  into one long unterminated string cannot make the messages quadratic;
+  `section_name` itself reads the whole name. `.dynsym` is looked up once
+  per file and compared without reading more than its length.
+- **Section and segment contents.** `section_data` / `segment_data` return
+  the bytes inside the file (borrowed when in memory); Ghidra reads past the
+  end of the file as zeros, which `section_provider` reproduces as a
+  zero-filling view without allocating.
+- **Notes and informational sections are read from the file**, in the
+  file's data byte order, not from a loaded program's memory. A list of notes
+  stops at the first note that cannot be read, as `markupPtNote` does.
+- **GNU versioning chains** are followed only forwards (offsets are added as
+  unsigned), at most the declared count and never past the section, so a
+  hostile chain ends. Ghidra does not parse these structures at all outside
+  the loader's markup.
+- **Not ported:** `GnuBuildAttributes` / `GnuBuildAttribute` (the
+  `.gnu.build.attributes` notes: their name-field encoding is decoded only
+  for markup); the notes themselves are readable with `section_notes`.
+  The data-type layouts of Android and RELR tables
+  (`AndroidElfRelocationTableDataType`, `ElfRelrRelocationTableDataType`) are
+  M4 markup and not here.
 
 ## 9. Status
 
-**Handover on 2026-11-12, track not finished.** `bk-bin` is complete against
-sections 4.1 and 4.2 and its Ghidra tests are ported and marked. `bk-elf` has
-its building blocks and the first half of the parser; the second half
-(symbol and relocation tables), the `ElfFile` type, GNU versioning, notes,
-the fixture builder and nearly all ELF tests are not written. The state, the
-crate evaluation and the remaining work are in `docs/agents/bin-elf.md`.
+**Done, 2026-11-12.** Both crates are complete against sections 4–6 except
+`GnuBuildAttributes` (section 8). The full report — what was built, how
+each part was verified, test counts, fuzzing, benchmarks, gaps — is
+`docs/agents/bin-elf.md`.
+
+- `bk-bin`: providers, `BinaryReader`, LEB128; Ghidra's `BinaryReaderTest`,
+  provider tests and `LEB128Test` ported and marked.
+- `bk-elf`: `ElfFile<P>` parses what `ElfHeader.parse()` parses (header,
+  header tables, dynamic table, string, symbol and relocation tables
+  including the paths through the dynamic table for stripped files) with
+  Ghidra's tolerance rules and messages, and reads names, symbols,
+  relocations (`REL`, `RELA`, `RELR`, Android `APS2`, MIPS-64 layout),
+  section contents, decompressed sections, GNU versioning and notes on
+  demand.
+- Verified against `object` on Ghidra's 18 ELF files, on 17 clang/lld
+  fixtures (6 targets, both byte orders) and on builder output; packed
+  relocation tables against lld's unpacked twins and hand-computed vectors;
+  every tolerance rule of `ElfHeader` against a damaged fixture.
+- Ghidra has no ELF parser tests; its ELF coverage is through loader and
+  emulator tests that need the program model (M4, listed in the report).
