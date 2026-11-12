@@ -285,7 +285,9 @@ is ported in full. `SleighLanguageProviderTest` is ported only in part
 (discovery and description, `tests/ported.rs`); its lock, timeout and
 `.sla` compilation assertions wait for the SLEIGH compiler (M2), so its
 checklist line stays open. A `cargo-fuzz` target (`fuzz/`,
-`lang_readers`) covers the three readers in both modes.
+`lang_readers`) covers the three readers in both modes; a 30-minute run
+seeded with Ghidra's files (2.7 million executions) found no crash or
+panic.
 
 **Benchmark.** Registry scan of the whole Ghidra tree 13–15 ms median on
 an Apple M1 Pro under load (budget 50 ms); details in `docs/PERF.md`.
