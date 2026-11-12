@@ -9,104 +9,17 @@
 
 use std::fmt::Write as _;
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
-
-use rustc_hash::FxBuildHasher;
-use string_interner::backend::StringBackend;
-use string_interner::symbol::SymbolU32;
-use string_interner::{StringInterner, Symbol as _};
 
 use crate::diag::Diagnostic;
 use crate::span::{FileId, IncludeId, Location, Span};
 
-/// One source file read during preprocessing.
-#[derive(Debug)]
-pub struct SourceFile {
-    path: PathBuf,
-    name: String,
-    text: String,
-    /// Byte offset of the start of each line, plus the text length at the end.
-    line_starts: Vec<u32>,
-}
+mod file;
+mod indexer;
 
-impl SourceFile {
-    pub(crate) fn new(path: PathBuf, text: String) -> Self {
-        let name = path.file_name().map_or_else(
-            || path.to_string_lossy().into_owned(),
-            |n| n.to_string_lossy().into_owned(),
-        );
-        let line_starts = split_lines(&text);
-        Self {
-            path,
-            name,
-            text,
-            line_starts,
-        }
-    }
-
-    /// The path the file was loaded from.
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-
-    /// The file name without directories. This is what Ghidra reports in
-    /// messages and stores in `.sla` source-file tables.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    /// The whole text of the file.
-    pub fn text(&self) -> &str {
-        &self.text
-    }
-
-    /// Number of lines, counted as Java's `BufferedReader.readLine` does:
-    /// `\n`, `\r\n` and `\r` end a line, and a final line needs no terminator.
-    pub fn line_count(&self) -> u32 {
-        u32::try_from(self.line_starts.len().saturating_sub(1)).unwrap_or(u32::MAX)
-    }
-
-    /// Byte range of line `line` (1-based) in [`Self::text`], without its
-    /// terminator.
-    pub fn line_range(&self, line: u32) -> Option<Range<usize>> {
-        let index = (line as usize).checked_sub(1)?;
-        let start = *self.line_starts.get(index)? as usize;
-        let next = *self.line_starts.get(index + 1)? as usize;
-        let bytes = self.text.as_bytes().get(start..next)?;
-        let end = match bytes {
-            [.., b'\r', b'\n'] => next - 2,
-            [.., b'\n' | b'\r'] => next - 1,
-            _ => next,
-        };
-        Some(start..end)
-    }
-
-    /// The text of line `line` (1-based), without its terminator.
-    pub fn line(&self, line: u32) -> Option<&str> {
-        self.text.get(self.line_range(line)?)
-    }
-}
-
-/// Start offsets of the lines of `text`, followed by `text.len()`.
-fn split_lines(text: &str) -> Vec<u32> {
-    let bytes = text.as_bytes();
-    let mut starts = Vec::with_capacity(bytes.len() / 32 + 2);
-    let mut pos = 0usize;
-    while pos < bytes.len() {
-        starts.push(pos as u32);
-        let rest = bytes.get(pos..).unwrap_or(&[]);
-        match memchr::memchr2(b'\n', b'\r', rest) {
-            Some(i) => {
-                let two = rest.get(i) == Some(&b'\r') && rest.get(i + 1) == Some(&b'\n');
-                pos += i + if two { 2 } else { 1 };
-            }
-            None => pos = bytes.len(),
-        }
-    }
-    starts.push(bytes.len() as u32);
-    starts
-}
+pub use file::SourceFile;
+pub use indexer::SourceFileIndexer;
 
 /// What the preprocessor did with one input line.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -415,7 +328,7 @@ impl SourceMap {
         };
         let path = self
             .file(loc.file)
-            .map_or_else(String::new, |f| f.path.display().to_string());
+            .map_or_else(String::new, |f| f.path().display().to_string());
         let mut out = format!(
             "{path}:{}:{}: {severity}: {}",
             loc.line, loc.column, diagnostic.message
@@ -423,7 +336,7 @@ impl SourceMap {
         for (file, line) in self.include_chain(loc.include) {
             let path = self
                 .file(file)
-                .map_or_else(String::new, |f| f.path.display().to_string());
+                .map_or_else(String::new, |f| f.path().display().to_string());
             let _ = write!(out, "\n    included from {path}:{line}");
         }
         out
@@ -510,62 +423,6 @@ impl SourceMap {
         out.push_str("###");
         out.push_str(&run.first_src_line.to_string());
         out.push('\u{8}');
-    }
-}
-
-/// Assigns a stable index to each source file name, in order of first use.
-///
-/// The counterpart of Ghidra's `SourceFileIndexer`: the SLEIGH compiler
-/// records, for every constructor, the index of the file that defines it,
-/// and writes the table of names once.
-#[derive(Clone, Debug)]
-pub struct SourceFileIndexer {
-    names: StringInterner<StringBackend<SymbolU32>, FxBuildHasher>,
-}
-
-impl Default for SourceFileIndexer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl SourceFileIndexer {
-    /// An empty index.
-    pub fn new() -> Self {
-        Self {
-            names: StringInterner::with_hasher(FxBuildHasher),
-        }
-    }
-
-    /// The index of `filename`, adding it if it is new.
-    pub fn index(&mut self, filename: &str) -> u32 {
-        self.names.get_or_intern(filename).to_usize() as u32
-    }
-
-    /// The index of `filename`, if it has one.
-    pub fn get_index(&self, filename: &str) -> Option<u32> {
-        self.names.get(filename).map(|s| s.to_usize() as u32)
-    }
-
-    /// The file name with the given index.
-    pub fn file_name(&self, index: u32) -> Option<&str> {
-        self.names
-            .resolve(SymbolU32::try_from_usize(index as usize)?)
-    }
-
-    /// Number of indexed files.
-    pub fn len(&self) -> usize {
-        self.names.len()
-    }
-
-    /// Whether no file has been indexed.
-    pub fn is_empty(&self) -> bool {
-        self.names.is_empty()
-    }
-
-    /// File names in index order.
-    pub fn iter(&self) -> impl Iterator<Item = &str> {
-        self.names.iter().map(|(_, name)| name)
     }
 }
 
