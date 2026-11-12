@@ -33,7 +33,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.app.plugin.processors.sleigh.SleighLanguageVolatilityTest` (unit, 5 tests)
 - [ ] `ghidra.app.util.SymbolPathParserTest` (unit, 11 tests)
 - [ ] `ghidra.app.util.SymbolPathTest` (unit, 9 tests)
-- [ ] `ghidra.pcode.floatformat.BigFloatTest` (unit, 26 tests)
+- [x] `ghidra.pcode.floatformat.BigFloatTest` (unit, 26 tests) → `crates/bk-pcode/tests/java_bigfloat.rs`
 - [ ] `ghidra.pcode.floatformat.FloatFormatTest` (unit, 58 tests)
 - [ ] `ghidra.pcodeCPort.slghpatexpress.EqualEquationTest` (unit, 3 tests)
 - [ ] `ghidra.program.database.SpecExtensionTest` (unit, 2 tests)

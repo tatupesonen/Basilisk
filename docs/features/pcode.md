@@ -169,6 +169,109 @@ rules) but implement it natively, and port the five tests against it.
 (The implementing agent appends further differences here, including any
 C++/Java disagreements found.)
 
+Appended by the `pcode` track (first agent; see `docs/agents/pcode.md` for
+the reasoning behind each and for what Ghidra's source says):
+
+**Structure**
+
+- The wide path's operand is `Wide`, a fixed 512-bit unsigned integer
+  (`primitive-types`' `U512`), not an arbitrary-precision integer: `Copy`,
+  no allocation, covers the 64-byte `ZMM` registers. Sizes above 64 bytes
+  are `EvalError::UnsupportedSize`. Java's `BigInteger` has no limit.
+- The wide path returns the result cut to `size_out` bytes. Java returns
+  an untruncated, possibly negative `BigInteger` and the emulator truncates
+  it when storing.
+- The exact float level uses `num-bigint` for significands and a small
+  `Decimal` type that reproduces the parts of Java's `BigDecimal` Ghidra's
+  output is defined by (canonical `toString`, `MathContext` rounding,
+  the `String` constructor); `BigFloat` operations return new values
+  instead of mutating.
+- Two float implementations are kept (host level = C++ `float.cc`, exact
+  level = Java `BigFloat`), because they do not give identical results:
+  see the next two groups.
+- `PTRADD` (ternary) and `PTRSUB` (binary) are evaluated as `typeop.cc`
+  wires them (`OpBehaviorPtradd`/`OpBehaviorPtrsub`); the emulator's
+  `registerInstructions` leaves them unimplemented, as does the wide path.
+- There is no `behavior/boolean.rs`: the four boolean operations are
+  one-line arms of the dispatch `match`.
+
+**Where Ghidra's result is undefined or host-dependent (u64 path)**
+
+- A NaN *created* by an operation (`inf - inf`, `0/0`, `0 * inf`,
+  `sqrt(-1)`) is the positive quiet NaN. Ghidra takes the host FPU's:
+  negative on x86-64, positive on AArch64. A NaN *propagated* from an
+  input keeps the sign of the first NaN input (both hosts agree).
+- `FLOAT_TRUNC` of a NaN, an infinity or a value outside `i64` saturates
+  (NaN gives 0). The C++ cast is undefined (x86-64: `i64::MIN`; AArch64 and
+  Java: saturate).
+- A value that rounds up from the largest subnormal to the smallest normal
+  encodes as the smallest normal. The C++ shifts by -1 there ("TODO handle
+  round to normal case") and in practice returns zero. Java is correct.
+- Shift counts outside `0..64` that the C++ reaches only with a size of 0
+  or above 8 (undefined behaviour) are taken modulo 64, which is what Java
+  defines and what x86-64/AArch64 produce. `recover_input_binary` instead
+  treats such a shift as shifting everything out, so that recovering a
+  shift by 0 of a full-width value works (on x86-64 the C++ reports "not in
+  range" for every non-zero output in that case).
+- `printDecimal` prints non-finite values as `inf`, `-inf`, `nan`, `-nan`
+  (the C++ prints what the C library prints).
+
+**C++/Java disagreements for sizes up to 8 bytes (the C++ wins)**
+
+- `INT_DIV` by zero: the C++ throws; Java returns 0. basilisk:
+  `DivideByZero`, on the wide path too (Java's `BigInteger` overload also
+  returns 0, while its `INT_SDIV`/`INT_REM`/`INT_SREM` throw).
+- `FLOAT_ROUND`: the C++ uses `round()` (halfway cases away from zero);
+  Java uses `floor(x + 0.5)`. The u64 path follows the C++; the wide path
+  follows Java, whose tests pin `round(-2.5) = -2`.
+- `PIECE`: the C++ shifts the high piece by `(size_out - size_in) * 8`;
+  Java shifts by `size_in * 8`, which is wrong when the two pieces differ
+  in size. Both paths use the C++ formula.
+- `SUBPIECE` with an offset of 8 or more: 0 in the C++; Java's `long`
+  overload shifts by the offset modulo 8.
+- `INT_LEFT`/`INT_RIGHT`/`INT_SRIGHT` compare the shift amount with
+  `8 * size_out` in the C++ and `8 * size_in` in Java; `INT_RIGHT` masks
+  before shifting in the C++ and after in Java; `INT_LESS`/`INT_LESSEQUAL`
+  mask their inputs in Java and not in the C++. These agree on clean inputs
+  with equal sizes.
+- Opcode names: `get_opname` (C++) calls `MULTIEQUAL`, `INDIRECT`,
+  `PTRADD`, `PTRSUB` by their SLEIGH template names `BUILD`, `DELAY_SLOT`,
+  `LABEL`, `CROSSBUILD`; `PcodeOp.getMnemonic` (Java) uses the operation
+  names and accepts both when parsing. Both are available (`name`,
+  `mnemonic`).
+- The C++ `FloatFormat` exists for 4 and 8 bytes only; Java has 2, 4, 8,
+  10, 16 and 32.
+
+**Java bugs fixed on the wide/exact path (not pinned by a Java test)**
+
+- Float comparisons are IEEE: a NaN is unordered and `+0 == -0`. Java's
+  `BigInteger` overloads compare `BigFloat` representations and use
+  `compareTo`'s total order, so there `+0 == -0` is false, `-0 < +0` is
+  true and `x < NaN` is true.
+- Narrowing into the x87 format: a rounding carry bumps the exponent.
+  Java tests the carry against the wrong bit for a format with an explicit
+  integer bit and loses the value (the result decodes as zero).
+
+**Java behaviour kept on the wide/exact path although questionable**
+
+- A NaN result is always the positive quiet NaN (also for `FLOAT_NEG` and
+  `FLOAT_ABS`).
+- `FLOAT_TRUNC` of an infinity gives the largest or smallest integer of
+  the *float's* size, then cut to the output size.
+- `INT2FLOAT` into the 2-, 10-, 16- and 32-byte formats truncates an
+  integer wider than the significand instead of rounding; decimal text is
+  converted to those formats by converting the digits and the power of ten
+  separately and multiplying or dividing (not always the nearest value).
+- The x87 format has no subnormals (they encode as zero), and its infinity
+  is recognised only when the whole 64-bit fraction field, integer bit
+  included, is zero — so a real x87 infinity (`0x7fff 8000…`) decodes as a
+  NaN.
+- `toDecimalString` appends `.0` to scientific notation without a decimal
+  point (`1E+10.0`).
+
 ## 9. Status
 
-Not implemented yet.
+Partially implemented; the track was handed over mid-way. The library
+(`crates/bk-pcode/src`) covers sections 4.1 to 4.4; the test work of
+section 6 is partly done. The exact state, what was verified and what
+remains is in `docs/agents/pcode.md`.
