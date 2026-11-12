@@ -115,7 +115,8 @@ line.
 
 ### Output format, version 1
 
-The format is a contract: golden files hold it and
+The format is a contract: `insta` snapshots of it are checked in (for
+example `crates/bk-testkit/tests/snapshots/`) and
 `bk_testkit::tools::parse_dump` reads it. A change bumps the version in the
 `H` record, here, in `pcodedump.cc` and in the parser together.
 

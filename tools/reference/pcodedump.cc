@@ -4,13 +4,17 @@
 // context defaults of its processor specification, decodes a byte buffer as a
 // linear sweep from a base address and prints every instruction and its p-code
 // in the line format documented in tools/reference/README.md. The format is a
-// contract for golden files and for the parser in crates/bk-testkit; change the
-// two together and bump FORMAT_VERSION.
+// contract for checked-in snapshots and for the parser in crates/bk-testkit;
+// change the two together and bump FORMAT_VERSION.
 //
 // Modelled on Ghidra's sleighexample.cc. Built by scripts/build-reference.sh
 // against the objects of the reference build; it is a development oracle and
-// never part of the product (ADR-005). Part of basilisk and covered by the
-// project licence (see LICENSE at the repository root).
+// never part of the product (ADR-005).
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of basilisk, under the project licence (LICENSE at the repository root).
+// The patches under tools/reference/patches/ modify Ghidra's Apache-2.0 source
+// and stay under that source's licence.
 
 #include "loadimage.hh"
 #include "sleigh.hh"
