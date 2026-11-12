@@ -60,14 +60,14 @@ and a sane architecture in mind.
   subagents, which write the code from those docs. The coordinator spawns
   the agents, reviews and merges their branches. Rules for agents:
   `docs/agents/RULES.md`.
-* **Agent model** (owner, 2026-11-12, latest of several changes that day):
-  **Opus 5.5 at medium effort.** The first wave was started on Fable 5.2;
-  each of those agents stops at its first checkpoint (work committed, status
-  report written) and its track continues with an Opus 5.5 agent at medium
-  effort in the same worktree. New agents start on Opus 5.5 at medium
-  effort. (Owner, later the same day: "Move to using opus 5.5 for all
-  agents now.") When the owner asks for a Fable 5.2 agent, it runs at
-  **high effort** (owner, 2026-11-12: "high effort for fable").
+* **Agent models** (owner, 2026-11-12; this replaces the several earlier
+  rules of the same day): **Fable 5.2 for all research, Opus 5.5 for all
+  implementation.** Research means work whose product is knowledge — a
+  survey, an investigation, an evaluation, a design study — written up as a
+  document. Implementation means work whose product is code, tests or
+  assets in the repository. Effort: **high for Fable** research agents,
+  **medium for Opus** implementation agents. The coordinator (Fable) writes
+  the docs and specs itself.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each

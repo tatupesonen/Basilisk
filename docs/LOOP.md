@@ -33,7 +33,9 @@ The Ghidra source at `../ghidra` is **read-only reference**. Never modify it.
    Ghidra sources, write or update the inventory section and the feature
    spec (`docs/features/<feature>.md`, format below), and assign disjoint
    crates. Record an ADR for every non-obvious decision.
-4. **Start agents**: one per track, each in its own worktree
+4. **Start agents** (models and effort: `DIRECTION.md`, "Agent models" —
+   Fable 5.2 for research, Opus 5.5 for implementation): one per track,
+   each in its own worktree
    (`git worktree add ../basilisk-wt/<track> -b <track>`), briefed with its
    spec and `agents/RULES.md`.
 5. **Review and merge** each finished branch: read the diff against the
