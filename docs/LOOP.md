@@ -146,7 +146,9 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   near-identical functions.
 - **Differential tests** (ADR-007) wherever Ghidra's output defines
   correct behaviour, through `bk-testkit`. Tests needing the spec root
-  (`BASILISK_GHIDRA_DIR`, default `../ghidra`) or the reference tools
+  (`BASILISK_GHIDRA_DIR`; in tests the default is `../ghidra` beside the
+  basilisk checkout, resolved from the workspace root, not the current
+  directory — library code takes an explicit root) or the reference tools
   (`../reference/`) skip with a printed reason when those are absent — they
   never fail for that reason and never pass silently when present.
 - Every public behaviour gets a test. Unit tests sit next to the code;

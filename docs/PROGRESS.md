@@ -11,10 +11,10 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 
 | Track / branch | Crates | Spec |
 |---|---|---|
-| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
+| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — **merged 2026-11-12** |
 | `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — checkpointed by Fable (preprocessor, lexer, AST and parser written; all 150 specs parse; 265 tests pass by its report; verification and paperwork remain); continued by Opus 5.5 |
-| `lang` | `bk-lang` | `features/lang.md` — finished by Opus, but **sent back**: the merge gate failed (registry miscounts `.pspec` files when the root path contains `..`); also moving its fuzz target into the shared crate |
+| `lang` | `bk-lang` | `features/lang.md` — **merged 2026-11-12** (second attempt, after the root-path fix) |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
 | `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
@@ -52,6 +52,27 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — `bk-marshal`, `bk-core` and `bk-lang` merged
+* `bk-marshal` + `bk-core`: XML (quick-xml) and packed encode/decode,
+  byte-exact; address spaces, manager, addresses, ranges, joins. 212
+  tests; two fuzz targets (60 s each, no finding). Not yet checked against
+  Ghidra's binary — only against a transliteration of `marshal.cc`; now
+  that `bk-testkit` is on master, a differential test is a wave 2 item.
+* `bk-lang`: 236 tests; 202 languages from 52 `.ldefs`; 30-minute fuzz run
+  clean. Second attempt: the first failed the merge gate (two spellings of
+  the same path under a `..` root — also silently broke the `.sla` overlay
+  lookup). Fixed by canonicalising roots once; `spec_root_from_env()` now
+  returns `Option` (a library cannot know where the checkout is).
+* The merge gate then caught a second thing, of my making: I held
+  `roxmltree` at 0.21.1 on an agent's word that it was the vetted version,
+  and 0.21.1 overflows the stack on deep nesting. 0.21.2 is now required
+  (ADR-011).
+* Follow-ups for wave 2: move `bk-lang` and `bk-testkit` XML reading onto
+  `bk-marshal`'s document; tracks adopt `bk-testkit` in place of local
+  "find Ghidra" helpers; differential test of `bk-marshal` encoders.
+* Gate on the merge: green, 891 tests. M0 lacks only `sleigh-syntax` and
+  `bin-elf`.
 
 ### 2026-11-12 — reference tools and `bk-testkit` merged; fuzzing unified
 * `scripts/build-reference.sh` → `../reference/` (Ghidra's `sleigh`,

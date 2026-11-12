@@ -211,6 +211,17 @@ Evaluations so far:
   own parser and `object` is a dev-dependency used as a differential
   oracle on well-formed files. The same question is asked afresh for PE and
   Mach-O when those tracks start.
+- **`roxmltree` must be 0.21.2 or later** (2026-11-12). Version 0.21.1
+  overflows the stack on deeply nested elements — a crash on hostile
+  input (ADR-009); 0.21.2 (released 2026-10-24) parses element content
+  iteratively. Found at the merge gate, when the lock file was held at
+  0.21.1 and `bk-lang`'s 100,000-deep nesting test aborted. Lesson: holding
+  a dependency back to an older "vetted" version can remove a fix; read
+  the changelog before pinning downward.
+- **Other adoptions recorded in feature docs**: `num-bigint`,
+  `primitive-types`, `libm` (`features/pcode.md`); `walkdir`,
+  `wait-timeout`, `insta` (`features/reference-tools.md`,
+  `features/lang.md`); `quick-xml` (above).
 - **To evaluate when reached**: `gimli` (DWARF), `pdb`/`pdb2`,
   `cpp_demangle`, `msvc-demangler`, `symbolic-demangle`, `tree-sitter` or
   `lang-c` (C parser), `petgraph`, `rustc-hash`, `smallvec`, `indexmap`,

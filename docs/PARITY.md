@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (`bk-pcode`, reference tools and `bk-testkit` merged).
+Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang` merged).
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -19,8 +19,8 @@ Last updated: 2026-11-12 (`bk-pcode`, reference tools and `bk-testkit` merged).
 
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
-| SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` done (opcodes, op behaviours, float formats; all its Ghidra tests ported). `bk-core` in progress (`core-marshal`) |
-| SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | In progress | Wave 1: `lang`. `.cspec` arrives with the decompiler (M3) |
+| SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
+| SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
 | SoftwareModeling: SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
 | SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | In progress | Wave 1: `sleigh-syntax` (front end only) |
 | SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
@@ -38,7 +38,7 @@ Last updated: 2026-11-12 (`bk-pcode`, reference tools and `bk-testkit` merged).
 
 | Ghidra part | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
-| CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | In progress | Wave 1 |
+| CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
 | SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
 | SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
 | Decompiler engine (DECCORE) | `bk-decomp`, `bk-decomp-print` | M3 | Missing | |
