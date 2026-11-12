@@ -372,8 +372,9 @@ packed vectors per type code; every decoder error path; property tests
 (round trips in both forms, XML and packed agree, decoders never panic,
 range lists against a byte set); the corpus test over the 501 XML files of
 Ghidra's processor and data-test trees; integration tests of the address
-model; fuzz targets `packed_decode` and `xml_decode` (60 s each without a
-finding); benchmarks in `docs/PERF.md`.
+model; fuzz targets `packed_decode` and `xml_decode`, named
+`bk_marshal_packed_decode` and `bk_marshal_xml_decode` in the shared fuzz
+crate (60 s each without a finding); benchmarks in `docs/PERF.md`.
 
 **Gaps.**
 - The Java program-model address tests (`ghidra.program.model.address.*`,
