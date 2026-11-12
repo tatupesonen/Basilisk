@@ -133,12 +133,22 @@ Later an adapter implements it over `bk-program` and `bk-decomp`; keep it
 free of anything those cannot provide and of anything egui-specific.
 
 ### 4.3 Shell
-- **Layout**: dockable panes — tabs, splits, drag to rearrange — with a
-  sensible default arrangement that a newcomer can use without touching
-  it, layout persistence between runs, and a "reset layout" action.
-  Panes can pop out into native windows (deferred viewports, as
-  postmortem does) or the design may defer this to a later wave if it
-  says why.
+- **Layout**: every pane is dockable and the user can **reorder the
+  interface freely** (owner requirement, 2026-11-12): drag a pane's tab to
+  move it, split any area in either direction, stack panes as tabs,
+  resize, close and reopen from the Window menu — as Ghidra's docking
+  windows allow. The default is Ghidra's CodeBrowser arrangement; the
+  layout persists between runs and "Reset Window Layout" restores the
+  default.
+- **Pop-out windows** (owner requirement, 2026-11-12; required in this
+  track, not deferred): any pane can be detached into its own native
+  operating-system window — by dragging its tab out of the main window
+  and by a "Detach" action on the tab — moved to another monitor, and
+  docked back. Detached windows keep working like docked ones (same
+  navigation, highlighting and key bindings), can themselves hold several
+  docked panes, and are restored with the layout on the next run. Use
+  egui's deferred viewports, as postmortem does (its ADR-008 lists the
+  macOS focus and resize workarounds).
 - **Command palette** (one shortcut): every action, plus go-to for
   functions, symbols and addresses, fuzzy-matched, with the shortcut
   shown beside each action. It is an addition: Ghidra's menus, toolbar
@@ -258,7 +268,9 @@ Ghidra with the reason.
   program, navigate by double-click and by palette, go back, cross-
   highlight between listing and decompiler, filter the function table,
   rename and comment (asserting the command sent to the data source),
-  rearrange and reset the layout, remap a key.
+  rearrange and reset the layout, detach a pane into its own window and
+  dock it back, restore a saved layout that includes a detached window,
+  remap a key.
 - **Snapshot images** of the main window in both themes and of each view,
   rendered headlessly, kept as `insta`/kittest snapshots. They are also
   the designer's eyes: the design is judged from renders, not from code.

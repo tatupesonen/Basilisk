@@ -24,6 +24,7 @@ and a sane architecture in mind.
 | **The decompiler is ported from Ghidra's C++ engine** — same pipeline as the starting point, validated against Ghidra's own tests and by diffing output with the original; improvements over Ghidra's output are allowed once parity is the measured baseline (ADR-004). | 2026-11-12 |
 | **The UI is egui**, and it should be **good-looking and intuitive**; work on it started early, against demo data, with the agent briefed as an expert UI designer (`features/ui-shell.md`). | 2026-11-12 |
 | **The UI stays familiar to Ghidra users**: "make the UI somewhat represent old Ghidra; if you are proficient in Ghidra it should be easy to work in basilisk." Same default layout, names, menus and key bindings; the improvement is in look, feel and additions, not in moving things. | 2026-11-12 |
+| **The interface can be reordered and its windows popped out**: panes are dockable and rearrangeable, and any pane can be detached into its own native window. | 2026-11-12 |
 | **The plugin API is Python through PyO3**, so users can still build their own plugins (ADR-014). | 2026-11-12 |
 | **Licence: GPL-3.0-or-later** for the whole project (first Apache-2.0; the owner does not mind GPL-3.0). Ghidra stays attributed in `NOTICE` (ADR-018). | 2026-11-12 |
 | **Ghidra's GPL helpers are ported like any other code** (GNU demangler, GNU disassembler wrapper, DMG): plain crates, called directly — no wrappers, helper processes or feature flags (ADR-018). | 2026-11-12 |
