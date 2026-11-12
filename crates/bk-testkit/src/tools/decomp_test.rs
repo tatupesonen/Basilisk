@@ -231,7 +231,9 @@ fn parse_unit_tests(text: &str) -> Result<(Vec<TestOutcome>, usize, usize), Repo
             if reason.is_empty() || reason.starts_with(':') {
                 if let Some(name) = current.take() {
                     let reason = reason.trim_start_matches(':').trim();
-                    let detail = assertion.take().or((!reason.is_empty()).then_some(reason));
+                    let detail = assertion
+                        .take()
+                        .or_else(|| (!reason.is_empty()).then_some(reason));
                     tests.push(TestOutcome {
                         name: name.to_owned(),
                         passed: false,

@@ -136,11 +136,17 @@ fn drain<R: Read + Send + 'static>(mut pipe: R) -> JoinHandle<io::Result<Vec<u8>
     })
 }
 
-/// The result of a pipe thread; a panic in it is reported as an I/O error.
+/// The result of a pipe thread; a panic in it is reported as an I/O error
+/// carrying the panic's message.
 fn join<T>(handle: JoinHandle<io::Result<T>>) -> io::Result<T> {
-    handle
-        .join()
-        .map_err(|_| io::Error::other("a pipe thread panicked"))?
+    handle.join().map_err(|payload| {
+        let message = payload
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+            .unwrap_or("no message");
+        io::Error::other(format!("a pipe thread panicked: {message}"))
+    })?
 }
 
 /// What a drained pipe held, as text. The tools print ASCII; anything else
@@ -152,7 +158,8 @@ fn collect(handle: Option<JoinHandle<io::Result<Vec<u8>>>>) -> io::Result<String
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
 

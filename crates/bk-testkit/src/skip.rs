@@ -103,6 +103,10 @@ pub(crate) fn verdict(
 /// Act on a missing requirement: print the skip line, or panic when skips
 /// are failures. Panicking is how a test fails; this is test-support code.
 #[track_caller]
+#[expect(
+    clippy::panic,
+    reason = "a required oracle that is missing must fail the calling test, and a panic is how a test fails"
+)]
 fn report(missing: &Missing) {
     let thread = std::thread::current();
     match verdict(

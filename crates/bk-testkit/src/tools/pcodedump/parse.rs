@@ -261,11 +261,15 @@ fn last_instruction(
 
 /// A `0x`-prefixed hexadecimal number.
 fn hex(line: usize, what: &'static str, text: &str) -> Result<u64, DumpParseError> {
+    hex_value(text).ok_or_else(|| bad(line, what, text))
+}
+
+/// `0x` and lower- or upper-case hexadecimal digits, or `None`.
+fn hex_value(text: &str) -> Option<u64> {
     text.strip_prefix("0x")
         // `from_str_radix` accepts a leading `+`, which the tool never prints.
         .filter(|digits| digits.bytes().all(|byte| byte.is_ascii_hexdigit()))
         .and_then(|digits| u64::from_str_radix(digits, 16).ok())
-        .ok_or_else(|| bad(line, what, text))
 }
 
 /// A decimal number.
@@ -274,11 +278,17 @@ fn decimal<T: std::str::FromStr>(
     what: &'static str,
     text: &str,
 ) -> Result<T, DumpParseError> {
+    decimal_value(text).ok_or_else(|| bad(line, what, text))
+}
+
+/// A decimal number, or `None`. The error says which field and shows its
+/// text, which is all the standard parser's reason would add.
+fn decimal_value<T: std::str::FromStr>(text: &str) -> Option<T> {
     // `parse` accepts a leading `+`, which the tool never prints.
     if text.starts_with('+') {
-        return Err(bad(line, what, text));
+        return None;
     }
-    text.parse().map_err(|_| bad(line, what, text))
+    text.parse().ok()
 }
 
 /// A run of two-digit lower-case hexadecimal bytes.
@@ -338,8 +348,8 @@ fn varnode(line: usize, text: &str) -> Result<DumpVarnode, DumpParseError> {
     }
     Ok(DumpVarnode {
         space: space.to_owned(),
-        offset: hex(line, "varnode", offset).map_err(|_| error())?,
-        size: decimal(line, "varnode", size).map_err(|_| error())?,
+        offset: hex_value(offset).ok_or_else(error)?,
+        size: decimal_value(size).ok_or_else(error)?,
         name: parts.next().map(str::to_owned),
     })
 }

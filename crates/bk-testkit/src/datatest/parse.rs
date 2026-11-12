@@ -68,6 +68,8 @@ pub enum DataTestError {
         attribute: &'static str,
         /// Its value.
         value: String,
+        /// Why it does not parse.
+        source: std::num::ParseIntError,
     },
     /// The content of a `<bytechunk>` is not pairs of hexadecimal digits.
     #[error("line {line}: <bytechunk> content is not hexadecimal byte pairs (at {found:?})")]
@@ -190,11 +192,12 @@ fn attribute<'a>(
     element: &'static str,
     name: &'static str,
 ) -> Result<&'a str, DataTestError> {
-    node.attribute(name).ok_or(DataTestError::MissingAttribute {
-        line: line_of(node),
-        element,
-        attribute: name,
-    })
+    node.attribute(name)
+        .ok_or_else(|| DataTestError::MissingAttribute {
+            line: line_of(node),
+            element,
+            attribute: name,
+        })
 }
 
 /// An unsigned attribute in C notation: `0x` hexadecimal, leading-`0` octal
@@ -213,23 +216,28 @@ fn unsigned(
     } else {
         text.parse()
     };
-    parsed.map_err(|_| DataTestError::BadNumber {
+    parsed.map_err(|source| DataTestError::BadNumber {
         line: line_of(node),
         element,
         attribute: name,
         value: value.to_owned(),
+        source,
     })
 }
 
 /// A decimal count attribute of `<stringmatch>`.
 fn count(node: Node<'_, '_>, name: &'static str) -> Result<u32, DataTestError> {
     let value = attribute(node, "stringmatch", name)?;
-    value.trim().parse().map_err(|_| DataTestError::BadNumber {
-        line: line_of(node),
-        element: "stringmatch",
-        attribute: name,
-        value: value.to_owned(),
-    })
+    value
+        .trim()
+        .parse()
+        .map_err(|source| DataTestError::BadNumber {
+            line: line_of(node),
+            element: "stringmatch",
+            attribute: name,
+            value: value.to_owned(),
+            source,
+        })
 }
 
 fn string_match(node: Node<'_, '_>) -> Result<StringMatch, DataTestError> {
