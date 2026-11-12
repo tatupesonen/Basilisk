@@ -18,7 +18,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — **merged 2026-11-12** |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
 | `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
-| `decomp-research` | docs only: `docs/research/decompiler-quality.md` | research (Fable 5.2, the owner's choice for this one): how to beat Ghidra's decompiler on accuracy and readability; feeds the M3 specs and an ADR |
+| `decomp-research` | docs only: `docs/research/decompiler-quality.md` | research (Fable 5.2 at high effort, the owner's choice for this one): how to beat Ghidra's decompiler on accuracy and readability; feeds the M3 specs and an ADR |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
 | `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
 

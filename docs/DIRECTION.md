@@ -66,7 +66,8 @@ and a sane architecture in mind.
   report written) and its track continues with an Opus 5.5 agent at medium
   effort in the same worktree. New agents start on Opus 5.5 at medium
   effort. (Owner, later the same day: "Move to using opus 5.5 for all
-  agents now.")
+  agents now.") When the owner asks for a Fable 5.2 agent, it runs at
+  **high effort** (owner, 2026-11-12: "high effort for fable").
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
