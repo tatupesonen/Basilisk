@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="basilisk">
+  <!-- simplified artwork for 16-32 px: heavier ring, no head eye, pupil centred on the pixel grid -->
+  <rect width="256" height="256" rx="58" fill="#0F1412"/>
+  <g fill="#B8F03C" transform="translate(25.6 25.6) scale(0.8)">
+    <!-- serpent: head, body tapering round to the tail -->
+    <path d="M162.2 54 A100 100 0 1 0 208.9 89.2 L208.7 91.5 C209.1 94 209.8 96.2 210.4 98.5 C211.8 103.5 213.2 108.4 214.1 113.2 C216.3 124 216.9 134.7 215.8 144.9 C213.1 171.4 198.8 194.7 179.2 208.1 C159.5 221.5 134.8 224.9 114 218.7 C93.2 212.4 76.6 196.7 69.2 178.2 C61.8 159.7 63.5 138.8 72.6 122.9 C81.7 106.9 98 97 114.5 93.7 L126 118 L193 86 L198 70 Z"/>
+    <!-- crown -->
+    <path d="M87.9 58 L80.7 24.8 L113.7 46 L128 0 L142.3 46 L175.3 24.8 L168.1 58 Z"/>
+    <!-- slit pupil -->
+    <path d="M128 128 Q168 170 128 212 Q88 170 128 128 Z"/>
+  </g>
+</svg>
