@@ -18,4 +18,20 @@ here, newest first under the crate's heading. Sizes use SI prefixes.
 
 ## Measurements
 
-None yet.
+### `bk-lang`
+
+Command (release, Ghidra tree at commit `42db038f3c`):
+
+```text
+BASILISK_GHIDRA_DIR=/path/to/ghidra cargo test -p bk-lang --release --test bench -- --ignored --nocapture
+```
+
+Each figure is the fastest and the median of repeated runs. The scan walks
+every module of the Ghidra tree (39 processor modules plus the rest of
+`Ghidra/`), finds 52 `.ldefs` files and registers 202 languages; budget
+50 ms (`docs/features/lang.md`).
+
+| Date | Machine | Registry scan | Scan + opinion database (32 files, 339 constraints) | Scan + all 87 `.pspec` | One opinion query (ELF MIPS, binary pattern) |
+|---|---|---|---|---|---|
+| 2026-11-12 | Apple M1 Pro, macOS, Rust 1.97.1; load average 10 on 8 cores (other agents building, a fuzzer running) | 13.05 / 14.97 ms | 16.77 / 21.40 ms | 21.58 / 25.60 ms | 6.0 / 6.1 µs |
+| 2026-11-12 | same machine, other agents building | 11.8 / 12.8 ms | — / 15.6 ms | — / 22.1 ms | — / 5.8 µs |
