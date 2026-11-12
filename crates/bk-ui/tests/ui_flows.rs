@@ -14,11 +14,12 @@
 mod common;
 
 use bk_ui::actions::{ActionId, keymap::chord};
+use bk_ui::model::ProgramSource as _;
 use bk_ui::model::{Command, CommentKind};
 use bk_ui::views::ViewKind;
 use common::*;
 use egui::{Key, Modifiers};
-use egui_kittest::kittest::Queryable;
+use egui_kittest::kittest::{NodeT as _, Queryable};
 
 const CMD_SHIFT: Modifiers = Modifiers {
     alt: false,
@@ -110,7 +111,6 @@ fn double_click_follows_a_call_in_the_listing_and_the_toolbar_goes_back() {
     settle(&mut h);
     // Back returns to the call site, where the cursor was.
     let src = bk_ui::demo::DemoProgram::licd().unwrap();
-    use bk_ui::model::ProgramSource as _;
     assert_eq!(
         src.function_containing(here(&h)).unwrap().unwrap().entry,
         addr("main")
@@ -151,7 +151,6 @@ fn decompiler_and_listing_cross_highlight() {
     assert!(!related.ranges.is_empty());
     assert!(related.contains(at));
     let f = bk_ui::demo::DemoProgram::licd().unwrap();
-    use bk_ui::model::ProgramSource as _;
     assert_eq!(
         f.function_containing(at).unwrap().unwrap().entry,
         addr("main")
@@ -356,7 +355,6 @@ fn window_menu_reopens_a_closed_pane_and_reset_restores_ghidras_layout() {
     assert!(h.query_by_label_contains("Decompile:").is_none());
     h.get_by_label("Window").click();
     h.run_steps(1);
-    use egui_kittest::kittest::NodeT as _;
     let item = h
         .get_all_by_label_contains("Decompile")
         .find(|n| {
