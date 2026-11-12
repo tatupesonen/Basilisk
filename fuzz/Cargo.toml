@@ -1,3 +1,8 @@
+# The one fuzz crate for the whole workspace (docs/LOOP.md, "Fuzzing").
+# Every fuzz target of every crate lives here: add the crate under
+# [dependencies] and one [[bin]] entry, both in alphabetical order, and put
+# the target in fuzz_targets/<crate>_<what>.rs. Do not create a fuzz crate
+# anywhere else.
 [package]
 name = "basilisk-fuzz"
 version = "0.0.0"
@@ -13,8 +18,8 @@ libfuzzer-sys = "0.4.13"
 bk-lang = { path = "../crates/bk-lang" }
 
 [[bin]]
-name = "lang_readers"
-path = "fuzz_targets/lang_readers.rs"
+name = "bk_lang_readers"
+path = "fuzz_targets/bk_lang_readers.rs"
 test = false
 doc = false
 bench = false

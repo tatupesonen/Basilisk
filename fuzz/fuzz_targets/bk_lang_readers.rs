@@ -3,7 +3,7 @@
 //! secondary-key patterns. Nothing may panic (ADR-009).
 //!
 //! Seed with Ghidra's files, for example
-//! `find ../ghidra/Ghidra -name '*.pspec' -o -name '*.ldefs' -o -name '*.opinion' | xargs -I{} cp {} corpus/lang_readers/`.
+//! `find ../ghidra/Ghidra -name '*.pspec' -o -name '*.ldefs' -o -name '*.opinion' | xargs -I{} cp {} corpus/bk_lang_readers/`.
 
 #![no_main]
 

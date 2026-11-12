@@ -83,7 +83,7 @@ needed. Steps:
 2. Copy `DEC/cpp` and `DEC/zlib` into `../reference/src` and build
    `sleigh_opt`, `decomp_opt` and `decomp_test_dbg` with the Makefile,
    using parallel make. The generated parser sources (`slghparse.cc`,
-   `slghscan.cc`, `grammar.cc`, `xml.cc`, `pcodeparse.cc`, `ruleparse.cc`)
+   `slghscan.cc`, `grammar.cc`, `xml.cc`, `pcodeparse.cc`)
    are in the tree; avoid regenerating them where the host's `bison`/`flex`
    are too old (macOS ships bison 2.3) — touch them newer than their
    grammars, or install nothing and document what is needed. The build
@@ -103,8 +103,11 @@ needed. Steps:
 4. Build `bin/pcodedump`.
 5. Run `bin/decomp_test` over the unit tests and data tests with the
    overlay as its SLEIGH root and write the result summary to the stamp:
-   this is the baseline the Rust decompiler is measured against. Expected:
-   every test passes; report any that do not on this host.
+   this is the baseline the Rust decompiler is measured against. On macOS
+   arm64 with Apple clang, 204 of 205 unit tests and 758 of 760 data-test
+   checks pass (`double_decimal_precision` and two `floatprint.xml` checks
+   fail, apparently for host C++ library reasons); the stamp records the
+   exact result.
 6. Write `STAMP`.
 
 The script prints what it is doing in plain lines and ends with a short
@@ -149,9 +152,11 @@ The Rust API other crates' tests use:
   and return typed results (for `pcodedump`: parsed instructions and ops;
   for `decomp_test`: per-test pass/fail). No shell interpolation of
   arguments.
-- **Golden files:** compare text or bytes against a file under the
-  calling crate's `tests/golden/`, with readable diffs on mismatch and
-  regeneration when `UPDATE_GOLDEN=1` (`LOOP.md`, Testing rules).
+- **Golden files:** `insta` snapshots (decided 2026-11-12, replacing the
+  hand-written comparison this spec first asked for: `insta` is the
+  standard crate for it and is already in the workspace). `bk-testkit` adds
+  no golden machinery of its own beyond small helpers that are specific to
+  the oracles (for example normalising tool output before it is snapshotted).
 - **Data tests:** a parser for Ghidra's `<decompilertest>` files into a
   typed structure (binary image: architecture, byte chunks with space and
   offset, symbols; the script lines; the string matches with their

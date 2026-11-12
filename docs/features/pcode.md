@@ -32,6 +32,16 @@ execution.
 | `UT/testfloatemu.cc` (31 tests), `UT/testmultiprec.cc` (5 tests) | C++ tests |
 | `SMT/ghidra/pcode/floatformat/` (`FloatFormatTest` 58, `BigFloatTest` 26), `SMT/ghidra/pcode/opbehavior/` (about 46 classes) | Java tests |
 
+*Corrections from the track's reading of Ghidra's source (2026-11-12),
+which override the text below where they differ: there are 73 operations,
+not 74 (slot 45 is unused); `get_opcode` is a map lookup and the boolean
+flips come from `typeop.cc`, not `opcodes.cc`; the Java op behaviours and
+their tests live in `Ghidra/Framework/Emulation` (checklist file
+`docs/inventory/tests/framework-emulation.md`); the C++ `FloatFormat` has
+only the 4- and 8-byte formats, so sizes 2, 10, 16 and 32 are defined by
+the Java alone; `multiprecision.cc`'s function names differ from those
+listed here.*
+
 ## 3. Scope
 
 **In:** opcodes; op behaviours for all sizes; float formats; multiprecision
@@ -169,6 +179,138 @@ rules) but implement it natively, and port the five tests against it.
 (The implementing agent appends further differences here, including any
 C++/Java disagreements found.)
 
+Appended by the `pcode` track (first agent, revised by the second; see `docs/agents/pcode.md` for
+the reasoning behind each and for what Ghidra's source says):
+
+**Structure**
+
+- The wide path's operand is `Wide`, a fixed 512-bit unsigned integer
+  (`primitive-types`' `U512`), not an arbitrary-precision integer: `Copy`,
+  no allocation, covers the 64-byte `ZMM` registers. Sizes above 64 bytes
+  are `EvalError::UnsupportedSize`. Java's `BigInteger` has no limit.
+- The wide path returns the result cut to `size_out` bytes. Java returns
+  an untruncated, possibly negative `BigInteger` and the emulator truncates
+  it when storing.
+- The exact float level uses `num-bigint` for significands and a small
+  `Decimal` type that reproduces the parts of Java's `BigDecimal` Ghidra's
+  output is defined by (canonical `toString`, `MathContext` rounding,
+  the `String` constructor); `BigFloat` operations return new values
+  instead of mutating.
+- Two float implementations are kept (host level = C++ `float.cc`, exact
+  level = Java `BigFloat`), because they do not give identical results:
+  see the next two groups.
+- `PTRADD` (ternary) and `PTRSUB` (binary) are evaluated as `typeop.cc`
+  wires them (`OpBehaviorPtradd`/`OpBehaviorPtrsub`); the emulator's
+  `registerInstructions` leaves them unimplemented, as does the wide path.
+- There is no `behavior/boolean.rs`: the four boolean operations are
+  one-line arms of the dispatch `match`.
+
+**Where Ghidra's result is undefined or host-dependent (u64 path)**
+
+Reviewed by the second `pcode` agent against Ghidra's source, Ghidra's own
+data tests and a differential run of Ghidra's compiled C++
+(`tests/cpp_oracle.rs`, 87,176 cases; see `docs/agents/pcode.md`).
+
+- A NaN *created* by an operation (`inf - inf`, `0/0`, `0 * inf`,
+  `sqrt(-1)`) is the **negative** quiet NaN, x86-64's default NaN. Ghidra
+  takes the host FPU's: negative on x86-64, positive on AArch64. Ghidra's
+  data test `floatprint.xml` folds `0.0f / 0.0f` and expects `-NAN`, so the
+  x86-64 result is the tested one (the reference build on AArch64 fails that
+  test). A NaN *propagated* from an input keeps the sign of the first NaN
+  input (both hosts agree). (Changed from the first agent's positive NaN.)
+- `FLOAT_TRUNC` of a NaN, an infinity or a value outside `i64` saturates
+  (NaN gives 0). The C++ cast is undefined: x86-64 gives `i64::MIN`,
+  AArch64 saturates. Java's `(long)` cast saturates and
+  `FloatFormatTest.testOpTruncLongInt` and `OpBehaviorFloatTruncTest` pin
+  that, so basilisk saturates; this is the one place it does not follow
+  x86-64, and a differential test against a reference `decomp` built on
+  x86-64 will see the difference for out-of-range constants.
+- A value that rounds up from the largest subnormal to the smallest normal
+  encodes as the smallest normal. The C++ shifts by -1 there ("TODO handle
+  round to normal case") and returns a signed zero on both hosts (seen in
+  the differential run). Java is correct. Kept: a fixed rounding bug in a
+  case no Ghidra test pins.
+- `INT_SEXT` with `size_out < size_in`, or a size of 0: the C++ shifts by a
+  negative amount or by 64; both hosts take the count modulo 64, and
+  basilisk now does the same, reproducing Ghidra's compiled result bit for
+  bit. (The first agent returned the input unchanged; the differential run
+  found it.)
+- Shift counts outside `0..64` that the C++ reaches only with a size of 0
+  or above 8 (undefined behaviour) are taken modulo 64, which is what Java
+  defines and what x86-64/AArch64 produce.
+- `recover_input_binary` of `INT_LEFT`/`INT_RIGHT`/`INT_SRIGHT` by 0 at 8
+  bytes: the C++ shifts by 64, which both hosts take as 0, so it reports
+  every non-zero output as "not in range" (seen on AArch64 in the
+  differential run). basilisk returns the output, the correct input. Kept
+  as a deliberate fix: the decompiler's only caller is jump-table
+  recovery (`jumptable.cc`), where Ghidra simply fails on such a shift.
+- `printDecimal` prints non-finite values as `inf`, `-inf`, `nan`, `-nan`
+  (the C++ prints what the C library prints). It reproduces libstdc++'s
+  stream extraction, which stores the largest finite value on overflow
+  (`testfloatemu.cc` pins `1.79769313486232e+308` for `DBL_MAX`); with
+  libc++ (macOS) Ghidra prints 17 digits there and fails its own test.
+
+**C++/Java disagreements for sizes up to 8 bytes (the C++ wins)**
+
+- `INT_DIV` by zero: the C++ throws; Java returns 0. basilisk:
+  `DivideByZero`, on the wide path too (Java's `BigInteger` overload also
+  returns 0, while its `INT_SDIV`/`INT_REM`/`INT_SREM` throw).
+- `FLOAT_ROUND`: the C++ uses `round()` (halfway cases away from zero);
+  Java uses `floor(x + 0.5)`. The u64 path follows the C++; the wide path
+  follows Java, whose tests pin `round(-2.5) = -2`.
+- `PIECE`: the C++ shifts the high piece by `(size_out - size_in) * 8`;
+  Java shifts by `size_in * 8`, which is wrong when the two pieces differ
+  in size. Both paths use the C++ formula.
+- `SUBPIECE` with an offset of 8 or more: 0 in the C++; Java's `long`
+  overload shifts by the offset modulo 8.
+- `INT_LEFT`/`INT_RIGHT`/`INT_SRIGHT` compare the shift amount with
+  `8 * size_out` in the C++ and `8 * size_in` in Java; `INT_RIGHT` masks
+  before shifting in the C++ and after in Java; `INT_LESS`/`INT_LESSEQUAL`
+  mask their inputs in Java and not in the C++. These agree on clean inputs
+  with equal sizes.
+- Opcode names: `get_opname` (C++) calls `MULTIEQUAL`, `INDIRECT`,
+  `PTRADD`, `PTRSUB` by their SLEIGH template names `BUILD`, `DELAY_SLOT`,
+  `LABEL`, `CROSSBUILD`; `PcodeOp.getMnemonic` (Java) uses the operation
+  names and accepts both when parsing. Both are available (`name`,
+  `mnemonic`).
+- The C++ `FloatFormat` exists for 4 and 8 bytes only; Java has 2, 4, 8,
+  10, 16 and 32.
+
+**Java bugs fixed on the wide/exact path (not pinned by a Java test)**
+
+- Float comparisons are IEEE: a NaN is unordered and `+0 == -0`. Java's
+  `BigInteger` overloads compare `BigFloat` representations and use
+  `compareTo`'s total order, so there `+0 == -0` is false, `-0 < +0` is
+  true and `x < NaN` is true.
+- Narrowing into the x87 format: a rounding carry bumps the exponent.
+  Java tests the carry against the wrong bit for a format with an explicit
+  integer bit and loses the value (the result decodes as zero).
+
+**Java behaviour kept on the wide/exact path although questionable**
+
+- A NaN result is always the positive quiet NaN (also for `FLOAT_NEG` and
+  `FLOAT_ABS`). (This differs from the u64 path's x86-64 rule; Java's
+  `BigFloat` has no NaN sign, so it is defined behaviour there.)
+- `FLOAT_TRUNC` of an infinity gives the largest or smallest integer of
+  the *float's* size, then cut to the output size.
+- `INT2FLOAT` into the 2-, 10-, 16- and 32-byte formats truncates an
+  integer wider than the significand instead of rounding; decimal text is
+  converted to those formats by converting the digits and the power of ten
+  separately and multiplying or dividing (not always the nearest value).
+- The x87 format has no subnormals (they encode as zero), and its infinity
+  is recognised only when the whole 64-bit fraction field, integer bit
+  included, is zero — so a real x87 infinity (`0x7fff 8000…`) decodes as a
+  NaN.
+- `toDecimalString` appends `.0` to scientific notation without a decimal
+  point (`1E+10.0`).
+
 ## 9. Status
 
-Not implemented yet.
+Complete (2026-11-12). The library (`crates/bk-pcode/src`) covers sections
+4.1 to 4.4. Every listed Ghidra test is ported and marked: `testfloatemu.cc`
+(31), `testmultiprec.cc` (5), `BigFloatTest` (26), `FloatFormatTest` (58)
+and the 40 `OpBehavior*Test` classes (82 methods). Derived tests, a
+differential test against Ghidra's compiled C++ behaviours, property tests
+(native arithmetic, wide = u64, float ops against native `f32`/`f64`, round
+trips, never panics) and benchmarks (`docs/PERF.md`) are in place. Gaps and
+the detailed report: `docs/agents/pcode.md`.

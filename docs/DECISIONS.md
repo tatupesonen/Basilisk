@@ -193,15 +193,24 @@ Evaluations so far:
   test. Crates that read Ghidra XML should go through `bk-marshal`'s
   document rather than a second XML crate; `bk-lang`, written in the same
   wave on `roxmltree`, moves over after both merge.
-- **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
-  *Being re-examined by the `bin-elf` track after the owner's rule of
-  2026-11-12 (use existing crates unless there is a good reason): the
-  reasoning below is a hypothesis until that track reports what the
-  crates actually expose and how they behave on damaged files.* Ghidra's
-  loaders expose format details (every header field, relocation and
-  dynamic-table entry, vendor extensions) and tolerate malformed files in
-  specific ways that its tests assert. The format crates are ports of
-  Ghidra's parsers; `object` is a dev-dependency for differential tests.
+- **ELF parsing: `object`, `goblin` → oracle only** (confirmed 2026-11-12
+  by experiment in the `bin-elf` track; the program is kept under
+  `docs/agents/bin-elf-crate-eval/`). A real `.so` was damaged in eleven
+  ways that Ghidra tolerates and both crates were run on each. `object`
+  0.40.0 (712 million downloads): a cut-off or over-counted section table
+  or an out-of-range `e_shstrndx` yields no sections at all where Ghidra
+  keeps what fits; an invalid `EI_DATA` is rejected where Ghidra assumes
+  little-endian; there is no path from the dynamic table to dynamic symbols
+  in stripped files; no Android packed relocations or entry-size
+  validation. `goblin` 0.10.7 (88 million): strict mode aborts on any bad
+  table, permissive mode replaces bad tables with empty ones and logs
+  globally instead of returning diagnostics; a bad `e_phoff` is fatal
+  either way; no extended numbering, RELR or Android relocations; parses
+  eagerly from one slice. Neither can carry Ghidra's tolerance rules, which
+  are the reason an analysis tool's ELF reader exists, so `bk-elf` is its
+  own parser and `object` is a dev-dependency used as a differential
+  oracle on well-formed files. The same question is asked afresh for PE and
+  Mach-O when those tracks start.
 - **To evaluate when reached**: `gimli` (DWARF), `pdb`/`pdb2`,
   `cpp_demangle`, `msvc-demangler`, `symbolic-demangle`, `tree-sitter` or
   `lang-c` (C parser), `petgraph`, `rustc-hash`, `smallvec`, `indexmap`,
@@ -443,6 +452,11 @@ The GNU demangler is a different case: Ghidra carries libiberty's
 demangler source in its own tree (`GPL/DemanglerGnu`), and that is ported
 to Rust (ADR-018), not built from C.
 
+binutils' code is used unmodified (owner, 2026-11-12: "just use existing
+binutils, no value in rewriting them"). The one exception the owner allows:
+a particular part may be rewritten in Rust if it is really slow — shown by
+a benchmark recorded in `PERF.md`, not assumed.
+
 Schedule: milestone M10 with the rest of the comparison tooling, or
 earlier if a differential test wants GNU's disassembly as a second oracle.
 
@@ -480,3 +494,28 @@ and check that all code with miri that does need unsafe." Tightens the
   Miri does run.
 
 Currently no crate on `master` contains `unsafe`.
+
+## ADR-021 — Where Ghidra's result depends on the host, basilisk takes x86-64's
+(Proposed by the `pcode` track, accepted 2026-11-12.)
+
+Some of Ghidra's C++ behaviour is not defined by its source but by the
+machine it runs on: the sign of a NaN an operation creates, conversions of
+out-of-range floats to integers, and decimal printing of floats through the
+C++ standard library. Ghidra's own tests show it: on macOS on Apple silicon
+the reference build fails one unit test (`double_decimal_precision`) and
+two `floatprint.xml` checks that pass on x86-64 Linux.
+
+basilisk's results must not depend on the host. Where Ghidra's does,
+basilisk produces **the result Ghidra gives on x86-64 Linux** (its
+reference platform, and the one its tests were written on), on every
+platform — unless a Ghidra test pins a different value, in which case the
+test wins and the case is recorded in the feature doc. Examples in
+`bk-pcode`: a created NaN is negative (so `0.0f/0.0f` prints `-NAN`, as
+`floatprint.xml` expects); out-of-range `FLOAT_TRUNC` saturates, because
+Ghidra's Java tests pin saturation.
+
+Consequence for differential tests (ADR-007): an oracle built on another
+host disagrees with basilisk in exactly these documented cases; tests list
+them rather than loosen the comparison. The x86-64 behaviour that no test
+pins is taken from reading the source until someone runs the oracle on
+x86-64 Linux, which `scripts/build-reference.sh` in a container can do.

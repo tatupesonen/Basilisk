@@ -22,12 +22,14 @@ and a sane architecture in mind.
 | **Not a one-to-one port: improving on Ghidra is allowed.** Ghidra is the baseline for behaviour and the reference to learn from, not a ceiling. Where a better design, algorithm or result is found, take it, and document the difference (ADR-001). | 2026-11-12 |
 | **Reuse Ghidra's processor specs unchanged** (`.slaspec`/`.sinc`/`.sla`, `.ldefs`, `.pspec`, `.cspec`, `.opinion`, pattern files). basilisk designs **its own program database**; it does not read or write Ghidra projects (ADR-002, ADR-003). | 2026-11-12 |
 | **The decompiler is ported from Ghidra's C++ engine** — same pipeline as the starting point, validated against Ghidra's own tests and by diffing output with the original; improvements over Ghidra's output are allowed once parity is the measured baseline (ADR-004). | 2026-11-12 |
-| **The UI is egui.** | 2026-11-12 |
+| **The UI is egui**, and it should be **good-looking and intuitive**; work on it started early, against demo data, with the agent briefed as an expert UI designer (`features/ui-shell.md`). | 2026-11-12 |
+| **The UI stays familiar to Ghidra users**: "make the UI somewhat represent old Ghidra; if you are proficient in Ghidra it should be easy to work in basilisk." Same default layout, names, menus and key bindings; the improvement is in look, feel and additions, not in moving things. | 2026-11-12 |
 | **The plugin API is Python through PyO3**, so users can still build their own plugins (ADR-014). | 2026-11-12 |
 | **Licence: GPL-3.0-or-later** for the whole project (first Apache-2.0; the owner does not mind GPL-3.0). Ghidra stays attributed in `NOTICE` (ADR-018). | 2026-11-12 |
 | **Ghidra's GPL helpers are ported like any other code** (GNU demangler, GNU disassembler wrapper, DMG): plain crates, called directly — no wrappers, helper processes or feature flags (ADR-018). | 2026-11-12 |
 | **basilisk is a single binary.** | 2026-11-12 |
 | **binutils is built from source as its own crate** for the GNU disassembler comparison, so nothing has to be installed separately (ADR-019). Reference clone: `../binutils` (2.41, the version Ghidra names). | 2026-11-12 |
+| **binutils is used as it is, not rewritten**: there is no value in rewriting it. A particular part may be rewritten in Rust only if it is measured to be really slow (benchmark first, numbers in `PERF.md`). | 2026-11-12 |
 
 ## Tests
 
@@ -61,7 +63,8 @@ and a sane architecture in mind.
   each of those agents stops at its first checkpoint (work committed, status
   report written) and its track continues with an Opus 5.5 agent at medium
   effort in the same worktree. New agents start on Opus 5.5 at medium
-  effort.
+  effort. (Owner, later the same day: "Move to using opus 5.5 for all
+  agents now.")
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
