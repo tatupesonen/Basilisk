@@ -11,7 +11,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 
 | Track / branch | Crates | Spec |
 |---|---|---|
-| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` |
+| `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
 | `pcode` | `bk-pcode` | `features/pcode.md` |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` |
 | `lang` | `bk-lang` | `features/lang.md` |
@@ -36,9 +36,10 @@ Next steps for the coordinator:
    (`git -C ../basilisk-wt/<track> log --oneline master..HEAD`, read the
    diff and `docs/agents/<track>.md`), run the gate on the merge, merge to
    `master`, remove the worktree.
-2. After `core-marshal` and `pcode` are both merged, add the opcode
-   attribute helpers to `bk-marshal` (`read_opcode`/`write_opcode`, cut out
-   of wave 1 so the two tracks stay independent).
+2. After `core-marshal` and `lang` are both merged, move `bk-lang`'s XML
+   reading from `roxmltree` onto `bk-marshal`'s document (ADR-011). The
+   opcode attribute needs no glue: `bk-marshal` has generic
+   `read_enum`/`write_enum`.
 3. Tick M0 in `PLAN.md`, update `PARITY.md`, log the wave below.
 4. Plan wave 2 (`PLAN.md`, "Working in waves"): write the inventory
    sections and feature specs for the SLEIGH runtime, the SLEIGH compiler's

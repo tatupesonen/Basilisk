@@ -178,11 +178,21 @@ Evaluations so far:
 - **Compression: `flate2` with the `zlib-rs` backend → adopt.** Pure Rust.
   `.sla` files are zlib streams; decompressed content is compared, never
   compressed bytes.
-- **XML reading: `roxmltree` → adopt provisionally** for `.ldefs`,
-  `.pspec`, `.cspec`, `.opinion` and decompiler data tests. The foundation
-  track verifies that every XML file under `../ghidra/Ghidra/Processors`
-  and `datatests/` parses, and falls back to porting Ghidra's `xml.cc` if
-  any does not.
+- **XML reading: `quick-xml` → adopt; `roxmltree` → oracle only**
+  (2026-11-12, from the `core-marshal` track's corpus check, superseding
+  the provisional choice of `roxmltree`). `roxmltree` parses all 501 XML
+  files under Ghidra's processor and data-test trees, but it merges text,
+  entity references and CDATA into one node, so Ghidra's rule of dropping
+  white-space-only content pieces (`xml.y`) cannot be reproduced: three
+  corpus elements decode differently (one `<com>` in
+  `datatests/injectoverride.xml`, two `<body>` in `hexagon.cspec`).
+  `quick-xml`'s events map one-to-one onto `xml.y`'s rules, and it is the
+  more widely used crate (542 million downloads and 2,935 dependents
+  against 104 million and 994). `bk-marshal` builds its own small DOM on
+  `quick-xml` events; `roxmltree` stays as a dev-only oracle in the corpus
+  test. Crates that read Ghidra XML should go through `bk-marshal`'s
+  document rather than a second XML crate; `bk-lang`, written in the same
+  wave on `roxmltree`, moves over after both merge.
 - **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
   *Being re-examined by the `bin-elf` track after the owner's rule of
   2026-11-12 (use existing crates unless there is a good reason): the
