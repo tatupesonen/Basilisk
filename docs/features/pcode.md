@@ -32,6 +32,16 @@ execution.
 | `UT/testfloatemu.cc` (31 tests), `UT/testmultiprec.cc` (5 tests) | C++ tests |
 | `SMT/ghidra/pcode/floatformat/` (`FloatFormatTest` 58, `BigFloatTest` 26), `SMT/ghidra/pcode/opbehavior/` (about 46 classes) | Java tests |
 
+*Corrections from the track's reading of Ghidra's source (2026-11-12),
+which override the text below where they differ: there are 73 operations,
+not 74 (slot 45 is unused); `get_opcode` is a map lookup and the boolean
+flips come from `typeop.cc`, not `opcodes.cc`; the Java op behaviours and
+their tests live in `Ghidra/Framework/Emulation` (checklist file
+`docs/inventory/tests/framework-emulation.md`); the C++ `FloatFormat` has
+only the 4- and 8-byte formats, so sizes 2, 10, 16 and 32 are defined by
+the Java alone; `multiprecision.cc`'s function names differ from those
+listed here.*
+
 ## 3. Scope
 
 **In:** opcodes; op behaviours for all sizes; float formats; multiprecision

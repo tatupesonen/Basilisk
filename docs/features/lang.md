@@ -27,7 +27,7 @@ every tool needs before it can touch a binary.
 | `SM/ghidra/app/plugin/processors/sleigh/SleighLanguage.java` — the `.pspec` reading (`readInitialDescription`, `read(XmlPullParser)` and the methods it calls, `parseSegmentOp`, register and context handling) | What each `.pspec` element means on the Java side |
 | `Ghidra/Features/Decompiler/src/decompile/cpp/architecture.cc` — `parseProcessorConfig` and the `decode*` methods it calls | What the decompiler takes from the same `.pspec` (some elements are read only here) |
 | `BASE/ghidra/app/util/opinion/QueryOpinionService.java`, `QueryOpinionServiceHandler.java`, `QueryResult.java`, and `LoadSpec.java` | `.opinion` files: nesting, attribute inheritance, lookup by loader name and primary/secondary key, the preferred flag |
-| `P/*/data/languages/*.ldefs` (51 files, 194 languages), `*.pspec` (88), `*.opinion` (29) | The corpus |
+| `P/*/data/**/*.ldefs` (52 files, 202 languages, 12 of them deprecated; one file is `RISCV/data/languages/old/riscv_deprecated.ldefs`, found because Ghidra searches each module's whole `data` tree), `*.pspec` (89), `*.opinion` (29, plus 3 under `Features/FileFormats`) | The corpus (counts corrected 2026-11-12 from the track's findings) |
 
 ## 3. Scope
 
@@ -116,7 +116,9 @@ languages in the registry (by processor, endian, size, variant against the
 language descriptions, not by id).
 
 ### 4.5 Registry
-Built from a spec root: scan `Ghidra/Processors/*/data/languages/*.ldefs`
+Built from a spec root: for each module under `Ghidra/Processors` (in
+code-point name order), search its whole `data` tree for `.ldefs` files, as
+Ghidra does (not just `data/languages`),
 under `BASILISK_GHIDRA_DIR` (default `../ghidra`), and additional roots
 the caller adds (a user's own processor module; the `../reference` overlay
 that holds compiled `.sla` files, see `features/reference-tools.md`). It
@@ -157,9 +159,12 @@ parse 88 processor specs.
   `LanguageCompilerSpecPair`, query classes) and port those too.
 - **Corpus tests** (skip when `../ghidra` is absent): every `.ldefs`,
   `.pspec` and `.opinion` under `P/` reads in strict mode; the registry
-  holds exactly 194 languages from 51 files, with no duplicate ids; every
+  holds exactly 202 languages from 52 files, with no duplicate ids; every
   file a description names exists (allowing `.sla` to be absent); every
-  `.opinion` entry maps to at least one language. Any corpus file that
+  `.opinion` entry maps to at least one language, except the five
+  constraints the track found that select none in Ghidra either
+  (`avr8`, `minidump`, `pagedump`, `PIC24`, `V850` — the test lists them
+  exactly). Any corpus file that
   violates its schema is recorded in the status section, and strict mode
   is adjusted to the documented reality.
 - **Golden tests:** the parsed model of `x86.ldefs`, `x86.pspec`,

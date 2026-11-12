@@ -24,7 +24,11 @@ and a sane architecture in mind.
 | **The decompiler is ported from Ghidra's C++ engine** — same pipeline as the starting point, validated against Ghidra's own tests and by diffing output with the original; improvements over Ghidra's output are allowed once parity is the measured baseline (ADR-004). | 2026-11-12 |
 | **The UI is egui.** | 2026-11-12 |
 | **The plugin API is Python through PyO3**, so users can still build their own plugins (ADR-014). | 2026-11-12 |
-| **Licence: Apache-2.0**, Ghidra attributed in `NOTICE` (ADR-010). | 2026-11-12 |
+| **Licence: GPL-3.0-or-later** for the whole project (first Apache-2.0; the owner does not mind GPL-3.0). Ghidra stays attributed in `NOTICE` (ADR-018). | 2026-11-12 |
+| **Ghidra's GPL helpers are ported like any other code** (GNU demangler, GNU disassembler wrapper, DMG): plain crates, called directly — no wrappers, helper processes or feature flags (ADR-018). | 2026-11-12 |
+| **basilisk is a single binary.** | 2026-11-12 |
+| **binutils is built from source as its own crate** for the GNU disassembler comparison, so nothing has to be installed separately (ADR-019). Reference clone: `../binutils` (2.41, the version Ghidra names). | 2026-11-12 |
+| **binutils is used as it is, not rewritten**: there is no value in rewriting it. A particular part may be rewritten in Rust only if it is measured to be really slow (benchmark first, numbers in `PERF.md`). | 2026-11-12 |
 
 ## Tests
 
@@ -40,6 +44,9 @@ and a sane architecture in mind.
 |---|---|
 | **Performant.** Speed and memory are design inputs from the first line, not a later pass (ADR-012, `PERF.md`). | 2026-11-12 |
 | **Best Rust practices** throughout (`LOOP.md`, Engineering rules). | 2026-11-12 |
+| **Lints configured with sensible, strict rules**: clippy (pedantic plus chosen restriction lints), rustdoc, rustfmt, `cargo-deny`, all enforced by the gate (`Cargo.toml` `[workspace.lints]`, `clippy.toml`, `deny.toml`). | 2026-11-12 |
+| **No `unsafe` unless absolutely necessary; any code that needs it is checked with Miri** (ADR-020). | 2026-11-12 |
+| **Use existing crates when they fit.** There is no value in reimplementing something from scratch unless there is a good reason; when there is one, state it (ADR-011 records each evaluation). **Prefer "industry standard" crates** — widely used ones with lots of downloads — over obscure alternatives. | 2026-11-12 |
 | **Separate components live in their own crates**, split sensibly; **no huge Rust files** — split modules as they grow (`LOOP.md`; `scripts/check-file-size.sh` enforces a ceiling). | 2026-11-12 |
 | **Project structure follows postmortem** (`../postmortem`): a workspace of focused crates, ADRs in `DECISIONS.md`, a plan, a parity matrix, inventories, and **comprehensive docs for every feature** (`docs/features/`). | 2026-11-12 |
 
@@ -47,24 +54,24 @@ and a sane architecture in mind.
 
 * **Division of labour** (owner, 2026-11-12): the coordinator (Claude Fable)
   writes the docs — ADRs, plan, feature specs, agent rules — and manages
-  **Fable 5.2 subagents at high effort** (for now; the owner first named
-  Opus 5.5 and may switch back), which write the code from those docs.
-  The coordinator spawns the agents, reviews and merges their branches.
-  Rules for agents: `docs/agents/RULES.md`.
+  subagents, which write the code from those docs. The coordinator spawns
+  the agents, reviews and merges their branches. Rules for agents:
+  `docs/agents/RULES.md`.
+* **Agent model** (owner, 2026-11-12, latest of several changes that day):
+  **Opus 5.5 at medium effort.** The first wave was started on Fable 5.2;
+  each of those agents stops at its first checkpoint (work committed, status
+  report written) and its track continues with an Opus 5.5 agent at medium
+  effort in the same worktree. New agents start on Opus 5.5 at medium
+  effort. (Owner, later the same day: "Move to using opus 5.5 for all
+  agents now.")
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
-  its own and may push on its own. Agents commit in their worktrees only.
+  its own and pushes on its own to `origin`
+  (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
+  green gate. Agents commit in their worktrees only and never push.
 * **Brand**: a minimal logo, in the spirit of Ghidra's but its own design
-  (`assets/brand/`).
+  (`assets/brand/`). Colour: ember orange (owner's pick, 2026-11-12).
 * **Feature spec before code.** No implementation agent starts without a
   spec in `docs/features/`.
 * The Ghidra source at `../ghidra` is **read-only reference**. Never modify
   it; build reference tools from a copy outside it (`../reference/`).
 * Use metric units.
-
-## Open owner decisions
-
-* **Git remote**: the owner allows the coordinator to commit and push on
-  its own (2026-11-12), but no remote exists yet. The coordinator does not
-  create a hosted repository itself (its name, owner and visibility are
-  the owner's call); once the owner adds a remote, finished work is pushed
-  to it after each green gate.
