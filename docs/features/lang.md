@@ -197,6 +197,102 @@ parse 88 processor specs.
 
 (The implementing agent appends further differences here.)
 
+Appended by the `lang` track (2026-11-12):
+
+- A language whose files are missing is reported (`LoadFailure`) and left
+  out; later languages of the same `.ldefs` file are still registered.
+  Ghidra abandons the rest of the file.
+- Readers are atomic per file: a bad `endian` or `size` in an `.opinion`
+  file rejects the file; Ghidra keeps the constraints read before the
+  failure.
+- `.opinion` files are schema-checked in strict mode; Ghidra never
+  validates them (lenient mode is closer to Ghidra there).
+- Within a module, files are visited in name order; Ghidra's order is
+  whatever `File.listFiles` returns. This decides `default_language` where
+  a processor's languages span several files (for `RISCV` it is
+  `RISCV:LE:32:AndeStar_v5`, because `andestar_v5.ldefs` sorts first).
+- `<memory_block>` booleans accept every spelling the schema allows
+  (`true`/`false`/`yes`/`no`/`1`/`0`); Ghidra's `MemoryBlockDefinition`
+  throws on `yes`/`no`/`1`/`0`.
+- Negative sizes and versions are rejected; Ghidra's `decodeInt` would
+  accept them.
+- Documents with a DTD are refused (no spec file has one; entity expansion
+  is a denial-of-service vector).
+- Opinion nesting is read without recursion and without a depth limit.
+- Strict mode is implemented by tables restating the schemas
+  (`bk_lang::schema`) rather than by running a RELAX NG validator on the
+  `.rxg` files: the schema files are not part of what releases bundle
+  (ADR-002 bundles only `Processors/*/data`), and no widely used pure-Rust
+  RELAX NG validator exists. The tables are tested against the `.rxg`
+  files' names, and were verified once against a validator (section 9).
+- `SegmentOp::far_pointer` is `Option<bool>`: Java decodes the value, the
+  C++ decompiler treats the attribute's presence as true, and two shipped
+  `<segmentop>`s say `farpointer="no"`; each consumer applies its own rule.
+- Lenient mode (not in Ghidra) collects warnings for user-supplied
+  modules, and load problems are returned as `LoadFailure` values instead
+  of being logged or shown in message boxes.
+- Java's `HashMap` iteration order is reproduced for opinion results, but
+  not once a bin would be turned into a tree (nine or more results in one
+  bin of a table of 64 or more); `OpinionDatabase::order_is_exact` reports
+  that case, which no shipped `.opinion` file reaches.
+
 ## 9. Status
 
-Not implemented yet.
+Implemented 2026-11-12 (track `lang`; final report in
+`docs/agents/lang.md`).
+
+**Built.** Crate `bk-lang`, no dependency on other `bk-*` crates;
+third-party `roxmltree`, `thiserror`, `tracing`, `walkdir`. Modules: `id`,
+`endian`, `value` (Ghidra's `SpecXmlUtils` number and boolean decoding),
+`schema` (the three grammars as public tables), `reader` (strict/lenient
+checking against the tables, positions), `error`, `ldefs/{model, read}`,
+`pspec/{model, read, address, context, registers, symbols, memory,
+segment}`, `opinion/{model, read, query, javahash}`,
+`registry/{mod, scan, paths, query}`. Sections 4.1–4.5 are implemented
+in full.
+
+**Corpus** (Ghidra commit `42db038f3c`): every `.ldefs` (52), `.pspec`
+(89) and `.opinion` (29 under `Processors`, 3 under
+`Features/FileFormats`) reads in strict mode; no shipped file violates its
+schema. The registry holds 202 languages (190 not deprecated) from 52
+files, no duplicate ids, no load failures, 60 processors, 87 distinct
+`.pspec` files, 339 opinion constraints from 22 loaders. Every file a
+description names exists; no `.sla` exists in the source tree. Five
+opinion constraints select no language (`avr8`, `minidump`, `pagedump`,
+`PIC24`, `V850`), exactly as listed in section 6.
+
+**Schema conformance.** `tests/schema_coverage.rs` checks that the
+element and attribute names reachable in each `.rxg` file equal those in
+the tables, that the fullest document the tables describe reads in strict
+mode, and that every shipped file reads. One-time verification, not
+repeated in the test suite: on 2026-11-12 the strict readers were run
+against a RELAX NG validator (`oxixml-relaxng` 0.1.2, loaded with
+Ghidra's `.rxg` files) — all 173 corpus files validated, and on 1,049
+single-step mutations of documents generated from the tables (119
+`.ldefs`, 817 `.pspec`, 113 `.opinion`) reader and validator disagreed
+nowhere, except where the schema accepts a value that neither basilisk's
+nor Ghidra's reader can decode (`size="maybe"`). The validator was then
+removed as a dependency (too little used to carry in every test run).
+
+**Opinion order.** Result order equals a real JVM's `HashSet` order:
+checked once with OpenJDK 25 on three real queries (284, 56 and 4
+results); two JVM-produced vectors are kept as tests.
+
+**Tests.** 127 unit tests, 106 integration tests (corpus, golden
+snapshots, ported Ghidra tests, readers, registry, queries, property
+tests, schema coverage), 1 ignored benchmark. `QueryOpinionServiceTest`
+is ported in full. `SleighLanguageProviderTest` is ported only in part
+(discovery and description, `tests/ported.rs`); its lock, timeout and
+`.sla` compilation assertions wait for the SLEIGH compiler (M2), so its
+checklist line stays open. A `cargo-fuzz` target (`fuzz/`,
+`lang_readers`) covers the three readers in both modes.
+
+**Benchmark.** Registry scan of the whole Ghidra tree 13–15 ms median on
+an Apple M1 Pro under load (budget 50 ms); details in `docs/PERF.md`.
+
+**Gaps.** Old-language translators (`data/languages/old/*.lang`,
+`*.trans`) are not read (M8). `.cspec`, `.dwarf` and pattern files are
+out of scope. UTF-16 spec files are refused (`ReadError::Encoding`; none
+exist). Not tested: symlinked module or data directories, and the
+exact-case file rule on a case-sensitive file system (tested on macOS
+only).
