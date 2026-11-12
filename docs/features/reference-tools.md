@@ -35,7 +35,7 @@ tools and comparing output. Nothing here ships in the product.
 1. `scripts/build-reference.sh` — builds the reference tools and the
    compiled-language overlay into `../reference/`.
 2. `tools/reference/pcodedump.cc` — basilisk's own small C++ oracle
-   program (Apache-2.0, kept in this repository), linked against the
+   program (kept in this repository), linked against the
    reference objects.
 3. `bk-testkit` — the Rust test-support crate.
 4. Baseline measurements of the reference tools for `PERF.md`.

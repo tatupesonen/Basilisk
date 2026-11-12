@@ -1,10 +1,35 @@
+# Clippy configuration. Lint levels are in Cargo.toml ([workspace.lints]).
+
+# Nothing here is published, so clippy may suggest changes to public APIs.
+avoid-breaking-exported-api = false
+
+# Test code may unwrap, index, panic and print (docs/LOOP.md, Testing rules).
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
 allow-print-in-tests = true
 allow-dbg-in-tests = true
+allow-useless-vec-in-tests = true
+
+# Signals to split a function or a type, in the spirit of the file-size rule (ADR-013).
+too-many-arguments-threshold = 7
+type-complexity-threshold = 250
+max-fn-params-bools = 2
+
+# Large values are passed and stored by reference or boxed (ADR-012).
+pass-by-value-size-limit = 256
+enum-variant-size-threshold = 200
+too-large-for-stack = 4096
+
+disallowed-methods = [
+    { path = "std::env::set_var", reason = "process-global state; pass configuration explicitly" },
+    { path = "std::env::remove_var", reason = "process-global state; pass configuration explicitly" },
+    { path = "std::thread::sleep", reason = "blocks a thread; use a channel, condition or timeout", allow-invalid = true },
+]
+
 doc-valid-idents = [
     "..",
     "SLEIGH", "PCode", "Ghidra", "AArch64", "PowerPC", "MIPS", "RISC-V", "DWARF", "MachO", "macOS",
-    "SQLite", "OpCode", "JUnit", "GitHub",
+    "SQLite", "OpCode", "JUnit", "GitHub", "PyO3", "CPython", "LEB128", "RELR", "binutils",
 ]

@@ -18,7 +18,7 @@ planned (`LOOP.md`); the test checklist is `tests/`.
 | `Ghidra/Extensions/` | Optional extensions: Jython, BSim Elastic, machine learning, Lisa, SleighDevTools (the p-code test framework), samples |
 | `Ghidra/Test/` | Cross-module integration tests (`IntegrationTest`, `DebuggerIntegrationTest`) and `TestResources` (test binaries and programs) |
 | `Ghidra/RuntimeScripts/`, `Configurations/` | Launch scripts and the release configuration |
-| `GPL/` | GPL-licensed helpers: GNU demangler and disassembler wrappers, DMG. Not ported from source (ADR-010) |
+| `GPL/` | GPL-licensed helpers run as separate programs: the GNU demangler (libiberty, 34,000 lines of C), `gdis` over binutils, a DMG/HFS+ reader. Ghidra runs them as separate programs; basilisk ports them like any other code (ADR-018) |
 | `GhidraBuild/`, `GhidraDocs/`, `gradle/` | Build infrastructure and documentation |
 
 A Ghidra module is a directory with `src/main/java`, optional
