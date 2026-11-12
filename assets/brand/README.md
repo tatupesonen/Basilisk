@@ -11,10 +11,12 @@ that is itself a stare. Read small it is an eye with a crown; read large it
 is a serpent chasing its tail. The ring and the stroke inside it are also a
 0 and a 1.
 
-The body is a perfect circle on the outside and tapers on the inside, from
-the neck round to a needle tail, so the mark looks like it is turning. The
-head, crown, pupil and tail all end in sharp points; everything else is one
-circle.
+The body is a perfect circle on the outside and a near-even ring for three
+quarters of the way round, then thins into a blade for the tail. The tip of
+the crown, the point of the jaw and the pupil sit on one vertical axis
+through the centre of the ring, so the mark is symmetrical apart from the
+head and the tail. Head, crown, pupil and tail all end in sharp points;
+everything else is one circle. In the icon the ring is centred on the tile.
 
 It sits in the same family as Ghidra's dragon (a mythical beast as a flat
 emblem, coiled) but shares no shapes, colour or lettering with it: this is
@@ -75,8 +77,9 @@ dots on the two i's repeat the slit pupil.
 
 The SVGs are plain paths in a 256-unit box. The ring is a circle of radius
 100 centred on (128, 148); its outer edge is one arc command and its inner
-edge is eight cubic segments. Head, crown and pupil are straight-edged
-polygons and two quadratic curves, safe to nudge by hand.
+edge is nine cubic segments. Head and crown are straight-edged polygons and
+the pupil is two circular arcs centred on x = 128, all safe to nudge by
+hand.
 
 Regenerate the PNGs with [resvg](https://github.com/linebender/resvg):
 
