@@ -5,7 +5,7 @@
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Wave 1 (milestone M0) is in progress.** Six implementation agents
+**Wave 1 (milestone M0) is in progress.** Six implementation agents and one design agent
 (Fable 5.2, high effort), one per track, each in its own worktree under
 `../basilisk-wt/<track>` on branch `<track>`:
 
@@ -17,6 +17,11 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `lang` | `bk-lang` | `features/lang.md` |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` |
+| `logo` | `assets/brand/` (no crates) | brief only: a minimal basilisk logo |
+
+In a worktree `../ghidra` does not resolve; agents set
+`BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
+`BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`.
 
 Next steps for the coordinator:
 1. As each agent reports, review its branch against its spec

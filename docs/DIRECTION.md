@@ -51,6 +51,10 @@ and a sane architecture in mind.
   Opus 5.5 and may switch back), which write the code from those docs.
   The coordinator spawns the agents, reviews and merges their branches.
   Rules for agents: `docs/agents/RULES.md`.
+* **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
+  its own and may push on its own. Agents commit in their worktrees only.
+* **Brand**: a minimal logo, in the spirit of Ghidra's but its own design
+  (`assets/brand/`).
 * **Feature spec before code.** No implementation agent starts without a
   spec in `docs/features/`.
 * The Ghidra source at `../ghidra` is **read-only reference**. Never modify
@@ -59,5 +63,8 @@ and a sane architecture in mind.
 
 ## Open owner decisions
 
-* **Git remote**: the repository is local only so far. Nothing is pushed
-  until the owner names a remote.
+* **Git remote**: the owner allows the coordinator to commit and push on
+  its own (2026-11-12), but no remote exists yet. The coordinator does not
+  create a hosted repository itself (its name, owner and visibility are
+  the owner's call); once the owner adds a remote, finished work is pushed
+  to it after each green gate.
