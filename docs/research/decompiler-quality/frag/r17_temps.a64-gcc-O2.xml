@@ -1,0 +1,39 @@
+<binaryimage arch="AARCH64:LE:64:v8A:default">
+<bytechunk space="ram" offset="0x401000" readonly="true">
+85f60f848800000089f631c0ba010000004c8d0c37be7180078066662e0f1f84
+000000000066662e0f1f84000000000066662e0f1f8400000000000f1f440000
+0fb60f4883c70101ca4889d1480fafd648c1ea2f4469c2f1ff00004429c101c8
+89ca89c04889c1480fafc648c1e82f4469c0f1ff000089c84429c04939f975c0
+c1e01009d0c3662e0f1f840000000000b801000000c3662e0f1f840000000000
+488b57084803378b471448f7da4839f27f268b4f104889378d510189c183e0fe
+83c9018957104885f60f48c189471489d0c3660f1f44000083c804baffffffff
+ebea4889f8c34889f8c3b800000000c3b800000000c34889f8c3b800000000c3
+b800000000c3b800000000c3c390ebfeebfeb800000000c3b800000000c3b800
+000000c3b800000000c3ebfe89f8c3c3c3488d0437c3
+</bytechunk>
+<bytechunk space="ram" offset="0x402000">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x401000" name="checksum"/>
+<symbol space="ram" offset="0x4010a0" name="update"/>
+<symbol space="ram" offset="0x4010e2" name="memcpy"/>
+<symbol space="ram" offset="0x4010e6" name="memset"/>
+<symbol space="ram" offset="0x4010ea" name="strlen"/>
+<symbol space="ram" offset="0x4010f0" name="strcmp"/>
+<symbol space="ram" offset="0x4010f6" name="strcpy"/>
+<symbol space="ram" offset="0x4010fa" name="printf"/>
+<symbol space="ram" offset="0x401100" name="puts"/>
+<symbol space="ram" offset="0x401106" name="malloc"/>
+<symbol space="ram" offset="0x40110c" name="free"/>
+<symbol space="ram" offset="0x40110d" name="exit"/>
+<symbol space="ram" offset="0x401110" name="abort"/>
+<symbol space="ram" offset="0x401112" name="read"/>
+<symbol space="ram" offset="0x401118" name="write"/>
+<symbol space="ram" offset="0x40111e" name="open"/>
+<symbol space="ram" offset="0x401124" name="close"/>
+<symbol space="ram" offset="0x40112a" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x40112c" name="ext_i"/>
+<symbol space="ram" offset="0x40112f" name="ext_v"/>
+<symbol space="ram" offset="0x401130" name="ext_p"/>
+<symbol space="ram" offset="0x401131" name="ext_l"/>
+</binaryimage>

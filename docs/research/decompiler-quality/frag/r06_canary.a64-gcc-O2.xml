@@ -1,0 +1,34 @@
+<binaryimage arch="AARCH64:LE:64:v8A:default">
+<bytechunk space="ram" offset="0x401000" readonly="true">
+48b868656c6c6f2c2000534883ec5064488b34252800000048897424484889fe
+488d7c240748890424e8380000004889e7e83a000000488b54244864482b1425
+2800000075064883c4505bc3e849000000904889f8c34889f8c3b800000000c3
+b800000000c34889f8c3b800000000c3b800000000c3b800000000c3c390ebfe
+ebfeb800000000c3b800000000c3b800000000c3b800000000c3ebfe89f8c3c3
+c3488d0437c3
+</bytechunk>
+<bytechunk space="ram" offset="0x402000">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x401000" name="greet"/>
+<symbol space="ram" offset="0x401052" name="memcpy"/>
+<symbol space="ram" offset="0x401056" name="memset"/>
+<symbol space="ram" offset="0x40105a" name="strlen"/>
+<symbol space="ram" offset="0x401060" name="strcmp"/>
+<symbol space="ram" offset="0x401066" name="strcpy"/>
+<symbol space="ram" offset="0x40106a" name="printf"/>
+<symbol space="ram" offset="0x401070" name="puts"/>
+<symbol space="ram" offset="0x401076" name="malloc"/>
+<symbol space="ram" offset="0x40107c" name="free"/>
+<symbol space="ram" offset="0x40107d" name="exit"/>
+<symbol space="ram" offset="0x401080" name="abort"/>
+<symbol space="ram" offset="0x401082" name="read"/>
+<symbol space="ram" offset="0x401088" name="write"/>
+<symbol space="ram" offset="0x40108e" name="open"/>
+<symbol space="ram" offset="0x401094" name="close"/>
+<symbol space="ram" offset="0x40109a" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x40109c" name="ext_i"/>
+<symbol space="ram" offset="0x40109f" name="ext_v"/>
+<symbol space="ram" offset="0x4010a0" name="ext_p"/>
+<symbol space="ram" offset="0x4010a1" name="ext_l"/>
+</binaryimage>

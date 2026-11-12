@@ -1,0 +1,47 @@
+<binaryimage arch="x86:LE:64:default:gcc">
+<bytechunk space="ram" offset="0x200120" readonly="true">
+89f80fc8c366662e0f1f84000000000089f189f8d3c0c3660f1f840000000000
+31c04885ff7414660f1f840000000000488d4fffffc04821cf75f5c30f1f4000
+b83f0000000fbdc783f01fc30f1f4000488d470f4883e0f0c30f1f8000000000
+85ff740b8d4fff31c085cf0f94c0c331c0c3cccccccccccccccccccccccccccc
+4889f8c36666662e0f1f8400000000004889f8c36666662e0f1f840000000000
+31c0c3666666662e0f1f84000000000031c0c3666666662e0f1f840000000000
+4889f8c36666662e0f1f84000000000031c0c3666666662e0f1f840000000000
+31c0c3666666662e0f1f84000000000031c0c3666666662e0f1f840000000000
+c36666666666662e0f1f840000000000ebfe66666666662e0f1f840000000000
+ebfe66666666662e0f1f84000000000031c0c3666666662e0f1f840000000000
+31c0c3666666662e0f1f84000000000031c0c3666666662e0f1f840000000000
+31c0c3666666662e0f1f840000000000ebfe66666666662e0f1f840000000000
+89f8c3666666662e0f1f840000000000c36666666666662e0f1f840000000000
+c36666666666662e0f1f840000000000488d0437c3
+</bytechunk>
+<bytechunk space="ram" offset="0x2012d8">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x200120" name="bswap"/>
+<symbol space="ram" offset="0x200130" name="rotl"/>
+<symbol space="ram" offset="0x200140" name="popcnt"/>
+<symbol space="ram" offset="0x200160" name="clz"/>
+<symbol space="ram" offset="0x200170" name="align_up"/>
+<symbol space="ram" offset="0x200180" name="is_pow2"/>
+<symbol space="ram" offset="0x2001a0" name="memcpy"/>
+<symbol space="ram" offset="0x2001b0" name="memset"/>
+<symbol space="ram" offset="0x2001c0" name="strlen"/>
+<symbol space="ram" offset="0x2001d0" name="strcmp"/>
+<symbol space="ram" offset="0x2001e0" name="strcpy"/>
+<symbol space="ram" offset="0x2001f0" name="printf"/>
+<symbol space="ram" offset="0x200200" name="puts"/>
+<symbol space="ram" offset="0x200210" name="malloc"/>
+<symbol space="ram" offset="0x200220" name="free"/>
+<symbol space="ram" offset="0x200230" name="exit"/>
+<symbol space="ram" offset="0x200240" name="abort"/>
+<symbol space="ram" offset="0x200250" name="read"/>
+<symbol space="ram" offset="0x200260" name="write"/>
+<symbol space="ram" offset="0x200270" name="open"/>
+<symbol space="ram" offset="0x200280" name="close"/>
+<symbol space="ram" offset="0x200290" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x2002a0" name="ext_i"/>
+<symbol space="ram" offset="0x2002b0" name="ext_v"/>
+<symbol space="ram" offset="0x2002c0" name="ext_p"/>
+<symbol space="ram" offset="0x2002d0" name="ext_l"/>
+</binaryimage>

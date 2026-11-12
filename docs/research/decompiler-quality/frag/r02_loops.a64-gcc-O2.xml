@@ -1,0 +1,42 @@
+<binaryimage arch="AARCH64:LE:64:v8A:default">
+<bytechunk space="ram" offset="0x401000" readonly="true">
+85f67e1901d6662e0f1f840000000000891783c2014883c70439f275f3c36690
+31c085f67f15c3660f1f84000000000039d1741c83c00139f07d114863c88b0c
+8f85c979eb83c00239f07cefc30f1f00c366662e0f1f8400000000000f1f4000
+85f67e654189f341ba0100000031c94d39da745266662e0f1f84000000000090
+468b4c97fc4c89d066662e0f1f84000000000066662e0f1f8400000000006690
+448b04874501c84139d0410f94c04883c001450fb6c04401c139c67fe34983c2
+014d39da75ba89c8c331c989c8c36690803f00741b4889f80f1f840000000000
+4883c00180380075f74829f8c30f1f0031c0c3904889f8c34889f8c3b8000000
+00c3b800000000c34889f8c3b800000000c3b800000000c3b800000000c3c390
+ebfeebfeb800000000c3b800000000c3b800000000c3b800000000c3ebfe89f8
+c3c3c3488d0437c3
+</bytechunk>
+<bytechunk space="ram" offset="0x402000">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x401000" name="fill"/>
+<symbol space="ram" offset="0x401020" name="find_first"/>
+<symbol space="ram" offset="0x401060" name="count_pairs"/>
+<symbol space="ram" offset="0x4010d0" name="my_strlen"/>
+<symbol space="ram" offset="0x4010f4" name="memcpy"/>
+<symbol space="ram" offset="0x4010f8" name="memset"/>
+<symbol space="ram" offset="0x4010fc" name="strlen"/>
+<symbol space="ram" offset="0x401102" name="strcmp"/>
+<symbol space="ram" offset="0x401108" name="strcpy"/>
+<symbol space="ram" offset="0x40110c" name="printf"/>
+<symbol space="ram" offset="0x401112" name="puts"/>
+<symbol space="ram" offset="0x401118" name="malloc"/>
+<symbol space="ram" offset="0x40111e" name="free"/>
+<symbol space="ram" offset="0x40111f" name="exit"/>
+<symbol space="ram" offset="0x401122" name="abort"/>
+<symbol space="ram" offset="0x401124" name="read"/>
+<symbol space="ram" offset="0x40112a" name="write"/>
+<symbol space="ram" offset="0x401130" name="open"/>
+<symbol space="ram" offset="0x401136" name="close"/>
+<symbol space="ram" offset="0x40113c" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x40113e" name="ext_i"/>
+<symbol space="ram" offset="0x401141" name="ext_v"/>
+<symbol space="ram" offset="0x401142" name="ext_p"/>
+<symbol space="ram" offset="0x401143" name="ext_l"/>
+</binaryimage>

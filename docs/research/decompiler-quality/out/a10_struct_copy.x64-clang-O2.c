@@ -1,0 +1,105 @@
+// a10_struct_copy, x64-clang-O2 (x86:LE:64:default:gcc)
+// Ghidra reference decomp output; inputs: frag/a10_struct_copy.x64-clang-O2.xml
+
+[decomp]> load function copy_struct
+Function copy_struct: 0x00200120
+[decomp]> override flow r0x200210 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200220 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200270 callreturn
+Successfully added flow override
+[decomp]> decompile
+Decompiling copy_struct
+Decompilation complete
+[decomp]> decompile
+Clearing old decompilation
+Decompiling copy_struct
+Decompilation complete
+[decomp]> print C
+
+void copy_struct(xunknown8 *param_1,xunknown8 *param_2)
+
+{
+  xunknown8 xVar1;
+  xunknown8 xVar2;
+  xunknown8 xVar3;
+  xunknown8 xVar4;
+  xunknown8 xVar5;
+  
+  xVar1 = *param_2;
+  xVar2 = param_2[1];
+  xVar3 = param_2[2];
+  xVar4 = param_2[3];
+  xVar5 = param_2[5];
+  param_1[4] = param_2[4];
+  param_1[5] = xVar5;
+  param_1[2] = xVar3;
+  param_1[3] = xVar4;
+  *param_1 = xVar1;
+  param_1[1] = xVar2;
+  return;
+}
+[decomp]> load function zero_init
+Function zero_init: 0x00200140
+[decomp]> override flow r0x200210 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200220 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200270 callreturn
+Successfully added flow override
+[decomp]> decompile
+Decompiling zero_init
+Decompilation complete
+[decomp]> decompile
+Clearing old decompilation
+Decompiling zero_init
+Decompilation complete
+[decomp]> print C
+
+void zero_init(void)
+
+{
+  xunknown8 xStack_38;
+  xunknown8 xStack_30;
+  xunknown8 xStack_28;
+  xunknown8 xStack_20;
+  xunknown8 xStack_18;
+  xunknown8 xStack_10;
+  
+  xStack_20 = 0;
+  xStack_18 = 0;
+  xStack_10 = 0;
+  xStack_38 = 0;
+  xStack_30 = 0;
+  xStack_28 = 7;
+  ext_p(&xStack_38);
+  return;
+}
+[decomp]> load function copy16
+Function copy16: 0x00200170
+[decomp]> override flow r0x200210 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200220 callreturn
+Successfully added flow override
+[decomp]> override flow r0x200270 callreturn
+Successfully added flow override
+[decomp]> decompile
+Decompiling copy16
+Decompilation complete
+[decomp]> decompile
+Clearing old decompilation
+Decompiling copy16
+Decompilation complete
+[decomp]> print C
+
+void copy16(xunknown8 *param_1,xunknown8 *param_2)
+
+{
+  xunknown8 xVar1;
+  
+  xVar1 = param_2[1];
+  *param_1 = *param_2;
+  param_1[1] = xVar1;
+  return;
+}
