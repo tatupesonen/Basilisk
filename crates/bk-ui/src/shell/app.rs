@@ -27,6 +27,12 @@ pub const PREFS_KEY: &str = "basilisk-prefs";
 #[derive(Debug, Clone)]
 pub struct BasiliskApp {
     tool: Arc<Mutex<Tool>>,
+    /// The detached windows' viewports, for repainting them when data
+    /// arrives or the shared state changes (deferred viewports repaint
+    /// only when asked).
+    viewports: Arc<Mutex<Vec<egui::ViewportId>>>,
+    /// The shared state last frame, to notice changes made in one window.
+    seen: u64,
 }
 
 /// The demo program's opener.
@@ -46,6 +52,8 @@ impl BasiliskApp {
         let tool = Tool::new(prefs, opener, mac);
         let app = Self {
             tool: Arc::new(Mutex::new(tool)),
+            viewports: Arc::new(Mutex::new(Vec::new())),
+            seen: 0,
         };
         app.install_waker(ctx);
         app
@@ -65,7 +73,13 @@ impl BasiliskApp {
         let tool = self.tool.lock();
         if let Some(ws) = &tool.ws {
             let ctx = ctx.clone();
-            ws.client.set_waker(Arc::new(move || ctx.request_repaint()));
+            let viewports = Arc::clone(&self.viewports);
+            ws.client.set_waker(Arc::new(move || {
+                ctx.request_repaint();
+                for v in viewports.lock().iter() {
+                    ctx.request_repaint_of(*v);
+                }
+            }));
         }
     }
 
@@ -106,13 +120,24 @@ impl BasiliskApp {
         if !had_program && self.tool.lock().ws.is_some() {
             self.install_waker(&ctx);
         }
+        let ids: Vec<egui::ViewportId> = windows.iter().map(|w| viewport_id(w.id)).collect();
+        // Something changed in one window (location, highlight, an edit):
+        // the others redraw too.
+        let seen = self.tool.lock().ws.as_ref().map_or(0, state_signature);
+        if seen != self.seen {
+            self.seen = seen;
+            for id in &ids {
+                ctx.request_repaint_of(*id);
+            }
+        }
+        *self.viewports.lock() = ids;
         for w in windows {
             self.detached(&ctx, &w);
         }
     }
 
     fn detached(&self, ctx: &egui::Context, w: &Detached) {
-        let id = egui::ViewportId::from_hash_of(("bk-window", w.id));
+        let id = viewport_id(w.id);
         let mut builder = egui::ViewportBuilder::default()
             .with_title(w.title())
             .with_min_inner_size([320.0, 200.0]);
@@ -133,6 +158,33 @@ impl BasiliskApp {
             detached_window(ui, &mut tool, wid, id);
         });
     }
+}
+
+/// The viewport of detached window `wid`.
+fn viewport_id(wid: u64) -> egui::ViewportId {
+    egui::ViewportId::from_hash_of(("bk-window", wid))
+}
+
+/// A number that changes whenever state shown in every window changes.
+fn state_signature(ws: &super::Workspace) -> u64 {
+    use std::hash::{Hash as _, Hasher as _};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    ws.shared.nav.generation().hash(&mut h);
+    ws.client.revision().hash(&mut h);
+    ws.shared
+        .highlight
+        .as_ref()
+        .map(|t| t.text.clone())
+        .hash(&mut h);
+    ws.shared.related.ranges.len().hash(&mut h);
+    ws.shared
+        .related
+        .ranges
+        .first()
+        .map(|r| r.start)
+        .hash(&mut h);
+    ws.active.hash(&mut h);
+    h.finish()
 }
 
 impl eframe::App for BasiliskApp {
@@ -295,6 +347,7 @@ pub fn main_window(ui: &mut egui::Ui, tool: &mut Tool) {
 /// One frame of detached window `wid`.
 fn detached_window(ui: &mut egui::Ui, tool: &mut Tool, wid: u64, vp: egui::ViewportId) {
     let ctx = ui.ctx().clone();
+    let before = tool.ws.as_ref().map(state_signature);
     let t = tool.tokens();
     if ctx.input(|i| i.viewport().close_requested()) {
         // Closing the window closes its panes (reopen them from Window).
@@ -363,4 +416,11 @@ fn detached_window(ui: &mut egui::Ui, tool: &mut Tool, wid: u64, vp: egui::Viewp
     tab_commands(tool, commands);
     overlays(&ctx, tool, vp);
     process(&ctx, tool, requests, run, vp);
+    // Clicks in this window move the shared state: the main window (which
+    // repaints the other detached ones) must redraw.
+    if before != tool.ws.as_ref().map(state_signature)
+        || ctx.input(|i| i.pointer.any_down() || !i.events.is_empty())
+    {
+        ctx.request_repaint_of(egui::ViewportId::ROOT);
+    }
 }

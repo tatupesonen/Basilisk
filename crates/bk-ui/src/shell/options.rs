@@ -103,6 +103,8 @@ pub fn ui(
         .open(&mut open)
         .collapsible(false)
         .default_size([720.0, 480.0])
+        .pivot(egui::Align2::CENTER_CENTER)
+        .default_pos(ctx.content_rect().center())
         .show(ctx, |ui| {
             ui.horizontal_top(|ui| {
                 ui.vertical(|ui| {

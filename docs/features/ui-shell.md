@@ -260,6 +260,44 @@ Ghidra with the reason.
 (The implementing agent appends the rest, with reasons, and mirrors them
 in `ui-design.md`.)
 
+Appended by the implementing track (details and reasons in
+`ui-design.md` §8). The owner later asked for the interface to stay
+familiar to Ghidra users: menus keep every action, and the palette is a
+second route, not the primary one.
+
+- Go To (`G`) matches names fuzzily and live; an address typed in hex is
+  always the first entry.
+- Enter follows the reference under the cursor (Ghidra: double-click
+  only; double-click still works).
+- One row per line in the Listing: bytes beyond six show as `…` instead
+  of wrapping; a narrow Listing scrolls sideways. This keeps rows uniform,
+  which makes scrolling and jumping O(1) in a program of any size.
+- Functions, Defined Strings and References open by default as tabs
+  beside the Console.
+- Detached windows dock back through a Dock Window action (header
+  button, tab menu, Window menu, palette), not by dragging a tab between
+  operating-system windows, which `egui_dock` cannot do. Double-clicking a
+  tab detaches it.
+- The Decompiler shows the same hover preview as the Listing.
+- Rename and Set Comment are small non-blocking dialogs; Enter saves,
+  Shift+Enter is a new comment line.
+- Dark and light themes and two row densities are first-class.
+- Navigable code tokens are accessibility nodes (screen readers can read
+  the code views).
+
 ## 9. Status
 
-Not implemented yet.
+Implemented in `crates/bk-ui` (track `ui`; report in `docs/agents/ui.md`,
+design in `ui-design.md`, screenshots in `ui-screenshots/`).
+
+Built: the paged, egui-free data interface (`model`) and its off-thread
+client (`task`); the `licd` demo program (real x86-64 code disassembled by
+Ghidra's decoder, decompiler lines mapped through DWARF) and a synthetic
+ten-million-row program; the design system; the shell with Ghidra's layout,
+menus, tool bar, key bindings and popup menus, docking with native pop-out
+windows, the command palette, dialogs, options with key remapping, status
+bar, notifications and start screen; the Listing, Decompiler, Functions,
+Symbol Tree, Program Trees, Defined Strings, References, Search Results and
+Console views. Scrolling budget met (`docs/PERF.md`).
+
+Gaps: see `docs/agents/ui.md`.
