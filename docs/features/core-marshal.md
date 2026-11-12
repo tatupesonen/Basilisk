@@ -36,9 +36,10 @@ addresses, ranges, varnode data and the bit arithmetic helpers.
 
 **Not in this track:**
 - Opcode attributes (`readOpcode`/`writeOpcode`): they need `OpCode`, which
-  the `pcode` track is writing in `bk-pcode` in the same wave. Leave them
-  out; the coordinator adds them after both branches merge. Do **not**
-  depend on `bk-pcode`.
+  the `pcode` track is writing in `bk-pcode` in the same wave. Do **not**
+  depend on `bk-pcode`. *As built: `bk-marshal` offers generic
+  `read_enum`/`write_enum` (the name in XML, a non-negative integer in the
+  packed form), which `bk-pcode` uses for `OpCode` — no later glue needed.*
 - The SLEIGH-format element and attribute ids (`CPP/slaformat.cc`): they
   belong to `bk-sleigh` (M1). But the id machinery must support them: they
   live in a separate id scope (`FORMAT_SCOPE`) with their own numbering.
@@ -54,9 +55,11 @@ addresses, ranges, varnode data and the bit arithmetic helpers.
 An id is a name plus a number; the XML form uses the name and the packed
 form the number, so **both must equal Ghidra's**. Numbers are unique within
 a scope; the default scope and the SLEIGH format scope are numbered
-independently. `ATTRIB_UNKNOWN`/`ELEM_UNKNOWN` (id 0) is returned for names
-or numbers not registered. `ATTRIB_CONTENT` (id 1) stands for an element's
-text content in XML and is an ordinary attribute in the packed form.
+independently. `ATTRIB_UNKNOWN` (id 161) and `ELEM_UNKNOWN` (id 292) are
+returned for names or numbers not registered; id 0 is not an id at all and
+only means "nothing left" (no more attributes, no next element).
+`ATTRIB_CONTENT` (id 1) stands for an element's text content in XML and is
+an ordinary attribute in the packed form.
 
 Ghidra registers ids through global static constructors. basilisk must not
 use global mutable state: design an id table that is built once, immutable
@@ -69,8 +72,10 @@ path and must be a hash lookup, not a scan.
 One decoder interface with XML and packed implementations, giving the same
 results for the same logical document. Operations (names are Ghidra's;
 choose Rust names): `peekElement`, `openElement` (any / expecting a given
-id, which fails if a different element is next), `closeElement` (fails if
-attributes or children remain unread, exactly as Ghidra does),
+id, which fails if a different element is next), `closeElement` (Ghidra
+never checks for unread attributes, and its XML decoder checks for unread
+children only in debug builds — match the release behaviour and document
+it),
 `closeElementSkipping`, `getNextAttributeId` (returns 0 when exhausted),
 `getIndexedAttributeId`, `rewindAttributes`, and typed reads of the current
 attribute or of a named attribute: `readBool`, `readSignedInteger`,
@@ -111,6 +116,10 @@ basilisk offers, and if there is none, record the test as covered by the
 contiguous design under "Differences from Ghidra".
 
 ### 4.5 XML reading
+*Outcome (2026-11-12): the check below was done; `roxmltree` failed the
+value check on three corpus elements and `quick-xml` was adopted instead
+(ADR-011). The original instruction is kept for the record.*
+
 ADR-011 adopts `roxmltree` provisionally. Verify it first: parse every
 `.xml`, `.ldefs`, `.pspec`, `.cspec`, `.opinion`, `.sinc`-adjacent XML and
 data-test file under `../ghidra/Ghidra/Processors` and
@@ -130,12 +139,13 @@ A space has a name, an index, a type (`IPTR_CONSTANT`, `PROCESSOR`,
 word size, endianness, delay and dead-code delay, flags (`big_endian`,
 `heritaged`, `does_deadcode`, `programspecific`, `reverse_justification`,
 `formal_stackspace`, `overlay`, `overlaybase`, `truncated`, `hasphysical`,
-`is_otherspace`, `has_nearpointers`), a shortcut character, and derived
+`is_otherspace`, `has_nearpointers`, `allows_wrapped_range`,
+`addressable_all`, `addressable_none`), a shortcut character, and derived
 values (highest offset, pointer bounds). Keep all of Ghidra's rules:
 `wrapOffset`, `byteToAddress`/`addressToByte` word-size scaling, truncation
 (`truncateSpace`), overlay containment, `printRaw` and `printOffset`
-formatting, `read` (parsing `0x…+size` and register names through a
-callback), `encodeAttributes`, `decode` for each kind including overlay
+formatting, `read` (parsing `name-or-number[:size][+offset]`, with register
+names resolved through a callback), `encodeAttributes`, `decode` for each kind including overlay
 spaces, and the `OtherSpace`, `UniqueSpace` and `JoinSpace` constants
 (names, indices, sizes).
 
@@ -156,7 +166,7 @@ accepts). `SeqNum` (address, time, order). `Range` and `RangeList`
 (insert/remove with merging, `inRange`, `longestFit`, `getFirstRange`,
 `getLastRange`, `getLastSignedRange`, encode/decode, `RangeProperties`).
 `VarnodeData` (space, offset, size) with its ordering, `contains`,
-`isContiguous`, encode/decode. The bit helpers, exactly, including
+`isContiguous`, encode/decode. `BitRange` (also defined in `address.hh`). The bit helpers, exactly, including
 behaviour at sizes 0 and above 8 bytes.
 
 ## 5. Design

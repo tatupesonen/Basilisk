@@ -7,7 +7,7 @@ exclude = ["fuzz"]
 version = "0.0.1"
 edition = "2024"
 rust-version = "1.97"
-license = "Apache-2.0"
+license = "GPL-3.0-or-later"
 publish = false
 authors = ["basilisk contributors"]
 
@@ -21,6 +21,8 @@ bk-lang = { path = "crates/bk-lang" }
 bk-bin = { path = "crates/bk-bin" }
 bk-elf = { path = "crates/bk-elf" }
 bk-testkit = { path = "crates/bk-testkit" }
+bk-binutils-sys = { path = "crates/bk-binutils-sys" }
+bk-gnu-disasm = { path = "crates/bk-gnu-disasm" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"
@@ -46,15 +48,30 @@ insta = "1.49.0"
 tempfile = "3.27.0"
 
 [workspace.lints.rust]
+# `unsafe` is forbidden everywhere; a crate that truly needs it opts out by
+# name under ADR-020 and is then checked with Miri (scripts/miri.sh).
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
 missing_docs = "warn"
 rust_2018_idioms = { level = "warn", priority = -1 }
 unreachable_pub = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
+unused_macro_rules = "warn"
+trivial_numeric_casts = "warn"
+redundant_lifetimes = "warn"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "warn"
+bare_urls = "warn"
+invalid_rust_codeblocks = "warn"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+
 # Pedantic lints that fight binary-parsing and compiler-style code more than they help.
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
@@ -67,14 +84,53 @@ cast_precision_loss = "allow"
 similar_names = "allow"
 too_many_lines = "allow"
 struct_excessive_bools = "allow"
-# Correctness-adjacent restrictions we do want (ADR-009).
+
+# No panics on untrusted input (ADR-009). Tests are exempt through clippy.toml.
+indexing_slicing = "warn"
+string_slice = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+get_unwrap = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+exit = "warn"
+mem_forget = "warn"
+
+# Unsafe code, where a crate is allowed any (ADR-020).
+undocumented_unsafe_blocks = "warn"
+multiple_unsafe_ops_per_block = "warn"
+
+# Output goes through `tracing`, not the console.
 dbg_macro = "warn"
 print_stdout = "warn"
 print_stderr = "warn"
-todo = "warn"
-unimplemented = "warn"
-indexing_slicing = "warn"
-unwrap_used = "warn"
+
+# A suppressed lint says why, and stops compiling once it is no longer needed.
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# Performance and data layout (ADR-012).
+clone_on_ref_ptr = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+needless_collect = "warn"
+or_fun_call = "warn"
+iter_with_drain = "warn"
+verbose_file_reads = "warn"
+
+# Clarity and correctness.
+use_self = "warn"
+if_then_some_else_none = "warn"
+map_err_ignore = "warn"
+unused_result_ok = "warn"
+float_cmp_const = "warn"
+lossy_float_literal = "warn"
+same_name_method = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+tests_outside_test_module = "warn"
+debug_assert_with_mut_call = "warn"
+wildcard_dependencies = "warn"
 
 [profile.dev]
 # SLEIGH decoding and the decompiler are painfully slow unoptimised; keep

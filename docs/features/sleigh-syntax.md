@@ -52,6 +52,14 @@ constructors).
 
 ## 4. Behaviour
 
+*Corrections from the track's reading of both front ends (2026-11-12),
+which override the text below where they differ: directives must start in
+column one (no leading whitespace); an unclosed conditional at end of file
+is accepted silently (`ARMv8.sinc` relies on it); `!` in `@if` applies only
+to a parenthesised expression; `0n` integers exist only in the Java front
+end and only as semantic operands; an expanded `$(NAME)` value starts a new
+token (eight ARM specs depend on it).*
+
 ### 4.1 Preprocessor
 Line-oriented, run before lexing. Directives start with `@` at the start
 of a line (after optional whitespace) — take the exact forms from the

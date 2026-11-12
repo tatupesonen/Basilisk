@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="420"></p>
+
 # basilisk
 
 A reimplementation of [Ghidra](https://github.com/NationalSecurityAgency/ghidra)
@@ -33,4 +35,6 @@ Tests that compare against Ghidra expect its source tree at `../ghidra`
 
 ## Licence
 
-Apache-2.0. basilisk is derived from Ghidra; see `NOTICE`.
+GPL-3.0-or-later (`LICENSE`). basilisk is derived from Ghidra, whose
+Apache-2.0 code is included as that licence permits; see `NOTICE` and
+`LICENSE-APACHE`.
