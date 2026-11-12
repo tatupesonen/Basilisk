@@ -82,7 +82,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.program.model.lang.RegisterManagerTest` (unit, 3 tests)
 - [ ] `ghidra.program.model.listing.VariableUtilitiesTest` (unit, 1 tests)
 - [x] `ghidra.program.model.pcode.EncodeDecodeTest` (unit, 10 tests) → `crates/bk-marshal/tests/testmarshal.rs` (the nine `marshal_*_packed` tests and `marshal_bufferpad`; the Java bodies are the C++ ones)
-- [ ] `ghidra.program.model.pcode.LinkedByteBufferTest` (unit, 5 tests)
+- [-] `ghidra.program.model.pcode.LinkedByteBufferTest` (unit, 5 tests) — not applicable: it tests Java's chunked ingest buffer, which the contiguous-slice decoder (`bk-marshal`'s `PackedDecoder` over `&[u8]`) does not have; values that cross the 1,024-byte chunk boundary are covered by `crates/bk-marshal/tests/testmarshal.rs::values_across_the_ingest_buffer_boundary`
 - [ ] `ghidra.program.model.pcode.VarnodeTest` (unit, 2 tests)
 - [ ] `ghidra.program.model.scalar.ScalarTest` (unit, 9 tests)
 - [ ] `ghidra.program.model.symbol.IllegalCharCppTransformerTest` (unit, 3 tests)
