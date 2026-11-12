@@ -13,7 +13,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 |---|---|---|
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
 | `pcode` | `bk-pcode` | `features/pcode.md` — checkpointed by Fable (library written, 247 tests pass by its report; test porting partial, no property tests or benchmarks); continued by Opus 5.5 |
-| `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` |
+| `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — checkpointed by Fable (preprocessor, lexer, AST and parser written; all 150 specs parse; 265 tests pass by its report; verification and paperwork remain); continued by Opus 5.5 |
 | `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
