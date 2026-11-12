@@ -1,127 +1,280 @@
-# Track `bin-elf` — handover
+# Track `bin-elf` — status report
 
-Written 2026-11-12 by the first agent on this track, which was stopped at a
-checkpoint before the spec was finished. **The track is not done.** This file
-is the starting point for whoever continues: it says what exists, what was
-actually run, what the crate evaluation found, what remains, what was in
-flight, and what Ghidra's source says that the spec does not.
+Final report, 2026-11-12, by the second agent on the track (Opus 5.5), which
+continued from the first agent's checkpoint. **The track is done** against
+`docs/features/bin-elf.md` with one stated gap (§7). Worktree
+`basilisk-wt/bin-elf`, branch `bin-elf`. `master` was merged twice, as
+authorised: at the start, and again for the shared fuzz crate.
 
-Spec: `docs/features/bin-elf.md`. Worktree: `basilisk-wt/bin-elf`, branch
-`bin-elf`. Nothing is uncommitted. `master` has **not** been merged into the
-branch (the coordinator asked that the next agent do that first; its lint
-configuration is stricter).
+Tests that use Ghidra's files need, from a worktree,
+`export BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra`; otherwise they skip
+with a printed reason. Run with the variable unset (skips), set to
+`/Users/tatu/slop/ghidra`, and set to `/Users/tatu/slop/basilisk/../ghidra`
+(both find and check all 18 files).
 
-When running tests, `export BASILISK_GHIDRA_DIR=<path to the Ghidra tree>`;
-from a worktree the default `../ghidra` does not resolve and the real-file
-test then skips (it prints why).
+## 1. Built
 
-## 1. Done
+### `bk-bin` — finished at the checkpoint
 
-### `bk-bin` — complete against spec §4.1 and §4.2
+Providers (`MemoryProvider`, `FileProvider` with a 64 × 64 KiB block cache,
+`SubProvider`, `UnlimitedProvider`, `RangeMappedProvider`, `EmptyProvider`,
+`FillProvider`), the `Copy` `BinaryReader` (all integer, array and string
+forms) and LEB128. This session changed only three lint findings
+(`ok_or_else`, a named `map_err` binding) and the test files' lint header.
 
-| Module | Content | State |
+### `bk-elf`
+
+| Module | Content |
+|---|---|
+| `file` — `ElfFile<P>` | `ElfFile::parse(provider) -> Result<ElfFile<P>, ElfError>`; dereferences to `ElfTables`. On demand: `section_name`, `section_by_name`, `string`, `dynamic_library_names`, `symbols` / `symbol`, `symbol_name` (`Result<Option<Cow<str>>, Diagnostic>`), `formatted_symbol_name`, `extended_section_index`, `relocation_layout`, `relocations`, `section_data`, `section_provider` (Ghidra's zero-filled view), `decompress_section`, `segment_data`, `symbol_versions`, `version_definitions`, `version_needs`, `reader` / `raw_reader`. |
+| `file_notes` | `section_notes`, `segment_notes`, `program_notes`, `abi_tag`, `build_id`, `gnu_property`, `debug_link`, `debug_alt_link`, `comment`. |
+| `tables` — `ElfTables` | Everything parsed eagerly, Ghidra's lookups (signed comparisons), prelink, image base, type names. |
+| `parse/{mod,dynamic,symbols,relocs}` | `ElfHeader.parse()` in Ghidra's order: program headers, section headers, dynamic table, string tables; **symbol tables** (sections; `DT_SYMTAB` sized by `DT_HASH`, the `DT_GNU_HASH` walk or `DT_GNU_XHASH`; `SHT_SYMTAB_SHNDX`); **relocation tables** (`DT_REL`, `DT_RELA`, `DT_JMPREL` twice, `DT_ANDROID_REL(A)`, `DT_RELR`, `DT_ANDROID_RELR`, then sections). Ghidra's messages throughout. |
+| `reloc/{table,rel,relr,android}` | Lazy decoders: `REL`/`RELA` (32/64-bit, MIPS-64 layout), `RELR`, Android `APS2`, plus the parse-time scan that counts `APS2` relocations and reports Ghidra's diagnostics. |
+| `version` | `.gnu.version`, `.gnu.version_d`, `.gnu.version_r`, with bounded chains. |
+| `note/{mod,gnu,info}` | `ElfNote`, `NoteIter`, `NoteAbiTag`, `NoteGnuBuildId`, `NoteGnuProperty`, `GnuDebugLink`, `GnuDebugAltLink`, `ElfComment`. |
+| `header`, `program_header`, `section_header`, `strtab`, `symbol`, `symbol_name`, `dynamic`, `compress`, `limits`, `diag`, `error`, `constants`, `machine` | From the checkpoint: header tolerance, extended numbering, compression headers, and the constants and processor tables generated from Ghidra. |
+
+- `parse_tables`, the checkpoint's temporary entry point, is gone.
+- The generator (`gen/gen_tables.py`) now puts identifiers in Ghidra's
+  descriptions into code spans, which fixed the 89 `doc_markdown` warnings
+  where the text is produced. `constants/generated.rs` (999 lines) starts
+  with `// bk:allow-long-file:`. To regenerate:
+  `python3 crates/bk-elf/gen/gen_tables.py <ghidra>`, then `cargo fmt`.
+- **Fixtures**: `crates/bk-elf/tests/fixtures/` holds 17 ELF files (116 KB),
+  made by Apple clang 17.0.0 and rust-lld 22.1.6, with `generate.sh` and a
+  provenance `README.md`. They cover x86-64, i686, AArch64/Android,
+  ARMv7/Android, AArch64 BE and ARMv7 BE: `.o` files with `REL`/`RELA` and
+  zlib-compressed debug sections, and `.so` files in plain, `RELR`, `APS2`,
+  `APS2` + `ANDROID_RELR` and versioned forms.
+- **Fixture builder**: `tests/common/builder.rs`, for 32/64-bit and both
+  byte orders. It writes the header, sections, segments, symbols, the
+  dynamic table and relocations, and has patch helpers for damaging output.
+  Its output is checked against `object`.
+- **Fuzz target**: `bk_elf_parse` (the spec's `elf_parse`) in the shared
+  `fuzz/` crate. The body is `fuzz/fuzz_targets/bk_elf/mod.rs`, which the
+  property tests and the regression replay also include.
+
+## 2. Verification: what each part was checked against
+
+Everything below was **run** in this session (macOS, Apple M1 Pro, Rust
+1.97.1, Ghidra 42db038f3c).
+
+| Part | Independent reference | Test |
 |---|---|---|
-| `endian` | `Endian` | complete |
-| `error` | `BinError` (`thiserror`), `is_eof()` for the cases where Ghidra throws `EOFException` | complete |
-| `provider/traits` | `ByteProvider`: `len`, `read_into`, `as_slice`, `read_bytes -> Cow`, `read_byte`, validity checks, `name`/`path`; blanket impls for `&P`, `Box<P>`, `Arc<P>`; `Send + Sync + Debug`, object-safe | complete |
-| `provider/memory` | `MemoryProvider<B: AsRef<[u8]>>` — owned (`Vec`), borrowed (`&[u8]`), `Arc<[u8]>`, or a memory map from a crate that may create one | complete |
-| `provider/file` | `FileProvider`: positional reads, 64 × 64 KiB direct-mapped block cache with a lock per slot, large reads bypass the cache, file size verified by reading the last byte (Ghidra's `/proc` guard) | complete |
-| `provider/sub` | `SubProvider` (`ByteProviderWrapper`), `UnlimitedProvider` (`UnlimitedByteProviderWrapper`: zero fill past the end) | complete |
-| `provider/range_mapped` | `RangeMappedProvider` with sparse ranges and merging | complete |
-| `provider/fill` | `EmptyProvider`, `FillProvider` (`StaticValueByteProvider`) | complete |
-| `reader/cursor` | `BinaryReader<'a>`: `Copy`, over a provider or a bare slice, position, `at`, `with_endian`, `align`, `has_next`, `read_exact`, `read_array::<N>` | complete |
-| `reader/int` | `read_{u,i}{8,16,32,64}` + `_at` + `peek_`, arrays of 16/32/64-bit types, `read_bytes -> Cow`, `read_uint`/`read_sint` (1–8 bytes), `read_u32_count` | complete |
-| `reader/string` | `Charset` (ASCII, Latin-1, UTF-8, UTF-16 LE/BE, UTF-32 LE/BE); terminated and fixed-length reads, generic and per-charset; `read_terminated_bytes_at` (raw, borrowed) | complete |
-| `reader/leb128` | `decode_*`, `encode_*`, `encoded_len`, `Leb128Info`, `read_uleb128`/`read_sleb128` with Ghidra's 64-bit rules | complete |
+| Header, program and section headers, dynamic table, section names, `DT_NEEDED` | `object` 0.40.0 on Ghidra's 18 ELF files, the 17 fixtures and builder output in all 4 encodings | `real_files.rs`, `builder.rs`, `common/oracle.rs` |
+| Symbols of every `.symtab`/`.dynsym`: every field and the name | `object`, same files | same |
+| `REL`/`RELA`: offset, info, symbol, type, addend | `object`, same files (32-bit `REL` and big-endian included) | same |
+| `RELR` (`SHT_RELR`) | `object`'s `RelrIterator`; lld's unpacked twin links (x86-64, i686, AArch64 BE); hand-computed vectors for 32/64-bit and LE/BE | `real_files.rs`, `packed_relocations.rs`, `reloc_vectors.rs` |
+| Android `APS2` (`RELA` and `REL`, LE and BE) and `SHT_ANDROID_RELR` | lld's unpacked twins, every relocation compared as (section, offset, type, symbol name, addend target); hand-computed vectors covering every error path | `packed_relocations.rs`, `reloc_vectors.rs` |
+| MIPS-64 relocation layout | Hand-computed vector, LE and BE. No real MIPS file: Apple clang has no MIPS backend | `reloc_vectors.rs` |
+| Stripped files: `DT_SYMTAB` with `DT_HASH`/`DT_GNU_HASH`, `DT_STRTAB`, dynamic relocations | The same lld file with its section headers intact (11 files: GNU hash, SysV hash, both, Android, BE) | `stripped.rs` |
+| GNU versioning: versym, verdef, verneed | `object` on the fixtures; names checked by hand | `real_files.rs`, `notes_versions.rs` |
+| `PT_NOTE` notes (build id) | `object`'s note iterator | `notes_versions.rs` |
+| `.comment` | clang and lld strings | `notes_versions.rs` |
+| `SHF_COMPRESSED` | clang `-gz=zlib` sections inflate to `ch_size`; builder sections compressed with `flate2` | `tolerance_header.rs` |
+| Tolerance rules | Builder files damaged one rule at a time; expected texts taken from `ElfHeader.java` | `tolerance_header.rs`, `tolerance_tables.rs` |
 
-Not ported, deliberately (reasons in the spec, §8): `InputStreamByteProvider`,
-`ObfuscatedFileByteProvider`, `SynchronizedByteProvider`, the write half of
-`FileByteProvider`, `MemoryByteProvider`/`MemBufferByteProvider` (M4).
+**Checked only against my own builder and unit vectors** (no third party):
+- ABI tag, GNU property, `.gnu_debuglink`, `.gnu_debugaltlink`;
+- `SHT_SYMTAB_SHNDX` extended indexes and `DT_GNU_XHASH`;
+- the GNU-hash walk failure;
+- the prelink trailer and the "segments add up to the file" rewrite;
+- extended numbering (`PN_XNUM`, `e_shnum` = 0, `SHN_XINDEX`).
 
-### `bk-elf` — partial
+Diagnostic texts were checked against Ghidra's source by reading it; Ghidra
+itself was never run.
 
-| Module | Content | State |
-|---|---|---|
-| `gen/gen_tables.py` | Generates the constant and name tables from Ghidra's Java (`ElfConstants`, `ElfSectionHeaderConstants/Type`, `ElfProgramHeaderConstants/Type`, `ElfDynamicType`, the 13 `*_ElfExtension` classes) | complete |
-| `constants/` | Newtypes `Machine`, `ElfType`, `OsAbi`, `SectionType`, `SegmentType`, `DynamicTag` with constants and name lookup (`SHT_0x%08x` fallbacks); flags; 197 machines, 29 named section types, 11 named segment types, 76 dynamic tags with description and value kind | complete, unit-tested |
-| `machine/` | `MachineExtension` per processor (AARCH64, ARM, AVR8, eBPF, HCS12, Hexagon, MIPS, MSP430, PIC30, PowerPC, PowerPC64, RISC-V, x86-32), selection as `canHandle(ElfHeader)`, data-type suffix, the two parsing hooks (MIPS-64 relocation layout, dsPIC30 halved data-segment sizes) | complete, unit-tested |
-| `diag`, `error` | `Diagnostic { kind, message }` with Ghidra's message texts; `ElfError` for the fatal cases | complete |
-| `limits` | `constrain_count`, `has_fragment` (Ghidra's `constrainHeaderCount` / `hasHeaderFragment`), `is_negative` | complete, unit-tested |
-| `header` | `ElfHeader`: all fields, raw and effective values, header-endianness rule, invalid offsets, `PN_XNUM` / `e_shnum`=0 / `SHN_XINDEX` through section 0, entry-size checks, count truncation | written; exercised only by the real-file smoke test — **no tolerance tests yet** |
-| `program_header` | `ProgramHeader`, 32/64 layouts, offset validity, prelink-adjusted addresses, `offset_of` (vaddr → file offset), `load_order` | written; smoke-tested; `offset_of`, `load_order` untested |
-| `section_header` | `SectionHeader`, compression-header detection with Ghidra's conditions | written; smoke-tested; compression path untested |
-| `compress` | `CompressionHeader`, bounded `inflate` (flate2/zlib-rs) | unit-tested; not yet reachable from a public API |
-| `strtab` | `StringTable` descriptor, `read` with Ghidra's rules (offset inside the table, UTF-8, Java `trim`) | unit-tested |
-| `dynamic/` | `DynamicTable` (entries to the first `DT_NULL`), lookups by tag | unit-tested |
-| `symbol` | `Symbol` decode (32/64, both byte orders, zero-padded), accessors, `SymbolTable` descriptor, `SymbolIter` | unit-tested |
-| `symbol_name` | `replace_invalid_chars` (`ElfSymbolNameUtils`), `is_cold_symbol_name`, `split_version` | unit-tested |
-| `reloc/table` | `RelocationTable` descriptor, `Relocation` with `Elf32` / `Elf64` / `Mips64` layouts | unit-tested |
-| `reloc/rel`, `reloc/relr`, `reloc/android` | Lazy decoders for REL/RELA, RELR, Android APS2 (+ the eager `scan` that counts and produces Ghidra's diagnostics) | **written, compiled, never run** — no tests |
-| `tables` | `ElfTables`: everything parsed eagerly + lookups (`program_load_header_containing`, `section_load_header_containing`, …) with Ghidra's signed comparisons, prelink, image base, type names | written; partly smoke-tested |
-| `parse/mod`, `parse/dynamic` | `parse()`: header → prelink → program headers (incl. the "segments add up to the file" hack) → section headers → dynamic table → string tables; `section_name()` | written; smoke-tested on real files |
-| `parse/symbols`, `parse/relocs` | Symbol-table and relocation-table location | **not written** (design in §5) |
-| `ElfFile<P>` (`file`) | The public type that owns the provider | **not written** (design in §5); `bk_elf::parse_tables(&dyn ByteProvider)` is a temporary entry point |
-| `version` (GNU versioning), `note/*` | | **not started** |
-| fixture builder | | **not started** |
+**Sensitivity check**: I broke the `RELR` bitmap base and the `APS2` offset
+accumulation on purpose. All 7 twin comparisons failed, and the decoders
+were then restored.
 
-## 2. Verified — what was actually run
+**Allocation bound**: `tests/alloc_bound.rs` measures peak heap with `dhat`
+while parsing and reading everything except decompression. Inputs: the
+fixtures, the builder sample, and 256 builder files with random damage. The
+limit is 32 × input + 64 KiB. Decompression has its own bound, 1,040 × the
+compressed size (zlib's maximum ratio). The measurement can over-estimate
+(the peak is global to the process) but cannot under-estimate.
 
-All on 2026-11-12, macOS on an Apple M1 Pro, Rust 1.97.1, with
-`BASILISK_GHIDRA_DIR` pointing at the Ghidra tree (commit `42db038f3c`).
+## 3. Tests
 
-- `CARGO_BUILD_JOBS=2 cargo test -p bk-bin -p bk-elf` — **all pass**:
-  - `bk-bin`: 71 unit, 54 in `tests/binary_reader.rs`, 5 in `tests/leb128.rs`,
-    19 in `tests/providers.rs`, 11 property tests in `tests/proptests.rs`,
-    2 doc tests; 2 benchmarks ignored.
-  - `bk-elf`: 70 unit, 2 in `tests/real_files.rs`.
-- `cargo fmt --all --check` — clean. `scripts/check-file-size.sh` — passes
-  (but `bk-elf/src/constants/generated.rs` is 998 lines after `rustfmt`: two
-  more constants in Ghidra and it needs the `// bk:allow-long-file:` opt-out
-  or a split).
-- `cargo clippy -p bk-bin --all-targets` — **0 warnings**.
-- `cargo clippy -p bk-elf --all-targets` — **not clean**, roughly 110 warnings:
-  80 `doc_markdown` (Ghidra's description texts in the generated tables and a
-  few of mine), about 20 dead-code warnings for code whose caller is not
-  written yet (`inflate`, `StringTable::read`, `SymbolIter::new`,
-  `RelocationTable::iter`, `scan`, `offset_in_segment`, …), a handful of
-  small pedantic ones.
-- **The full gate (`scripts/gate.sh`) was not run** and would fail on the
-  clippy warnings above.
-- Benchmarks: `cargo test -p bk-bin --release --test bench -- --ignored
-  --nocapture`, numbers in `docs/PERF.md`.
-- Fuzzing: **nothing was fuzzed.** There is no `fuzz/` directory.
+| Kind | `bk-bin` | `bk-elf` |
+|---|---:|---:|
+| Unit | 71 | 80 |
+| Ghidra ports (`BinaryReaderTest` 53 + 1, provider tests 19, `LEB128Test` 5) | 78 | — (Ghidra has no ELF parser tests) |
+| Differential against `object` (real files: 18 Ghidra + 17 fixtures; builder) | — | 3 + 1 |
+| Packed relocations against unpacked twins | — | 7 |
+| Hand-computed relocation vectors | — | 12 |
+| Stripped files | — | 11 |
+| Tolerance (one damaged fixture per rule) | — | 34 (16 header-level, 18 table-level) |
+| Notes and versioning | — | 4 |
+| Property tests (`proptest`) | 11 | 4 (512 cases each) |
+| Allocation bound (`dhat`) | — | 1 |
+| Fuzz regression replay | — | 1 (no inputs: nothing was found) |
+| Doc tests | 2 | 1 |
+| Benchmarks (`#[ignore]`) | 2 | 1 |
 
-**Ghidra tests ported and marked** (`docs/inventory/tests/`):
-`BinaryReaderTest` (53 → 53 Rust tests with the same names, plus one extra),
+`BASILISK_GHIDRA_DIR=… CARGO_BUILD_JOBS=2 cargo test -p bk-bin -p bk-elf`:
+all pass.
+
+Ghidra tests ported and marked (by the first agent): `BinaryReaderTest` (53),
 `ByteArrayProviderTest` (2), `FileByteProviderTest` (4),
-`RangeMappedByteProviderTest` (12), `LEB128Test` (5). Left unmarked as the
+`RangeMappedByteProviderTest` (12), `LEB128Test` (5). Left unmarked, as the
 spec says: `MemoryByteProviderTest`, `LEB128DataTypeTest`.
 
-**The real-file smoke test** (`tests/real_files.rs`) parses the 18 files with
-the ELF magic under `GPL/GnuDisassembler/data` and
-`GhidraDocs/GhidraClass/ExerciseFiles` with `parse_tables`, asserts **no
-diagnostics**, and compares with `object` 0.40.0's low-level API: every ELF
-header field, every program header field, every section header field, the
-dynamic entries up to the first `DT_NULL`, and one string table per
-`SHT_STRTAB` section. Symbols and relocations are not compared (not parsed
-yet). This is spec acceptance item 2 for the half of the parser that exists.
+### Ghidra's ELF loader tests, waiting for the program model (M4)
 
-**Written but untested:** every tolerance rule in `header.rs` (no damaged
-fixtures exist yet); the compression-header path; `ProgramHeader::offset_of`;
-the lookups in `tables.rs` beyond what the smoke test touches; prelink; the
-three relocation decoders and the Android scan; `section_name`'s fallbacks.
+Ghidra has no test class under `ghidra.app.util.bin.format.elf`. ELF is
+tested only by loading whole programs:
 
-**ELF tests in Ghidra.** The inventory has no test class under
-`ghidra.app.util.bin.format.elf`, and `grep -rl "ElfHeader\|ElfLoader\|format\.elf" --include='*Test*.java'`
-over `Ghidra/` finds no test either. The only ELF-named tests are three
-Version Tracking GUI tests (`VT*Correlator_ELF_Test`,
-`features-versiontracking.md`), which need whole programs and the UI — for
-M4 and later, not for this track. Ghidra's ELF parser is effectively
-untested upstream; everything here has to be derived from its source.
+- **Processor emulator tests** built on
+  `ghidra.test.processors.support.ProcessorEmulatorTestAdapter`
+  (`*_O0_EmulatorTest`, `*_O3_EmulatorTest`, … in
+  `docs/inventory/tests/processors-*.md`). Processors: AARCH64, ARM, Atmel,
+  CR16, Hexagon, LoongArch, 68000, MIPS, MSP430, NDS32, PA-RISC, PIC,
+  PowerPC, RISC-V, SPARC, SuperH4, TriCore, V850, x86 and Xtensa. They load
+  ELF test binaries (not in the tree) through `ElfLoader`, so they need the
+  loader, the relocation handlers and the emulator.
+- **Version Tracking GUI tests** in `features-versiontracking.md`:
+  `VTCombinedFunctionDataReferenceCorrelator_ELF_Test`,
+  `VTDataReferenceCorrelator_ELF_Test` and
+  `VTFunctionReferenceCorrelator_ELF_Test`. They need whole programs and the
+  UI.
+- `StringsAnalyzerTest` names a program `libopencoreplayer.so` but builds it
+  with `ProgramBuilder`. It never loads ELF.
 
-## 3. Crate evaluation for ELF parsing (owner rule: use existing crates when they fit)
+## 4. Fuzzing (run)
 
-**Recommendation: write the parser (continue what is here); keep `object` as
+`bk_elf_parse`, seeded from `tests/fixtures/` plus the corpus of a first
+37-second run (made under the old target name, no finding):
+
+- **15 minutes**: `cargo +nightly fuzz run bk_elf_parse fuzz/corpus/bk_elf_parse crates/bk-elf/tests/fixtures -- -max_total_time=900 -rss_limit_mb=2048 -max_len=65536`,
+  from 2026-11-12T17:27:27Z to 17:42:29Z. Result: `Done 5708054 runs in 901
+  second(s)`, **no finding**; coverage 3,188, corpus 1,778, RSS 940 MB at
+  the end, under the 2 GB limit.
+- **Smoke run**: `scripts/fuzz-smoke.sh 60 bk_elf_parse` gave
+  `Done 230508 runs in 61 second(s)`, then `fuzz: all targets ran without a
+  finding`.
+- `fuzz/regressions/bk_elf_parse/` is empty apart from `.gitkeep`. Its
+  replay test (`tests/fuzz_regressions.rs`) runs in the gate.
+- The fuzz crate's `Cargo.lock` is not committed (the coordinator's, per the
+  rule).
+
+## 5. Benchmarks (run)
+
+Command:
+`cargo test -p bk-elf --release --test bench -- --ignored --nocapture --test-threads=1`.
+Input: a 41 MB file with one `.symtab` of 1,000,001 symbols, written by the
+builder. The fuzzer was running on the machine at the same time, so treat
+the figures as indicative.
+
+| Benchmark | Time | Per symbol |
+|---|---:|---:|
+| `ElfFile::parse` (header, tables located, no symbol read) | 1.3 µs | — |
+| Decode every symbol (`MemoryProvider`) | 3.8 ms | 3.8 ns |
+| … and borrow its name | 27.8 ms | 27.8 ns |
+| … and collect owned names | 50.5 ms | 50.5 ns |
+| Decode every symbol (`FileProvider`) | 23.8 ms | 23.8 ns |
+| … and read its name (`FileProvider`) | 215 ms | 215 ns |
+
+These numbers are in `docs/PERF.md`, next to `bk-bin`'s reader numbers from
+the checkpoint.
+
+## 6. Differences from Ghidra
+
+All are recorded in spec §8. The ones added in this session:
+
+- **Exceptions that end Ghidra's import become diagnostics here**, and the
+  affected table is skipped:
+  - an Android table that is missing or not `APS2` (an `IOException` in
+    Ghidra);
+  - an address that `ElfProgramHeader.getOffset` cannot map (an unchecked
+    exception in Ghidra).
+- **The `APS2` count is capped at the file length.** A group larger than the
+  capped count is therefore reported against the capped number.
+- **The GNU-hash walk also stops at the end of the file.**
+- **`section_by_name` returns the first match**, where Ghidra's
+  `getSection` throws if two sections share a name.
+- **`st_name` is unsigned.**
+- **Lazy reads report their own diagnostics** (a symbol name, a `DT_NEEDED`
+  string) instead of adding to the file's list.
+- **Android relocations on MIPS-64** use the standard 64-bit split.
+- **Section names in diagnostic messages are read with a 256-byte bound**,
+  so that hostile names cannot make the messages quadratic.
+- **Section and segment data is cut at the end of the file.**
+  `section_provider` gives Ghidra's zero-filled view instead.
+- **Notes and informational sections are read from the file**, in the
+  file's data byte order, not from program memory.
+- **GNU versioning chains are bounded.**
+- **Kept as in Ghidra, not a difference**: a relocation section whose link
+  is bad is reported three times (both `DT_JMPREL` passes and the section
+  loop reach it). The test asserts the repetition.
+
+## 7. Gaps
+
+- **Not ported: `GnuBuildAttributes` / `GnuBuildAttribute`.** These decode
+  the `.gnu.build.attributes` name fields for markup. The notes themselves
+  can be read with `section_notes`.
+- **Not ported: the Android and `RELR` table data-type layouts**
+  (`AndroidElfRelocationTableDataType`, `ElfRelrRelocationTableDataType`).
+  They are M4 markup.
+- **No real MIPS, PowerPC or SPARC file** in the fixtures: Apple clang
+  lacks those backends. The MIPS-64 relocation layout rests on hand
+  vectors.
+- **`"Failed to idenitify loaded GNU Hash table"` [sic] has no test.** It
+  needs a hash table outside every section and `PT_LOAD` file range while
+  its address is inside a `PT_LOAD`, which I could not construct with the
+  builder's single whole-file `PT_LOAD`.
+- **The 2³¹ hard limit on header-table counts** is tested in `limits.rs`
+  and through the section-index table, not with a header-table fixture
+  (that would need a multi-gigabyte file).
+
+## 8. For the PE / Mach-O and loader tracks — the `bk-bin` API
+
+- Take input as `&dyn ByteProvider`, or be generic over `P: ByteProvider`
+  to own it, as `ElfFile<P>` does. References, `Box` and `Arc` of providers
+  are providers.
+- `MemoryProvider::new(vec_or_slice)` for bytes, `FileProvider::open(path)`
+  for files, `SubProvider::new(&parent, offset, len)` for an embedded file,
+  `UnlimitedProvider` when headers must tolerate truncation (reads past the
+  end yield zeros).
+- `BinaryReader::new(&provider, endian)` or `BinaryReader::from_slice`. It
+  is `Copy`: `.at(offset)` gives an independent cursor, `.with_endian(e)`
+  another byte order.
+- `read_x()` advances, `read_x_at(i)` does not, `peek_x()` reads at the
+  cursor. A failed read never moves the cursor (LEB128 excepted). Errors
+  are `BinError`, and `is_eof()` tells "ran out of data".
+- Do not allocate per entry. `read_bytes_at` borrows from in-memory
+  providers; `read_array_at::<N>` copies onto the stack.
+- Through `UnlimitedProvider` every range is valid, so bound lengths read
+  from the file yourself.
+- For a `FileProvider`, read a whole table with one `read_bytes` call and
+  decode from the slice. Per-item reads cost about 20 ns each through the
+  block cache (§5).
+- For the loader: `ElfFile` exposes everything `ElfHeader` did, plus
+  `relocation_layout()`. Relocation *handlers*, GOT/PLT markup and data
+  types are M4.
+
+## 9. Follow-ups and proposals
+
+- **ADR-011**: please add the `dhat` evaluation from §11 (a dev-dependency
+  for allocation-bound tests).
+- **`flate2`**: `master`'s lock now has 1.1.11; this branch keeps 1.1.10, as
+  the brief asked. The coordinator decides at merge.
+- **Lock pins**: `dhat`'s dependency tree brought in `itoa` 1.0.19 and
+  `smallvec` 1.16.5, both under two weeks old. They are pinned back to
+  1.0.18 and 1.16.4.
+- **`object` as the shared oracle**: `tests/common/oracle.rs` is generic
+  over class and byte order. It could move to `bk-testkit` once that crate
+  is free.
+
+## 10. Gate
+
+`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` → **0**; last line `tests: 764 passed, 0 failed` (run on commit `303e3c8`; only this report changed after it). In the gate `BASILISK_GHIDRA_DIR` is unset, so from the worktree the Ghidra-file test skips; it was run separately with the variable set (above).
+
+## 11. Crate evaluation (owner rule: use existing crates when they fit)
+
+**Decision (ADR-011 on `master`): write the parser; keep `object` as
 the differential oracle. Neither `object` nor `goblin` can carry the
 structure parsing under Ghidra's tolerance rules.** The reasons are specific
 and were checked by experiment, not assumed.
@@ -247,16 +400,23 @@ sources of truth for the same bytes.
 - **Endian-aware integers — the standard library** (`from_le_bytes` /
   `from_be_bytes`); `byteorder`/`zerocopy` would add nothing.
 - **String decoding — the standard library** (`String::from_utf8_lossy`,
-  `char::decode_utf16`, `char::from_u32`). `encoding_rs` was considered and
-  does not fit the reader's rules: it implements the WHATWG Encoding
-  Standard, which has no UTF-32 and maps the "ASCII" label to windows-1252,
-  where Java's `US_ASCII` turns bytes above 0x7f into U+FFFD (Ghidra's
-  behaviour, covered by tests here). **This is from the standard the crate
-  implements, not from running it** — I did not build against it. It *is*
-  the right crate when Ghidra's wider list of Java charsets is needed for
-  string data types (M4+); add it then.
+  `char::decode_utf16`, `char::from_u32`). `encoding_rs` 0.8.35 was **built
+  and run** this time (`target/enc-check`, a throw-away program; output
+  below): every ASCII and Latin-1 label resolves to windows-1252
+  (41 80 e9 ff → `A€éÿ`, no error; Java's `US_ASCII` gives `A` + three
+  U+FFFD, its `ISO_8859_1` gives U+0080 for 0x80), `utf-32`/`utf-32le` are
+  unknown labels, and its UTF-8/UTF-16 decoders produce what the standard
+  library already does (one U+FFFD per error, unpaired surrogates included).
+  It would replace nothing and break two charsets. Recorded in spec §8.
+
+      us-ascii   -> windows-1252  decode(41 80 e9 ff) = "A€éÿ" errors=false
+      iso-8859-1 -> windows-1252  decode(41 80 e9 ff) = "A€éÿ" errors=false
+      utf-8      -> UTF-8         decode(41 80 e9 ff) = "A���" errors=true
+      utf-32     -> None
+      utf16 unpaired: encoding_rs="A�B" std="A�B"
+
 - **zlib — `flate2`** (workspace), used.
-- **File block cache — own code (≈40 lines).** `lru` (the standard choice)
+- **File block cache — own code (≈40 lines), unchanged.** `lru` (the standard choice)
   needs `&mut` for `get`, hence one exclusive lock around every read, which
   is what the spec's "many threads can read one provider without locking"
   rules out; `moka` is concurrent but brings a large dependency tree for a
@@ -268,340 +428,16 @@ sources of truth for the same bytes.
 - **Unicode general category — `unicode-properties`** (used), for
   `SymbolUtilities.isInvalidCodePoint`.
 
-## 4. Remaining, in the order I would do it
+- **Heap measurement in tests — `dhat` 0.3.3** (dev-dependency, new): 15.6
+  million downloads, 4.9 million in the last 90 days, 401 reverse
+  dependencies, released 2024-02-04; MIT/Apache-2.0. The standard crate for
+  asserting heap use in tests (`dhat::HeapStats`, testing mode); it needs no
+  `unsafe` in our code. Alternative looked at: `stats_alloc` (21.7 million
+  downloads, but 2.0 million recent, unmaintained since 0.1.10). Its
+  dependency tree adds `backtrace`, `serde_json`, `parking_lot` & co. to the
+  lock file; two of those resolved to versions under two weeks old and were
+  pinned back (`itoa` 1.0.18, `smallvec` 1.16.4).
 
-1. **Merge `master`** into the branch (stricter lints, new licence; the
-   coordinator asked for this first) and get `bk-bin` clippy-clean again
-   under the new configuration.
-2. **`parse/symbols.rs`** — `parseSymbolTables`, `parseDynamicSymbolTable`,
-   `getExtendedSymbolSectionIndexTable`, the GNU-hash/XHASH/`DT_HASH` symbol
-   count (§5 has the rules).
-3. **`parse/relocs.rs`** — `parseRelocationTables`,
-   `parseDynamicRelocTable`, `parseJMPRelocTable`,
-   `parseSectionBasedRelocationTable`, table construction (§5).
-4. **`ElfFile<P>`** (`file.rs`) with the lazy API; remove `parse_tables` (§5).
-5. **Fixture builder** (`bk_elf::builder`, spec §6): header, sections,
-   segments, symbols, dynamic, relocations; 32/64, both byte orders. Needed
-   by every test below.
-6. **Tolerance tests**: one damaged fixture and the expected diagnostic per
-   rule — the full list of rules is in §6 of this file. Acceptance item 3.
-7. **Relocation decoder tests**: REL/RELA both classes and byte orders,
-   MIPS-64; RELR and Android `APS2` against hand-computed vectors (including
-   truncation, group-size errors, the REL-with-addend case that empties the
-   table, the count cap).
-8. **GNU versioning** (`version.rs`): `.gnu.version` (u16 per dynamic
-   symbol), `.gnu.version_d` (`GnuVerdef` 20 bytes + `GnuVerdaux` 8),
-   `.gnu.version_r` (`GnuVerneed` 16 + `GnuVernaux` 16), lazy, following
-   `vd_next`/`vn_next`/`vda_next`/`vna_next` with a visited/offset bound.
-   Ghidra's `ElfHeader.parseGNU_d/_r` are empty stubs; the structures are
-   only used for markup.
-9. **Notes and info** (`note/`): `ElfNote.read` (name ≤ 1024, desc ≤ 1 MiB,
-   name padded to 4, desc **not** padded by `read` — `markupPtNote` aligns
-   afterwards), `NoteAbiTag`, `NoteGnuBuildId`, `NoteGnuProperty`,
-   `GnuDebugLink`, `GnuDebugAltLink`, `ElfComment`, `GnuBuildAttributes`.
-   Ghidra reads these from *program memory*, so write them as functions over
-   a `BinaryReader` and add `ElfFile` conveniences over section bytes.
-10. **Section contents**: `section_data` (raw; empty for `SHT_NOBITS`),
-    decompression through `compress::inflate`, `segment_data`.
-11. **Differential tests** against `object` on builder output and on the
-    real files: symbols, dynamic entries, relocations (extend
-    `tests/real_files.rs`).
-12. **Stripped-file test**: take section headers away from a builder file
-    and check that dynamic symbols, strings and relocations are still found.
-13. **Property tests** (`elf_parse` never panics on arbitrary and on mutated
-    builder output; allocation bounded) and the **fuzz target**
-    `fuzz/fuzz_targets/elf_parse.rs` (`libfuzzer-sys` 0.4.13 is old enough);
-    run 60 s (`cargo +nightly fuzz run elf_parse -- -max_total_time=60`; a
-    nightly toolchain and `cargo-fuzz` 0.13.2 are installed). `fuzz/Cargo.toml`
-    will be created by several tracks at once — expect a merge conflict.
-14. **Benchmark**: symbol table of a million-symbol builder file; numbers in
-    `docs/PERF.md`.
-15. **Clippy and the gate**: fix or allow `doc_markdown` on the generated
-    tables (a module-level `#[expect]` with the reason "descriptions are
-    Ghidra's text" on `mod generated`, `mod machines` and the machine
-    modules is the least work), remove the handover `#[allow]` in
-    `reloc/mod.rs`, run `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`.
-16. **Docs**: turn the *(planned)* entries in spec §8 into facts or delete
-    them; fill spec §9; replace this file with the final report (RULES.md).
+## 12. Commits
 
-Not started and possibly out of scope — decide when there: the data-type
-layout of Android tables (`AndroidElfRelocationTableDataType` records the
-offset and length of every LEB128 field for markup; the decoder here yields
-relocations only) and of RELR tables (`ElfRelrRelocationTableDataType`).
-M4 needs them for markup; a group/word iterator that reports offsets would
-do.
-
-## 5. In flight — the design that was being implemented
-
-### `ElfFile<P>`
-
-```rust
-pub struct ElfFile<P> { provider: UnlimitedProvider<P>, tables: ElfTables }
-impl<P: ByteProvider> ElfFile<P> { pub fn parse(provider: P) -> Result<Self, ElfError> }
-impl<P> Deref for ElfFile<P> { type Target = ElfTables; }
-```
-
-- Generic over the provider so that both `ElfFile<&MemoryProvider<&[u8]>>`
-  (borrowed, for tests and embedded files) and
-  `ElfFile<Arc<dyn ByteProvider>>` (owned, no lifetime — what the loader and
-  the Python bindings want, ADR-014) work; references, `Box` and `Arc` of
-  providers are providers. Rejected: `ElfFile<'p>` holding
-  `&'p dyn ByteProvider` (a lifetime in a type plugins hold) and an
-  `Arc<dyn ByteProvider>`-only design (cannot borrow a slice).
-- All heavy code stays non-generic: `parse::parse(&dyn, &dyn)` builds
-  `ElfTables`; `ElfFile<P>`'s methods only make a `BinaryReader` and call
-  non-generic functions. Two readers are needed, as in Ghidra: the
-  **zero-padding** one (`UnlimitedProvider`, header byte order) for headers,
-  symbols, strings and hash tables, and the **raw** one
-  (`provider.inner()`) for relocation tables, where Ghidra enforces the end
-  of the file.
-- Lazy methods planned on `ElfFile`: `section_name(&SectionHeader) -> Cow<str>`,
-  `section_by_name`, `symbols(&SymbolTable) -> SymbolIter`,
-  `symbol_name(&SymbolTable, &Symbol) -> Result<Option<Cow<str>>, Diagnostic>`,
-  `extended_section_index`, `string(&StringTable, offset)`,
-  `dynamic_library_names()` (iterator; `UNK_LIB_NAME_<i>` fallback),
-  `relocations(&RelocationTable) -> RelocationIter`, `section_data`,
-  `decompress_section`, the version and note readers.
-- Why names are lazy: see spec §8 (quadratic blow-up otherwise). Why
-  `Deref`: every non-I/O accessor and lookup of `ElfTables` is then on
-  `ElfFile` without wrappers.
-
-### Symbol name rule (not yet implemented; from `ElfSymbol` + `ElfSymbolTable`)
-
-`st_name` = 0 **and** type `STT_SECTION` **and** `st_shndx` < `SHN_LORESERVE`
-and < section count → the section's name. Otherwise, if the table has a
-string table → `StringTable::read(st_name)` (failure = Ghidra logs and the
-name is null). Otherwise null. A blank name displays as `<no name>`. Note
-that a non-section symbol with `st_name` 0 reads the string at offset 0
-(normally empty), it is not special-cased.
-
-### `parse/symbols.rs` — rules (`ElfHeader.parseSymbolTables`)
-
-For each `SHT_SYMTAB` / `SHT_DYNSYM` section, in order; each check that
-fails logs and **skips that table only**:
-
-1. `is_invalid_offset()` → "Symbol table section header '<name>' has invalid offset value: 0x…".
-2. `sh_size` ≤ 0 (signed) → "… has invalid sh_size value (table size): 0x…".
-3. `!SymbolTable::is_valid_entry_size(class, sh_entsize)` → "… has unsupported sh_entsize value (table entry size): 0x…".
-4. `sh_size % sh_entsize != 0` → "… has sh_size which is not a multiple of sh_entsize value" (warning only, continues).
-5. count = `constrain_count(size / entsize, offset, entsize, hard_limit(entsize), "Symbol")`; truncated = `has_fragment(...) || count != expected`.
-6. String table: `sh_link` in range → `string_table_index_for_section(link)` (matched by **file offset**, whatever the linked section's type). None → "String table not found for symbol table: <name>" (table is still created).
-7. `is_dynamic` = the section's *name* is `.dynsym` (not its type).
-8. `SHT_SYMTAB_SHNDX`: only if the file has any; find the SHNDX section whose `sh_link` (1 ≤ link < count) is this symbol-table section; size ≤ 0 or > `i32::MAX` → "Symbol table section index header '<name>' has invalid size: 0x…"; invalid offset → "… has invalid offset value: 0x…"; count = `constrain_count(size / 4, offset, 4, symbol_count, "Symbol section index")` plus `has_fragment` for its log. The plan is to store offset and count (`SectionIndexTable`) and read indexes lazily through the zero-padding reader; index ≥ count → 0.
-9. If the table's address equals the prelink-adjusted `DT_SYMTAB` → it is the dynamic symbol table.
-
-If none matched and the dynamic table has `DT_SYMTAB` (else, when there is a
-dynamic table: "ELF does not contain a dynamic symbol table (DT_SYMTAB)") →
-`parseDynamicSymbolTable`, checks in this order:
-
-1. hash type = first present of `DT_HASH`, `DT_GNU_HASH`, `DT_GNU_XHASH`; if
-   `DT_SYMTAB`, `DT_SYMENT` or a hash is missing → "Failed to parse DT_SYMTAB, missing dynamic dependency" **only if** a dynamic string table exists; stop.
-2. `DT_SYMTAB` = 0 → "Failed to process DT_SYMTAB with 0 value".
-3. No `PT_LOAD` contains the (adjusted) address → "Failed to locate DT_SYMTAB in memory at 0x…".
-4. offset = `offset_of(addr)`; ≤ 0, > hard limit or ≥ file length → "Dynamic symbol table has invalid DT_SYMTAB value (table offset): 0x…".
-5. Hash address not in a `PT_LOAD` → "Failed to locate DT_HASH, DT_GNU_HASH, or DT_GNU_XHASH in memory at 0x…".
-6. Invalid `DT_SYMENT` → "Dynamic symbol table has unsupported DT_SYMENT value (table entry size): 0x…".
-7. Count: `DT_HASH` → `nchain` (u32 at hash + 4). `DT_GNU_XHASH` → u32 at +8 (`symndx`) + u32 at +0 (`ngnusyms`). `DT_GNU_HASH` → walk below.
-8. Count ≤ 0 → "Unable to determine symbol count for dynamic symbol table at address 0x…".
-9. constrain / fragment as above ("Symbol").
-10. No dynamic string table → "String table not found for dynamic symbol table at address 0x…" (table still created). No SHNDX table for a dynamic-only table.
-
-GNU hash walk (`deriveGnuHashDynamicSymbolCount`), all in signed 64-bit:
-`nbuckets`, `symbase`, `bloomsize` = u32 at +0, +4, +8; buckets start at
-`hash + 16 + wordsize·bloomsize`; `max_offset` = end of the *section* whose
-file range contains `[hash, hash+12)` (if there are sections), else of the
-`PT_LOAD` containing the file offset, else fail with "Failed to idenitify
-loaded GNU Hash table" [sic]. For each bucket: offset outside
-`[hash, max_offset]` → "Error occured while inspecting GNU Hash table" [sic],
-count 0; value read as **signed** i32, track the maximum. Then
-`chain = buckets_end + 4·(max − symbase)`; `max += 1`; loop: bounds check as
-above; read i32; low bit set → stop; else `max += 1`, next. Result `max`.
-**Add** a stop at the end of the file (same message): past the end the
-zero-padding reader returns 0 forever and `max_offset` is file-controlled.
-
-### `parse/relocs.rs` — rules (`ElfHeader.parseRelocationTables`)
-
-Order (it matters; later duplicates are skipped by file offset):
-`DT_REL`(ent `DT_RELENT`, size `DT_RELSZ`), `DT_RELA`(`DT_RELAENT`,
-`DT_RELASZ`), then if `DT_PLTREL` exists `DT_JMPREL`(no ent, `DT_PLTRELSZ`,
-addend = `DT_PLTREL` == 7), `DT_ANDROID_REL`(no ent, `DT_ANDROID_RELSZ`),
-`DT_ANDROID_RELA`(no ent, `DT_ANDROID_RELASZ`), `DT_RELR`(`DT_RELRENT`,
-`DT_RELRSZ`), `DT_ANDROID_RELR`(`DT_ANDROID_RELRENT`, `DT_ANDROID_RELRSZ`),
-then `DT_JMPREL` again with ent `DT_RELAENT`/`DT_RELENT`, then every section.
-
-Dynamic table entry → table: address missing → skip silently. Address
-inside an **allocated section** → treat that section as a section-based
-table and stop (if its type is not a relocation type, nothing happens).
-Else no `PT_LOAD` → "Failed to locate <DT_NAME> in memory at 0x…"; load
-header with invalid offset → skip silently; offset already parsed → skip;
-offset < 0, > hard limit or ≥ length → "Invalid derived dynamic relocation
-table file offset: 0x…; <DT_NAME>(0x%08x): 0x<addr>" (Ghidra prints the tag's
-`toString`, `NAME(0x%08x)`); ent or size entry missing → skip silently;
-size ≤ 0 → "Dynamic relocation table has invalid <DT_NAME>(0x…) (table
-size): 0x…"; symbol table = the dynamic symbol table; construction error →
-"Failed to process relocation table: <message>".
-
-Section → table (types `SHT_REL`, `SHT_RELA`, `SHT_RELR`, `SHT_ANDROID_REL`,
-`SHT_ANDROID_RELA`, `SHT_ANDROID_RELR`): offset already parsed → skip;
-invalid offset → skip silently; `sh_size` ≤ 0 → "Relocation table section
-header '<name>' has invalid sh_size value (table size): 0x…"; `sh_info` ≠ 0
-must be a valid section index else "Failed to process relocation table
-<name>: invalid linked section index <n>"; symbol-table section = `.dynsym`
-*by name* when `sh_link` = 0, else section `sh_link`, which must be
-`SHT_DYNSYM` or `SHT_SYMTAB` ("… unexpected section type for section index
-<n>"); symbol table matched by file offset (may be absent); entry size
-`sh_entsize`.
-
-Construction (`ElfRelocationTable`): entry size = the standard size when the
-format is default and the given size ≤ 0; if the format is not Android and
-the size ≠ supported (REL 8/16, RELA 12/24, RELR 4/8) → error "Relocation
-table has unsupported entry size: 0x…". Then per format — this is what
-`RelocationTable::units` is for:
-- **default**: expected = length / entsize; count = `constrain_count(..., "Relocation Table")`, truncated = fragment || count ≠ expected; then only entries wholly inside the file are read: if count > complete entries → truncated + "Truncated ELF Relocation table due to unexpected EOF". `units` = readable entries.
-- **RELR**: words = ⌈length / entsize⌉; if more than fit in the file → truncated + "Truncated ELF RELR Relocation table due to unexpected EOF". `units` = words.
-- **Android**: `reloc::scan_android` (already written) returns count and truncation and pushes Ghidra's diagnostics; its `Err(message)` is Ghidra's `IOException` ("Android relocation table not found at file offset N" / "Unsupported Android relocation table format"), which in Ghidra escapes `parse()` — report it as "Failed to process relocation table…: <message>" and skip the table. `units` = count.
-
-Relocation layout: `RelocationLayout::for_file(class, extension.uses_mips64_relocations(class), header.data_endian())`.
-
-### Things tried or considered that did not work
-
-- **Storing section names eagerly** (as Ghidra does): unbounded on hostile
-  input, see spec §8. Names are lazy.
-- **`BinaryReader` generic over the provider type**: unnecessary — the
-  reader caches `provider.as_slice()` and takes a slice fast path, which
-  measured 0.45 ns per `read_u32` through `&dyn ByteProvider`.
-- **A source-filter mistake worth knowing about**: reading Ghidra's Java
-  with comment lines filtered out hid one line of code that *starts* with a
-  comment — `/*long unused_reserved = */ reader.readNextUnsignedInt();` in
-  `ElfCompressedSectionHeader.read64`. `Elf64_Chdr` does have the reserved
-  word; `compress.rs` reads it. It is the only such line in the ELF sources.
-- **`object` 0.40 API change**: accessors return newtypes
-  (`e_type() -> FileType`, `sh_flags() -> SectionFlags`, `d_tag() -> DynamicTag`);
-  use `.0`. `tests/real_files.rs` is written for 0.40.
-- **Version pins**: `cargo` resolved `flate2` to 1.1.11 (six days old) and
-  would resolve `unicode-properties` to 0.1.5 (twelve days old); the lock
-  file holds `flate2` at 1.1.10 (`cargo update -p flate2 --precise 1.1.10`)
-  and the manifest pins `unicode-properties = "=0.1.4"`. After merging
-  `master`, check the lock file again.
-
-## 6. What Ghidra's source says that the spec does not
-
-### `BinaryReader` and providers
-
-- There is no `readTerminatedString`/`readFixedLenString` in this Ghidra
-  (the spec names them); the forms are `readString(index, charset, charLen)`
-  (terminated) and `readString(index, charCount, charset, charLen)` (fixed).
-- Terminated: stops at the first all-zero *unit* at a unit boundary; nothing
-  is trimmed ("this method no longer trims"); a tab does not terminate.
-  Errors are all `EOFException`: nothing readable at the index, data ends
-  before the terminator, or the buffer limit (2³¹ − 1025 bytes).
-- Fixed-length: reads the whole field (which must be in range), strips
-  trailing all-zero units only, keeps embedded NULs and whitespace.
-- LEB128 is not in `BinaryReader`; it is `LEB128.read(InputStream, signed)`:
-  error when an 11th byte is read (`shift == 70`) or, unsigned only, when
-  the 10th byte is > 1. A signed 10-byte value is accepted whatever the
-  10th byte holds.
-- `readNextUnsignedIntExact` rejects values above `Integer.MAX_VALUE`; array
-  reads reject counts above 2³¹ − 1025.
-- `FileByteProvider`: 64 KiB buffers, 4 pinned + soft references, all reads
-  under one monitor; it verifies the file size by reading the last byte.
-- `RangeMappedByteProvider.addRange` has the sparse-merge bug described in
-  spec §8.
-
-### `ElfHeader` — the tolerance rules, complete list
-
-Constructor (fatal = `ElfException`):
-
-1. First four bytes ≠ `\x7fELF` (or unreadable) → **fatal** "Not a valid ELF executable."
-2. Length < 34 → **fatal** "Not enough bytes to be a valid ELF executable."
-3. `EI_DATA` not 1 or 2 → warn "Invalid EI_DATA, assuming little-endian headers (EI_DATA=0x…)".
-4. `EI_DATA` = 2 but byte 16 ≠ 0 and byte 20 = 1 → headers are read little-endian (no message). `isLittleEndian()` still reports the ident byte; section *contents* (compression headers) use the ident byte, header tables and relocation tables use the header order.
-5. All later header reads go through the zero-padding wrapper: a truncated header gives zero fields, not an error.
-6. `EI_CLASS` not 1 or 2 → **fatal**.
-7. `e_phoff` / `e_shoff` negative, > 0x7FFF_FFFF_FFFF or ≥ length → warn "Invalid ELF e_phoff value (program header table offset): 0x…" / "… e_shoff value (section header table offset) …", treated as 0.
-8. `e_phoff` = 0 → no program headers. `e_phnum` = 0xffff → count from section 0's `sh_info`; section 0 missing, not wholly in the file or not `SHT_NULL` → warn "Failed to load Section-0 required for extended program header count", 0; negative → "Invalid extended program header count: <n>".
-9. `e_shnum` ≥ 0xff00 → warn "Invalid ELF e_shnum value (section header count): 0x…", then treated as 0 — which triggers rule 10.
-10. `e_shoff` = 0 → no sections. `e_shnum` = 0 → count from section 0's `sh_size` (same failure message with "section header count"); negative or > `i32::MAX` → "Invalid extended section header count: <n>".
-11. `e_phentsize` ≠ 32/56 with program headers present: if there are sections → warn "Unsupported e_phentsize value (program header size): <n> (expected <m>), using section headers only"; else **fatal**.
-12. Program header count > what fits (one partial entry allowed) or > `i32::MAX / size` → warn "Program Header count <n> exceeds file capacity|hard limit <m>; truncating"; a partial last entry → warn "Program Header has partial entry"; either sets `hasTruncatedProgramHeaders`.
-13. Rules 11–12 for sections (`e_shentsize` 40/64, "using program headers only", "Section Header"). The fallback test uses the *already adjusted* other count, so a file with both sizes wrong is fatal on the section check.
-14. `e_shstrndx`: 0 if no sections; 0xffff → section 0's `sh_link` (0 if section 0 unusable or the value is negative).
-
-`parse()`:
-
-15. Prelink: last 8 bytes = 32-bit base + ASCII that trims to `PRE` → every address accessor adds the base (`e_entry` only if non-zero).
-16. Program headers: if the sum of all `p_filesz` equals the file length, `p_offset`s are rewritten to be consecutive from 0 ("malformed ELF file with only program header sections" hack, no message).
-17. A program or section header offset is *invalid* (not an error, a flag) when ≥ 0x7FFF_FFFF_FFFF, ≥ length, or 0xFFFFFFFF in a 32-bit file.
-18. Section names: only if `sh_name` ≥ 0 as an int, 0 < `e_shstrndx` < count, the string-table section's offset is valid and `offset + sh_name` < length; read as UTF-8 to the NUL (not bounded by the string table's size, not trimmed); empty or unreadable → `SECTION<index>`.
-19. Compression header: used only if the section is not `SHF_ALLOC`, lies in the file, and the type is zlib (1); otherwise the section is silently (a `Msg.warn`) treated as uncompressed.
-20. Dynamic table: exactly one `PT_DYNAMIC` → by `p_vaddr` through the containing `PT_LOAD` (or its own `p_offset` if none); `p_vaddr` = 0 or `p_filesz` = 0 → warn "ELF Dynamic table appears to have been stripped from binary"; more than one → warn "Multiple ELF Dynamic table program headers found" and fall through; otherwise exactly one `SHT_DYNAMIC` section inside a `PT_LOAD`. Entries are read to the first `DT_NULL`, not limited by `p_filesz`; `d_tag` is truncated to 32 bits.
-21. String tables: every `SHT_STRTAB`; dynamic one by `DT_STRTAB` (missing → "ELF does not contain a dynamic string table (DT_STRTAB)"; no `DT_STRSZ` → "Failed to parse DT_STRTAB, missing dynamic dependency"; address 0 → "ELF Dynamic String Table of size <n> appears to have been stripped from binary"; not in a `PT_LOAD` → "Failed to locate DT_STRTAB in memory at 0x…").
-22. Strings: offset ≥ table length → "Failed to read Elf String at offset 0x… within String Table at offset 0x…", name null; result is `trim()`med (Java: characters ≤ U+0020).
-23. `DT_NEEDED` names that cannot be read → `UNK_LIB_NAME_<i>`.
-24. Symbol and relocation tables: §5 above.
-
-Places where Ghidra's parse **throws** rather than tolerates (an unchecked
-exception or `IOException` leaves `parse()` and the import fails). basilisk
-should record a diagnostic and skip the table instead — each is a deliberate
-difference to document:
-
-- `ElfProgramHeader.getOffset(long)` on a segment with `p_filesz` = 0, or on
-  dsPIC30 data segments (`UnsupportedOperationException`), or with a zero
-  adjusted load size (`ArithmeticException`). Reached from dynamic string,
-  symbol, hash and relocation table location. *(done: `offset_of` returns `Err`)*
-- A dynamic table, hash table or section-index read at an offset ≥ 2⁶³
-  (`IOException` from the wrapper). *(dynamic table: done)*
-- Android table missing or not `APS2` (`IOException`).
-- `getSection(String)` with two sections of that name (`RuntimeException`).
-
-Other surprises:
-
-- `ElfSymbol.getBind()` is wrong for bindings ≥ 8 (signed shift).
-- The signed 64-bit comparisons everywhere: `size <= 0` also rejects sizes
-  ≥ 2⁶³, and range lookups (`getProgramLoadHeaderContaining`, …) use signed
-  order. `tables.rs` reproduces this with `as i64`.
-- `ElfSectionHeaderType` has no named type for `SHT_RELR` (19) or the
-  `SHT_LLVM_*` values although `ElfSectionHeaderConstants` defines them, so
-  their names are `SHT_0x00000013` etc. Same for `PT_SUNWBSS`/`PT_SUNWSTACK`.
-- HCS12's extension names its types inconsistently (`PT_HCS12X_ARCHEXT`,
-  `SHT_AHCS12_ATTRIBUTES` [sic]); Hexagon reuses ARM's names
-  (`PT_ARM_EXIDX`, `SHT_ARM_*`). The generated tables keep Ghidra's text.
-- x86-64, SPARC, LoongArch and others have **no** ELF extension in Ghidra;
-  only the 13 listed in §1 exist.
-- No extension overrides the section/segment permission predicates; the only
-  format-level hooks are `getRelocationClass` (MIPS-64) and the adjusted
-  sizes (PIC30).
-- The spec says a fatal error "is reserved for files that are not ELF at
-  all"; Ghidra is also fatal for an unsupported class and for a wrong
-  entry size with no other table to fall back on (rules 6, 11, 13). The
-  code follows Ghidra.
-
-## 7. For the PE / Mach-O and loader tracks — the `bk-bin` API
-
-- Take input as `&dyn ByteProvider` (or be generic over `P: ByteProvider`
-  when you need to own it). `MemoryProvider::new(vec_or_slice_or_arc)` for
-  bytes in memory, `FileProvider::open(path)` for files,
-  `SubProvider::new(&parent, offset, len)` for an embedded file,
-  `UnlimitedProvider` when a format's headers must tolerate truncation.
-- `BinaryReader::new(&provider, Endian::Little)` or
-  `BinaryReader::from_slice(bytes, endian)`. It is `Copy`: `reader.at(offset)`
-  gives an independent cursor, `reader.with_endian(e)` another byte order.
-- `read_x()` advances, `read_x_at(i)` does not, `peek_x()` reads at the
-  cursor without advancing. A failed read never moves the cursor (LEB128
-  excepted). Errors are `BinError`; `is_eof()` tells "ran out of data".
-- Do not allocate per table entry: `read_bytes_at(offset, len)` borrows from
-  memory-backed providers, and `read_array_at::<N>()` copies N bytes onto
-  the stack on either path.
-- Bound every count from a file before using it; `read_*_array` checks the
-  range against the provider first, but `UnlimitedProvider` accepts any
-  range, so lengths read through it must be checked against `len()`.
-- UTF-16 strings in PE: `read_utf16_at` / `read_utf16_fixed_at` use the
-  reader's byte order; `Charset::Utf16Le` etc. are explicit.
-
-## 8. Commits
-
-```
-git log --oneline master..HEAD
-```
-
-is reproduced in the final message of the run; the last commit is this file.
+`git log --oneline master..HEAD` — see the final message of the run.
