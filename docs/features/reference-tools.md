@@ -95,7 +95,8 @@ needed. Steps:
    under `tools/reference/patches/`, and report it.
 3. Copy each `P/<Module>/data/languages` directory into the overlay and
    compile every `.slaspec` with `bin/sleigh`, in parallel, supplying the
-   same preprocessor definitions Ghidra's build does (read
+   same options Ghidra's build does (as found: no preprocessor definitions
+   at all, only `-l`/`-t` per module) (read
    `SleighCompileLauncher.java` and the Gradle `sleighCompile` task under
    `gradle/` for what they are; some specs include files from other
    processor modules). All 150 must compile; a failure stops the script

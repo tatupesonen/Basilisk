@@ -109,7 +109,7 @@ it is reached; later milestones are intentionally coarse.
 - [x] Workspace, lints, gate, CI, licence, docs skeleton, test checklist
 - [x] `bk-core` + `bk-marshal`: address spaces, addresses, varnode data, XML and packed encode/decode (`features/core-marshal.md`)
 - [x] `bk-pcode`: opcodes, op behaviours, float formats, multiprecision (`features/pcode.md`)
-- [ ] `bk-sleigh-syntax`: SLEIGH preprocessor, lexer, parser; parses all 150 `.slaspec` files (`features/sleigh-syntax.md`)
+- [x] `bk-sleigh-syntax`: SLEIGH preprocessor, lexer, parser; parses all 150 `.slaspec` files (`features/sleigh-syntax.md`)
 - [x] `bk-lang`: `.ldefs`, `.pspec`, `.opinion`, language registry (`features/lang.md`)
 - [ ] `bk-bin` + `bk-elf`: byte providers, binary reader, ELF parser (`features/bin-elf.md`)
 - [x] `bk-testkit` + reference tools: build Ghidra's `sleigh` and `decomp`, compile every `.sla`, oracle wrappers (`features/reference-tools.md`)

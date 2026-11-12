@@ -13,7 +13,7 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 |---|---|---|
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — **merged 2026-11-12** |
 | `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
-| `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — checkpointed by Fable (preprocessor, lexer, AST and parser written; all 150 specs parse; 265 tests pass by its report; verification and paperwork remain); continued by Opus 5.5 |
+| `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — **merged 2026-11-12** |
 | `lang` | `bk-lang` | `features/lang.md` — **merged 2026-11-12** (second attempt, after the root-path fix) |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
@@ -52,6 +52,22 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — `bk-sleigh-syntax` merged
+* Preprocessor + source map, parser-driven modal lexer, arena AST, parser.
+  317 tests. Corpus: 150 specs, 348 files, 1.12 million lines, 133,065
+  constructors, 0 diagnostics, 325 ms for all of it.
+* The independent check asked for at handover paid off: comparing the tree
+  with Ghidra's compiled `.sla` (`sleigh -y` XML) for all 150 specs showed
+  the corpus test had been passing module names as preprocessor
+  definitions, so HC05/HC08 parsed the wrong conditional branches (174
+  constructors instead of 86) — with zero diagnostics. Ghidra's build
+  passes no definitions. "Everything parses" had hidden it.
+* Not covered by any external check: semantic-section trees (Ghidra keeps
+  only compiled p-code) — M2's differential tests will cover them. The Java
+  front end was never run; its behaviour is from reading the grammar.
+* `tests/reference/` (a model of the `.sla` XML) is reusable for M2.
+* Gate on the merge: green, 1,208 tests. M0 lacks only `bin-elf`.
 
 ### 2026-11-12 — `bk-marshal`, `bk-core` and `bk-lang` merged
 * `bk-marshal` + `bk-core`: XML (quick-xml) and packed encode/decode,

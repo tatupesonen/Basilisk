@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang` merged).
+Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang`, `bk-sleigh-syntax` merged).
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -22,7 +22,7 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 | SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
 | SoftwareModeling: SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
-| SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | In progress | Wave 1: `sleigh-syntax` (front end only) |
+| SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | Partial | Front end done: preprocessor, lexer, parser, checked against Ghidra's compiled output for all 150 specs. Semantic analysis and `.sla` output are M2 |
 | SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
 | SoftwareModeling: disassembler | `bk-disasm` | M5 | Missing | |
 | SoftwareModeling: assembler | `bk-asm` | M6 | Missing | |

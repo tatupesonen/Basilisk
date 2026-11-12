@@ -218,6 +218,16 @@ Evaluations so far:
   0.21.1 and `bk-lang`'s 100,000-deep nesting test aborted. Lesson: holding
   a dependency back to an older "vetted" version can remove a fix; read
   the changelog before pinning downward.
+- **SLEIGH lexer and parser: hand-written; `logos`, `winnow`, `nom`,
+  `pest`, `lalrpop`, `chumsky` → not adopted** (2026-11-12, `sleigh-syntax`
+  track; figures and detail in `features/sleigh-syntax.md` §8). SLEIGH's
+  lexer has three modes that the *parser* switches per token, with
+  re-lexing from arbitrary offsets; the parser needs per-construct error
+  recovery and an explicit nesting limit. `logos` (101 million downloads)
+  cannot share token definitions across the mode enums; each parser
+  library fails one of the three needs. Adopted for the crate:
+  `string-interner` (a process-global atom table such as `string_cache`
+  is excluded by the no-global-state rule), `rustc-hash`, `num-bigint`.
 - **Other adoptions recorded in feature docs**: `num-bigint`,
   `primitive-types`, `libm` (`features/pcode.md`); `walkdir`,
   `wait-timeout`, `insta` (`features/reference-tools.md`,
