@@ -63,6 +63,43 @@ In a worktree `../ghidra` does not resolve; agents set
 `BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`, and must also test
 with the variable unset and with a non-canonical path.
 
+**Unattended loop** (set up 2026-11-12 20:10, the owner is away): a cron
+job in the coordinator's session fires every 30 minutes with the
+coordinator prompt (job `045f7c32`; session-only, expires after 7 days).
+Each firing follows `LOOP.md` from these files. Nothing may wait without a
+time limit.
+
+**CI is visible** (`gh` is authenticated): `gh run list`, `gh run view
+<id> --log-failed`. State at 20:15: macOS and Linux jobs green; **the
+Windows test job is red on `master`** — `bk-lang`
+`tests/registry.rs:195` compares messages containing paths and expects `/`
+where Windows gives `\`. CI stopped at the first failing binary, so more
+may hide behind it; CI now runs with `--no-fail-fast` to list them all.
+Under ADR-022 this must be fixed before further merges: **first in the
+queue** is a small Opus track `windows-ci` — make the Windows job green
+(fix path-separator assumptions in tests and, where the product formats
+paths, decide the rule once), using `gh` to read each run.
+
+**x86-64 Linux reference build**: started 20:12 in a `linux/amd64`
+container (emulated), output in `../reference-x86_64/`, log
+`../reference-x86_64/build.log` (last line is `exit=<code>` when done). If
+it is still running after 22:00, kill the container (`docker ps`, image
+`gcc:14`) and record that emulation is too slow. When it finishes: compare
+its `STAMP` test results with the aarch64 ones (ADR-021 expects the two
+`-NAN` checks to pass on x86-64), then regenerate `bk-pcode`'s C++ oracle
+table there (`crates/bk-pcode/tests/data/README.md`) and compare.
+
+**Queue** (start as slots free, keeping about four agents in total):
+1. `windows-ci` (Opus) — above.
+2. `store-spike` (Fable) — brief in this session's history; notes from its
+   interrupted first run are in
+   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`.
+3. `spec-program-model`, `spec-pe`, `spec-macho` (Fable) — worktrees exist,
+   empty; briefs as described in the table above.
+4. `followups` (Opus) — step 4 below.
+5. Implementation tracks from `spec-sleigh` and `spec-decompiler` as those
+   specs are merged.
+
 ## Blockers
 
 None. Open owner decisions are listed in `DIRECTION.md`.

@@ -98,6 +98,12 @@ rules so merges are clean and the result is shippable.
   you can (`cargo check --target x86_64-pc-windows-msvc` for crates
   without C code) and say in your report exactly what was verified on
   which platform and what rests on CI.
+- **Nothing waits forever.** The owner is often away, so a hung command
+  stalls the project. Give every command an explicit timeout; bound
+  background jobs (fuzz runs with `-max_total_time`, containers and builds
+  with a time limit) and kill anything that has run far past its expected
+  time; never poll in an unbounded loop. If something does not finish in
+  its budget, stop it, record what happened, and move on.
 - **Do not fan out.** The owner caps the project at about four agents at
   once. Work alone; start at most one helper subagent at a time, and only
   when it saves real time.

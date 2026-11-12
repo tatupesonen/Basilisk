@@ -22,6 +22,7 @@ jobs:
   lint:
     name: fmt + clippy + file size
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install
@@ -38,17 +39,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       # Tests that need Ghidra's processor specs or the reference tools skip
       # themselves when BASILISK_GHIDRA_DIR is unset (docs/LOOP.md, Testing rules).
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --workspace --all-features --locked
+      # --no-fail-fast: report every failing test binary, not only the first
+      # (a platform-specific failure in one crate must not hide the others).
+      - run: cargo test --workspace --all-features --locked --no-fail-fast
 
   docs:
     name: rustdoc
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install
@@ -60,6 +65,7 @@ jobs:
   deny:
     name: cargo-deny (licences, advisories, sources)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
@@ -68,6 +74,7 @@ jobs:
     # Runs the tests of every crate listed with `miri` in unsafe-crates.txt (ADR-020).
     name: miri (crates with unsafe)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install nightly --component miri
