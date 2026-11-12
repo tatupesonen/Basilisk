@@ -19,35 +19,48 @@ head and the tail. Head, crown, pupil and tail all end in sharp points;
 everything else is one circle. In the icon the ring is centred on the tile.
 
 It sits in the same family as Ghidra's dragon (a mythical beast as a flat
-emblem, coiled) but shares no shapes, colour or lettering with it: this is
-a legless, wingless serpent in green, built from one circle, with an eye in
-the middle. It uses no Rust or Ferris artwork.
+emblem, coiled) but shares no shapes or lettering with it: this is a
+legless, wingless serpent built from one circle, with an eye in the
+middle. It uses no Rust or Ferris artwork.
 
 ## Palette
 
-| Name     | Hex       | Use                                             |
-|----------|-----------|-------------------------------------------------|
-| Venom    | `#B8F03C` | The mark on dark backgrounds; accents           |
-| Moss     | `#4A8500` | The mark on light backgrounds (4.5:1 on white)  |
-| Obsidian | `#0F1412` | Icon tile, dark backgrounds, wordmark on light  |
-| Bone     | `#E9EEE2` | Wordmark and text on dark                       |
+Ember orange was the owner's choice (variant A4 below), replacing the
+first, acid-green palette.
+
+| Name       | Hex       | Use                                            |
+|------------|-----------|------------------------------------------------|
+| Ember      | `#FF6A2B` | The mark on dark backgrounds; accents          |
+| Ember deep | `#E8551A` | The mark on light backgrounds                  |
+| Soot       | `#150F0D` | Icon tile, dark backgrounds, wordmark on light |
+| Bone       | `#F1ECE6` | Wordmark and text on dark                      |
 
 Flat colour only. No gradients, glows, outlines or shadows.
+
+Measured contrast (WCAG ratio): Ember on Soot 6.6:1; Bone on Soot 16.2:1;
+Soot on white 19.0:1. Ember on white is only 2.9:1, under the 3:1 a
+graphic needs, which is why light backgrounds get Ember deep: 3.7:1 on
+white (and 5.2:1 on Soot, so it also survives a dark background).
+
+Ember is hue 18°, a red-orange. Ghidra's dragon and Binary Ninja's mark are
+both reds (hue near 0°; recalled, not sampled from their artwork), so of
+all the colourways tried this one sits closest to them; Ember deep, being darker, reads a little redder still. If
+more distance is wanted, shift both toward amber (hue 30-40°).
 
 ## Files
 
 | File                       | Use it for                                                        |
 |----------------------------|-------------------------------------------------------------------|
-| `basilisk-mark.svg`        | Emblem alone, Venom, transparent. Dark backgrounds (in-app, about box, dark docs). |
-| `basilisk-mark-light.svg`  | Emblem alone, Moss, transparent. Light backgrounds.               |
+| `basilisk-mark.svg`        | Emblem alone, Ember, transparent. Dark backgrounds (in-app, about box, dark docs). |
+| `basilisk-mark-light.svg`  | Emblem alone, Ember deep, transparent. Light backgrounds.         |
 | `basilisk-mark-mono.svg`   | Emblem in `currentColor`. One-colour print, UI glyphs, anything that must inherit the text colour. |
 | `basilisk-logo.svg`        | Emblem + wordmark for light backgrounds.                          |
 | `basilisk-logo-dark.svg`   | Emblem + wordmark for dark backgrounds.                           |
-| `basilisk-icon.svg`        | App icon: emblem on the Obsidian tile. Source for 64 px and up.   |
-| `basilisk-icon-small.svg`  | Simplified icon for 16 and 32 px: heavier ring, no head eye, pupil centred on the pixel grid. |
+| `basilisk-icon.svg`        | App icon: emblem on the Soot tile.     Source for 64 px and up.   |
+| `basilisk-icon-small.svg`  | Simplified icon for 16 and 32 px: heavier, fuller ring, bigger crown and pupil, no head eye, pupil centred on the pixel grid. |
 | `png/basilisk-icon-N.png`  | Icon renders at 16, 32, 64, 128, 256, 512, 1024 px (window icon, favicon, bundles). |
-| `png/preview-*.png`        | Previews only (mark, both logos, overview sheet). Not for shipping. |
-| `variants/`                | Colour, shape and tile variants of the icon to choose from, see below. |
+| `png/preview-*.png`        | Previews only (mark, both logos, overview and variants sheets). Not for shipping. |
+| `variants/`                | The colour, shape and tile variants the palette was chosen from, see below. |
 | `concepts/`                | Rejected directions, see below.                                   |
 
 For a README that follows the viewer's theme:
@@ -72,7 +85,7 @@ dots on the two i's repeat the slit pupil.
 - Icon: 16 px minimum. At 16 px it reads as a crowned ring with a slit; the
   serpent's head only resolves from 32 px up.
 - Do not recolour outside the palette, rotate, stretch, outline, or put the
-  Venom mark on a light background (use Moss or mono there).
+  Ember mark on a light background (use Ember deep or mono there).
 
 ## Editing and re-rendering
 
@@ -95,14 +108,16 @@ for s in 64 128 256 512 1024; do resvg -w $s basilisk-icon.svg       png/basilis
 ![variants](png/preview-variants.png)
 
 `variants/` holds alternatives of the same flat mark, each a complete icon
-SVG named by the code on the sheet. They are options, not part of the set:
-pick one (or a colour from row A with a shape from row B) and the main
-files get rebuilt around it.
+SVG named by the code on the sheet. They are options, not part of the set.
+The owner picked **A4, ember**, for the colour; the main files are built
+from A4 with the shape and tile unchanged (B1 on the rounded square). Rows
+B and C are still drawn in the first green.
 
-- **A, colour** (same shape): A1 Venom on Obsidian (current), A2 inverted,
-  A3 gold, A4 ember, A5 glass cyan, A6 nightshade violet, A7 bone,
-  A8 bone with a Venom pupil, A9 Venom with an ember pupil. There is no red
-  on purpose: that is Ghidra's colour.
+- **A, colour** (same shape): A1 Venom green `#B8F03C` on Obsidian
+  `#0F1412` (the first palette), A2 inverted, A3 gold, **A4 ember
+  (chosen)**, A5 glass cyan, A6 nightshade violet, A7 bone, A8 bone with a
+  Venom pupil, A9 Venom with an ember pupil. There is no pure red on
+  purpose: that is Ghidra's colour.
 - **B, shape** (same colour): B1 even ring with lens pupil (current),
   B2 tapered ring (the first version), B3 gem pupil, B4 iris disc with the
   slit cut out, B5 bar pupil (a literal 0 and 1), B6 bold, B7 fine line,
