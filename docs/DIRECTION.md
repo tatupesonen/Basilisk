@@ -57,10 +57,11 @@ and a sane architecture in mind.
   the agents, reviews and merges their branches. Rules for agents:
   `docs/agents/RULES.md`.
 * **Agent model** (owner, 2026-11-12, latest of several changes that day):
-  **Opus 5.5 at high effort.** The first wave was started on Fable 5.2;
+  **Opus 5.5 at medium effort.** The first wave was started on Fable 5.2;
   each of those agents stops at its first checkpoint (work committed, status
-  report written) and its track continues with an Opus 5.5 agent at high
-  effort in the same worktree. New agents start on Opus 5.5 at high effort.
+  report written) and its track continues with an Opus 5.5 agent at medium
+  effort in the same worktree. New agents start on Opus 5.5 at medium
+  effort.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each

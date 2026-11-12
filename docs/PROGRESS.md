@@ -27,7 +27,7 @@ In a worktree `../ghidra` does not resolve; agents set
 **Handover to Opus 5.5** (owner, 2026-11-12): each wave 1 agent was told to
 stop at its first checkpoint — crates building, current tests passing,
 everything committed, `docs/agents/<track>.md` written with done/remaining.
-When a track checkpoints: read its report, start an Opus 5.5 agent (high
+When a track checkpoints: read its report, start an Opus 5.5 agent (medium
 effort) in the same worktree to finish the spec, beginning with
 `git merge master` (stricter lints, ADR-018 licence, ADR-020 unsafe rule).
 
