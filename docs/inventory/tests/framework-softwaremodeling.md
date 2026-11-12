@@ -88,10 +88,10 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.program.model.symbol.IllegalCharCppTransformerTest` (unit, 3 tests)
 - [ ] `ghidra.program.model.util.AcyclicCallGraphBuilderTest` (unit, 8 tests)
 - [ ] `ghidra.program.model.util.PropertyMapTest` (unit, 1 tests)
-- [ ] `ghidra.sleigh.grammar.BooleanExpressionDefTest` (unit, 3 tests)
-- [ ] `ghidra.sleigh.grammar.BooleanExpressionTest` (unit, 31 tests)
-- [ ] `ghidra.sleigh.grammar.SleighPreprocessorTest` (unit, 1 tests)
-- [ ] `ghidra.sleigh.grammar.SourceFileIndexerTest` (unit, 1 tests)
+- [x] `ghidra.sleigh.grammar.BooleanExpressionDefTest` (unit, 3 tests) → `crates/bk-sleigh-syntax/tests/ghidra_boolean_expression.rs`
+- [x] `ghidra.sleigh.grammar.BooleanExpressionTest` (unit, 31 tests) → `crates/bk-sleigh-syntax/tests/ghidra_boolean_expression.rs`
+- [x] `ghidra.sleigh.grammar.SleighPreprocessorTest` (unit, 1 tests) → `crates/bk-sleigh-syntax/tests/ghidra_preprocessor.rs::sleigh_preprocessor_test_external`
+- [x] `ghidra.sleigh.grammar.SourceFileIndexerTest` (unit, 1 tests) → `crates/bk-sleigh-syntax/tests/ghidra_preprocessor.rs::source_file_indexer_basic_test`
 - [ ] `ghidra.util.DifferenceAddressSetViewTest` (unit, 13 tests)
 - [ ] `ghidra.util.IntersectionAddressSetViewTest` (unit, 13 tests)
 - [ ] `ghidra.util.MergeSortingIteratorTest` (unit, 4 tests)
