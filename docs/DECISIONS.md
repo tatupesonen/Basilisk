@@ -193,15 +193,24 @@ Evaluations so far:
   test. Crates that read Ghidra XML should go through `bk-marshal`'s
   document rather than a second XML crate; `bk-lang`, written in the same
   wave on `roxmltree`, moves over after both merge.
-- **Object-file parsing: `object`, `goblin` → oracle only (provisional).**
-  *Being re-examined by the `bin-elf` track after the owner's rule of
-  2026-11-12 (use existing crates unless there is a good reason): the
-  reasoning below is a hypothesis until that track reports what the
-  crates actually expose and how they behave on damaged files.* Ghidra's
-  loaders expose format details (every header field, relocation and
-  dynamic-table entry, vendor extensions) and tolerate malformed files in
-  specific ways that its tests assert. The format crates are ports of
-  Ghidra's parsers; `object` is a dev-dependency for differential tests.
+- **ELF parsing: `object`, `goblin` → oracle only** (confirmed 2026-11-12
+  by experiment in the `bin-elf` track; the program is kept under
+  `docs/agents/bin-elf-crate-eval/`). A real `.so` was damaged in eleven
+  ways that Ghidra tolerates and both crates were run on each. `object`
+  0.40.0 (712 million downloads): a cut-off or over-counted section table
+  or an out-of-range `e_shstrndx` yields no sections at all where Ghidra
+  keeps what fits; an invalid `EI_DATA` is rejected where Ghidra assumes
+  little-endian; there is no path from the dynamic table to dynamic symbols
+  in stripped files; no Android packed relocations or entry-size
+  validation. `goblin` 0.10.7 (88 million): strict mode aborts on any bad
+  table, permissive mode replaces bad tables with empty ones and logs
+  globally instead of returning diagnostics; a bad `e_phoff` is fatal
+  either way; no extended numbering, RELR or Android relocations; parses
+  eagerly from one slice. Neither can carry Ghidra's tolerance rules, which
+  are the reason an analysis tool's ELF reader exists, so `bk-elf` is its
+  own parser and `object` is a dev-dependency used as a differential
+  oracle on well-formed files. The same question is asked afresh for PE and
+  Mach-O when those tracks start.
 - **To evaluate when reached**: `gimli` (DWARF), `pdb`/`pdb2`,
   `cpp_demangle`, `msvc-demangler`, `symbolic-demangle`, `tree-sitter` or
   `lang-c` (C parser), `petgraph`, `rustc-hash`, `smallvec`, `indexmap`,
