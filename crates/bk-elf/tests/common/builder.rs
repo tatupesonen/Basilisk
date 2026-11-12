@@ -507,7 +507,7 @@ impl ElfBuilder {
         if self.section_headers {
             out.resize(shoff as usize, 0);
             out.extend_from_slice(&vec![0; shentsize as usize]);
-            let mut write = |out: &mut Vec<u8>, h: [u64; 10]| {
+            let write = |out: &mut Vec<u8>, h: [u64; 10]| {
                 enc.u32(out, h[0] as u32);
                 enc.u32(out, h[1] as u32);
                 enc.word(out, h[2]);

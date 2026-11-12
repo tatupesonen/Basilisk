@@ -15,6 +15,7 @@ tracing.workspace = true
 unicode-properties.workspace = true
 
 [dev-dependencies]
+dhat.workspace = true
 object.workspace = true
 proptest.workspace = true
 rstest.workspace = true

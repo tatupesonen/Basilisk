@@ -44,6 +44,8 @@ rstest = "0.27.0"
 insta = "1.49.0"
 tempfile = "3.27.0"
 object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "std"] }
+# Heap measurement in tests (bk-elf allocation bound; ADR-011 evaluation in docs/agents/bin-elf.md).
+dhat = "0.3.3"
 
 [workspace.lints.rust]
 # `unsafe` is forbidden everywhere; a crate that truly needs it opts out by
