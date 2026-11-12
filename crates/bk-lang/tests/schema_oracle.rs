@@ -279,10 +279,10 @@ fn mutations(root: &Element, path: &[usize]) -> Vec<(String, Element)> {
             e.attrs.remove(i);
         });
         mutate(format!("<{name}> with {attr}=\"maybe\""), &|e| {
-            e.attrs[i].1 = "maybe".into()
+            e.attrs[i].1 = "maybe".into();
         });
         mutate(format!("<{name}> with {attr}=\"\""), &|e| {
-            e.attrs[i].1 = String::new()
+            e.attrs[i].1 = String::new();
         });
     }
     for missing in target
@@ -331,7 +331,7 @@ fn mutations(root: &Element, path: &[usize]) -> Vec<(String, Element)> {
         e.children.drain(..e.children.len().saturating_sub(1));
     });
     mutate(format!("<{name}> with no children"), &|e| {
-        e.children.clear()
+        e.children.clear();
     });
     mutate(format!("<{name}> with an unknown child"), &|e| {
         let mut bogus = e.clone();
@@ -342,7 +342,7 @@ fn mutations(root: &Element, path: &[usize]) -> Vec<(String, Element)> {
     });
     mutate(format!("<{name}> with text"), &|e| e.text = "stray".into());
     mutate(format!("<{name}> with white space"), &|e| {
-        e.text = " \n\t".into()
+        e.text = " \n\t".into();
     });
     mutate(format!("<{name}> renamed"), &|e| e.name = "bogus".into());
     out

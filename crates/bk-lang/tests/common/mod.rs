@@ -5,6 +5,9 @@
 
 #![allow(dead_code, reason = "each test binary uses a different subset")]
 
+pub(crate) mod documents;
+pub(crate) mod tree;
+
 use std::{
     path::{Path, PathBuf},
     sync::OnceLock,

@@ -71,7 +71,11 @@ fn registry_holds_every_language_once() {
     assert!(registry.failures().is_empty(), "{:?}", registry.failures());
     assert_eq!(registry.ldefs_files().len(), 52);
     assert_eq!(registry.languages().len(), 202);
-    let ids: BTreeSet<&LanguageId> = registry.languages().iter().map(|l| l.id()).collect();
+    let ids: BTreeSet<&LanguageId> = registry
+        .languages()
+        .iter()
+        .map(bk_lang::LanguageDescription::id)
+        .collect();
     assert_eq!(
         ids.len(),
         registry.languages().len(),
@@ -297,12 +301,14 @@ fn show(results: &[bk_lang::opinion::QueryResult]) -> Vec<String> {
         .collect()
 }
 
+/// The name of Ghidra's ELF loader.
+const ELF: &str = "Executable and Linking Format (ELF)";
+
 #[test]
 fn opinion_queries_on_the_real_corpus() {
     let Some(registry) = common::registry() else {
         return;
     };
-    const ELF: &str = "Executable and Linking Format (ELF)";
     // ELF, e_machine 62 (x86-64): gcc is preferred. The order is the
     // iteration order of Ghidra's HashSet.
     assert_eq!(
