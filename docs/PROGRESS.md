@@ -14,9 +14,9 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
 | `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — checkpointed by Fable (preprocessor, lexer, AST and parser written; all 150 specs parse; 265 tests pass by its report; verification and paperwork remain); continued by Opus 5.5 |
-| `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
+| `lang` | `bk-lang` | `features/lang.md` — finished by Opus, but **sent back**: the merge gate failed (registry miscounts `.pspec` files when the root path contains `..`); also moving its fuzz target into the shared crate |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
-| `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
+| `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — **merged 2026-11-12** |
 | `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
 | `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
@@ -52,6 +52,27 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — reference tools and `bk-testkit` merged; fuzzing unified
+* `scripts/build-reference.sh` → `../reference/` (Ghidra's `sleigh`,
+  `decomp`, `decomp_test`, `pcodedump`, all 150 `.sla`); 70 s clean, 2 s
+  when nothing changed. One patch to the copied source (`#undef INT_MIN`
+  for Apple clang) and `-fsigned-char` always (on Linux aarch64 Ghidra's
+  data-test runner hangs with unsigned `char`).
+* Ghidra's own tests, the baseline: macOS arm64 204/205 unit, 758/760
+  data-test checks; Linux aarch64 (container) 205/205 and 758/760. The two
+  `-NAN` checks fail on both aarch64 hosts; x86-64 not run (ADR-021).
+* `bk-testkit`: locate/require the oracles (skips print one line; fail
+  under `BASILISK_REQUIRE_REFERENCE=1`), tool wrappers, `pcodedump` parser,
+  data-test parser, corpus iterators. Goldens are `insta` snapshots.
+  107 tests, pass with and without the oracles. Baselines in `PERF.md`.
+* **Fuzzing unified** (owner): one root `fuzz/` crate for all targets,
+  `scripts/fuzz-smoke.sh`, rule in `LOOP.md`; tracks told to move theirs.
+* **Merge gate caught a bug in `lang`**: its corpus test passed in the
+  worktree (absolute `BASILISK_GHIDRA_DIR`) and failed in the main
+  checkout (default root with `..`). Sent back. Lesson, now told to every
+  track: run tests with the variable unset and with a non-canonical path.
+* Gate on the merge: green, 443 tests.
 
 ### 2026-11-12 — `bk-pcode` merged (first code on master)
 * Opcodes (73, not 74), `u64` op behaviours matching Ghidra's C++, wide

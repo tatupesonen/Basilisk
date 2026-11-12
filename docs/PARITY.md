@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (`bk-pcode` merged).
+Last updated: 2026-11-12 (`bk-pcode`, reference tools and `bk-testkit` merged).
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -100,7 +100,7 @@ Last updated: 2026-11-12 (`bk-pcode` merged).
 |---|---|---|---|---|
 | Framework-TraceModeling, Debugger, Debugger-api, Debugger-rmi-trace, agents, ISF, TaintAnalysis, ProposedUtils | `bk-debug-*` | M10 | Missing | |
 | Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
-| Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | |
+| Extensions/SleighDevTools (p-code test framework) | `bk-testkit`, `bk-emu` tests | M6 | Missing | `bk-testkit` exists (oracle wrappers); the p-code test framework itself is M6 |
 
 ## Ghidra's GPL modules (ADR-018)
 

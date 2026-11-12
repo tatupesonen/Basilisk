@@ -168,8 +168,8 @@ The Rust API other crates' tests use:
 ## 5. Design
 
 - `bk-testkit` modules: `paths`, `skip`, `tools/{sleigh, decomp,
-  decomp_test, pcodedump}`, `golden`, `datatest/{model, parse}`,
-  `corpus`. Errors use `thiserror`; this is a library, so the workspace
+  decomp_test, pcodedump}`, `datatest/{model, parse}`, `corpus`
+  (no `golden` module: snapshots are `insta`'s). Errors use `thiserror`; this is a library, so the workspace
   lints apply to it like any other crate.
 - The script is POSIX `bash` (macOS ships bash 3.2: no associative
   arrays, no `mapfile`), uses only tools present on a stock developer
