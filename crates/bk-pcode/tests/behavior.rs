@@ -299,6 +299,8 @@ fn pointer_arithmetic() {
 fn float_operations_through_the_format_table() {
     let f4 = |x: f32| u64::from(x.to_bits());
     let nan = FloatFormat::SINGLE.nan_encoding(false);
+    // A NaN created by an operation is x86-64's default NaN, negative.
+    let created_nan = FloatFormat::SINGLE.nan_encoding(true);
     let inf = f4(f32::INFINITY);
     assert_eq!(binary(OpCode::FloatAdd, 4, 4, f4(1.5), f4(2.25)), f4(3.75));
     assert_eq!(binary(OpCode::FloatSub, 4, 4, f4(1.5), f4(2.25)), f4(-0.75));
@@ -308,8 +310,11 @@ fn float_operations_through_the_format_table() {
         binary(OpCode::FloatDiv, 4, 4, f4(-1.0), f4(0.0)),
         f4(f32::NEG_INFINITY)
     );
-    assert_eq!(binary(OpCode::FloatDiv, 4, 4, f4(0.0), f4(0.0)), nan);
-    assert_eq!(binary(OpCode::FloatSub, 4, 4, inf, inf), nan);
+    assert_eq!(
+        binary(OpCode::FloatDiv, 4, 4, f4(0.0), f4(0.0)),
+        created_nan
+    );
+    assert_eq!(binary(OpCode::FloatSub, 4, 4, inf, inf), created_nan);
     assert_eq!(
         binary(OpCode::FloatAdd, 8, 8, 0.1f64.to_bits(), 0.2f64.to_bits()),
         0.3_f64.next_up().to_bits()
@@ -320,7 +325,7 @@ fn float_operations_through_the_format_table() {
     assert_eq!(unary(OpCode::FloatNeg, 4, 4, f4(0.0)), f4(-0.0));
     assert_eq!(unary(OpCode::FloatAbs, 4, 4, f4(-3.5)), f4(3.5));
     assert_eq!(unary(OpCode::FloatSqrt, 4, 4, f4(2.0)), f4(2.0f32.sqrt()));
-    assert_eq!(unary(OpCode::FloatSqrt, 4, 4, f4(-1.0)), nan);
+    assert_eq!(unary(OpCode::FloatSqrt, 4, 4, f4(-1.0)), created_nan);
     assert_eq!(unary(OpCode::FloatSqrt, 4, 4, f4(-0.0)), f4(-0.0));
     assert_eq!(unary(OpCode::FloatTrunc, 4, 4, f4(-2.75)), 0xffff_fffe);
     assert_eq!(unary(OpCode::FloatTrunc, 8, 4, f4(-2.75)), (-2i64) as u64);

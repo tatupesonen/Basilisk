@@ -6,7 +6,8 @@
 //! sign of a NaN it creates. basilisk fixes that sign (see
 //! `bk_pcode::float::host`), so where the native result is a NaN the
 //! expected encoding is the quiet NaN with the sign basilisk documents: that
-//! of the first NaN input, positive when no input is a NaN.
+//! of the first NaN input, and negative (x86-64's default NaN) when no input
+//! is a NaN.
 
 #![allow(
     clippy::unwrap_used,
@@ -66,7 +67,7 @@ fn expected(native: f32, inputs: &[f32]) -> u64 {
         let negative = inputs
             .iter()
             .find(|input| input.is_nan())
-            .is_some_and(|nan| nan.is_sign_negative());
+            .is_none_or(|nan| nan.is_sign_negative());
         F4.nan_encoding(negative)
     } else {
         float_to_raw_bits(native)

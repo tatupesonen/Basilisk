@@ -16,15 +16,19 @@
 //! - **The sign of a NaN result.** The C++ takes it from the host FPU. When an
 //!   input is a NaN, x86-64 and AArch64 agree: the result has the sign of the
 //!   first NaN input. When the operation creates a NaN (`inf - inf`,
-//!   `0 / 0`, `0 * inf`, `sqrt(-1)`), x86-64 produces a negative NaN and
-//!   AArch64 a positive one. basilisk produces the positive NaN, as AArch64
-//!   and Java's exact path do.
+//!   `0 / 0`, `0 * inf`, `sqrt(-1)`), x86-64 produces its default NaN, which
+//!   is negative, and AArch64 a positive one. basilisk produces the negative
+//!   NaN, as x86-64 does: Ghidra's data test `floatprint.xml` expects the
+//!   folded `0.0f / 0.0f` to print as `-NAN` (it fails on AArch64).
 //! - **`TRUNC` of a NaN, an infinity or a value outside the `i64` range.**
-//!   The C++ cast is undefined; x86-64 gives `i64::MIN`, AArch64 saturates.
-//!   basilisk saturates and maps NaN to 0, as AArch64 and Java do.
+//!   The C++ cast is undefined; x86-64 (`cvttsd2si`) gives `i64::MIN`,
+//!   AArch64 saturates and maps NaN to 0. Here basilisk does not follow
+//!   x86-64: it saturates and maps NaN to 0, as Java's `(long)` cast does,
+//!   which `FloatFormatTest.testOpTruncLongInt` pins for the emulator's
+//!   path.
 //! - **A subnormal that rounds up to the smallest normal value.** The C++
 //!   shifts by a negative amount (its comment says "TODO handle round to
-//!   normal case") and in practice returns zero. basilisk returns the
+//!   normal case") and on both hosts returns zero. basilisk returns the
 //!   smallest normal value, the correctly rounded result, as Java does.
 
 use super::format::{FloatClass, FloatFormat};
@@ -63,14 +67,14 @@ fn quiet_nan(negative: bool) -> f64 {
     })
 }
 
-/// The result of a host operation with a host-independent NaN: a NaN result
-/// takes the sign of the first NaN input, and is positive when no input is a
-/// NaN.
+/// The result of a host operation with the NaN x86-64 gives: a NaN result
+/// takes the sign of the first NaN input, and is x86-64's default NaN
+/// (negative) when no input is a NaN.
 #[inline]
 fn settle_nan(result: f64, inputs: [f64; 2]) -> f64 {
     if result.is_nan() {
         let source = inputs.into_iter().find(|input| input.is_nan());
-        quiet_nan(source.is_some_and(f64::is_sign_negative))
+        quiet_nan(source.is_none_or(f64::is_sign_negative))
     } else {
         result
     }
@@ -517,18 +521,24 @@ mod tests {
     }
 
     #[test]
-    fn nan_signs_do_not_depend_on_the_host() {
+    fn nan_signs_follow_x86_64() {
         let inf = f4(f32::INFINITY);
         let pos_nan = F4.nan_encoding(false);
         let neg_nan = F4.nan_encoding(true);
-        // Created NaNs are positive.
-        assert_eq!(F4.op_sub(inf, inf), pos_nan);
-        assert_eq!(F4.op_div(f4(0.0), f4(-0.0)), pos_nan);
-        assert_eq!(F4.op_mult(f4(0.0), inf), pos_nan);
-        assert_eq!(F4.op_sqrt(f4(-1.0)), pos_nan);
+        // Created NaNs are x86-64's default NaN, which is negative (Ghidra's
+        // data test `floatprint.xml` expects `0.0f / 0.0f` to print `-NAN`).
+        assert_eq!(F4.op_sub(inf, inf), neg_nan);
+        assert_eq!(F4.op_div(f4(0.0), f4(0.0)), neg_nan);
+        assert_eq!(F4.op_div(f4(0.0), f4(-0.0)), neg_nan);
+        assert_eq!(F4.op_mult(f4(0.0), inf), neg_nan);
+        assert_eq!(F4.op_sqrt(f4(-1.0)), neg_nan);
+        assert_eq!(F8.op_div(0, 0), F8.nan_encoding(true));
         // Propagated NaNs keep the sign of the first NaN input.
         assert_eq!(F4.op_add(neg_nan, f4(1.0)), neg_nan);
         assert_eq!(F4.op_add(f4(1.0), neg_nan), neg_nan);
+        assert_eq!(F4.op_add(pos_nan, f4(1.0)), pos_nan);
+        assert_eq!(F4.op_add(f4(1.0), pos_nan), pos_nan);
+        assert_eq!(F4.op_sqrt(pos_nan), pos_nan);
         assert_eq!(F4.op_mult(pos_nan, neg_nan), pos_nan);
         assert_eq!(F4.op_div(neg_nan, pos_nan), neg_nan);
         assert_eq!(F4.op_sqrt(neg_nan), neg_nan);
