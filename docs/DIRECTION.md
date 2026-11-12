@@ -28,6 +28,7 @@ and a sane architecture in mind.
 | **Ghidra's GPL helpers are ported like any other code** (GNU demangler, GNU disassembler wrapper, DMG): plain crates, called directly — no wrappers, helper processes or feature flags (ADR-018). | 2026-11-12 |
 | **basilisk is a single binary.** | 2026-11-12 |
 | **binutils is built from source as its own crate** for the GNU disassembler comparison, so nothing has to be installed separately (ADR-019). Reference clone: `../binutils` (2.41, the version Ghidra names). | 2026-11-12 |
+| **binutils is used as it is, not rewritten**: there is no value in rewriting it. A particular part may be rewritten in Rust only if it is measured to be really slow (benchmark first, numbers in `PERF.md`). | 2026-11-12 |
 
 ## Tests
 

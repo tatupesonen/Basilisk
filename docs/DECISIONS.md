@@ -443,6 +443,11 @@ The GNU demangler is a different case: Ghidra carries libiberty's
 demangler source in its own tree (`GPL/DemanglerGnu`), and that is ported
 to Rust (ADR-018), not built from C.
 
+binutils' code is used unmodified (owner, 2026-11-12: "just use existing
+binutils, no value in rewriting them"). The one exception the owner allows:
+a particular part may be rewritten in Rust if it is really slow — shown by
+a benchmark recorded in `PERF.md`, not assumed.
+
 Schedule: milestone M10 with the rest of the comparison tooling, or
 earlier if a differential test wants GNU's disassembly as a second oracle.
 
