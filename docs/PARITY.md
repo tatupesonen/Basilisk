@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (project start; nothing implemented yet).
+Last updated: 2026-11-12 (`bk-pcode` merged).
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -19,7 +19,7 @@ Last updated: 2026-11-12 (project start; nothing implemented yet).
 
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
-| SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | In progress | Wave 1: `core-marshal`, `pcode` |
+| SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` done (opcodes, op behaviours, float formats; all its Ghidra tests ported). `bk-core` in progress (`core-marshal`) |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | In progress | Wave 1: `lang`. `.cspec` arrives with the decompiler (M3) |
 | SoftwareModeling: SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
 | SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | In progress | Wave 1: `sleigh-syntax` (front end only) |

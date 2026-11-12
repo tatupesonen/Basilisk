@@ -1,5 +1,5 @@
-//! Replays the saved inputs of the `packed_decode` and `xml_decode` fuzz
-//! targets (`fuzz/regressions/<target>/`) through the targets' own code, so
+//! Replays the saved inputs of the `bk_marshal_packed_decode` and
+//! `bk_marshal_xml_decode` fuzz targets (`fuzz/regressions/<target>/`) through the targets' own code, so
 //! a fixed crash stays fixed (docs/LOOP.md, Testing rules; `fuzz/README.md`).
 
 #![allow(
@@ -13,8 +13,8 @@
     reason = "test code"
 )]
 
-#[path = "../../../fuzz/fuzz_targets/marshal/mod.rs"]
-mod marshal;
+#[path = "../../../fuzz/fuzz_targets/bk_marshal_shared/mod.rs"]
+mod bk_marshal_shared;
 
 use std::path::Path;
 
@@ -40,12 +40,12 @@ fn replay(target: &str, run: fn(&[u8])) {
 
 #[test]
 fn packed_decode_regressions() {
-    replay("packed_decode", marshal::packed_decode);
+    replay("bk_marshal_packed_decode", bk_marshal_shared::packed_decode);
 }
 
 #[test]
 fn xml_decode_regressions() {
-    replay("xml_decode", marshal::xml_decode);
+    replay("bk_marshal_xml_decode", bk_marshal_shared::xml_decode);
 }
 
 /// A few hand-made inputs, so the replay path itself is exercised even while
@@ -57,14 +57,14 @@ fn hand_made_inputs() {
         let mut input = vec![ops.len() as u8];
         input.extend_from_slice(ops);
         input.extend_from_slice(&packed_addr);
-        marshal::packed_decode(&input);
+        bk_marshal_shared::packed_decode(&input);
         let mut input = vec![ops.len() as u8];
         input.extend_from_slice(ops);
         input.extend_from_slice(
             br#"<addr space="join" piece1="ram:0x10:4" piece2="register:0x0:4"/>"#,
         );
-        marshal::xml_decode(&input);
+        bk_marshal_shared::xml_decode(&input);
     }
-    marshal::packed_decode(&[]);
-    marshal::xml_decode(&[0xff]);
+    bk_marshal_shared::packed_decode(&[]);
+    bk_marshal_shared::xml_decode(&[0xff]);
 }

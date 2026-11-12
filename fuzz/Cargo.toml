@@ -1,8 +1,10 @@
-# cargo-fuzz targets (docs/LOOP.md, Testing rules). Not a workspace member:
-# it needs a nightly toolchain and libFuzzer. Run from the repository root:
-#   cargo +nightly fuzz run <target>
+# The one fuzz crate for the whole workspace (docs/LOOP.md, "Fuzzing").
+# Every fuzz target of every crate lives here: add the crate under
+# [dependencies] and one [[bin]] entry, both in alphabetical order, and put
+# the target in fuzz_targets/<crate>_<what>.rs. Do not create a fuzz crate
+# anywhere else.
 [package]
-name = "bk-fuzz"
+name = "basilisk-fuzz"
 version = "0.0.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
@@ -11,23 +13,21 @@ publish = false
 [package.metadata]
 cargo-fuzz = true
 
-[workspace]
-
 [dependencies]
-libfuzzer-sys = "0.4.13"
-bk-marshal = { path = "../crates/bk-marshal" }
 bk-core = { path = "../crates/bk-core" }
+bk-marshal = { path = "../crates/bk-marshal" }
+libfuzzer-sys = "0.4.13"
 
 [[bin]]
-name = "packed_decode"
-path = "fuzz_targets/packed_decode.rs"
+name = "bk_marshal_packed_decode"
+path = "fuzz_targets/bk_marshal_packed_decode.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "xml_decode"
-path = "fuzz_targets/xml_decode.rs"
+name = "bk_marshal_xml_decode"
+path = "fuzz_targets/bk_marshal_xml_decode.rs"
 test = false
 doc = false
 bench = false

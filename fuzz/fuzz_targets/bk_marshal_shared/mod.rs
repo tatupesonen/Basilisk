@@ -1,5 +1,5 @@
-//! The bodies of the `packed_decode` and `xml_decode` targets (track
-//! `core-marshal`): a random walk of decoder operations, a full walk of the
+//! The bodies of the `bk_marshal_packed_decode` and `bk_marshal_xml_decode`
+//! targets (track `core-marshal`): a random walk of decoder operations, a full walk of the
 //! document, and the address-model decoders of `bk-core`. Every call may
 //! fail; none may panic, loop or allocate without bound (ADR-009).
 //!
@@ -38,7 +38,7 @@ const ATTRIBUTES: [AttributeId; 7] = [
 ];
 const ELEMENTS: [ElementId; 2] = [ELEM_ADDR, ELEM_DATA];
 
-/// The `packed_decode` target.
+/// The `bk_marshal_packed_decode` target.
 pub fn packed_decode(data: &[u8]) {
     let (ops, document) = split(data);
     let manager = manager();
@@ -47,7 +47,7 @@ pub fn packed_decode(data: &[u8]) {
     address_model(&manager, |resolver| PackedDecoder::new(document, resolver));
 }
 
-/// The `xml_decode` target.
+/// The `bk_marshal_xml_decode` target.
 pub fn xml_decode(data: &[u8]) {
     let (ops, document) = split(data);
     let Ok(text) = std::str::from_utf8(document) else {
