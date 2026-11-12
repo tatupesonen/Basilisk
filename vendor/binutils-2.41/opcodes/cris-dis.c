@@ -105,6 +105,14 @@ cris_parse_disassembler_options (disassemble_info *info,
 {
   struct cris_disasm_data *disdata;
 
+  /* bk-binutils-sys: this runs once per disassemble_info, which starts a
+     new sequence of instructions; a case table begun by an earlier one
+     (possibly another disassembler's) does not continue into it.  */
+  case_offset = 0;
+  case_offset_counter = 0;
+  no_of_case_offsets = 0;
+  last_immediate = 0;
+
   info->private_data = calloc (1, sizeof (struct cris_disasm_data));
   disdata = (struct cris_disasm_data *) info->private_data;
   if (disdata == NULL)

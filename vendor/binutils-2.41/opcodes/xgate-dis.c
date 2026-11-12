@@ -274,6 +274,17 @@ print_insn (bfd_vma memaddr, struct disassemble_info* info)
 int
 print_insn_xgate (bfd_vma memaddr, struct disassemble_info* info)
 {
+  /* bk-binutils-sys: a new disassemble_info starts a new sequence of
+     instructions; the instruction before it, which may have belonged to
+     another disassembler, must not be combined with its first one.  This
+     target does not otherwise use private_data, and
+     disassemble_free_target does not free it for this architecture.  */
+  if (info->private_data == NULL)
+    {
+      previousOpName[0] = 0;
+      perviousBin = 0;
+      info->private_data = previousOpName;
+    }
   return print_insn (memaddr, info);
 }
 

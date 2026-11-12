@@ -191,3 +191,68 @@ fn arm_it_block_state_lasts_one_request() {
         "2 movs\tr0, #1\n"
     );
 }
+
+#[test]
+fn sequence_state_lasts_one_request_on_every_architecture() {
+    // B alone, then after unrelated requests A that end exactly where B
+    // starts (the worst case for state kept by address), must print the
+    // same. binutils keeps such state in statics in several targets (ARM IT
+    // and VPT blocks, xgate's instruction pairs, CRIS case tables); patches
+    // 0001 and 0003 reset it when a request begins.
+    let b = noise(96, 0xb0b);
+    let mut leaks = Vec::new();
+    for name in architecture_names().unwrap() {
+        if scan_architecture(&name).unwrap().is_none() {
+            continue;
+        }
+        for big in [false, true] {
+            let Ok(mut dis) = disassembler(&name, big, None) else {
+                continue;
+            };
+            let reference = listing(&mut dis, &b, 0x2000);
+            if reference.contains("error") {
+                continue;
+            }
+            for seed in 1..=6 {
+                let a = noise(96, seed);
+                let _ = listing(&mut dis, &a, 0x2000 - 96);
+                let again = listing(&mut dis, &b, 0x2000);
+                if again != reference {
+                    let first = reference
+                        .lines()
+                        .zip(again.lines())
+                        .find(|(x, y)| x != y)
+                        .map(|(x, y)| format!("{x:?} became {y:?}"))
+                        .unwrap_or_default();
+                    leaks.push(format!("{name} big={big} after seed {seed}: {first}"));
+                    break;
+                }
+            }
+        }
+    }
+    assert!(
+        leaks.is_empty(),
+        "{} leaks:\n{}",
+        leaks.len(),
+        leaks.join("\n")
+    );
+}
+
+#[test]
+fn a_cris_case_table_does_not_continue_into_the_next_request() {
+    // "bound.d 3,$r0" then the case jump "adds.w [$pc+$r0.w],$pc": CRIS
+    // prints what follows as case-table entries.
+    let switch = [0xef, 0x0d, 3, 0, 0, 0, 0x5f, 0x05, 0x3f, 0xf8];
+    let mut dis = disassembler("cris", false, None).unwrap();
+    let mut table = switch.to_vec();
+    table.extend([0x10, 0, 0x20, 0, 0x30, 0, 0x40, 0]);
+    let full = listing(&mut dis, &table, 0);
+    assert!(full.contains("case 0/default: -> "), "{full}");
+    // A request that ends right after the case jump leaves the table open
+    // in binutils' statics; the next request must not be read as its
+    // entries (patch 0003), whichever disassembler makes it.
+    let _ = listing(&mut dis, &switch, 0);
+    let mut other = disassembler("cris", false, None).unwrap();
+    let next = listing(&mut other, &[0x10, 0, 0x20, 0], 0x100);
+    assert!(!next.contains("case"), "{next}");
+}

@@ -4,7 +4,7 @@ source: git://sourceware.org/git/binutils-gdb.git
 tag: binutils-2_41
 commit: 2c73aeb8d2e02de7b69cbcb13361cfbca9d76a4e
 generated: opcodes/s390-opc.tab (opcodes/s390-mkopc.c < opcodes/s390-opc.txt)
-patches: 0001-arm-dis-sequence-state-per-info.patch 0002-cgen-dis-cache-switch.patch
+patches: 0001-arm-dis-sequence-state-per-info.patch 0002-cgen-dis-cache-switch.patch 0003-xgate-cris-sequence-state-per-info.patch
 files (sha256, path):
 231f7edcc7352d7734a96eef0b8030f77982678c516876fcb81e25b32d68564c  COPYING
 56bdea73b6145ef6ac5259b3da390b981d840c24cb03b8e1cbc678de7ecfa18d  COPYING.LIB
@@ -277,7 +277,7 @@ a883d5c737c3b5e985fcc0efdc73b7b630ca21c90ce69ef52a2781761b06ec00  opcodes/cgen-d
 e22a8842b55e436bbb19291b03d6f278e64bcff1ba249a62c8f3e78e1da8ade1  opcodes/cgen-opc.c
 77c17a552af64eb21e3765b3dd87fc99f736d3534aeddbe2fcd80d6a420077ea  opcodes/cr16-dis.c
 f6b04659522c208814855c0e5bc23f14d4660e2cd853d391e0bff2c1cb84719b  opcodes/cr16-opc.c
-89866359ecc68adad7c7c85e270f00fd7005b1f3c4c2f3234402ab3eeefd9719  opcodes/cris-dis.c
+721ee9f167233a08f277584d3f242d40aa56cae7fa6e7a5cabcbe2716a8c42c2  opcodes/cris-dis.c
 f857504876852c2b6d64406124fa869e90ccd910934734c2625945c5537504c5  opcodes/cris-opc.c
 f7cfd905b4c95c7cd9e7a51e2edf7ae2f2e95bf014e65456c806913923d902bb  opcodes/crx-dis.c
 533ead079161539bbc4f8545dd7c68424e042bddfa505fae96ac42305eb10698  opcodes/crx-opc.c
@@ -466,7 +466,7 @@ d79162133bbd5f7dcf18da82ed16b4fa5fc169e5a37d11361145785896a9bf51  opcodes/v850-o
 b24a5a9ba221fdbf5b9084a3c2ef7c4e57338f9aaa34ad91f9215042781aba31  opcodes/vax-dis.c
 5728d5032ecead42a011fd3528673ff709a4fd9ebb85b4dbe18b05fba8feeefd  opcodes/visium-dis.c
 2d27ab3b0252ab8b06c7883768239e9ca8da9f17f8eefe1622f709598a5bd8b1  opcodes/wasm32-dis.c
-72e6e90ec1e0a22e53423fe5d402543fe0efb36813626f50dd4aca395908d9c7  opcodes/xgate-dis.c
+28051db579a97c503b9c2328e441f47d8ff2ec4a4c583176f60717ff8d239be2  opcodes/xgate-dis.c
 faf5611134932101f9fc7fe5d60fdb17493a0cf583b0dd9925993fd1a816d72c  opcodes/xgate-opc.c
 072a04a1091acf1e86d0b775508b8d4b9e3eab24a1c6e37c27b4d53fc92d212c  opcodes/xstormy16-asm.c
 ecc3f2b65bb2e9a4fccbdc323dee8d45efc40d5f7ea97974cc30911b2c04005f  opcodes/xstormy16-desc.c
