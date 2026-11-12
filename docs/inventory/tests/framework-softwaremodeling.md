@@ -81,7 +81,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.program.model.lang.InstructionSetTest` (unit, 4 tests)
 - [ ] `ghidra.program.model.lang.RegisterManagerTest` (unit, 3 tests)
 - [ ] `ghidra.program.model.listing.VariableUtilitiesTest` (unit, 1 tests)
-- [ ] `ghidra.program.model.pcode.EncodeDecodeTest` (unit, 10 tests)
+- [x] `ghidra.program.model.pcode.EncodeDecodeTest` (unit, 10 tests) → `crates/bk-marshal/tests/testmarshal.rs` (the nine `marshal_*_packed` tests and `marshal_bufferpad`; the Java bodies are the C++ ones)
 - [ ] `ghidra.program.model.pcode.LinkedByteBufferTest` (unit, 5 tests)
 - [ ] `ghidra.program.model.pcode.VarnodeTest` (unit, 2 tests)
 - [ ] `ghidra.program.model.scalar.ScalarTest` (unit, 9 tests)
