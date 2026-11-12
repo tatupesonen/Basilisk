@@ -162,9 +162,13 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   resources are referenced in place.
 - **Property tests** (`proptest`) for parsers and codecs: never panics,
   round-trips.
-- **Fuzz targets** (`cargo fuzz`, in `fuzz/`) for every parser of
-  untrusted bytes. Every crash is fixed, its input saved under
-  `fuzz/regressions/<target>/` and replayed by a normal test.
+- **Fuzz targets** for every parser of untrusted bytes, all in the **one
+  fuzz crate at the repository root** (`fuzz/`, see `fuzz/README.md`): a
+  crate adds a dependency line, a `[[bin]]` entry and
+  `fuzz_targets/<crate>_<what>.rs` there. No crate has a fuzz directory of
+  its own. `scripts/fuzz-smoke.sh` runs every target briefly. Every crash
+  is fixed, its input saved under `fuzz/regressions/<target>/` and
+  replayed by a normal test in the crate.
 - **Golden files** for large structured output (disassembly, p-code,
   decompiled C, parsed models) are `insta` snapshots: `.snap` files beside
   the tests, updated with `INSTA_UPDATE=always` (or `cargo insta review`)
