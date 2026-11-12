@@ -293,7 +293,7 @@ impl FloatFormat {
     /// Converts an encoding in another format to this format, rounding to
     /// nearest even (`convertEncoding`). A NaN becomes the quiet NaN with
     /// the same sign.
-    pub fn convert_encoding(&self, encoding: u64, from: &FloatFormat) -> u64 {
+    pub fn convert_encoding(&self, encoding: u64, from: &Self) -> u64 {
         let sgn = from.extract_sign(encoding);
         let mut signif = from.extract_fractional_code(encoding);
         let mut exp = from.extract_exponent_code(encoding);
@@ -401,7 +401,7 @@ impl FloatFormat {
     }
 
     /// Converts `a` to the format `out` (`opFloat2Float`).
-    pub fn op_float2float(&self, a: u64, out: &FloatFormat) -> u64 {
+    pub fn op_float2float(&self, a: u64, out: &Self) -> u64 {
         out.convert_encoding(a, self)
     }
 
@@ -574,7 +574,7 @@ mod tests {
             F8.op_int2float(0x8000_0000, 4),
             (-2_147_483_648.0f64).to_bits()
         );
-        assert_eq!(F4.op_int2float(0x7fff_ffff, 4), f4(2_147_483_648.0));
+        assert_eq!(F4.op_int2float(0x7fff_ffff, 4), f4((1u64 << 31) as f32));
     }
 
     #[test]

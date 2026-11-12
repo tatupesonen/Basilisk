@@ -48,19 +48,19 @@ pub struct FloatFormat {
 
 impl FloatFormat {
     /// IEEE 754 binary16 (2 bytes). Java only.
-    pub const HALF: FloatFormat = FloatFormat::standard(2, 5, 10, true, 4);
+    pub const HALF: Self = Self::standard(2, 5, 10, true, 4);
     /// IEEE 754 binary32 (4 bytes).
-    pub const SINGLE: FloatFormat = FloatFormat::standard(4, 8, 23, true, 8);
+    pub const SINGLE: Self = Self::standard(4, 8, 23, true, 8);
     /// IEEE 754 binary64 (8 bytes).
-    pub const DOUBLE: FloatFormat = FloatFormat::standard(8, 11, 52, true, 16);
+    pub const DOUBLE: Self = Self::standard(8, 11, 52, true, 16);
     /// The x87 80-bit double extended format (10 bytes), whose integer bit is
     /// stored explicitly as the top bit of its 64-bit fraction field. Java
     /// only.
-    pub const EXTENDED: FloatFormat = FloatFormat::standard(10, 15, 64, false, 18);
+    pub const EXTENDED: Self = Self::standard(10, 15, 64, false, 18);
     /// IEEE 754 binary128 (16 bytes). Java only.
-    pub const QUAD: FloatFormat = FloatFormat::standard(16, 15, 112, true, 34);
+    pub const QUAD: Self = Self::standard(16, 15, 112, true, 34);
     /// IEEE 754 binary256 (32 bytes). Java only.
-    pub const OCTUPLE: FloatFormat = FloatFormat::standard(32, 19, 236, true, 71);
+    pub const OCTUPLE: Self = Self::standard(32, 19, 236, true, 71);
 
     /// A format laid out as sign, exponent, fraction from the top bit down.
     const fn standard(
@@ -69,8 +69,8 @@ impl FloatFormat {
         frac_size: u32,
         jbit_implied: bool,
         display_precision: u32,
-    ) -> FloatFormat {
-        FloatFormat {
+    ) -> Self {
+        Self {
             size,
             signbit_pos: size * 8 - 1,
             frac_pos: 0,
@@ -87,14 +87,14 @@ impl FloatFormat {
     /// `FloatFormatFactory.getFloatFormat` gives it: sizes 2, 4, 8, 10, 16
     /// and 32. `None` for any other size (Java throws
     /// `UnsupportedFloatFormatException`).
-    pub const fn ieee(size: u32) -> Option<FloatFormat> {
+    pub const fn ieee(size: u32) -> Option<Self> {
         match size {
-            2 => Some(FloatFormat::HALF),
-            4 => Some(FloatFormat::SINGLE),
-            8 => Some(FloatFormat::DOUBLE),
-            10 => Some(FloatFormat::EXTENDED),
-            16 => Some(FloatFormat::QUAD),
-            32 => Some(FloatFormat::OCTUPLE),
+            2 => Some(Self::HALF),
+            4 => Some(Self::SINGLE),
+            8 => Some(Self::DOUBLE),
+            10 => Some(Self::EXTENDED),
+            16 => Some(Self::QUAD),
+            32 => Some(Self::OCTUPLE),
             _ => None,
         }
     }
@@ -171,7 +171,7 @@ impl FloatFormat {
 /// `FloatFormatFactory` (Java); here the caller passes the table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FloatFormats {
-    formats: [Option<FloatFormat>; FloatFormats::CAPACITY],
+    formats: [Option<FloatFormat>; Self::CAPACITY],
 }
 
 impl FloatFormats {
@@ -180,7 +180,7 @@ impl FloatFormats {
 
     /// The formats the decompiler uses: 4 and 8 bytes
     /// (`Translate::setDefaultFloatFormats`).
-    pub const DEFAULT: FloatFormats = FloatFormats {
+    pub const DEFAULT: Self = Self {
         formats: [
             Some(FloatFormat::SINGLE),
             Some(FloatFormat::DOUBLE),
@@ -195,7 +195,7 @@ impl FloatFormats {
 
     /// Every standard format: 2, 4, 8, 10, 16 and 32 bytes
     /// (`FloatFormatFactory`).
-    pub const IEEE: FloatFormats = FloatFormats {
+    pub const IEEE: Self = Self {
         formats: [
             Some(FloatFormat::SINGLE),
             Some(FloatFormat::DOUBLE),
@@ -209,14 +209,14 @@ impl FloatFormats {
     };
 
     /// A table with no formats: every float operation fails.
-    pub const NONE: FloatFormats = FloatFormats {
-        formats: [None; FloatFormats::CAPACITY],
+    pub const NONE: Self = Self {
+        formats: [None; Self::CAPACITY],
     };
 
     /// The table with `format` added, replacing a format of the same size.
     /// `None` if the table is full.
     #[must_use]
-    pub fn with(mut self, format: FloatFormat) -> Option<FloatFormats> {
+    pub fn with(mut self, format: FloatFormat) -> Option<Self> {
         let same_size =
             |slot: &&mut Option<FloatFormat>| slot.is_some_and(|held| held.size == format.size);
         let slot = match self.formats.iter_mut().find(same_size) {
@@ -239,8 +239,8 @@ impl FloatFormats {
 
 impl Default for FloatFormats {
     /// [`FloatFormats::DEFAULT`].
-    fn default() -> FloatFormats {
-        FloatFormats::DEFAULT
+    fn default() -> Self {
+        Self::DEFAULT
     }
 }
 

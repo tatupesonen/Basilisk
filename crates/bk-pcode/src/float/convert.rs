@@ -85,8 +85,8 @@ mod tests {
     #[test]
     fn sticky_breaks_ties_upward() {
         let tie = (1u128 << 64) + (1 << 11);
-        assert_eq!(f64_of(tie, false, 0), 18_446_744_073_709_551_616.0);
-        assert_eq!(f64_of(tie, true, 0), 18_446_744_073_709_555_712.0);
+        assert_eq!(f64_of(tie, false, 0), (1u128 << 64) as f64);
+        assert_eq!(f64_of(tie, true, 0), ((1u128 << 64) + (1 << 12)) as f64);
     }
 
     #[test]

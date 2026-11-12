@@ -7,7 +7,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     clippy::float_cmp,
     reason = "test code"
 )]
@@ -323,7 +326,7 @@ fn float_operations_through_the_format_table() {
     assert_eq!(unary(OpCode::FloatTrunc, 8, 4, f4(-2.75)), (-2i64) as u64);
     assert_eq!(
         unary(OpCode::FloatTrunc, 4, 8, 1e10f64.to_bits()),
-        10_000_000_000u64 & 0xffff_ffff
+        u64::from(10_000_000_000u64 as u32)
     );
     assert_eq!(unary(OpCode::FloatTrunc, 4, 4, nan), 0);
     assert_eq!(unary(OpCode::FloatCeil, 4, 4, f4(2.25)), f4(3.0));

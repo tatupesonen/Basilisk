@@ -27,41 +27,41 @@ impl Wide {
     /// The number of bits in a `Wide`.
     pub const BITS: u32 = 512;
     /// Zero.
-    pub const ZERO: Wide = Wide(U512([0; 8]));
+    pub const ZERO: Self = Self(U512([0; 8]));
     /// One.
-    pub const ONE: Wide = Wide::from_u64(1);
+    pub const ONE: Self = Self::from_u64(1);
     /// The value with all 512 bits set.
-    pub const MAX: Wide = Wide(U512([u64::MAX; 8]));
+    pub const MAX: Self = Self(U512([u64::MAX; 8]));
 
     /// Widens a `u64`.
-    pub const fn from_u64(value: u64) -> Wide {
-        Wide::from_u128(value as u128)
+    pub const fn from_u64(value: u64) -> Self {
+        Self::from_u128(value as u128)
     }
 
     /// Widens a `u128`.
-    pub const fn from_u128(value: u128) -> Wide {
-        Wide(U512([value as u64, (value >> 64) as u64, 0, 0, 0, 0, 0, 0]))
+    pub const fn from_u128(value: u128) -> Self {
+        Self(U512([value as u64, (value >> 64) as u64, 0, 0, 0, 0, 0, 0]))
     }
 
     /// Reads a little-endian value; `None` if it has a non-zero byte beyond
     /// the 64th.
-    pub fn from_le_bytes(bytes: &[u8]) -> Option<Wide> {
+    pub fn from_le_bytes(bytes: &[u8]) -> Option<Self> {
         let (low, excess) = bytes.split_at_checked(64).unwrap_or((bytes, &[]));
         excess
             .iter()
             .all(|&byte| byte == 0)
-            .then(|| Wide(U512::from_little_endian(low)))
+            .then(|| Self(U512::from_little_endian(low)))
     }
 
     /// Reads a big-endian value; `None` if it has a non-zero byte beyond the
     /// 64 least significant.
-    pub fn from_be_bytes(bytes: &[u8]) -> Option<Wide> {
+    pub fn from_be_bytes(bytes: &[u8]) -> Option<Self> {
         let split = bytes.len().saturating_sub(64);
         let (excess, low) = bytes.split_at_checked(split).unwrap_or((&[], bytes));
         excess
             .iter()
             .all(|&byte| byte == 0)
-            .then(|| Wide(U512::from_big_endian(low)))
+            .then(|| Self(U512::from_big_endian(low)))
     }
 
     /// The value as 64 little-endian bytes.
@@ -111,13 +111,13 @@ impl Wide {
 
     /// Bit `index` (0 is the least significant); `false` beyond bit 511.
     pub fn bit(self, index: u32) -> bool {
-        index < Wide::BITS && self.0.bit(index as usize)
+        index < Self::BITS && self.0.bit(index as usize)
     }
 
     /// The number of bits needed to represent the value (0 for zero), Java's
     /// `BigInteger.bitLength`.
     pub fn bit_len(self) -> u32 {
-        Wide::BITS - self.0.leading_zeros()
+        Self::BITS - self.0.leading_zeros()
     }
 
     /// The number of one bits.
@@ -127,18 +127,18 @@ impl Wide {
 
     /// The mask that keeps the low `size` bytes; all ones for 64 bytes or
     /// more.
-    pub fn mask(size: u32) -> Wide {
-        if size >= Wide::BYTES {
-            Wide::MAX
+    pub fn mask(size: u32) -> Self {
+        if size >= Self::BYTES {
+            Self::MAX
         } else {
-            Wide::MAX >> (Wide::BITS - size * 8)
+            Self::MAX >> (Self::BITS - size * 8)
         }
     }
 
     /// The low `size` bytes of the value.
     #[must_use]
-    pub fn truncate(self, size: u32) -> Wide {
-        self & Wide::mask(size)
+    pub fn truncate(self, size: u32) -> Self {
+        self & Self::mask(size)
     }
 
     /// Whether the sign bit of the value, taken as a `size`-byte integer, is
@@ -150,10 +150,10 @@ impl Wide {
     /// The value, taken as a `size`-byte twos-complement integer, extended
     /// to all 512 bits.
     #[must_use]
-    pub fn sign_extend(self, size: u32) -> Wide {
+    pub fn sign_extend(self, size: u32) -> Self {
         let low = self.truncate(size);
         if low.is_negative(size) {
-            low | !Wide::mask(size)
+            low | !Self::mask(size)
         } else {
             low
         }
@@ -161,35 +161,35 @@ impl Wide {
 
     /// Addition modulo 2^512.
     #[must_use]
-    pub fn wrapping_add(self, rhs: Wide) -> Wide {
-        Wide(self.0.overflowing_add(rhs.0).0)
+    pub fn wrapping_add(self, rhs: Self) -> Self {
+        Self(self.0.overflowing_add(rhs.0).0)
     }
 
     /// Subtraction modulo 2^512.
     #[must_use]
-    pub fn wrapping_sub(self, rhs: Wide) -> Wide {
-        Wide(self.0.overflowing_sub(rhs.0).0)
+    pub fn wrapping_sub(self, rhs: Self) -> Self {
+        Self(self.0.overflowing_sub(rhs.0).0)
     }
 
     /// Multiplication modulo 2^512.
     #[must_use]
-    pub fn wrapping_mul(self, rhs: Wide) -> Wide {
-        Wide(self.0.overflowing_mul(rhs.0).0)
+    pub fn wrapping_mul(self, rhs: Self) -> Self {
+        Self(self.0.overflowing_mul(rhs.0).0)
     }
 
     /// Negation modulo 2^512.
     #[must_use]
-    pub fn wrapping_neg(self) -> Wide {
-        Wide(self.0.overflowing_neg().0)
+    pub fn wrapping_neg(self) -> Self {
+        Self(self.0.overflowing_neg().0)
     }
 
     /// Unsigned quotient; `None` when `rhs` is zero.
-    pub fn checked_div(self, rhs: Wide) -> Option<Wide> {
+    pub fn checked_div(self, rhs: Self) -> Option<Self> {
         self.0.checked_div(rhs.0).map(Wide)
     }
 
     /// Unsigned remainder; `None` when `rhs` is zero.
-    pub fn checked_rem(self, rhs: Wide) -> Option<Wide> {
+    pub fn checked_rem(self, rhs: Self) -> Option<Self> {
         self.0.checked_rem(rhs.0).map(Wide)
     }
 
@@ -199,19 +199,19 @@ impl Wide {
     }
 
     /// The low 512 bits of an arbitrary-precision unsigned integer.
-    pub fn from_biguint(value: &BigUint) -> Wide {
+    pub fn from_biguint(value: &BigUint) -> Self {
         let mut limbs = [0u64; 8];
         for (to, from) in limbs.iter_mut().zip(value.iter_u64_digits()) {
             *to = from;
         }
-        Wide(U512(limbs))
+        Self(U512(limbs))
     }
 
     /// The low 512 bits of the twos-complement form of an arbitrary-precision
     /// signed integer, which is how Java's emulator stores a `BigInteger`
     /// result into a varnode.
-    pub fn from_bigint(value: &BigInt) -> Wide {
-        let magnitude = Wide::from_biguint(value.magnitude());
+    pub fn from_bigint(value: &BigInt) -> Self {
+        let magnitude = Self::from_biguint(value.magnitude());
         if value.sign() == Sign::Minus {
             magnitude.wrapping_neg()
         } else {
@@ -235,82 +235,82 @@ impl Wide {
 }
 
 impl Default for Wide {
-    fn default() -> Wide {
-        Wide::ZERO
+    fn default() -> Self {
+        Self::ZERO
     }
 }
 
 impl From<u64> for Wide {
-    fn from(value: u64) -> Wide {
-        Wide::from_u64(value)
+    fn from(value: u64) -> Self {
+        Self::from_u64(value)
     }
 }
 
 impl From<u128> for Wide {
-    fn from(value: u128) -> Wide {
-        Wide::from_u128(value)
+    fn from(value: u128) -> Self {
+        Self::from_u128(value)
     }
 }
 
 impl PartialOrd for Wide {
-    fn partial_cmp(&self, other: &Wide) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for Wide {
-    fn cmp(&self, other: &Wide) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }
 }
 
 impl BitAnd for Wide {
-    type Output = Wide;
+    type Output = Self;
 
-    fn bitand(self, rhs: Wide) -> Wide {
-        Wide(self.0 & rhs.0)
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
     }
 }
 
 impl BitOr for Wide {
-    type Output = Wide;
+    type Output = Self;
 
-    fn bitor(self, rhs: Wide) -> Wide {
-        Wide(self.0 | rhs.0)
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
     }
 }
 
 impl BitXor for Wide {
-    type Output = Wide;
+    type Output = Self;
 
-    fn bitxor(self, rhs: Wide) -> Wide {
-        Wide(self.0 ^ rhs.0)
+    fn bitxor(self, rhs: Self) -> Self {
+        Self(self.0 ^ rhs.0)
     }
 }
 
 impl Shl<u32> for Wide {
-    type Output = Wide;
+    type Output = Self;
 
     /// Logical left shift; zero when `bits` is 512 or more.
-    fn shl(self, bits: u32) -> Wide {
-        Wide(self.0 << bits)
+    fn shl(self, bits: u32) -> Self {
+        Self(self.0 << bits)
     }
 }
 
 impl Shr<u32> for Wide {
-    type Output = Wide;
+    type Output = Self;
 
     /// Logical right shift; zero when `bits` is 512 or more.
-    fn shr(self, bits: u32) -> Wide {
-        Wide(self.0 >> bits)
+    fn shr(self, bits: u32) -> Self {
+        Self(self.0 >> bits)
     }
 }
 
 impl Not for Wide {
-    type Output = Wide;
+    type Output = Self;
 
-    fn not(self) -> Wide {
-        Wide(!self.0)
+    fn not(self) -> Self {
+        Self(!self.0)
     }
 }
 

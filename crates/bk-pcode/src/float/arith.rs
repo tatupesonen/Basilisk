@@ -16,7 +16,7 @@ use num_bigint::BigUint;
 use super::bigfloat::{BigFloat, FloatKind, bit_length, lowest_set_bit, shift_left, shift_right};
 
 impl BigFloat {
-    fn make_quiet_nan(mut self) -> BigFloat {
+    fn make_quiet_nan(mut self) -> Self {
         self.kind = FloatKind::QuietNan;
         self
     }
@@ -84,7 +84,7 @@ impl BigFloat {
 
     /// `self / other`.
     #[must_use]
-    pub fn div(&self, other: &BigFloat) -> BigFloat {
+    pub fn div(&self, other: &Self) -> Self {
         let mut r = self.clone();
         if r.is_nan() || other.is_nan() {
             return r.make_quiet_nan();
@@ -126,7 +126,7 @@ impl BigFloat {
 
     /// `self * other`.
     #[must_use]
-    pub fn mul(&self, other: &BigFloat) -> BigFloat {
+    pub fn mul(&self, other: &Self) -> Self {
         let mut r = self.clone();
         if r.is_nan() || other.is_nan() {
             return r.make_quiet_nan();
@@ -151,7 +151,7 @@ impl BigFloat {
 
     /// `self + other`.
     #[must_use]
-    pub fn add(&self, other: &BigFloat) -> BigFloat {
+    pub fn add(&self, other: &Self) -> Self {
         let mut r = self.clone();
         if r.is_nan() || other.is_nan() {
             return r.make_quiet_nan();
@@ -187,7 +187,7 @@ impl BigFloat {
 
     /// `self - other`.
     #[must_use]
-    pub fn sub(&self, other: &BigFloat) -> BigFloat {
+    pub fn sub(&self, other: &Self) -> Self {
         let mut negated = other.clone();
         negated.negative = !negated.negative;
         let mut r = self.add(&negated);
@@ -199,7 +199,7 @@ impl BigFloat {
 
     /// Takes the kind, sign, significand and scale of `other` (`copyFrom`);
     /// the two are assumed to have the same format.
-    fn with_value_of(mut self, other: &BigFloat) -> BigFloat {
+    fn with_value_of(mut self, other: &Self) -> Self {
         self.kind = other.kind;
         self.negative = other.negative;
         self.unscaled.clone_from(&other.unscaled);
@@ -208,7 +208,7 @@ impl BigFloat {
     }
 
     /// Adds magnitudes: both finite, non-zero, same sign.
-    fn add0(mut self, other: &BigFloat) -> BigFloat {
+    fn add0(mut self, other: &Self) -> Self {
         let fracbits = i64::from(self.fracbits);
         let d = i64::from(self.scale) - i64::from(other.scale);
         if d > fracbits {
@@ -233,7 +233,7 @@ impl BigFloat {
     }
 
     /// Subtracts magnitudes: both finite, non-zero, opposite signs.
-    fn sub0(mut self, other: &BigFloat) -> BigFloat {
+    fn sub0(mut self, other: &Self) -> Self {
         let fracbits = i64::from(self.fracbits);
         let d = i64::from(self.scale) - i64::from(other.scale);
         if d > fracbits + 1 {
@@ -285,7 +285,7 @@ impl BigFloat {
     /// The square root. The root of a negative value is the quiet NaN; the
     /// root of a zero is that zero.
     #[must_use]
-    pub fn sqrt(&self) -> BigFloat {
+    pub fn sqrt(&self) -> Self {
         let mut r = self.clone();
         if r.is_zero() {
             return r;
@@ -350,7 +350,7 @@ impl BigFloat {
 
     /// The finite value both `floor` and `ceil` work on, or the result for
     /// an infinity or a NaN.
-    fn rounding_operand(&self) -> Result<BigFloat, BigFloat> {
+    fn rounding_operand(&self) -> Result<Self, Self> {
         match self.kind {
             FloatKind::Finite => Ok(self.clone()),
             FloatKind::Infinite | FloatKind::QuietNan => Err(self.clone()),
@@ -360,7 +360,7 @@ impl BigFloat {
 
     /// The largest integral value not above `self`.
     #[must_use]
-    pub fn floor(&self) -> BigFloat {
+    pub fn floor(&self) -> Self {
         match self.rounding_operand() {
             Ok(mut r) => {
                 if r.negative {
@@ -376,7 +376,7 @@ impl BigFloat {
 
     /// The smallest integral value not below `self`.
     #[must_use]
-    pub fn ceil(&self) -> BigFloat {
+    pub fn ceil(&self) -> Self {
         match self.rounding_operand() {
             Ok(mut r) => {
                 if r.negative {
@@ -393,7 +393,7 @@ impl BigFloat {
     /// The integral value towards zero (`trunc`). As in Java this is not
     /// meant for infinities and NaNs.
     #[must_use]
-    pub fn trunc(&self) -> BigFloat {
+    pub fn trunc(&self) -> Self {
         let mut r = self.clone();
         r.floor0();
         r
@@ -401,7 +401,7 @@ impl BigFloat {
 
     /// The value with its sign flipped.
     #[must_use]
-    pub fn negate(&self) -> BigFloat {
+    pub fn negate(&self) -> Self {
         let mut r = self.clone();
         r.negative = !r.negative;
         r
@@ -409,7 +409,7 @@ impl BigFloat {
 
     /// The value with a positive sign.
     #[must_use]
-    pub fn abs(&self) -> BigFloat {
+    pub fn abs(&self) -> Self {
         let mut r = self.clone();
         r.negative = false;
         r
@@ -419,8 +419,8 @@ impl BigFloat {
     /// the format's rounding) and take the floor. Halfway cases therefore go
     /// towards positive infinity.
     #[must_use]
-    pub fn round(&self) -> BigFloat {
-        let half = BigFloat::from_parts(
+    pub fn round(&self) -> Self {
+        let half = Self::from_parts(
             self.fracbits,
             self.expbits,
             FloatKind::Finite,
@@ -434,7 +434,7 @@ impl BigFloat {
     /// Java's `compareTo`: a total order in which a NaN is greater than
     /// everything and equal to any NaN, and `-0` is less than `+0`. (This is
     /// `Float.compare`'s order, not the IEEE comparison.)
-    pub fn compare(&self, other: &BigFloat) -> Ordering {
+    pub fn compare(&self, other: &Self) -> Ordering {
         let by_sign = |negative: bool, ordering: Ordering| {
             if negative {
                 ordering.reverse()

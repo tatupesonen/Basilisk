@@ -11,7 +11,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     clippy::float_cmp,
     reason = "test code"
 )]
@@ -27,16 +30,12 @@ impl JavaRandom {
     const MULTIPLIER: u64 = 0x5_DEEC_E66D;
     const MASK: u64 = (1 << 48) - 1;
 
-    fn new(seed: u64) -> JavaRandom {
-        JavaRandom((seed ^ JavaRandom::MULTIPLIER) & JavaRandom::MASK)
+    fn new(seed: u64) -> Self {
+        Self((seed ^ Self::MULTIPLIER) & Self::MASK)
     }
 
     fn next(&mut self, bits: u32) -> i32 {
-        self.0 = (self
-            .0
-            .wrapping_mul(JavaRandom::MULTIPLIER)
-            .wrapping_add(0xB))
-            & JavaRandom::MASK;
+        self.0 = (self.0.wrapping_mul(Self::MULTIPLIER).wrapping_add(0xB)) & Self::MASK;
         (self.0 >> (48 - bits)) as i32
     }
 

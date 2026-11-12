@@ -110,7 +110,7 @@ impl FloatFormat {
     }
 
     /// Converts `a` to the format `out`, rounding to nearest even.
-    pub fn op_float2float_exact(&self, a: &Wide, out: &FloatFormat) -> Wide {
+    pub fn op_float2float_exact(&self, a: &Wide, out: &Self) -> Wide {
         out.encode_big_float(&self.decode_big_float(a))
     }
 

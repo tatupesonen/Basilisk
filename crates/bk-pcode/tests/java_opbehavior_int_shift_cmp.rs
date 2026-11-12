@@ -2,7 +2,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     clippy::float_cmp,
     reason = "test code"
 )]

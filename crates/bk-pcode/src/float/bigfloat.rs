@@ -100,8 +100,8 @@ impl BigFloat {
         negative: bool,
         unscaled: BigUint,
         scale: i32,
-    ) -> Result<BigFloat, FloatError> {
-        let value = BigFloat {
+    ) -> Result<Self, FloatError> {
+        let value = Self {
             fracbits,
             expbits,
             kind,
@@ -130,8 +130,8 @@ impl BigFloat {
         negative: bool,
         unscaled: BigUint,
         scale: i32,
-    ) -> BigFloat {
-        BigFloat {
+    ) -> Self {
+        Self {
             fracbits,
             expbits,
             kind,
@@ -142,8 +142,8 @@ impl BigFloat {
     }
 
     /// Zero with the given sign.
-    pub fn zero(fracbits: u32, expbits: u32, negative: bool) -> BigFloat {
-        let mut value = BigFloat::from_parts(
+    pub fn zero(fracbits: u32, expbits: u32, negative: bool) -> Self {
+        let mut value = Self::from_parts(
             fracbits,
             expbits,
             FloatKind::Finite,
@@ -156,9 +156,9 @@ impl BigFloat {
     }
 
     /// Infinity with the given sign.
-    pub fn infinity(fracbits: u32, expbits: u32, negative: bool) -> BigFloat {
+    pub fn infinity(fracbits: u32, expbits: u32, negative: bool) -> Self {
         let unscaled = BigUint::from(1u8) << fracbits.saturating_sub(1);
-        let mut value = BigFloat::from_parts(
+        let mut value = Self::from_parts(
             fracbits,
             expbits,
             FloatKind::Infinite,
@@ -171,8 +171,8 @@ impl BigFloat {
     }
 
     /// The quiet NaN. The sign is kept in the value but never encoded.
-    pub fn quiet_nan(fracbits: u32, expbits: u32, negative: bool) -> BigFloat {
-        let mut value = BigFloat::from_parts(
+    pub fn quiet_nan(fracbits: u32, expbits: u32, negative: bool) -> Self {
+        let mut value = Self::from_parts(
             fracbits,
             expbits,
             FloatKind::QuietNan,
@@ -186,13 +186,13 @@ impl BigFloat {
 
     /// The value of an `f32`, in the binary32 format (Java's static
     /// `FloatFormat.toBigFloat(float)`).
-    pub fn from_f32(value: f32) -> BigFloat {
+    pub fn from_f32(value: f32) -> Self {
         FloatFormat::SINGLE.decode_big_float_u64(u64::from(value.to_bits()))
     }
 
     /// The value of an `f64`, in the binary64 format (Java's static
     /// `FloatFormat.toBigFloat(double)`).
-    pub fn from_f64(value: f64) -> BigFloat {
+    pub fn from_f64(value: f64) -> Self {
         FloatFormat::DOUBLE.decode_big_float_u64(value.to_bits())
     }
 
@@ -409,7 +409,7 @@ impl fmt::Display for BigFloat {
 }
 
 impl PartialEq for BigFloat {
-    fn eq(&self, other: &BigFloat) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         if self.expbits != other.expbits
             || self.fracbits != other.fracbits
             || self.kind != other.kind

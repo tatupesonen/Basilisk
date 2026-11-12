@@ -18,9 +18,9 @@ pub enum Arity {
 impl fmt::Display for Arity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Arity::Unary => "Unary",
-            Arity::Binary => "Binary",
-            Arity::Ternary => "Ternary",
+            Self::Unary => "Unary",
+            Self::Binary => "Binary",
+            Self::Ternary => "Ternary",
         })
     }
 }
@@ -90,10 +90,10 @@ pub enum RecoverOp {
 impl fmt::Display for RecoverOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            RecoverOp::ZExt => "zext",
-            RecoverOp::SExt => "sext",
-            RecoverOp::LeftShift => "left shift",
-            RecoverOp::RightShift => "right shift",
+            Self::ZExt => "zext",
+            Self::SExt => "sext",
+            Self::LeftShift => "left shift",
+            Self::RightShift => "right shift",
         })
     }
 }

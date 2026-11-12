@@ -35,13 +35,13 @@ pub(crate) fn pow10(exp: u32) -> BigUint {
 
 impl Decimal {
     /// The value `unscaled * 10^-scale`.
-    pub fn new(unscaled: BigInt, scale: i32) -> Decimal {
-        Decimal { unscaled, scale }
+    pub fn new(unscaled: BigInt, scale: i32) -> Self {
+        Self { unscaled, scale }
     }
 
     /// Zero with scale 0 (`BigDecimal.ZERO`).
-    pub fn zero() -> Decimal {
-        Decimal::new(BigInt::ZERO, 0)
+    pub fn zero() -> Self {
+        Self::new(BigInt::ZERO, 0)
     }
 
     /// The unscaled value.
@@ -76,15 +76,15 @@ impl Decimal {
 
     /// The value with its sign flipped.
     #[must_use]
-    pub fn negate(&self) -> Decimal {
-        Decimal::new(-&self.unscaled, self.scale)
+    pub fn negate(&self) -> Self {
+        Self::new(-&self.unscaled, self.scale)
     }
 
     /// Rounds to at most `precision` significant digits, halfway cases to
     /// the even digit (`BigDecimal.round` with a `HALF_EVEN` `MathContext`).
     /// A precision of 0 means unlimited and returns the value unchanged.
     #[must_use]
-    pub fn round(&self, precision: u32) -> Decimal {
+    pub fn round(&self, precision: u32) -> Self {
         let mut value = self.clone();
         if precision == 0 {
             return value;
@@ -108,7 +108,7 @@ impl Decimal {
             if round_up {
                 quotient += 1u32;
             }
-            value = Decimal::new(
+            value = Self::new(
                 BigInt::from_biguint(value.unscaled.sign(), quotient),
                 value.scale.saturating_sub(drop as i32),
             );
@@ -118,7 +118,7 @@ impl Decimal {
     /// The same value with the given scale, or `None` if that would lose
     /// digits (`BigDecimal.setScale` without a rounding mode, which throws
     /// `ArithmeticException` then).
-    pub fn with_scale(&self, scale: i32) -> Option<Decimal> {
+    pub fn with_scale(&self, scale: i32) -> Option<Self> {
         let unscaled = if scale >= self.scale {
             let raise = u32::try_from(i64::from(scale) - i64::from(self.scale)).ok()?;
             &self.unscaled * BigInt::from(pow10(raise))
@@ -130,7 +130,7 @@ impl Decimal {
             }
             &self.unscaled / divisor
         };
-        Some(Decimal::new(unscaled, scale))
+        Some(Self::new(unscaled, scale))
     }
 
     /// The integer part of the value (`BigDecimal.toBigInteger`).
@@ -184,8 +184,8 @@ impl Decimal {
 
 impl From<BigInt> for Decimal {
     /// The integer with scale 0 (`new BigDecimal(BigInteger)`).
-    fn from(unscaled: BigInt) -> Decimal {
-        Decimal::new(unscaled, 0)
+    fn from(unscaled: BigInt) -> Self {
+        Self::new(unscaled, 0)
     }
 }
 
@@ -238,7 +238,7 @@ impl FromStr for Decimal {
     /// Java's `new BigDecimal(String)`: an optional sign, digits with an
     /// optional decimal point, and an optional exponent (`e` or `E`, an
     /// optional sign, digits).
-    fn from_str(text: &str) -> Result<Decimal, FloatError> {
+    fn from_str(text: &str) -> Result<Self, FloatError> {
         let error = || FloatError::InvalidDecimal(text.to_owned());
         let (negative, body) = match text.as_bytes().first() {
             Some(b'-') => (true, text.get(1..).ok_or_else(error)?),
@@ -254,7 +254,10 @@ impl FromStr for Decimal {
                     return Err(error());
                 }
                 let exponent = exponent.strip_prefix('+').unwrap_or(exponent);
-                (mantissa, exponent.parse::<i32>().map_err(|_| error())?)
+                (
+                    mantissa,
+                    exponent.parse::<i32>().map_err(|_overflow| error())?,
+                )
             }
             None => (body, 0),
         };
@@ -267,9 +270,10 @@ impl FromStr for Decimal {
         let digits = [whole, fraction].concat();
         let magnitude = BigUint::parse_bytes(digits.as_bytes(), 10).ok_or_else(error)?;
         let sign = if negative { Sign::Minus } else { Sign::Plus };
-        let scale = i64::try_from(fraction.len()).map_err(|_| error())? - i64::from(exponent);
-        let scale = i32::try_from(scale).map_err(|_| error())?;
-        Ok(Decimal::new(BigInt::from_biguint(sign, magnitude), scale))
+        let scale =
+            i64::try_from(fraction.len()).map_err(|_overflow| error())? - i64::from(exponent);
+        let scale = i32::try_from(scale).map_err(|_overflow| error())?;
+        Ok(Self::new(BigInt::from_biguint(sign, magnitude), scale))
     }
 }
 

@@ -140,6 +140,10 @@ impl FloatFormat {
     /// encoding. Trailing zeros are removed either way, and `.0` is appended
     /// to a text without a decimal point (which, as in Java, includes
     /// scientific notation with a one-digit mantissa: `1E+10.0`).
+    #[expect(
+        clippy::wrong_self_convention,
+        reason = "converts `value`, not `self`; named after Java's `toDecimalString`"
+    )]
     pub fn to_decimal_string(&self, value: &BigFloat, compact: bool) -> String {
         if let Some(special) = value.format_special_case() {
             return special.to_owned();

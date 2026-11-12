@@ -2,7 +2,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     clippy::float_cmp,
     reason = "test code"
 )]
@@ -211,20 +214,16 @@ impl JavaRandom {
     const MASK: u64 = (1 << 48) - 1;
 
     /// `new Random(seed)`.
-    fn new(seed: u64) -> JavaRandom {
-        JavaRandom {
-            seed: (seed ^ JavaRandom::MULTIPLIER) & JavaRandom::MASK,
+    fn new(seed: u64) -> Self {
+        Self {
+            seed: (seed ^ Self::MULTIPLIER) & Self::MASK,
         }
     }
 
     /// `next(bits)`: the top `bits` bits of the next state, as the bit
     /// pattern of Java's `int` result.
     fn next(&mut self, bits: u32) -> u32 {
-        self.seed = self
-            .seed
-            .wrapping_mul(JavaRandom::MULTIPLIER)
-            .wrapping_add(0xB)
-            & JavaRandom::MASK;
+        self.seed = self.seed.wrapping_mul(Self::MULTIPLIER).wrapping_add(0xB) & Self::MASK;
         (self.seed >> (48 - bits)) as u32
     }
 

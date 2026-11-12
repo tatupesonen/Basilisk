@@ -237,8 +237,8 @@ impl OpCode {
     /// Unknown names give `None` where the C++ returns the value 0. The C++
     /// also maps `"UNUSED1"` to the unused slot 45; that is not an operation
     /// and gives `None` here.
-    pub fn from_name(name: &str) -> Option<OpCode> {
-        OpCode::ALL.iter().copied().find(|op| op.name() == name)
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL.iter().copied().find(|op| op.name() == name)
     }
 
     /// Looks an operation up by its Java mnemonic ([`OpCode::mnemonic`]), as
@@ -249,8 +249,8 @@ impl OpCode {
     /// `None` where the Java throws `UnknownInstructionException`; so do the
     /// Java table's two entries that are not operations (`UNIMPLEMENTED` = 0
     /// and `INVALID_OP` = 45).
-    pub fn from_mnemonic(mnemonic: &str) -> Option<OpCode> {
-        OpCode::ALL
+    pub fn from_mnemonic(mnemonic: &str) -> Option<Self> {
+        Self::ALL
             .iter()
             .copied()
             .find(|op| op.mnemonic() == mnemonic || op.name() == mnemonic)
@@ -263,17 +263,17 @@ impl OpCode {
     /// `None` for operations that have no complement (Ghidra's `CPUI_MAX`).
     pub const fn boolean_flip(self) -> Option<BooleanFlip> {
         let (opcode, reorder) = match self {
-            OpCode::IntEqual => (OpCode::IntNotEqual, false),
-            OpCode::IntNotEqual => (OpCode::IntEqual, false),
-            OpCode::IntSLess => (OpCode::IntSLessEqual, true),
-            OpCode::IntSLessEqual => (OpCode::IntSLess, true),
-            OpCode::IntLess => (OpCode::IntLessEqual, true),
-            OpCode::IntLessEqual => (OpCode::IntLess, true),
-            OpCode::BoolNegate => (OpCode::Copy, false),
-            OpCode::FloatEqual => (OpCode::FloatNotEqual, false),
-            OpCode::FloatNotEqual => (OpCode::FloatEqual, false),
-            OpCode::FloatLess => (OpCode::FloatLessEqual, true),
-            OpCode::FloatLessEqual => (OpCode::FloatLess, true),
+            Self::IntEqual => (Self::IntNotEqual, false),
+            Self::IntNotEqual => (Self::IntEqual, false),
+            Self::IntSLess => (Self::IntSLessEqual, true),
+            Self::IntSLessEqual => (Self::IntSLess, true),
+            Self::IntLess => (Self::IntLessEqual, true),
+            Self::IntLessEqual => (Self::IntLess, true),
+            Self::BoolNegate => (Self::Copy, false),
+            Self::FloatEqual => (Self::FloatNotEqual, false),
+            Self::FloatNotEqual => (Self::FloatEqual, false),
+            Self::FloatLess => (Self::FloatLessEqual, true),
+            Self::FloatLessEqual => (Self::FloatLess, true),
             _ => return None,
         };
         Some(BooleanFlip { opcode, reorder })
@@ -284,24 +284,24 @@ impl OpCode {
     pub const fn is_unary(self) -> bool {
         matches!(
             self,
-            OpCode::Copy
-                | OpCode::IntZExt
-                | OpCode::IntSExt
-                | OpCode::Int2Comp
-                | OpCode::IntNegate
-                | OpCode::BoolNegate
-                | OpCode::FloatNan
-                | OpCode::FloatNeg
-                | OpCode::FloatAbs
-                | OpCode::FloatSqrt
-                | OpCode::FloatInt2Float
-                | OpCode::FloatFloat2Float
-                | OpCode::FloatTrunc
-                | OpCode::FloatCeil
-                | OpCode::FloatFloor
-                | OpCode::FloatRound
-                | OpCode::PopCount
-                | OpCode::LzCount
+            Self::Copy
+                | Self::IntZExt
+                | Self::IntSExt
+                | Self::Int2Comp
+                | Self::IntNegate
+                | Self::BoolNegate
+                | Self::FloatNan
+                | Self::FloatNeg
+                | Self::FloatAbs
+                | Self::FloatSqrt
+                | Self::FloatInt2Float
+                | Self::FloatFloat2Float
+                | Self::FloatTrunc
+                | Self::FloatCeil
+                | Self::FloatFloor
+                | Self::FloatRound
+                | Self::PopCount
+                | Self::LzCount
         )
     }
 
@@ -311,21 +311,21 @@ impl OpCode {
     pub const fn is_special(self) -> bool {
         matches!(
             self,
-            OpCode::Load
-                | OpCode::Store
-                | OpCode::Branch
-                | OpCode::CBranch
-                | OpCode::BranchInd
-                | OpCode::Call
-                | OpCode::CallInd
-                | OpCode::CallOther
-                | OpCode::Return
-                | OpCode::MultiEqual
-                | OpCode::Indirect
-                | OpCode::Cast
-                | OpCode::SegmentOp
-                | OpCode::CPoolRef
-                | OpCode::New
+            Self::Load
+                | Self::Store
+                | Self::Branch
+                | Self::CBranch
+                | Self::BranchInd
+                | Self::Call
+                | Self::CallInd
+                | Self::CallOther
+                | Self::Return
+                | Self::MultiEqual
+                | Self::Indirect
+                | Self::Cast
+                | Self::SegmentOp
+                | Self::CPoolRef
+                | Self::New
         )
     }
 }
@@ -347,7 +347,7 @@ impl fmt::Display for OpCode {
 }
 
 impl From<OpCode> for u8 {
-    fn from(op: OpCode) -> u8 {
+    fn from(op: OpCode) -> Self {
         op.value()
     }
 }
@@ -355,8 +355,8 @@ impl From<OpCode> for u8 {
 impl TryFrom<u8> for OpCode {
     type Error = OpCodeError;
 
-    fn try_from(value: u8) -> Result<OpCode, OpCodeError> {
-        OpCode::from_u8(value).ok_or(OpCodeError::UnknownValue(value))
+    fn try_from(value: u8) -> Result<Self, OpCodeError> {
+        Self::from_u8(value).ok_or(OpCodeError::UnknownValue(value))
     }
 }
 
@@ -364,8 +364,8 @@ impl core::str::FromStr for OpCode {
     type Err = OpCodeError;
 
     /// Parses a C++ name ([`OpCode::from_name`]).
-    fn from_str(name: &str) -> Result<OpCode, OpCodeError> {
-        OpCode::from_name(name).ok_or_else(|| OpCodeError::UnknownName(name.to_owned()))
+    fn from_str(name: &str) -> Result<Self, OpCodeError> {
+        Self::from_name(name).ok_or_else(|| OpCodeError::UnknownName(name.to_owned()))
     }
 }
 
@@ -531,7 +531,7 @@ mod tests {
             let expected = JAVA_DIFFERENCES
                 .iter()
                 .find(|(value, _)| *value == op.value())
-                .map_or(op.name(), |(_, mnemonic)| mnemonic);
+                .map_or_else(|| op.name(), |(_, mnemonic)| mnemonic);
             assert_eq!(op.mnemonic(), expected);
             assert_eq!(OpCode::from_mnemonic(op.mnemonic()), Some(op));
             // The Java table also holds the template directive names.
