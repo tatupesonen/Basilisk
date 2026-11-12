@@ -166,8 +166,10 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   untrusted bytes. Every crash is fixed, its input saved under
   `fuzz/regressions/<target>/` and replayed by a normal test.
 - **Golden files** for large structured output (disassembly, p-code,
-  decompiled C), regenerated with `UPDATE_GOLDEN=1` and the diff reviewed
-  before committing.
+  decompiled C, parsed models) are `insta` snapshots: `.snap` files beside
+  the tests, updated with `INSTA_UPDATE=always` (or `cargo insta review`)
+  and the diff reviewed before committing — never blindly. `insta` is the
+  widely used crate for this; do not hand-roll golden comparison.
 - **UI**: `egui_kittest` interaction tests for every ported GUI test.
 - **Benchmarks** for hot paths as `#[ignore]` release tests or `divan`
   benches; commands and results in `PERF.md`.

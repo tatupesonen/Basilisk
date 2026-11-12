@@ -61,7 +61,8 @@ and a sane architecture in mind.
   each of those agents stops at its first checkpoint (work committed, status
   report written) and its track continues with an Opus 5.5 agent at medium
   effort in the same worktree. New agents start on Opus 5.5 at medium
-  effort.
+  effort. (Owner, later the same day: "Move to using opus 5.5 for all
+  agents now.")
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
