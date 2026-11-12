@@ -179,7 +179,7 @@ rules) but implement it natively, and port the five tests against it.
 (The implementing agent appends further differences here, including any
 C++/Java disagreements found.)
 
-Appended by the `pcode` track (first agent; see `docs/agents/pcode.md` for
+Appended by the `pcode` track (first agent, revised by the second; see `docs/agents/pcode.md` for
 the reasoning behind each and for what Ghidra's source says):
 
 **Structure**
@@ -207,24 +207,48 @@ the reasoning behind each and for what Ghidra's source says):
 
 **Where Ghidra's result is undefined or host-dependent (u64 path)**
 
+Reviewed by the second `pcode` agent against Ghidra's source, Ghidra's own
+data tests and a differential run of Ghidra's compiled C++
+(`tests/cpp_oracle.rs`, 87,176 cases; see `docs/agents/pcode.md`).
+
 - A NaN *created* by an operation (`inf - inf`, `0/0`, `0 * inf`,
-  `sqrt(-1)`) is the positive quiet NaN. Ghidra takes the host FPU's:
-  negative on x86-64, positive on AArch64. A NaN *propagated* from an
-  input keeps the sign of the first NaN input (both hosts agree).
+  `sqrt(-1)`) is the **negative** quiet NaN, x86-64's default NaN. Ghidra
+  takes the host FPU's: negative on x86-64, positive on AArch64. Ghidra's
+  data test `floatprint.xml` folds `0.0f / 0.0f` and expects `-NAN`, so the
+  x86-64 result is the tested one (the reference build on AArch64 fails that
+  test). A NaN *propagated* from an input keeps the sign of the first NaN
+  input (both hosts agree). (Changed from the first agent's positive NaN.)
 - `FLOAT_TRUNC` of a NaN, an infinity or a value outside `i64` saturates
-  (NaN gives 0). The C++ cast is undefined (x86-64: `i64::MIN`; AArch64 and
-  Java: saturate).
+  (NaN gives 0). The C++ cast is undefined: x86-64 gives `i64::MIN`,
+  AArch64 saturates. Java's `(long)` cast saturates and
+  `FloatFormatTest.testOpTruncLongInt` and `OpBehaviorFloatTruncTest` pin
+  that, so basilisk saturates; this is the one place it does not follow
+  x86-64, and a differential test against a reference `decomp` built on
+  x86-64 will see the difference for out-of-range constants.
 - A value that rounds up from the largest subnormal to the smallest normal
   encodes as the smallest normal. The C++ shifts by -1 there ("TODO handle
-  round to normal case") and in practice returns zero. Java is correct.
+  round to normal case") and returns a signed zero on both hosts (seen in
+  the differential run). Java is correct. Kept: a fixed rounding bug in a
+  case no Ghidra test pins.
+- `INT_SEXT` with `size_out < size_in`, or a size of 0: the C++ shifts by a
+  negative amount or by 64; both hosts take the count modulo 64, and
+  basilisk now does the same, reproducing Ghidra's compiled result bit for
+  bit. (The first agent returned the input unchanged; the differential run
+  found it.)
 - Shift counts outside `0..64` that the C++ reaches only with a size of 0
   or above 8 (undefined behaviour) are taken modulo 64, which is what Java
-  defines and what x86-64/AArch64 produce. `recover_input_binary` instead
-  treats such a shift as shifting everything out, so that recovering a
-  shift by 0 of a full-width value works (on x86-64 the C++ reports "not in
-  range" for every non-zero output in that case).
+  defines and what x86-64/AArch64 produce.
+- `recover_input_binary` of `INT_LEFT`/`INT_RIGHT`/`INT_SRIGHT` by 0 at 8
+  bytes: the C++ shifts by 64, which both hosts take as 0, so it reports
+  every non-zero output as "not in range" (seen on AArch64 in the
+  differential run). basilisk returns the output, the correct input. Kept
+  as a deliberate fix: the decompiler's only caller is jump-table
+  recovery (`jumptable.cc`), where Ghidra simply fails on such a shift.
 - `printDecimal` prints non-finite values as `inf`, `-inf`, `nan`, `-nan`
-  (the C++ prints what the C library prints).
+  (the C++ prints what the C library prints). It reproduces libstdc++'s
+  stream extraction, which stores the largest finite value on overflow
+  (`testfloatemu.cc` pins `1.79769313486232e+308` for `DBL_MAX`); with
+  libc++ (macOS) Ghidra prints 17 digits there and fails its own test.
 
 **C++/Java disagreements for sizes up to 8 bytes (the C++ wins)**
 
@@ -265,7 +289,8 @@ the reasoning behind each and for what Ghidra's source says):
 **Java behaviour kept on the wide/exact path although questionable**
 
 - A NaN result is always the positive quiet NaN (also for `FLOAT_NEG` and
-  `FLOAT_ABS`).
+  `FLOAT_ABS`). (This differs from the u64 path's x86-64 rule; Java's
+  `BigFloat` has no NaN sign, so it is defined behaviour there.)
 - `FLOAT_TRUNC` of an infinity gives the largest or smallest integer of
   the *float's* size, then cut to the output size.
 - `INT2FLOAT` into the 2-, 10-, 16- and 32-byte formats truncates an
@@ -281,7 +306,11 @@ the reasoning behind each and for what Ghidra's source says):
 
 ## 9. Status
 
-Partially implemented; the track was handed over mid-way. The library
-(`crates/bk-pcode/src`) covers sections 4.1 to 4.4; the test work of
-section 6 is partly done. The exact state, what was verified and what
-remains is in `docs/agents/pcode.md`.
+Complete (2026-11-12). The library (`crates/bk-pcode/src`) covers sections
+4.1 to 4.4. Every listed Ghidra test is ported and marked: `testfloatemu.cc`
+(31), `testmultiprec.cc` (5), `BigFloatTest` (26), `FloatFormatTest` (58)
+and the 40 `OpBehavior*Test` classes (82 methods). Derived tests, a
+differential test against Ghidra's compiled C++ behaviours, property tests
+(native arithmetic, wide = u64, float ops against native `f32`/`f64`, round
+trips, never panics) and benchmarks (`docs/PERF.md`) are in place. Gaps and
+the detailed report: `docs/agents/pcode.md`.
