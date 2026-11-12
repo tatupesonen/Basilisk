@@ -12,11 +12,12 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 | Track / branch | Crates | Spec |
 |---|---|---|
 | `core-marshal` | `bk-core`, `bk-marshal` | `features/core-marshal.md` — checkpointed by Fable (`bk-marshal` done bar fuzz/bench; `bk-core` barely started; 107 tests pass); continued by Opus 5.5 |
-| `pcode` | `bk-pcode` | `features/pcode.md` — checkpointed by Fable (library written, 247 tests pass by its report; test porting partial, no property tests or benchmarks); continued by Opus 5.5 |
+| `pcode` | `bk-pcode` | `features/pcode.md` — **merged 2026-11-12** |
 | `sleigh-syntax` | `bk-sleigh-syntax` | `features/sleigh-syntax.md` — checkpointed by Fable (preprocessor, lexer, AST and parser written; all 150 specs parse; 265 tests pass by its report; verification and paperwork remain); continued by Opus 5.5 |
 | `lang` | `bk-lang` | `features/lang.md` — checkpointed by Fable (all behaviour implemented, 232 tests pass; chores and gate remain); continued by Opus 5.5 |
 | `bin-elf` | `bk-bin`, `bk-elf` | `features/bin-elf.md` — checkpointed by Fable (`bk-bin` complete; `bk-elf` about half written; tests pass by its report, clippy not clean); continued by Opus 5.5 |
 | `reference-tools` | `bk-testkit`, `scripts/build-reference.sh` | `features/reference-tools.md` — checkpointed by Fable (script, `pcodedump`, `bk-testkit` complete and tested; paperwork and gate remain); continued by Opus 5.5 |
+| `ui` | `bk-ui`, GUI entry in `basilisk` | `features/ui-shell.md` — started 2026-11-12 at the owner's request, ahead of M7: design system, shell and core views against a demo data source (Opus 5.5) |
 | `logo` | `assets/brand/` (no crates) | **merged 2026-11-12**: crowned serpent ring, ember orange (the owner's pick, variant A4) |
 | `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | `features/gnu-disasm.md` (ADR-019) — checkpointed by Fable (vendored subset and `bk-binutils-sys` building on macOS; `bk-gnu-disasm` not started); continued by Opus 5.5 |
 
@@ -51,6 +52,21 @@ Next steps for the coordinator:
 None. Open owner decisions are listed in `DIRECTION.md`.
 
 ## Log
+
+### 2026-11-12 — `bk-pcode` merged (first code on master)
+* Opcodes (73, not 74), `u64` op behaviours matching Ghidra's C++, wide
+  behaviours (to 64 bytes) matching the Java, host-level and exact float
+  formats, multiprecision on `u128`. Started by Fable, finished by Opus.
+* Tests: 336 (4 benchmarks ignored). Ported and marked: `testfloatemu.cc`
+  31, `testmultiprec.cc` 5, `BigFloatTest` 26, `FloatFormatTest` 58, all 40
+  `OpBehavior*Test` classes. A differential test replays 87,176 cases
+  evaluated by Ghidra's compiled C++ (`tests/data/opbehavior_cpp.txt.gz`);
+  basilisk differs only in three documented classes.
+* Learned: Ghidra's float behaviour is host-dependent in places (ADR-021:
+  take x86-64's). The oracle found an undocumented difference (`INT_SEXT`
+  with odd sizes, 280 rows), which was reverted to Ghidra's behaviour — the
+  differential test earned its keep. Not run on x86-64.
+* Gate on the merge: green.
 
 ### 2026-11-12 — logo merged
 * `assets/brand/`: mark (dark, light, mono), logos, app icon and a

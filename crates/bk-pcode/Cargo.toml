@@ -1,0 +1,22 @@
+[package]
+name = "bk-pcode"
+description = "basilisk: p-code opcodes, the arithmetic of every p-code operation, float formats and multiprecision helpers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+libm = { workspace = true }
+num-bigint = { workspace = true }
+primitive-types = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+flate2 = { workspace = true }
+proptest = { workspace = true }
+rstest = { workspace = true }
+
+[lints]
+workspace = true
