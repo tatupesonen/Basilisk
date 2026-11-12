@@ -203,10 +203,13 @@ pub enum ReadError {
         source: io::Error,
     },
     /// The file is not UTF-8 text.
-    #[error("{}: not UTF-8 text", path.display())]
+    #[error("{}: not UTF-8 text: {source}", path.display())]
     Encoding {
         /// The file.
         path: PathBuf,
+        /// Where the first invalid byte sequence is.
+        #[source]
+        source: std::str::Utf8Error,
     },
     /// The file's content is not acceptable.
     #[error("{}: {source}", path.display())]

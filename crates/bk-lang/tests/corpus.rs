@@ -6,7 +6,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -294,7 +297,7 @@ fn lookups_on_the_real_corpus() {
     assert!(registry.default_language("Z8000").is_err());
 }
 
-fn show(results: &[bk_lang::opinion::QueryResult]) -> Vec<String> {
+fn show(results: &[opinion::QueryResult]) -> Vec<String> {
     results
         .iter()
         .map(|r| format!("{}{}", r.pair, if r.preferred { " *" } else { "" }))

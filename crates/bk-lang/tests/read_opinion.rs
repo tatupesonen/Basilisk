@@ -5,7 +5,10 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
+    clippy::panic,
     clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
     reason = "test code"
 )]
 
@@ -30,7 +33,7 @@ fn opinion_reads_nesting_and_resolves_inheritance() {
     // Document order, each naming its parent.
     let parents: Vec<Option<usize>> = constraints
         .iter()
-        .map(|c| c.parent.map(bk_lang::opinion::ConstraintId::index))
+        .map(|c| c.parent.map(opinion::ConstraintId::index))
         .collect();
     assert_eq!(parents, [None, Some(0), Some(1), Some(1), Some(0), None]);
     assert_eq!(

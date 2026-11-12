@@ -345,8 +345,9 @@ pub(crate) fn read_file_with<T>(
         path: path.to_owned(),
         source,
     })?;
-    let text = std::str::from_utf8(&bytes).map_err(|_| ReadError::Encoding {
+    let text = std::str::from_utf8(&bytes).map_err(|source| ReadError::Encoding {
         path: path.to_owned(),
+        source,
     })?;
     parse(text).map_err(|source| ReadError::Parse {
         path: path.to_owned(),

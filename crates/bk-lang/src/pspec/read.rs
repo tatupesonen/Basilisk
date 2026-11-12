@@ -202,7 +202,7 @@ fn volatile(
             existing.locations.append(&mut locations);
             existing.inputop = inputop;
             existing.outputop = outputop;
-            existing.format = format.or(existing.format.take());
+            existing.format = format.or_else(|| existing.format.take());
         }
         None => {
             *volatile = Some(Volatile {

@@ -237,7 +237,7 @@ impl Languages {
         install_root: Option<&Path>,
         definition: LanguageDefinition,
     ) {
-        let directory = ldefs.parent().unwrap_or(Path::new(""));
+        let directory = ldefs.parent().unwrap_or_else(|| Path::new(""));
         let id = definition.id.clone();
         let missing = |name: &str, extension: &'static str| LoadFailure::MissingFile {
             language: id.clone(),

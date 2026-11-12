@@ -63,7 +63,7 @@ fn language(r: &mut Reader<'_, '_>, node: Node<'_, '_>) -> Result<LanguageDefini
     r.check(node, def)?;
     let id_text = r.required(node, def, "id")?;
     let id = LanguageId::new(id_text)
-        .map_err(|_| r.invalid(node, def, "id", id_text, "a non-empty language id"))?;
+        .map_err(|_empty| r.invalid(node, def, "id", id_text, "a non-empty language id"))?;
     let data_endian = endian(r, node, "endian", r.required(node, def, "endian")?)?;
     let instruction_endian = match node.attribute("instructionEndian") {
         Some(text) => endian(r, node, "instructionEndian", text)?,
