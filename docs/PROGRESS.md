@@ -19,9 +19,25 @@ specs, Opus 5.5 (medium) for implementation.
 **Usage limit reached again on 2026-11-13 at about 18:00.** The four
 agents in the table below may have been stopped mid-work; resume each by
 its id (their work is committed often). Everything up to here is pushed.
-Read the result of CI run 43452049262 (Windows path fix) and of the run
+**CI run 43452049262: the Windows test job is still red** after the
+`windows-ci` merge (macOS and Linux green; `cargo-deny` red there only
+because that run predates the advisories fix). Failure lines from
+`gh run view 43452049262 --log-failed`:
+
+      test error::tests::messages_are_ghidras ... ok
+      test error::tests::messages_carry_context ... ok
+      test error::tests::messages_match_ghidra ... ok
+      test loader::tests::windows_spellings ... FAILED
+      test registry::paths::tests::windows_spellings::case_02 ... FAILED
+      test registry::paths::tests::windows_spellings::case_03 ... FAILED
+      thread 'loader::tests::windows_spellings' (6664) panicked at crates\bk-sleigh-syntax\src\loader.rs:251:13:
+      thread 'registry::paths::tests::windows_spellings::case_02' (7340) panicked at crates\bk-lang\src\registry\paths.rs:362:9:
+      thread 'registry::paths::tests::windows_spellings::case_03' (1824) panicked at crates\bk-lang\src\registry\paths.rs:362:9:
+
+Resume agent `af713570d2e64dbed` in a new worktree with the full log.
+Read also the result of the run
 on the push made at 18:00 (first Windows build of `bk-binutils-sys`;
-`cargo-deny` with the advisories fix) before anything else.
+`cargo-deny` with the advisories fix).
 
 ### Running (state at 2026-11-13 17:55)
 
