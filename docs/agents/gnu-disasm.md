@@ -14,7 +14,7 @@ not verified.
 | | |
 |---|---|
 | Done | `bk-binutils-sys` reviewed and hardened; `bk-gnu-disasm` built; goldens against GNU objdump; coverage of Ghidra's names; fuzzing and sanitizers on Linux; macOS and Linux verified; benchmarks; feature doc; preliminary full gate green |
-| In progress | **Windows** (ADR-022): the build no longer stubs Windows out (commit `c3a7753`), but the C has not yet been compiled for a Windows target. See section 6 |
+| In progress | **Windows** (ADR-022): MinGW target cross-built and tested under Wine; MSVC (clang-cl via cargo-xwin) being attempted. See section 6 |
 | Next | Windows cross-builds (MinGW, then MSVC via `cargo-xwin`) and tests under Wine in an amd64 container (`target/windows/{Dockerfile,run.sh,dock.sh}`, not committed: scratch); then the final gate and this report's last update |
 
 Machine: Apple silicon (8 cores, 16 GB), macOS 25.5, Apple clang 17,
@@ -126,7 +126,8 @@ on Windows.
 | macOS arm64 (Apple clang) | builds, all tests pass **[ran]** |
 | Linux aarch64 (Debian 13; GCC 14 and clang 19) | builds, all tests pass, also under ASan and UBSan **[ran]** (container) |
 | Linux x86_64 | **[not run]** |
-| Windows | in progress (section 6) |
+| Windows x86_64, MinGW (`-gnu`) | cross-compiled here; all tests pass under Wine **[ran]** |
+| Windows x86_64, MSVC | in progress (section 6) |
 
 ## 5. Tests (bk-binutils-sys 25, bk-gnu-disasm 44 + 1 ignored benchmark)
 
@@ -161,21 +162,26 @@ on Windows.
 ## 6. Windows (ADR-022) — in progress
 
 Done: build.rs builds the C for Windows targets; abort/exit redirection
-made MSVC-safe (prelude instead of `-D`); tests platform-neutral. The
-Windows stub type-checked and linted for `x86_64-pc-windows-msvc` before
-this change **[ran]**; it is no longer used on Windows.
+made MSVC-safe (prelude instead of `-D`); `stpcpy` supplied
+(`shim/bk_compat.c`; neither the UCRT nor MinGW-w64 has it); tests
+platform-neutral.
 
-Plan (next): an amd64 Debian container (`target/windows/Dockerfile`:
-`rust:1.97.1-trixie`, `gcc-mingw-w64-x86-64`, `wine`, `clang`, `lld`,
-`cargo-xwin 0.23.1`) to (1) build and test `x86_64-pc-windows-gnu` with
-MinGW-w64 GCC under Wine, (2) build `x86_64-pc-windows-msvc` with
-`cargo xwin` (clang-cl against the MSVC CRT and Windows SDK, which xwin
-downloads; that download involves accepting Microsoft's licence terms) and
-test under Wine. Known questions from reading: `strcasecmp`/`stpcpy`/
-`alloca` on MSVC's CRT, no `unistd.h`, `long` 32-bit (binutils 2.41 uses
-`uint64_t` for `bfd_vma`, and MinGW hosts are LLP64 already),
-`setjmp`/`longjmp` under SEH (C frames only between them; x64 has unwind
-data for every frame).
+Container: `target/windows/{Dockerfile,run.sh,dock.sh}` (scratch, not
+committed): **linux/amd64** Debian 13 under Docker's emulation on this Mac,
+`rust:1.97.1-trixie`, `gcc-mingw-w64-x86-64` (GCC 14), Wine 10,
+`clang`/`lld` 19, `cargo-xwin 0.23.1`.
+
+| Target | Result |
+|---|---|
+| `x86_64-pc-windows-gnu`, MinGW-w64 GCC | **cross-compiled here** **[ran]**; **tests run under Wine** **[ran]**: all of `bk-binutils-sys` (25, including the abort-trap tests — binutils' `abort()` → `longjmp` works there — and the child-process state tests) and `bk-gnu-disasm` (44; Ghidra-tree tests skip, no tree in the container). The golden test needs `INSTA_WORKSPACE_ROOT` under Wine, because a cross-built `.exe` cannot run `cargo metadata` to find the workspace; with it, all 37 snapshots match byte for byte |
+| `x86_64-pc-windows-msvc`, clang-cl via `cargo xwin` | in progress |
+| `x86_64-pc-windows-msvc` with MSVC's own `cl.exe` (what CI's `windows-latest` uses by default) | **not attempted** here (no `cl.exe` off Windows); would be exercised by CI, not seen running |
+
+What the sources needed from the platform, by evidence: under MinGW
+only `stpcpy` was missing. `long` being 32-bit changed no output (binutils
+2.41 uses `uint64_t`/`PRIx64` for `bfd_vma`). `setjmp`/`longjmp` work for
+the trap. One `config.h` serves all targets (`_WIN32` conditionals: no
+`unistd.h`/`strings.h`).
 
 ## 7. Build time and size
 
