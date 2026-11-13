@@ -40,6 +40,9 @@ pub struct Probe {
     pub painted: AtomicU64,
     /// Tab titles the detached windows drew last.
     pub titles: Mutex<Vec<String>>,
+    /// Put a G key press into the next detached frame's input (when no
+    /// script can type: macOS needs Accessibility permission for that).
+    pub inject_g: std::sync::atomic::AtomicBool,
 }
 
 /// The script's state.
@@ -53,6 +56,7 @@ pub struct SelfTest {
     window: Option<u64>,
     log: Vec<String>,
     failed: bool,
+    injected: bool,
     /// Shared with the detached windows.
     pub probe: Arc<Probe>,
 }
@@ -77,6 +81,7 @@ impl SelfTest {
             window: None,
             log: Vec::new(),
             failed: false,
+            injected: false,
             probe: Arc::new(Probe::default()),
         })
     }
@@ -200,10 +205,31 @@ impl SelfTest {
                 let vp = self.window.map(super::app::viewport_id);
                 let opened =
                     matches!(&ws.overlay, Some((at, Overlay::Palette(_))) if Some(*at) == vp);
+                // Activating the app makes the main window key; keep asking
+                // the window system to focus the detached one.
+                if let Some(v) = vp {
+                    if self.since.elapsed().as_millis() % 1000 < 60 {
+                        ctx.send_viewport_cmd_to(v, egui::ViewportCommand::Focus);
+                    }
+                }
+                if matches!(&ws.overlay, Some((at, Overlay::Palette(_))) if *at == egui::ViewportId::ROOT)
+                {
+                    self.log.push("note G arrived in the main window (it had the keyboard); focusing the detached window again".to_owned());
+                    ws.overlay = None;
+                }
+                if !opened && self.since.elapsed() > Duration::from_secs(6) && !self.injected {
+                    self.injected = true;
+                    self.probe.inject_g.store(true, Ordering::Relaxed);
+                    self.log.push("note no OS key arrived (no permission to send keystrokes?); placing a G press into the detached window's own input".to_owned());
+                }
                 if opened {
                     self.note(
                         true,
-                        "G typed into the detached window opened Go To in that window",
+                        if self.injected {
+                            "a G press in the detached window's input opened Go To in that window (key routing; OS key delivery not verified here)"
+                        } else {
+                            "G typed into the detached window opened Go To in that window"
+                        },
                     );
                     ws.overlay = None;
                     let _ = std::fs::remove_file(self.dir.join("ready-for-keys"));

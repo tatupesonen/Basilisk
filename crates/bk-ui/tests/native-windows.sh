@@ -17,9 +17,9 @@ pid=$!
 # Type G into the focused (detached) window while the self-test waits for it.
 for _ in $(seq 1 600); do
   if [ -e "$dir/ready-for-keys" ]; then
-    osascript -e "tell application \"System Events\" to set frontmost of (first process whose unix id is $pid) to true" >/dev/null 2>&1 || true
+    osascript -e "tell application \"System Events\" to set frontmost of (first process whose unix id is $pid) to true" >>"$dir/osascript.log" 2>&1 || true
     sleep 0.5
-    osascript -e 'tell application "System Events" to keystroke "g"' >/dev/null 2>&1 || true
+    osascript -e 'tell application "System Events" to keystroke "g"' >>"$dir/osascript.log" 2>&1 || true
     sleep 1
   fi
   kill -0 "$pid" 2>/dev/null || break
@@ -30,4 +30,5 @@ wait "$pid" || true
 BASILISK_UI_SELF_TEST=restore "$bin" || true
 
 cat "$dir/report-run.txt" "$dir/report-restore.txt"
+if [ -s "$dir/osascript.log" ]; then echo "osascript:"; sort -u "$dir/osascript.log"; fi
 grep -q '^PASS$' "$dir/report-run.txt" && grep -q '^PASS$' "$dir/report-restore.txt"
