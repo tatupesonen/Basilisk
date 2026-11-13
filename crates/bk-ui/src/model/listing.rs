@@ -112,7 +112,7 @@ pub enum RowContent {
     },
     /// A further cross-reference below a label.
     Xref(XrefEntry),
-    /// "[more]": more references exist than the listing shows.
+    /// `[n more]`: more references exist than the listing shows.
     XrefMore(u32),
     /// A pre-comment line, above the code unit.
     PreComment(Box<str>),
