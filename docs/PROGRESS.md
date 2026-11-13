@@ -16,6 +16,13 @@ reference tools in `../reference/`. Per-track history is in the log below.
 agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
+**Usage limit reached again on 2026-11-13 at about 18:00.** The four
+agents in the table below may have been stopped mid-work; resume each by
+its id (their work is committed often). Everything up to here is pushed.
+Read the result of CI run 43452049262 (Windows path fix) and of the run
+on the push made at 18:00 (first Windows build of `bk-binutils-sys`;
+`cargo-deny` with the advisories fix) before anything else.
+
 ### Running (state at 2026-11-13 17:55)
 
 | Branch | Model | Agent id | State |
@@ -32,11 +39,9 @@ fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* **Unpushed commits on `master`** (at 17:40): the `gnu-disasm` merge
-  (gate on the merge: green, 1,677 tests), `scripts/check-dep-age.py`,
-  and the `deny.toml` advisories fix. They are held back only so that CI
-  run 43452049262 is not cancelled by a new push; push when it finishes
-  (`git status -sb` shows "ahead").
+* `master` was pushed at 18:00 with the `gnu-disasm` and
+  `spec-decompiler` merges, `Provenance`, `scripts/check-dep-age.py` and
+  the `deny.toml` advisories fix (gate green, 1,680 tests).
 * **Windows job**: `windows-ci` was merged and pushed at 17:30. CI run
   43452049262 is the first time the fix runs on Windows. If the Windows
   job is still red, resume agent `af713570d2e64dbed` (its worktree was
