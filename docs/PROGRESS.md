@@ -100,18 +100,22 @@ fresh agent briefed from the branch's files.
 
 ## Blockers
 
-* **x86-64 Linux reference build (ADR-021) — needs the owner.** The build
-  started on the lent box `kassini` on 2026-11-12 at 20:25
+* **x86-64 Linux reference build (ADR-021) — the box is not reachable.**
+  The build started on the lent box `kassini` on 2026-11-12 at 20:25
   (`~/remote-build.sh`, output `~/basilisk-ref/reference/`, log
-  `~/basilisk-ref/run.log` ending in `exit=<code>`) was never read: the
-  box takes password login only, the password was given in an earlier
-  session and deliberately not written down, and this session does not
-  have it. Either give the password again (the helper
-  `/Users/tatu/slop/reference-x86_64/kssh.exp` reads it from the `KP`
-  environment variable) or install an SSH key on the box. The emulated
-  Docker build on this Mac was killed for lack of memory (`exit=137`).
-  When access is back: read `reference/STAMP` (the two `-NAN` checks
-  should pass on x86-64), regenerate `bk-pcode`'s C++ oracle table there
+  `~/basilisk-ref/run.log` ending in `exit=<code>`) has not been read.
+  The owner gave the login again on 2026-11-13 (kept in the session only,
+  never written to files). Tailscale on this Mac was stopped and was
+  brought up again at 17:15, but **no machine named `kassini` is on the
+  tailnet** (`tailscale status` does not list it; the name does not
+  resolve), so it is off, removed, or on another tailnet. Owner: turn it
+  on or re-add it, or give its address. Note that
+  `/Users/tatu/slop/reference-x86_64/kssh.exp` (password from the `KP`
+  environment variable) prints nothing and exits 0 when the host does not
+  resolve — check `tailscale status` first. The emulated Docker build on
+  this Mac was killed for lack of memory (`exit=137`). When access is
+  back: read `reference/STAMP` (the two `-NAN` checks should pass on
+  x86-64), regenerate `bk-pcode`'s C++ oracle table there
   (`crates/bk-pcode/tests/data/README.md`) and compare it with the
   checked-in aarch64 one. Nothing else waits on this.
 * **Update the Claude desktop app** (2.1.290 or newer): `/compact` fails
