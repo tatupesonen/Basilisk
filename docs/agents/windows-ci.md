@@ -144,8 +144,10 @@ it rests on CI.
 
 ## Gate
 
-The result line is given in the final message; it comes from
-`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`.
+`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` printed 0;
+last line: `tests: 1533 passed, 0 failed` (run with the Ghidra and reference
+variables unset, so Ghidra-dependent tests skipped in the gate; they were
+run separately as listed above).
 
 ## Follow-ups
 
