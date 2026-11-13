@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-12, evening)
+## Now — RESUME HERE (2026-11-13, 17:10)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -10,134 +10,113 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
 
-**Wave 2 is being specified.** The owner asked for specs to be written by
-subagents: Fable 5.2 research agents (high effort), one per area, each in a
-worktree under `../basilisk-wt/<branch>`, writing only new files:
+**Hard cap: four running workers** (owner, 2026-11-13), counting helpers;
+agents are told to start none. Fable 5.2 (high effort) for research and
+specs, Opus 5.5 (medium) for implementation.
 
-The owner capped the project at about four agents at once, so only
-`spec-sleigh`, `spec-decompiler` and `decomp-research` are running; the
-other four were stopped minutes after starting (nothing written) and are
-**queued** — restart each with the same brief when a slot frees, in this
-order: `store-spike`, `spec-program-model`, `spec-pe`, `spec-macho`.
+### Running (started or resumed 2026-11-13 about 17:00)
 
-| Branch | Writes | For |
-|---|---|---|
-| `spec-sleigh` | `inventory/01-sleigh.md`, runtime and compiler specs, the shared-model crate decision | M1, M2 |
-| `spec-decompiler` | `inventory/02-decompiler.md`, `features/decomp-plan.md`, specs for the first decompiler tracks | M3 |
-| `spec-pe` | `features/pe.md` (crate decision by experiment, as for ELF) | M4 |
-| `spec-macho` | `features/macho.md` (same) | M4 |
-| `spec-program-model` | `inventory/03-program-model.md`, `features/program-model-plan.md` | M4 |
-| `store-spike` | `research/storage-engine.md` + `tools/store-spike/` benchmarks | ADR-003 |
-| `decomp-research` | `research/decompiler-quality.md` | M3 design, an ADR |
+| Branch | Model | Agent id | State |
+|---|---|---|---|
+| `spec-sleigh` | Fable | `a45f182816cbd805f` | resumed; had read the C++ runtime and run a `.sla` census and a `libsla` benchmark but written nothing; told to write the inventory and the runtime specs to disk first, then the compiler specs. Planned specs: `sla`, `sleigh-decode`, `sleigh-pcode`, `sleigh-language`, `sleigh-compiler-front`, `sleigh-compiler-back`, `sleigh-snippet`. |
+| `gnu-disasm` | Opus | `a5b2605fa521b5dd2` | resumed; 20 commits plus 12 uncommitted files; was writing the Windows container driver (MinGW/MSVC under Wine). |
+| `ui` | Opus | `a605f5e614e41a56c` | resumed; 7 commits plus uncommitted self-test work. |
+| `windows-ci` | Opus | `af713570d2e64dbed` | new; makes the Windows test job green (three `bk-lang` `tests/registry.rs` failures known from run 43279380556) and sweeps the workspace for path assumptions. It cannot run Windows tests: after the merge and push the coordinator reads the Windows job and sends back any failure. |
 
-Still running from before (Opus 5.5, implementation):
+An agent stopped by a usage limit or a session restart can be resumed with
+its context intact by sending a message to its agent id (worked on
+2026-11-13 for agents stopped the day before). If that fails, start a
+fresh agent briefed from the branch's files.
 
-| Branch | Crates | State |
-|---|---|---|
-| `gnu-disasm` | `bk-binutils-sys`, `bk-gnu-disasm`, `vendor/binutils-2.41/` | build crate done by the first agent; shim review, sanitizers, safe API in progress |
-| `ui` | `bk-ui`, GUI entry in `basilisk` | data layer, design tokens, views written; shell in progress; no window yet |
+### Queue (start as slots free, in this order)
 
-Next steps for the coordinator:
-1. As each spec agent reports: read its documents critically (are claims
-   verified, are acceptance checks independent of the implementer, is each
-   track finishable by one agent), merge the docs to `master`, turn its
-   proposals into ADRs and `PLAN.md` changes, then start one Opus 5.5
-   implementation agent (medium effort) per track that can start.
-2. Reconcile `spec-decompiler` with `decomp-research` when both are in: the
-   research may overturn IR or rule-machinery design; settle it in an ADR
-   before the core IR track starts. Leaf tracks (types, circle ranges,
-   `.cspec`/prototype models) need not wait.
-3. Reconcile `spec-program-model` with `store-spike` the same way; decide
-   ADR-003's engine.
-4. Small follow-ups track (Opus), once capacity allows: move `bk-lang` and
-   `bk-testkit` XML reading onto `bk-marshal`'s document (ADR-011); crates
-   adopt `bk-testkit` in place of local "find Ghidra" helpers;
-   differential test of `bk-marshal`'s encoders against Ghidra's binary;
-   run the reference build on x86-64 Linux to confirm ADR-021's assumed
-   behaviour.
-5. Merge `gnu-disasm` and `ui` when they report (gate on the merge, as
-   always — it has caught three real problems so far).
+1. `spec-decompiler` (Fable) — resume `a0c25da932de14a37`; nothing on
+   disk. Writes `inventory/02-decompiler.md`, `features/decomp-plan.md`,
+   specs for the first decompiler tracks (M3).
+2. `decomp-research` (Fable) — resume `a53d43ea3e956d593`; 2 commits
+   (experiment corpus and harness) plus an uncommitted 1,084-line
+   `docs/research/decompiler-quality.md`.
+3. Implementation tracks from `spec-sleigh` as its specs are merged (M1
+   runtime first) — these go ahead of the remaining specs.
+4. `store-spike` (Fable) — fresh agent; notes from its interrupted run in
+   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`,
+   `notes-ghidra-program-db.md`, and `tools/store-spike/` (uncommitted).
+   Writes `research/storage-engine.md` + benchmarks (ADR-003).
+5. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
+   `features/program-model-plan.md` (M4); reads the store-spike notes.
+6. `spec-pe` (Fable) — `features/pe.md`, crate decision by experiment as
+   for ELF (M4). Four helper fact sheets wait in
+   `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md` (debug directory,
+   load config/exception/security, resources/rich header, CLI metadata).
+7. `spec-macho` (Fable) — `features/macho.md` (M4).
+8. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
+   `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in place
+   of local "find Ghidra" helpers; differential test of `bk-marshal`'s
+   encoders against Ghidra's binary.
 
-In a worktree `../ghidra` does not resolve; agents set
-`BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
-`BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`, and must also test
-with the variable unset and with a non-canonical path.
+### Coordinator's next steps
 
-**Unattended loop** (set up 2026-11-12 20:10, the owner is away): a cron
-job in the coordinator's session fires every 30 minutes with the
-coordinator prompt (job `045f7c32`; session-only, expires after 7 days).
-Each firing follows `LOOP.md` from these files. Nothing may wait without a
-time limit.
+1. `windows-ci` reports → review, merge `--no-ff`, gate, push, read the
+   Windows job (`gh run list`, `gh run view <id> --log-failed`); send the
+   agent any failure. Under ADR-022 the other merges wait for a green
+   Windows job, or at least must not add Windows failures.
+2. `gnu-disasm`, `ui` report → review against `features/gnu-disasm.md`,
+   `features/ui-shell.md`; both branches are far behind master, so merge
+   master's changes with care (lock file: keep versions at least two
+   weeks old) and gate the merge result.
+3. `spec-sleigh` reports → read critically (claims verified, acceptance
+   checks independent of the implementer, each track finishable by one
+   agent), merge the docs, ADRs and `PLAN.md` changes, start M1 tracks.
+4. Reconcile `spec-decompiler` with `decomp-research` in an ADR before the
+   decompiler core IR track starts; leaf tracks need not wait. Reconcile
+   `spec-program-model` with `store-spike` the same way (ADR-003 engine).
 
-**CI is visible** (`gh` is authenticated): `gh run list`, `gh run view
-<id> --log-failed`. State at 20:15: macOS and Linux jobs green; **the
-Windows test job is red on `master`** — `bk-lang`
-`tests/registry.rs:195` compares messages containing paths and expects `/`
-where Windows gives `\`. CI stopped at the first failing binary, so more
-may hide behind it; CI now runs with `--no-fail-fast` to list them all.
-Under ADR-022 this must be fixed before further merges: **first in the
-queue** is a small Opus track `windows-ci` — make the Windows job green
-(fix path-separator assumptions in tests and, where the product formats
-paths, decide the rule once), using `gh` to read each run.
+### Working notes
 
-**x86-64 Linux reference build**: the emulated Docker run on this Mac
-was stopped (slow). The owner lent a throwaway x86-64 Linux machine on
-Tailscale instead: host `kassini`, user `kassini` (Debian 13, 4 cores, 3 GB
-memory, Docker). The build was started there at 20:25 by
-`~/remote-build.sh` (shallow-fetches Ghidra at the pinned commit, runs
-`scripts/build-reference.sh` in a `gcc:14` container, 90-minute limit);
-output in `~/basilisk-ref/reference/`, log `~/basilisk-ref/run.log` (ends
-with `exit=<code>`). When it finishes: read `reference/STAMP` for the test
-results (ADR-021 expects the two `-NAN` checks to pass on x86-64), then
-regenerate `bk-pcode`'s C++ oracle table there
-(`crates/bk-pcode/tests/data/README.md`) and compare with the checked-in
-aarch64 one.
-*Access:* password login only; the password was given in the session and
-is deliberately **not written anywhere**. The helper
-`/Users/tatu/slop/reference-x86_64/kssh.exp` runs a remote command with
-the password taken from the `KP` environment variable. Installing an SSH
-key on the box was blocked by the session's permission system, so if the
-session no longer knows the password, ask the owner (or have them install
-a key) rather than guessing. Treat the box as disposable and shared: keep
-everything under `~/basilisk-ref`.
-
-**Keeping the Mac awake**: `caffeinate -ims -t 604800` is running from the
-coordinator session (7 days). It does not stop a closed lid from sleeping
-the machine; only the owner can do that (`sudo pmset -a disablesleep 1`).
-
-**Queue** (start as slots free, keeping about four agents in total):
-1. `windows-ci` (Opus) — above.
-2. `store-spike` (Fable) — brief in this session's history; notes from its
-   interrupted first run are in
-   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`
-   and `notes-ghidra-program-db.md` (also useful to `spec-program-model`).
-3. `spec-program-model`, `spec-pe`, `spec-macho` (Fable) — worktrees exist,
-   empty; briefs as described in the table above.
-4. `followups` (Opus) — step 4 below.
-5. Implementation tracks from `spec-sleigh` and `spec-decompiler` as those
-   specs are merged.
-
-**Orphaned helper reports.** The four spec agents stopped at 20:10 had
-already started helper subagents, which kept running and hand their
-reports to the coordinator. Their fact sheets are worth keeping for the
-queued specs: save each to the matching worktree as
-`docs/agents/notes-<topic>.md` (uncommitted; the restarted spec agent is
-told to read them) by extracting the `SubagentHandback` message from the
-task's output file with `../basilisk-wt/save-handback.py <task-id> <file>` —
-never by printing the transcript. Saved so
-far: `store-spike/docs/research/notes-ghidra-db-engine.md`,
-`notes-ghidra-program-db.md`; `spec-pe/docs/agents/notes-pe-debug-directory.md`,
-`notes-pe-loadconfig-exception-security.md`,
-`notes-pe-resources-rich-header.md`. Two more helpers were still
-running at 20:45 (probably PE and Mach-O fact sheets).
-
-**UI shown to the owner** at about 20:40: the `ui` branch's build was
-launched on screen at the owner's request (`target/debug/basilisk` in the
-`ui` worktree). No feedback recorded yet.
+* In a worktree `../ghidra` does not resolve; agents set
+  `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
+  `BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`, and must also test
+  with the variable unset and with a non-canonical path.
+* This Mac has no `timeout` command: use the Bash tool's timeout or
+  `perl -e 'alarm N; exec @ARGV' <cmd> …`.
+* The unattended loop is the session's self-paced `/loop` (restarted by
+  the owner 2026-11-13); the earlier 30-minute cron job is gone. The
+  session cannot compact its context until the Claude desktop app is
+  updated (2.1.290 or newer), so the coordinator keeps its own reading
+  small and relies on these files.
+* CI: `gh` is authenticated. macOS and Linux jobs green; the Windows test
+  job is red on `master` (see `windows-ci`).
+* Keep-awake: `caffeinate -ims -t 604800` restarted 2026-11-13 17:05. It
+  does not stop a closed lid from sleeping the machine.
+* Orphaned helper reports are saved with
+  `../basilisk-wt/save-handback.py <task-id> <file>` — never by printing
+  a transcript.
+* The UI build was shown to the owner on 2026-11-12 at about 20:40 and
+  again at 20:24 the same evening on request; no feedback recorded.
+* History of the stop: on 2026-11-12 at about 20:25 every agent was
+  stopped by the account's 5-hour usage limit; the session was later
+  restarted. Nothing destructive happened; uncommitted work survived in
+  the worktrees.
 
 ## Blockers
 
-None. Open owner decisions are listed in `DIRECTION.md`.
+* **x86-64 Linux reference build (ADR-021) — needs the owner.** The build
+  started on the lent box `kassini` on 2026-11-12 at 20:25
+  (`~/remote-build.sh`, output `~/basilisk-ref/reference/`, log
+  `~/basilisk-ref/run.log` ending in `exit=<code>`) was never read: the
+  box takes password login only, the password was given in an earlier
+  session and deliberately not written down, and this session does not
+  have it. Either give the password again (the helper
+  `/Users/tatu/slop/reference-x86_64/kssh.exp` reads it from the `KP`
+  environment variable) or install an SSH key on the box. The emulated
+  Docker build on this Mac was killed for lack of memory (`exit=137`).
+  When access is back: read `reference/STAMP` (the two `-NAN` checks
+  should pass on x86-64), regenerate `bk-pcode`'s C++ oracle table there
+  (`crates/bk-pcode/tests/data/README.md`) and compare it with the
+  checked-in aarch64 one. Nothing else waits on this.
+* **Update the Claude desktop app** (2.1.290 or newer): `/compact` fails
+  in the coordinator session on the current version, so a long unattended
+  run will eventually fill its context.
 
 ## Log
 

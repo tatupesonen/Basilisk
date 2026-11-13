@@ -155,6 +155,12 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   never fail for that reason and never pass silently when present.
 - Every public behaviour gets a test. Unit tests sit next to the code;
   cross-crate behaviour goes in `tests/`.
+- **Paths** (ADR-022): product code prints a path as the operating system
+  gives it (`Path::display`) and never rewrites separators; tests never
+  assume a separator — they build expected strings from `Path` values or
+  compare components. Where the product compares paths (file identity,
+  roots) every spelling of one file must compare equal on every platform,
+  including Windows verbatim (`\\?\C:\…`) forms.
 - Integration-test crates (`tests/*.rs`) start with
   `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]`
   because helper functions there are not covered by `clippy.toml`'s test

@@ -104,9 +104,16 @@ rules so merges are clean and the result is shippable.
   with a time limit) and kill anything that has run far past its expected
   time; never poll in an unbounded loop. If something does not finish in
   its budget, stop it, record what happened, and move on.
-- **Do not fan out.** The owner caps the project at about four agents at
-  once. Work alone; start at most one helper subagent at a time, and only
-  when it saves real time.
+- **No `timeout` command on the development Mac.** Bound a command with
+  the Bash tool's timeout parameter or
+  `perl -e 'alarm N; exec @ARGV' <cmd> …` (N in seconds).
+- **Do not fan out.** The owner caps the project at four running workers
+  (2026-11-13), and the coordinator fills all four. Work alone: start no
+  helper subagents.
+- **A usage limit can stop you at any moment.** Write results to files as
+  you go, commit every finished piece, and keep `docs/agents/<track>.md`
+  current (done / in progress / next) so the work can be continued from
+  the files alone. Research held only in your context is lost.
 
 ## Commits
 
