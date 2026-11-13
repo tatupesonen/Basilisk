@@ -279,10 +279,17 @@ Implemented (track `gnu-disasm`, 2026-11-12); the full report is
   `display_prefix_for`).
 - Platforms: macOS (arm64) builds and passes; Linux (Debian 13, aarch64,
   GCC and clang) builds and passes, also under AddressSanitizer and
-  UndefinedBehaviorSanitizer, in a container; Windows compiles and lints as
-  a stub that reports `Unavailable` (a gap: no C is built there).
+  UndefinedBehaviorSanitizer, in a container; Windows x86_64 (ADR-022)
+  builds for real: `x86_64-pc-windows-gnu` with MinGW-w64 GCC and
+  `x86_64-pc-windows-msvc` with **clang-cl** (MSVC's `cl.exe` rejects C that
+  binutils uses), both cross-compiled here and all tests passing under Wine;
+  not yet seen on a real Windows machine (CI's `windows-latest`). The stub
+  remains only for targets that are neither Unix-like nor Windows.
 - Every one of the 65 `gnu` names in Ghidra's `.ldefs` resolves and
   decodes; `0x18:0x5` (Hexagon) is m9s12x in binutils 2.41, which has no
   Hexagon (section 8). Both `.gdis` files parse.
 - Not done: wiring to `bk-lang`'s external names and the listing field
-  (follow-ups); a Windows build of the C.
+  (follow-ups).
+- Requirement on Windows with the MSVC toolchain: `clang-cl` on `PATH`
+  (LLVM, or Visual Studio's "C++ Clang tools for Windows"), or a C compiler
+  named in `CC`.
