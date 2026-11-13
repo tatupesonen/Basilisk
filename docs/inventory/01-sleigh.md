@@ -558,7 +558,7 @@ walk. For each non-subtable operand, the handle is the defining symbol's
 | varnode list | selected register's | … | … |
 | start / end / next2 | the instruction's space | that address's offset | the space's address size |
 | defining expression | const | value | 0 |
-| name | (a name symbol has no handle; the compiler gives such operands zero-size constant handles that templates never dereference) | | |
+| name | const | field value | 0 (inherited from the value symbol; `NameSymbol` overrides only `print` and `resolve`) |
 
 After a constructor's operands, if its main template has an export, the
 `handle_tpl` is resolved into the node's handle (`HandleTpl::fix`):
@@ -617,10 +617,8 @@ in `Toy/data/languages/toyInstructions.sinc`].
   expression operands). `inst_start`/`inst_next`/`inst_next2` print the
   offset as `0x…` (never negative). A name symbol prints the table entry;
   a varnode list prints the selected register's **symbol name**; a varnode
-  symbol used directly as an operand has no `print` in C++ (the compiler
-  never emits an operand print piece for one; it writes the name as
-  literal text) [unverified: no failing case found; all 150 languages will
-  show in the differential test].
+  symbol used directly as an operand prints its name
+  (`VarnodeSymbol::print`, `CPP/slghsymbol.hh:260`).
 * [run] `pcodedump` output: `MOV` / `RAX,qword ptr [RBP + 0x8]`; `CALL` /
   `0x1009`; `MOVSB.REP` / `RDI,RSI`; `SYSCALL` / empty.
 
