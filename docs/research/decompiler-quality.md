@@ -718,9 +718,10 @@ int4 caller(xunknown4 param_1) { iVar1 = helper(5); iVar2 = helper(param_1); …
 ```
 
 An argument that reaches the call in the register it arrived in leaves no
-write for the caller-side analysis to see (`ActionActiveParam`,
-`AncestorRealistic`), so both the call's argument and the function's own
-parameter disappear. In a11 the callee, decompiled alone, is
+write for the caller-side analysis to see, so both the call's argument and
+the function's own parameter disappear (the analysis is `ActionActiveParam`
+with `AncestorRealistic`; that this is the reason is my reading of the
+output, not traced in the source **[J]**). In a11 the callee, decompiled alone, is
 `__regparm3 helper(param_1 … param_4)` — four parameters, one of them
 spurious — while its callers show one argument.
 
@@ -734,9 +735,10 @@ guess as a signature.
 **A6. Return storage on AArch64.** Scope: engine. `double fmin2(double,
 double)` is printed as `xunknown1 [16] fmin2(float8 param_1, float8 param_2)`
 ending `axVar1._8_8_ = 0; axVar1._0_8_ = param_1; return axVar1;`, and
-`fabs2(double)` takes `xunknown1 param_1 [16]` (a03, a13, AArch64 GCC): a
-write to `d0` clears the upper half of `v0`, and the widest written register
-is taken as the return storage.
+`fabs2(double)` takes `xunknown1 param_1 [16]` (a03, a13, AArch64 GCC): my
+reading, not traced in the source **[J]**, is that a write to `d0` also
+clears the upper half of `v0` in the lifted p-code and the widest written
+register is taken as the return storage.
 
 **A7. Indirect tail calls.** Scope: engine.
 
@@ -794,7 +796,9 @@ structure and the prototype (a15), the remainder loop of clang's unrolled
 **A11. An invented store and a raw stack pointer for a variable-length
 array.** Scope: engine. In r12 the return address pushed by the call to
 `puts` is printed as a statement, `*(xunknown8 *)((int8)&xStack_10 + iVar2) =
-0x2001ec;`, and the array is addressed through `register_RSP`.
+0x2001ec;` (`0x2001ec` is the address of the instruction after the call,
+checked in the disassembly), and the array is addressed through
+`register_RSP`.
 
 **A12. An invented loop.** Scope: language definition plus engine.
 `__builtin_clz` compiled to `bsr` is printed as `for (; param_1 >> uVar1 ==
@@ -813,7 +817,7 @@ FuzzFlesh 12 control-flow miscompilations **[S]**.
 |---|---|---|---|---|---|
 | R1 | Loop shape | `for (i = 0; i < n; i++) a[i] = v + i;` (r02, AArch64 GCC) | `if (0 < param_2) { iVar1 = 0; do { …; iVar1 = iVar1 + 1; } while (iVar1 != param_2); }` | the `for` | `block.cc`: `for` is made in `BlockWhileDo::finalTransform`, that is, only from a loop already recognised as top-tested **[G]** |
 | R2 | Unrolled loops | the same loop from clang (r02, t_smoke, a01) | a 4× or 8× body, then a remainder loop: 25 lines for 1 | one loop | none; open problem |
-| R3 | Switch lowered to compares | `switch (x) { case 1: … case 10000: … }` (a07 `sparse`; `dense` on AArch64 GCC) | nested `if (param_1 == 100) … if (param_1 < 0x65) …` | `switch` | `jumptable.cc` handles only indirect branches |
+| R3 | Switch lowered to compares | `switch (x) { case 1: … case 10000: … }` (a07 `sparse`; `dense` on AArch64 GCC) | nested `if (param_1 == 100) … if (param_1 < 0x65) …` | `switch` | jump-table recovery starts from an indirect branch (`jumptable.cc`) **[P]**; nothing rebuilds a `switch` from comparisons |
 | R4 | Switch lowered to a bit test | `case ' ': case '\t': case '\n': case '\r': case ',': case ';': return 1;` (a07) | `(param_1 < 0x3c) && ((0x800100100002600U >> ((uint8)param_1 & 0x3f) & 1) != 0)` | the `switch`, or the six comparisons | none |
 | R5 | Lowered switch in a loop | the interpreter of r03, AArch64 GCC | 7 gotos, the loop body printed twice | as from x86-64 GCC, where the jump table gives a clean `switch` | structuring |
 | R6 | Gotos from tail merging | goto-free `classify` (r01, clang) | 2 gotos, `param_1 = param_2;` … `param_3 = param_1;` | no goto | structuring; merging |
@@ -825,11 +829,11 @@ FuzzFlesh 12 control-flow miscompilations **[S]**.
 | R12 | Range-check and bit idioms | `c >= 'A' && c <= 'Z'`; `x % 3 == 0`; `b < 0 && c < 0`; `a << 24 \| b << 16 \| c` | `(uint1)(param_1 + 0xbfU) < 0x1a`; `(uint4)(param_1 * -0x55555555) < 0x55555556`; `(int4)(param_2 & param_3) < 0`; `param_2 * 0x10000 + param_1 * 0x1000000 \| param_3` | the source forms | no rule |
 | R13 | Names | throughout: 2,520 automatic names | `uVar3`, `param_1`, `iStack_14`, `in_FS_OFFSET` | names with meaning | `ActionNameVars`, `database.cc` |
 | R14 | Temporaries | `if (v[i].id == id) return &v[i];` (a15, GCC) | `piVar1 = &v->id; piVar2 = v; v = v + 1; if (*piVar1 == id) { return piVar2; }` | one comparison | merging and explicit-variable marking |
-| R15 | Declarations | throughout: 320 declarations, all at function tops | 17 `float4` declarations before the first statement (r16) | at first use | `PrintC::emitLocalVarDecls` |
+| R15 | Declarations | throughout: 320 declarations, all at function tops | 19 declarations, 14 of them `float4` temporaries, before the first statement (r16) | at first use | `PrintC::emitLocalVarDecls` |
 | R16 | Stack protector | any function with a buffer (r06) | `iStack_8 = *(int8 *)(in_FS_OFFSET + 0x28);` … `if (*(int8 *)(in_FS_OFFSET + 0x28) != iStack_8) { __stack_chk_fail(); }` | nothing, or a one-line note | none |
 | R17 | Variadic functions | `va_arg` loop (r11) | `aiStack_b8 [46]`, `iStack0000000000000008`, offset arithmetic on the register save area | `va_list` operations | none |
 | R18 | Constants | `open(path, O_WRONLY\|O_CREAT\|O_TRUNC, 0644)`; `c == ' ' \|\| c == '\t' \|\| c == '\n'` (r10) | `open(param_1,0x241,0x1a4)`; `(param_1 != 9) && (param_1 != 0x20)` … `param_1 == 10`; `0x14` beside `10` | flag names, octal mode, characters | `PrintLanguage::mostNaturalBase`; no enumeration data in the console |
-| R19 | Vector code | `d[i] = a[i] + b[i]` vectorised (r16) | 90 lines, 17 scalar temporaries | a loop, or vector operations | none |
+| R19 | Vector code | `d[i] = a[i] + b[i]` vectorised (r16) | about 85 lines, 14 scalar `float4` temporaries | a loop, or vector operations | none |
 | R20 | Assignments and commas in conditions | the unrolled table search (r15) | `if (((((table._0_4_ == param_1) \|\| (pxVar1 = table + 0x10, table._16_4_ == param_1)) \|\| …` | a loop | structuring |
 
 ### 3.4 Counters over the corpus
