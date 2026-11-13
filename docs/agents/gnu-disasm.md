@@ -13,9 +13,9 @@ not verified.
 
 | | |
 |---|---|
-| Done | `bk-binutils-sys` reviewed and hardened; `bk-gnu-disasm` built; goldens against GNU objdump; coverage of Ghidra's names; fuzzing and sanitizers on Linux; macOS and Linux verified; benchmarks; feature doc; preliminary full gate green |
-| In progress | **Windows** (ADR-022): MinGW target cross-built and tested under Wine; MSVC (clang-cl via cargo-xwin) being attempted. See section 6 |
-| Next | Windows cross-builds (MinGW, then MSVC via `cargo-xwin`) and tests under Wine in an amd64 container (`target/windows/{Dockerfile,run.sh,dock.sh}`, not committed: scratch); then the final gate and this report's last update |
+| Done | everything in the spec's acceptance list: `bk-binutils-sys` reviewed and hardened; `bk-gnu-disasm` built; goldens against GNU objdump; coverage of Ghidra's names; fuzzing and sanitizers on Linux; macOS, Linux and Windows (MinGW and MSVC, cross-built, tests under Wine) verified; benchmarks; feature doc; full gate green |
+| Rests on CI | a real Windows machine (`windows-latest`), x86_64 Linux and macOS on GitHub's runners |
+| Next | merge (coordinator); follow-ups in section 10 |
 
 Machine: Apple silicon (8 cores, 16 GB), macOS 25.5, Apple clang 17,
 rustc 1.97.1, nightly 2026-11-12 for fuzzing, Docker 29.1. Other agents
@@ -25,14 +25,16 @@ were building at the same time throughout (load average 9–16).
 
 **`bk-binutils-sys`** (C shim and FFI; the workspace's only `unsafe`)
 - `build.rs`: compiles 302 units (`sources.list`) of the vendored tree plus
-  the shim with the `cc` crate against `config/config.h`; generates `bfd.h`;
-  no C debug info by default (`CFLAGS=-g` to have it); `abort`/`exit`
-  redirected through a forced-include prelude
-  (`shim/include/bk_prelude.h`), failed `assert` through
-  `shim/include/assert.h`.
+  the shim with the `cc` crate against `config/config.h`, for every
+  Unix-like and Windows target (clang-cl for MSVC targets); generates
+  `bfd.h`; no C debug info by default (`CFLAGS=-g` to have it);
+  `abort`/`exit` redirected through a forced-include prelude
+  (`shim/include/bk_prelude.h`, which also carries the Windows
+  adaptations), failed `assert` through `shim/include/assert.h`.
 - `shim/bk_gdis.c` (entry points, read/write bounds, abort trap),
   `shim/bk_state.c` (new: option resets, once-only options, quarantine),
-  `shim/bfd_nofile.c` (libbfd functions that need an object file).
+  `shim/bfd_nofile.c` (libbfd functions that need an object file),
+  `shim/bk_compat.c` (`stpcpy` on Windows), `shim/include-msvc/strings.h`.
 - `src/real.rs` (all `unsafe`; the crate's lint opt-out is a
   `#[expect(unsafe_code)]` on this module only), `src/lib.rs`, `src/stub.rs`
   (now only for targets that are neither Unix-like nor Windows).
@@ -108,7 +110,7 @@ clang's runtimes were not tried with Rust nightly's.
 
 | Run | Result |
 |---|---|
-| Tests of `bk-binutils-sys` under **AddressSanitizer** (C with clang `-fsanitize=address`, Rust `-Zsanitizer=address`); C instrumentation checked with `nm` (547 objects with `__asan_report_load*`) | 21 tests pass, no report **[ran]** (before the Windows commit; 25 tests now) |
+| Tests of `bk-binutils-sys` under **AddressSanitizer** (C with clang `-fsanitize=address`, Rust `-Zsanitizer=address`); C instrumentation checked with `nm` (547 objects with `__asan_report_load*`) | all pass, no report **[ran]**: 21 tests first, and the final code's 25 again at the end |
 | Tests under **UndefinedBehaviorSanitizer** (clang runtime linked through `-C linker=clang`) | all pass; reports: `riscv-dis.c:170` and `csky-dis.c:274` "non-zero offset to null pointer" (`opt = opt_end + 1` once `opt_end` is NULL at loop end; never dereferenced) **[ran]** |
 | Fuzz build: C with `-fsanitize=fuzzer-no-link,address,undefined`, memory-safety UB fatal (`bounds,null,vla-bound,return,unreachable,builtin`), the rest reported; checked with `nm` (`__sanitizer_cov_8bit_counters_init` in 203 objects — the others are data tables) | builds **[ran]** |
 | Discovery: all architectures, 600 s, trapped aborts counted as findings | 1,397,103 executions, ~69 k edges, no crash, no ASan report, no abort **[ran]** |
@@ -123,11 +125,12 @@ on Windows.
 
 | Platform | Status |
 |---|---|
-| macOS arm64 (Apple clang) | builds, all tests pass **[ran]** |
+| macOS arm64 (Apple clang 17) | builds, all tests pass, gate green **[ran]** |
 | Linux aarch64 (Debian 13; GCC 14 and clang 19) | builds, all tests pass, also under ASan and UBSan **[ran]** (container) |
-| Linux x86_64 | **[not run]** |
-| Windows x86_64, MinGW (`-gnu`) | cross-compiled here; all tests pass under Wine **[ran]** |
-| Windows x86_64, MSVC | in progress (section 6) |
+| Windows x86_64, `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14) | **cross-compiled here, all tests pass under Wine 10.0** **[ran]** (emulated linux/amd64 container) |
+| Windows x86_64, `x86_64-pc-windows-msvc` (clang-cl 19 + MSVC CRT/SDK via cargo-xwin) | **cross-compiled here, all tests pass under Wine 10.0** **[ran]** |
+| Windows on a real Windows machine; with MSVC's `cl.exe` | would be exercised by CI (`windows-latest`), **not seen running**; `cl.exe` is not supported (section 6) |
+| Linux x86_64 | not run here; CI's `ubuntu-latest` would exercise it |
 
 ## 5. Tests (bk-binutils-sys 25, bk-gnu-disasm 44 + 1 ignored benchmark)
 
@@ -159,29 +162,56 @@ on Windows.
   in this worktree), `=/Users/tatu/slop/ghidra`, and
   `=/Users/tatu/slop/basilisk/../ghidra` — all pass **[ran]**.
 
-## 6. Windows (ADR-022) — in progress
+## 6. Windows (ADR-022)
 
-Done: build.rs builds the C for Windows targets; abort/exit redirection
-made MSVC-safe (prelude instead of `-D`); `stpcpy` supplied
-(`shim/bk_compat.c`; neither the UCRT nor MinGW-w64 has it); tests
-platform-neutral.
+**Result: the GNU disassembler builds and works for Windows x86_64 with
+both toolchains, as far as can be shown without a Windows machine.**
 
 Container: `target/windows/{Dockerfile,run.sh,dock.sh}` (scratch, not
-committed): **linux/amd64** Debian 13 under Docker's emulation on this Mac,
-`rust:1.97.1-trixie`, `gcc-mingw-w64-x86-64` (GCC 14), Wine 10,
-`clang`/`lld` 19, `cargo-xwin 0.23.1`.
+committed): linux/amd64 Debian 13 under Docker's emulation on this Mac,
+`rust:1.97.1-trixie`, `gcc-mingw-w64-x86-64` (GCC 14-win32), Wine 10.0,
+clang/lld 19.1.7, `cargo-xwin 0.23.1` (ADR-011: 5.3 M downloads, the usual
+tool for this; a developer tool only, no dependency of any crate). xwin
+downloads Microsoft's CRT and Windows SDK into `target/windows/xwin-cache`;
+that download is under Microsoft's licence terms, accepted by the tool on
+the machine's behalf — the owner may want to know that this happened (only
+local verification; nothing from it is committed or redistributed).
 
-| Target | Result |
+| Evidence | Result |
 |---|---|
-| `x86_64-pc-windows-gnu`, MinGW-w64 GCC | **cross-compiled here** **[ran]**; **tests run under Wine** **[ran]**: all of `bk-binutils-sys` (25, including the abort-trap tests — binutils' `abort()` → `longjmp` works there — and the child-process state tests) and `bk-gnu-disasm` (44; Ghidra-tree tests skip, no tree in the container). The golden test needs `INSTA_WORKSPACE_ROOT` under Wine, because a cross-built `.exe` cannot run `cargo metadata` to find the workspace; with it, all 37 snapshots match byte for byte |
-| `x86_64-pc-windows-msvc`, clang-cl via `cargo xwin` | in progress |
-| `x86_64-pc-windows-msvc` with MSVC's own `cl.exe` (what CI's `windows-latest` uses by default) | **not attempted** here (no `cl.exe` off Windows); would be exercised by CI, not seen running |
+| `cargo build --target x86_64-pc-windows-gnu -p bk-binutils-sys` (MinGW GCC) | cross-compiled here **[ran]** |
+| `cargo test --target x86_64-pc-windows-gnu -p bk-binutils-sys -p bk-gnu-disasm` under Wine | all pass: 25 + 44 (1 ignored benchmark), including the **abort-trap tests** (`longjmp` out of binutils works) and the child-process state tests **[ran]** |
+| `cargo xwin build/test --target x86_64-pc-windows-msvc` (clang-cl, MSVC CRT `-MD`) under Wine | all pass, same counts, trap tests included (`longjmp` through the MSVC runtime, which unwinds with SEH, crosses only C frames) **[ran]** |
+| Golden snapshots on both | all 37 identical byte for byte (`long` being 32-bit changes no output; binutils 2.41 uses `uint64_t`/`PRIx64` for `bfd_vma`) **[ran]**. Under Wine a cross-built `.exe` cannot run `cargo metadata`, so insta needs `INSTA_WORKSPACE_ROOT`; on real Windows it does not |
+| A real Windows machine; CI's `windows-latest` | not seen running; CI would exercise it |
+| `build.rs` choosing clang-cl by itself (no `CC` set) | not exercised here (cargo-xwin sets `CC_x86_64_pc_windows_msvc`); CI would exercise it |
+| MSVC's `cl.exe` | not attempted (no `cl.exe` off Windows). Not supported, by evidence: clang `-std=c11 -pedantic` over the 302 units finds GNU case ranges (`aarch64-dis.c`, 5), arithmetic on `void *` (`elfxx-riscv.c`), zero-size arrays (`xtensa-modules.c`) and C23 empty initializers (`aarch64-opc-2.c`, 36) **[ran]**, which `cl` rejects [read: MSVC documentation knowledge, not tried] |
 
-What the sources needed from the platform, by evidence: under MinGW
-only `stpcpy` was missing. `long` being 32-bit changed no output (binutils
-2.41 uses `uint64_t`/`PRIx64` for `bfd_vma`). `setjmp`/`longjmp` work for
-the trap. One `config.h` serves all targets (`_WIN32` conditionals: no
-`unistd.h`/`strings.h`).
+What the sources needed from Windows, all in the shim (binutils itself is
+not patched for Windows):
+- `stpcpy` (neither the UCRT nor MinGW-w64 has it): `shim/bk_compat.c`,
+  declared in the prelude.
+- MSVC CRT only (prelude, `#ifdef _MSC_VER`): `strcasecmp`/`strncasecmp` →
+  `_stricmp`/`_strnicmp`; `<malloc.h>` for `alloca`; `ALMOST_STDC`, because
+  `include/symcat.h` otherwise falls back to K&R token pasting when
+  `__STDC__` is undefined (as in MSVC mode); `static_assert` renamed,
+  because it is a keyword in MSVC mode and `mips-formats.h` names an array
+  so; a `<strings.h>` (`shim/include-msvc/`, MSVC targets only) for
+  `microblaze-dis.c`.
+- `abort`/`exit` redirection by a forced-include prelude instead of
+  `-Dabort=…`, which would have renamed the CRT's dllimport declaration.
+- One `config.h` for all targets (`_WIN32` conditionals already there).
+- `build.rs`: builds for every Unix-like or Windows target; for MSVC targets
+  uses `clang-cl` unless `CC` names a compiler, and fails with an
+  explanation if `clang-cl` is not on `PATH`.
+
+**What this asks of a user's Windows machine** with the MSVC toolchain:
+`clang-cl` on `PATH` (LLVM's installer, or Visual Studio's "C++ Clang tools
+for Windows" component) besides the usual Visual Studio Build Tools. GitHub's
+`windows-latest` image ships LLVM; whether `clang-cl` is on `PATH` there is
+**not verified** — if the CI job fails with the build script's message, add
+LLVM's `bin` to `PATH` in the workflow (proposal for the coordinator, who
+owns `ci.yml`). The GNU toolchain needs MinGW-w64 GCC as usual.
 
 ## 7. Build time and size
 
@@ -207,7 +237,9 @@ parse.
 
 ## 9. Gaps
 
-- Windows: see section 6.
+- Windows not seen on a real Windows machine (Wine only); MSVC's `cl.exe`
+  not supported (clang-cl required for MSVC targets); `build.rs`'s own
+  clang-cl selection not exercised here.
 - Linux x86_64 not run; sanitizers and fuzzing ran only on Linux aarch64.
 - Text truncation at 1,024 bytes is bounded by construction but never
   triggered by a test.
@@ -225,8 +257,20 @@ parse.
 - Hexagon's `0x18:0x5` should be dropped or marked unsupported in the
   language mapping.
 - If fuzz build time matters for other targets, `bk-binutils-sys` could be
-  an optional feature of the fuzz crate.
+  an optional feature of the fuzz crate (every `cargo fuzz build` now
+  compiles binutils: 2 min 7 s instrumented, Linux, 3 CPUs).
+- CI: make sure `clang-cl` is on `PATH` in the `windows-latest` job (LLVM's
+  `bin`), or the Windows tests fail with the build script's message.
+- Proposed ADR: Windows builds of `bk-binutils-sys` need clang-cl, not
+  `cl.exe` (section 6).
 
-## 11. Commits
+## 11. Gate and commits
 
-See `git log --oneline master..HEAD` (final list in the last update).
+Full gate, as RULES.md says (`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log
+2>&1; echo $?`, `BASILISK_GHIDRA_DIR` unset): exit 0, last lines
+`bans ok, licenses ok, sources ok` and **`tests: 401 passed, 0 failed`**
+**[ran, macOS]**. (The coverage tests skip there: no `../ghidra` beside
+this worktree; they pass with the variable set to the tree, either spelling.)
+
+`git log --oneline master..HEAD` lists this track's commits (and the two
+merges of `master`); the branch is behind `master` and was not rebased.
