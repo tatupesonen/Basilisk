@@ -1,3 +1,5 @@
 # The vendored binutils tree is byte-for-byte upstream (MANIFEST holds its
 # SHA-256 hashes): never convert its line endings.
 vendor/** -text
+# insta snapshots are compared as text written with LF; keep them LF on Windows checkouts.
+*.snap text eol=lf
