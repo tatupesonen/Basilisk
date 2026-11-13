@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk-lang`, `bk-sleigh-syntax`, `bk-bin`, `bk-elf` merged; milestone M0 complete).
+Last updated: 2026-11-13 (`bk-ui` merged on demo data; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -21,7 +21,7 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 |---|---|---|---|---|
 | SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
-| SoftwareModeling: SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
+| SoftwareModeling: SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | In progress | Specified (ADR-023, ADR-024; `features/sla.md`, `sleigh-decode.md`, `sleigh-pcode.md`). Track `sla` running; nothing on `master` yet. |
 | SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | Partial | Front end done: preprocessor, lexer, parser, checked against Ghidra's compiled output for all 150 specs. Semantic analysis and `.sla` output are M2 |
 | SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
 | SoftwareModeling: disassembler | `bk-disasm` | M5 | Missing | |
@@ -30,7 +30,7 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 | Emulation | `bk-emu` | M6 | Missing | |
 | Generic, Utility | — | — | Replaced | Rust std and crates; parts land where used. Tests ported or marked N/A per class (ADR-006) |
 | Project, FileSystem | `bk-project` | M8 | Missing | |
-| Docking, Gui, Help | `bk-ui` | M7 | Replaced | egui (ADR-008); user-visible behaviour reproduced |
+| Docking, Gui, Help | `bk-ui` | M7 | Partial | Replaced by egui (ADR-008). On `master` against demo data: design system, menus, tool bar, key bindings from one action registry, docking with native pop-out windows, layout persistence. Help is missing. No Ghidra GUI tests ported yet. |
 | Graph | `bk-graph`, `bk-ui` | M5, M7 | Missing | |
 | Pty | `bk-debug-*` | M10 | Missing | |
 
@@ -39,7 +39,7 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 | Ghidra part | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
-| SLEIGH runtime | `bk-sleigh` | M1 | Missing | |
+| SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | In progress | Specified (ADR-023, ADR-024; `features/sla.md`, `sleigh-decode.md`, `sleigh-pcode.md`). Track `sla` running; nothing on `master` yet. |
 | SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
 | Decompiler engine (DECCORE) | `bk-decomp`, `bk-decomp-print` | M3 | Missing | |
 | Ghidra pipe protocol (GHIDRA) | trait in `bk-decomp` | M5 | Replaced | In process (ADR-004) |
@@ -61,7 +61,7 @@ Last updated: 2026-11-12 (`bk-pcode`, `bk-testkit`, `bk-marshal`, `bk-core`, `bk
 | Base: headless analyzer | `bk-headless`, `basilisk analyze` | M5 | Missing | |
 | Base: exporters, XML, C parser | `bk-export`, `bk-datatypes` | M6 | Missing | |
 | Base: scripting | `bk-plugin` | M9 | Missing | Python through PyO3 (ADR-014) |
-| Base: UI plugins (87 packages) | `bk-ui` | M7 | Missing | |
+| Base: UI plugins (87 packages) | `bk-ui` | M7 | Partial | Against demo data only (`features/ui-shell.md`, `features/ui-design.md`): Listing, Decompiler view, Functions, Defined Strings, References, Search, Symbol Tree, Program Trees, Console, Go To, rename/label/comment dialogs. Missing: Data Type Manager, Function Graph, Bookmarks, Memory Map, byte viewer, everything needing a real program. |
 | Base: program merge | `bk-project` | M8 | Missing | |
 | Decompiler (Java): interface, result model, UI | `bk-decomp`, `bk-ui` | M5, M7 | Missing | |
 | DecompilerDependent | `bk-analyzers-*` | M5 | Missing | |

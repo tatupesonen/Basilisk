@@ -1,11 +1,12 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-13, 17:10)
+## Now — RESUME HERE (2026-11-13, 18:45)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Milestone M0 is complete and on `master`** (gate green, 1,529 tests):
+**Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
+(gate green, 1,608 tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
@@ -14,62 +15,78 @@ reference tools in `../reference/`. Per-track history is in the log below.
 agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
-### Running (started or resumed 2026-11-13 about 17:00)
+### Running (state at 2026-11-13 about 18:45)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `spec-sleigh` | Fable | `a45f182816cbd805f` | resumed; had read the C++ runtime and run a `.sla` census and a `libsla` benchmark but written nothing; told to write the inventory and the runtime specs to disk first, then the compiler specs. Planned specs: `sla`, `sleigh-decode`, `sleigh-pcode`, `sleigh-language`, `sleigh-compiler-front`, `sleigh-compiler-back`, `sleigh-snippet`. |
-| `gnu-disasm` | Opus | `a5b2605fa521b5dd2` | resumed; 20 commits plus 12 uncommitted files; was writing the Windows container driver (MinGW/MSVC under Wine). |
-| `ui` | Opus | `a605f5e614e41a56c` | resumed; 7 commits plus uncommitted self-test work. |
-| `windows-ci` | Opus | `af713570d2e64dbed` | new; makes the Windows test job green (three `bk-lang` `tests/registry.rs` failures known from run 43279380556) and sweeps the workspace for path assumptions. It cannot run Windows tests: after the merge and push the coordinator reads the Windows job and sends back any failure. |
+| `spec-decompiler` | Fable | `a0c25da932de14a37` | resumed 17:05; writes `inventory/02-decompiler.md`, `features/decomp-plan.md` and the first decompiler track specs. Told at 18:40 that ADR-025 binds the plan (profiles; six properties the port has from its first version) and to say so with evidence if any of them is unworkable. |
+| `gnu-disasm` | Opus | `a5b2605fa521b5dd2` | resumed 17:00; had 20 commits plus 12 uncommitted files; finishing the Windows container driver (MinGW/MSVC under Wine). |
+| `sla` | Opus | `a10095edf70216b9d` | started 18:40; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
+| `store-spike` | Fable | `a8012f27279847feb` | started 18:40 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
 
 An agent stopped by a usage limit or a session restart can be resumed with
 its context intact by sending a message to its agent id (worked on
 2026-11-13 for agents stopped the day before). If that fails, start a
 fresh agent briefed from the branch's files.
 
+### In the coordinator's hands
+
+* **`windows-ci`** (branch and worktree still present): finished 17:35,
+  reviewed, **not merged yet** — merge `--no-ff`, gate, push, then read
+  the Windows job (`gh run list`, `gh run view <id> --log-failed`). The
+  agent (`af713570d2e64dbed`, resumable) fixes whatever CI still shows.
+  Its report: `../basilisk-wt/windows-ci/docs/agents/windows-ci.md`. After
+  the merge, record under "Differences from Ghidra" in `features/lang.md`
+  that a `/` in a file name of a definition stands for the platform's
+  separator (Ghidra's text comparison never matches on Windows).
+* **Two-week rule is not checked by the gate.** The UI branch's lock file
+  had seven crates younger than two weeks. Add `scripts/check-dep-age.py`
+  (compare `Cargo.lock` with `master`'s, ask crates.io for each new
+  package's publish date, fail on anything under 14 days) and run it at
+  every merge; a first version is in the session scratchpad only, so
+  write it again if the session is gone. Not part of the offline gate.
+
 ### Queue (start as slots free, in this order)
 
-1. `spec-decompiler` (Fable) — resume `a0c25da932de14a37`; nothing on
-   disk. Writes `inventory/02-decompiler.md`, `features/decomp-plan.md`,
-   specs for the first decompiler tracks (M3).
-2. `decomp-research` (Fable) — resume `a53d43ea3e956d593`; 2 commits
-   (experiment corpus and harness) plus an uncommitted 1,084-line
-   `docs/research/decompiler-quality.md`.
-3. Implementation tracks from `spec-sleigh` as its specs are merged (M1
-   runtime first) — these go ahead of the remaining specs.
-4. `store-spike` (Fable) — fresh agent; notes from its interrupted run in
-   `../basilisk-wt/store-spike/docs/research/notes-ghidra-db-engine.md`,
-   `notes-ghidra-program-db.md`, and `tools/store-spike/` (uncommitted).
-   Writes `research/storage-engine.md` + benchmarks (ADR-003).
-5. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
-   `features/program-model-plan.md` (M4); reads the store-spike notes.
-6. `spec-pe` (Fable) — `features/pe.md`, crate decision by experiment as
+1. `sleigh-decode` and `sleigh-compiler-front` (Opus) — both start when
+   `sla` is merged, in parallel (ADR-023). Then `sleigh-pcode`,
+   `sleigh-compiler-back`, `sleigh-snippet`.
+2. Decompiler leaf tracks named by `spec-decompiler` when it reports.
+3. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
+   `features/program-model-plan.md` (M4); reads the store-spike notes and,
+   when it exists, `research/storage-engine.md`.
+4. `spec-pe` (Fable) — `features/pe.md`, crate decision by experiment as
    for ELF (M4). Four helper fact sheets wait in
    `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md` (debug directory,
    load config/exception/security, resources/rich header, CLI metadata).
-7. `spec-macho` (Fable) — `features/macho.md` (M4).
-8. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
+5. `spec-macho` (Fable) — `features/macho.md` (M4).
+6. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
    `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in place
    of local "find Ghidra" helpers; differential test of `bk-marshal`'s
-   encoders against Ghidra's binary.
+   encoders against Ghidra's binary; move `windows_spelling` (duplicated
+   in `bk-lang` and `bk-sleigh-syntax` by `windows-ci`) into a shared
+   foundation crate; evaluate `dunce` for showing plain `C:\…` paths.
+7. `ui` follow-ups (Opus), when the owner has looked at the merged UI:
+   the weak spots its report lists (empty Console on first open, no
+   draggable horizontal scroll bar in a narrow Listing, key-binding page
+   controls, snapshot tab hiding the live view), and whether the GUI
+   crates should leave the default workspace build (a clean build of the
+   GUI stack takes about 5 minutes and the gate about 20).
 
 ### Coordinator's next steps
 
-1. `windows-ci` reports → review, merge `--no-ff`, gate, push, read the
-   Windows job (`gh run list`, `gh run view <id> --log-failed`); send the
-   agent any failure. Under ADR-022 the other merges wait for a green
-   Windows job, or at least must not add Windows failures.
-2. `gnu-disasm`, `ui` report → review against `features/gnu-disasm.md`,
-   `features/ui-shell.md`; both branches are far behind master, so merge
-   master's changes with care (lock file: keep versions at least two
-   weeks old) and gate the merge result.
-3. `spec-sleigh` reports → read critically (claims verified, acceptance
-   checks independent of the implementer, each track finishable by one
-   agent), merge the docs, ADRs and `PLAN.md` changes, start M1 tracks.
-4. Reconcile `spec-decompiler` with `decomp-research` in an ADR before the
-   decompiler core IR track starts; leaf tracks need not wait. Reconcile
-   `spec-program-model` with `store-spike` the same way (ADR-003 engine).
+1. Merge `windows-ci` (above).
+2. `gnu-disasm` reports → review against `features/gnu-disasm.md`; the
+   branch is far behind master, so merge with care (lock file: keep
+   master's versions, check the age of every new package) and gate.
+3. `sla` reports → review against `features/sla.md` section 7, merge,
+   start `sleigh-decode` and `sleigh-compiler-front`.
+4. `spec-decompiler` reports → read critically, check it against ADR-025,
+   merge, start the leaf tracks.
+5. `store-spike` reports → decide ADR-003's engine; then
+   `spec-program-model`.
+6. `features/sleigh-language.md` is a draft with open `[to verify]` items
+   (nothing Java was run); complete it before its wave.
 
 ### Working notes
 
@@ -90,8 +107,12 @@ fresh agent briefed from the branch's files.
 * Orphaned helper reports are saved with
   `../basilisk-wt/save-handback.py <task-id> <file>` — never by printing
   a transcript.
-* The UI build was shown to the owner on 2026-11-12 at about 20:40 and
-  again at 20:24 the same evening on request; no feedback recorded.
+* The UI is on `master`: `cargo run -p basilisk` opens it on the demo
+  program; screenshots in `docs/features/ui-screenshots/`. The owner saw
+  an earlier build on 2026-11-12; no feedback recorded.
+* Docker: the `gcc:14` tag on this Mac points at the amd64 image
+  (`2534543d1c5c`); the arm64 image is `e750467579a2`, untagged. Tracks
+  that need a particular platform use image ids, not the tag.
 * History of the stop: on 2026-11-12 at about 20:25 every agent was
   stopped by the account's 5-hour usage limit; the session was later
   restarted. Nothing destructive happened; uncommitted work survived in
@@ -119,6 +140,48 @@ fresh agent briefed from the branch's files.
   checked-in aarch64 one. Nothing else waits on this.
 
 ## Log
+
+### 2026-11-13 — work resumed; `ui`, SLEIGH specs and decompiler research merged
+* **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
+  system (two themes, two densities, contrast asserted in tests), Ghidra's
+  menus, tool bar and key bindings from one action registry, docking with
+  native pop-out windows, Listing over `u64` rows, Decompiler view with
+  cross-highlighting, tables and trees, all against a paged
+  `ProgramSource` and the `licd` demo program. 79 tests (21 headless
+  flows). Ten-million-row listing: 0.63 ms mean per frame. Verified by
+  running on macOS only; Windows and Linux are compile-checked.
+  egui 0.36.2 because `egui_dock` has no 0.37 release.
+* **Lock file at the merge**: the UI branch had moved `flate2`, `itoa` and
+  `smallvec` past master's versions (held back), and seven of its 329 new
+  packages were younger than two weeks (pinned back: `async-executor`
+  1.13.3, `async-lock` 3.4.2, `cc` 1.10.0, `crc32fast` 1.5.3,
+  `serde_spanned` 1.1.2, `toml` 1.1.8, `uuid` 1.29.0). Eight more were
+  published exactly 14 days before and were left. Nothing checks this
+  rule mechanically yet.
+* **`spec-sleigh` merged**: `inventory/01-sleigh.md` and seven specs. Its
+  proposals are ADR-023 (the compiled language is its own crate `bk-sla`;
+  six tracks and their order) and ADR-024 (defined results where Ghidra's
+  C++ engine is undefined). Found: Ghidra's C++ engine cannot decode
+  PowerPC AltiVec constructors with more than 20 operands, so "match the
+  reference tool for every language" has an exception;
+  `SleighCompileRegressionTest` checks Java/C++ output equality, not
+  diagnostics; the snippet parser needs the compiler's template builder.
+  `sleigh-language.md` is a draft.
+* **`decomp-research` merged**: `research/decompiler-quality.md` with a
+  corpus of 36 C cases (74 builds, 209 decompiled functions) and a
+  harness. Measured on Ghidra's reference build: 25 of 174 non-`void`
+  functions print as `void` (one heuristic); float comparisons are wrong
+  for NaN by two mechanisms; code runs on after an unmarked non-returning
+  call. Its proposal is ADR-025 (profiles; the hooks the port carries
+  from the start; a quality scorecard). Not established: how full Ghidra
+  with its Java analyzers prints the analysis-dependent cases.
+* **`windows-ci` finished**, merge pending: the three failing Windows
+  tests were test assumptions about `/`; two product bugs on Windows
+  fixed besides (verbatim `\\?\C:\…` paths; a definition's file name
+  with a directory part never matched).
+* Owner, 2026-11-13: hard cap of four running workers. The 2026-11-12
+  stop was the account's 5-hour usage limit; agents were resumed by id
+  with their context.
 
 ### 2026-11-12 — `bk-bin` and `bk-elf` merged; milestone M0 complete
 * `bk-bin`: providers and `BinaryReader`; 162 tests, 78 of them Ghidra
