@@ -328,7 +328,7 @@ requirements above cannot.
   comparing binaries with recompiled decompiler output **[S]**.
 * **Effort:** S for counters and corpus (prototype exists here); M for the
   equivalence check; M for debug-information ground truth.
-* **Risk:** proxies get optimised instead of quality; section 5.3 lists how
+* **Risk:** proxies get optimised instead of quality; section 5.1 lists how
   each can be gamed.
 * **Where:** `bk-testkit` and a dev-only tool. **When:** with M3.
 
@@ -372,8 +372,8 @@ requirements above cannot.
 
 #### R2. NaN-correct comparisons
 
-* **Gain:** removes a default unsoundness; output equal to the source in the
-  common cases (`!(a >= b)`, `a < b ? a : b`).
+* **Gain:** removes two unsoundnesses, one of them not switchable; output
+  equal to the source in the common cases (`!(a >= b)`, `a < b ? a : b`).
 * **How:** two changes. (a) Instead of dropping `NAN(a) || NAN(b)`
   (`RuleIgnoreNan`), fold `NAN(a) || NAN(b) || a < b` into `!(a >= b)` and
   the dual forms; print a bare `a < b` only where the NaN case is provably
@@ -395,10 +395,12 @@ requirements above cannot.
 
 * **Gain:** turns `*(int4 *)(param_1 + param_2 * 4)` into `a[i]`,
   `(**(code **)(*param_2 + 8))(param_2, …)` into `out->ops->write(out, …)`,
-  and removes most casts. Dramko et al. found pointer arithmetic for
-  structure members in 22 of 25 Ghidra functions studied, the most common
-  issue after names, and judged a group of issue classes "fixable
-  deterministically given types" **[S]**. TRex reports better types than
+  and removes most casts. Dramko et al. coded pointer arithmetic for
+  structure members 22 times in the 25 Ghidra functions they studied — more
+  often than any other class in the rows of their table reported to me, names
+  aside, which they did not count — and judged a group of issue classes
+  fixable "deterministically given types" **[S]** (the table was read by a
+  helper; I verified two other figures of the paper, not this one). TRex reports better types than
   Ghidra on 123 of 125 binaries while analysing one function at a time
   **[S✓]** (abstract).
 * **How, in three steps of rising cost:**
@@ -464,7 +466,7 @@ requirements above cannot.
   appears only once the return type is known).
 * **Effort:** L in total, S–M per unit. **Risk:** duplication can bloat
   output and each unit must preserve semantics; the equivalence check and the
-  "keep only if better" rule bound both. SAILR's own run time is 20 times
+  "keep only if better" rule bound both. SAILR's own run time is over 20 times
   Ghidra's (median 1.16 s against 0.05 s per function), which its authors
   attribute to Python and a naive search **[S✓]**; a budget per function is
   needed.
@@ -521,8 +523,9 @@ requirements above cannot.
     `0x20`, `10` for characters; `x + -100`).
   * Names from more sources than Ghidra uses: results of known calls (`len`
     from `strlen`, `fd` from `open`, `p` from `malloc`), loop counters,
-    the returned variable. Binary Ninja 3.5 and Hex-Rays 7.6 both ship
-    call-derived names and counters **[S]**.
+    the returned variable. Binary Ninja 3.5 ships names taken from callees'
+    parameters and `i`, `j`, `k` for loop counters; Hex-Rays 7.6 ships names
+    inferred from assignments and calls **[S]** (vendors' release notes).
 * **Evidence:** **[E]** throughout; surveys by the dewolf authors conclude
   that preferences differ by user and task and that output should be
   configurable **[S]**.
@@ -542,10 +545,10 @@ requirements above cannot.
   demonstrates this division, it follows from the mechanism). Against free
   rewriting: D-LiFT's 93.2% **[S✓]**; DecompileBench's "52.2% lower
   functionality correctness" for model-based methods despite better judged
-  readability **[S✓]**. On names: VarBERT's deduplicated top-1 accuracy is
-  40–46% across binaries (54–60% within a binary's neighbourhood), after it
-  showed 65.5% and 79.9% train/test overlap in the two earlier data sets
-  **[S✓]**; one study of 27 students found gains with predicted names
+  readability **[S✓]**. On names: VarBERT's top-1 accuracy on its own
+  deduplicated corpus is 40–46% when the test binaries are unseen and 54–60%
+  when only the test functions are, after it showed 65.5% and 79.9%
+  train/test overlap in the two earlier data sets **[S✓]**; one study of 27 students found gains with predicted names
   **[S✓]**, a DSN 2025 study found no significant gain in speed or accuracy
   although participants preferred them **[S✓]**; a 2026 study found that
   model-made names, comments and types did not correlate with understanding
