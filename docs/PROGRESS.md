@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-13, 18:45)
+## Now — RESUME HERE (2026-11-13, 17:20)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -15,14 +15,14 @@ reference tools in `../reference/`. Per-track history is in the log below.
 agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
-### Running (state at 2026-11-13 about 18:45)
+### Running (state at 2026-11-13 about 17:20)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `spec-decompiler` | Fable | `a0c25da932de14a37` | resumed 17:05; writes `inventory/02-decompiler.md`, `features/decomp-plan.md` and the first decompiler track specs. Told at 18:40 that ADR-025 binds the plan (profiles; six properties the port has from its first version) and to say so with evidence if any of them is unworkable. |
+| `spec-decompiler` | Fable | `a0c25da932de14a37` | resumed 17:05; writes `inventory/02-decompiler.md`, `features/decomp-plan.md` and the first decompiler track specs. Told at 17:20 that ADR-025 binds the plan (profiles; six properties the port has from its first version) and to say so with evidence if any of them is unworkable. |
 | `gnu-disasm` | Opus | `a5b2605fa521b5dd2` | resumed 17:00; had 20 commits plus 12 uncommitted files; finishing the Windows container driver (MinGW/MSVC under Wine). |
-| `sla` | Opus | `a10095edf70216b9d` | started 18:40; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
-| `store-spike` | Fable | `a8012f27279847feb` | started 18:40 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
+| `sla` | Opus | `a10095edf70216b9d` | started 17:20; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
+| `store-spike` | Fable | `a8012f27279847feb` | started 17:20 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
 
 An agent stopped by a usage limit or a session restart can be resumed with
 its context intact by sending a message to its agent id (worked on
@@ -31,7 +31,7 @@ fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* **`windows-ci`** (branch and worktree still present): finished 17:35,
+* **`windows-ci`** (branch and worktree still present): finished about 17:10,
   reviewed, **not merged yet** — merge `--no-ff`, gate, push, then read
   the Windows job (`gh run list`, `gh run view <id> --log-failed`). The
   agent (`af713570d2e64dbed`, resumable) fixes whatever CI still shows.
