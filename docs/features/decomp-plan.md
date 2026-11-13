@@ -707,9 +707,10 @@ change, only D16b's design.
    goto edges as part of its result; D15 applies them to the IR when a
    result is adopted. For the `ghidra` profile this is the same final
    state provided no rule of `CollapseStructure` reads back a flag it
-   flipped on the original — true by my reading (the rules consult the
-   copy's own edge order, which the flip also swaps), and checked by D04's
-   and D15's acceptance against the console. If the ADR means this, its
+   flipped on the original. I found no such read (the rules consult the
+   copy's own edge order, which `BlockCopy::negateCondition` also swaps),
+   but did not read every rule for it; D04's and D15's acceptance against
+   the console decides. If the ADR means this, its
    wording can stay with "and the edits it wants made to the blocks".
 2. **3a: "evaluated at every stage" holds at unit boundaries and under
    stated assumptions, not absolutely.** (i) Inside a unit the graph is
