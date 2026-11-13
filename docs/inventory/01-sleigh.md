@@ -761,3 +761,1326 @@ result in `PERF.md`.
 | Decode + text (`printAssembly`) | 1.24 M/s (808 ns) |
 | Decode + p-code (`instructionLength` + `oneInstruction`, null emitter) | 1.50 M/s (667 ns) — the `PERF.md` figure |
 | Decode + text + p-code | 0.84 M/s (1,186 ns) |
+
+## 9. The compiler, front half: from the parsed specification to constructors with templates
+
+Sources: `CPP/slgh_compile.cc` (lines cited as SC), `CPP/slghparse.y`
+(GR), `CPP/slghscan.l` (LX), `CPP/pcodecompile.cc` (PC),
+`CPP/slghsymbol.cc` (SY), `CPP/semantics.cc` (SEM). Read in full for this
+section. The C++ compiler does its work *inside grammar actions*, one
+pass, with the lexer classifying identifiers by looking them up in the
+symbol table as it goes. Everything below that says "in order" means the
+order in which bison reduces, which for this grammar is: source order,
+and within an expression, operands left to right, then the operator
+(post-order). A port that works from a syntax tree must visit it in that
+order, because symbol ids and temporary offsets are handed out as a side
+effect and end up in the file.
+
+### 9.1 Driver and command line
+`main` (SC:3926-4091). Options are single arguments starting with `-`;
+only the second character is examined; parsing stops at the first
+argument without `-`:
+
+| Option | Effect | Default |
+|---|---|---|
+| `-a` | compile every `*.slaspec` found recursively under the directory argument (default `.`), each to the same name with `.sla`; prints `Compiling N slaspec files in DIR` and `Compiling (i of N) FILE`; **stops at the first failure** | off |
+| `-DNAME=VALUE` | preprocessor definition; without `=`: `Bad sleigh option: ARG`, exit 1 | — |
+| `-u` | list each unnecessary extension/truncation | summary only |
+| `-l` | report indistinguishable patterns as errors ("lenient conflict" off) | lenient |
+| `-c` | list each operand collision | summary only |
+| `-n` | list each NOP constructor | summary only |
+| `-t` | list each dead temporary | summary only |
+| `-e` | require `local` for temporaries | off |
+| `-s` | register names are case sensitive (no duplicate check) | check on |
+| `-y` | write the XML form | packed `.sla` |
+| `-x` | parser debugging, only in a `YYDEBUG` build | — |
+
+Anything else: `Unknown option: ARG`, exit 1. No arguments: the usage
+text of [run] below, exit 2. Java adds `-f` (unused token fields), `-d
+MODULE`, `-i FILE` (options from a file) and gives `-a` its own directory
+argument; its all-mode continues after failures (`SM/pcodeCPort/slgh_compile/
+SleighCompileLauncher.java`, `SleighCompileOptions.java`).
+
+File names (single mode): if the input name contains `.slaspec` anywhere
+it is used as is, otherwise `.slaspec` is appended; with an output
+argument, `.sla` is appended unless the name contains `.sla` ([run]
+`sleigh -y in.slaspec out` writes `out.sla`); without one, the output is
+the input up to `.slaspec` plus `.sla`; an input without `.slaspec` and
+without an output is treated as an XML job file (`run_xml`). More than two
+names: `Too many parameters`, exit 1; none: `Missing input file name`.
+
+`run_compilation` (SC:3774-3819): open the file (`Unable to open
+specfile: F`, return 2); parse; if the parse succeeded run `process`; if
+there are no errors write the output (XML with `XmlEncode` when `-y`,
+else header + zlib level −1 + packed); otherwise print `No output
+produced` and return 2. A `LowlevelError` escaping anywhere prints
+`Unrecoverable error: TEXT` and returns 2.
+
+Messages (SC:2403-2458). `reportError(loc, msg)` prefixes `FILE:LINE: `
+when a location is known; every error is finally printed to standard
+error as `CURFILE:CURLINE - ERROR TEXT` where `CURFILE`/`CURLINE` are the
+lexer's current file (base name) and line at the time of the report, and
+counted; more than 1,000,000 errors: `Too many errors: Aborting`, exit 2.
+Warnings print `WARN  TEXT` (two spaces). [run] usage text:
+
+```
+USAGE: sleigh [-x] [-dNAME=VALUE] inputfile [outputfile]
+   -a              scan for all slaspec files recursively where inputfile is a directory
+   -x              turns on parser debugging
+   -y              write .sla using XML debug format
+   -u              print warnings for unnecessary pcode instructions
+   -l              report pattern conflicts
+   -n              print warnings for all NOP constructors
+   -t              print warnings for dead temporaries
+   -e              enforce use of 'local' keyword for temporaries
+   -c              print warnings for all constructors with colliding operands
+   -s              treat register names as case sensitive
+   -DNAME=VALUE    defines a preprocessor macro NAME with value VALUE
+```
+
+`process` (SC:2479-2508) — the passes after parsing, each skipped when
+errors exist: `checkNops`; `checkCaseSensitivity`; "No default space
+specified"; `checkConsistency` (section 10 d); `checkLocalCollisions`
+(10 c.5); `buildPatterns` (10 c.1); `buildDecisionTrees` (10 c.6);
+`buildXrefs` ("Duplicate (offset,size) pair for registers: A and B");
+`checkUniqueAllocation` (9.9); `symtab.purge()` (9.10).
+
+### 9.2 Symbols, scopes, ids
+A symbol gets the next id (its index in one list) when it is added, and
+the id of the current scope (SY `SymbolTable::addSymbol`). A duplicate
+name in the same scope is an error (`Duplicate symbol name: N`; for
+sections, which always go to the global scope, `Duplicate symbol name
+'N'`). Lookup walks from the current scope up through parents.
+
+Scopes: the global scope (0) is created by `define endian` — which must
+therefore come first; each constructor, each macro definition and each
+named section of a constructor (child of the constructor's scope) opens a
+new scope, numbered in creation order. `error '}'` recovery resets to the
+global scope.
+
+`define endian` (`setEndian` → `predefinedSymbols`, SC:1982-2012) creates,
+in this order: subtable `instruction` (id 0); the constant space and its
+space symbol `const`; the OTHER space (index 1) and `OTHER`; the unique
+space (index 2) and `unique`; `inst_start`; `inst_next`; `inst_next2`;
+`epsilon`. User spaces therefore start at index 3.
+
+The lexer returns a different token for an identifier depending on the
+kind of symbol it currently names (LX `find_symbol`), `STRING` when it
+names nothing; the grammar's alternatives are written against those
+tokens. Consequences a tree-based port must reproduce: a name is
+resolved **at the point of use against the symbols defined so far**; a
+use before the definition is the "unknown …" error of that position, not
+a forward reference; local symbols shadow global ones.
+
+### 9.3 Definitions (grammar actions GR:166-270)
+* **alignment** — `setAlignment`.
+* **space** (`newSpace`, SC:2713-2740): size 0 → "Space definition 'N'
+  missing size attribute"; processor space, language endianness, given
+  size and word size, index = number of spaces so far, physical, delay 0
+  for `register_space`, 1 for `ram_space` (dead-code delay the same);
+  `default` twice → "Multiple default spaces -- 'A', 'B'"; then the space
+  symbol.
+* **varnodes** (`defineVarnodes`): names in order at `offset`, `offset +
+  size`, …; `_` skips a slot without a symbol.
+* **bitrange** (`defineBitrange`, SC:2800-2831): size 0 → "'N': size of
+  bitrange is zero"; outside the varnode → "'N': bad bitrange"; when
+  offset and width are whole bytes it becomes an ordinary varnode symbol
+  (big-endian: offset + (bits − bitoffset − numb)/8; little: offset +
+  bitoffset/8); otherwise a bitrange symbol (compile-time only).
+* **token** (`defineToken`, `addTokenField`, SC:2640-2688): size not a
+  multiple of 8 → "'N': token size must be multiple of 8" (and size/8+1
+  is used); endianness from the `endian=` clause or the language; a token
+  symbol; each field a value symbol over a `tokenfield` — errors "Field
+  'F' starts at L and ends at H" (H < L), "Field 'F' high must be less
+  than token size". `hex`/`dec` are recorded and never used.
+* **context** (`addContextField`, SC:2690-2711): the same two checks
+  ("Context field …", "… high must be less than context size"); fields are
+  *collected*, not created. After the layout is locked a further field is
+  "All context definitions must come before constructors".
+* **context layout** (`calcContextLayout`, `calcContextVarLayout`,
+  SC:2025-2084, 2515-2545): locked — once — when the lexer first sees, at
+  top level, a `:` (a constructor), `attach` or `with` (LX:494-502).
+  Fields are stable-sorted by (context register **name**, low bit).
+  Per register: its size must be a multiple of 4 bytes ("Invalid size of
+  context register 'R': must be a multiple of 4 bytes"). Fields are taken
+  in sorted order in groups of overlapping fields (a field joins the
+  group while its low ≤ the group's running max high); a field wider than
+  32 bits → "Size of bitfield 'F' larger than 32 bits" (the test is
+  `high − low > 32`), beyond the register → "Scope of bitfield 'F' extends
+  beyond the size of context register". A group needing `alloc = max −
+  min + 1` bits is placed at the running bit counter, first bumped to the
+  next multiple of 32 if it would straddle a word. Each field of the
+  group becomes a context symbol (**added to the symbol table now, in
+  this sorted order**) with `contextfield(signed, startbit = field.low −
+  min + base, endbit = base + alloc − 1 − (max − field.high))`, the
+  register symbol, the original `low`/`high`, and the `flow` flag
+  (`noflow` clears it). The counter continues across registers.
+* **pcodeop** (`addUserOp`): one user-op symbol per name, index = running
+  count.
+* **attach** (SC:2849-2966): duplicate symbols in the list → warning
+  "'attach values' list contains duplicate entries: N" (`names`,
+  `variables` alike) and the duplicates are ignored; list length must be
+  the field's maximum value + 1 → "Attach value 'F' (range 0..M) is wrong
+  size for list (of K entries)" (`Attach name`, `Attach varnode`);
+  `attach variables` with different sizes → "Attach statement contains
+  varnodes of different sizes -- A != B". The value symbol is **replaced
+  in place** by a value-map, name or varnode-list symbol with the same id
+  and scope (`SymbolTable::replaceSymbol`). `_` in a list: value
+  `0xBADBEEF`, an unusable name, or a null varnode. Context fields can be
+  attached too (the context symbol is replaced — it is then no longer a
+  context symbol in the file).
+
+### 9.4 `with` blocks (SC:120-212, 3676-3690)
+`with TABLE : PATTERN [CONTEXT] {` pushes a record; `TABLE` may be empty,
+an existing table or a new name (creating the table). For a constructor
+inside: its table, when it names none, is that of the **outermost**
+enclosing block that names one (the stack is searched from the bottom),
+else `instruction`; its pattern becomes `outer₁ & (outer₂ & … (own))` —
+built by wrapping from the outermost to the innermost, each as
+`EquationAnd(with, sofar)` — hence the innermost block's equation ends up
+outermost in the tree and leftmost; its context changes are clones of
+every block's changes, outermost block first, followed by its own.
+Definitions and macros may appear inside a block.
+
+### 9.5 Constructors (GR:279-296, 386; SC:2984-3098, 3364-3382, 3698-3735)
+`createConstructor`: the table (explicit, from `with`, or root); id =
+index in the table; line = current line; source index =
+`indexer.index(current file name)` (first use allocates the next index);
+a new scope; label counter reset.
+
+*Display section.* Pieces arrive in order. A quoted string or run of
+punctuation characters is literal text; white space is one piece `" "`;
+`^` separates without text; an identifier is an **operand** — a new
+operand symbol in the constructor's scope, index = position, plus a
+print piece referring to it — except that the first identifier directly
+after the `:` of a **root-table** constructor is literal text (the
+mnemonic). (`^` directly after `:` in a sub-table: "Unexpected '^' at
+start of print pieces".) `Constructor::addSyntax` (SY:1454-1481): an
+all-space string counts as `" "`; the first `" "` piece sets `first`;
+consecutive spaces collapse; text is appended to the previous piece
+unless that piece is an operand or a space or the new piece is a space.
+After the body, one trailing `" "` piece is removed
+(`removeTrailingSpace`).
+
+*Pattern section* (GR:303-345) builds equations (section 10 a) and, as a
+side effect in order of appearance:
+
+| Atom | Effect |
+|---|---|
+| `field = expr` etc. on a value/context/value-map/name/varlist symbol | a constraint equation |
+| `operand = expr` | if the operand is already defined by a family symbol: a constraint on that symbol's field; otherwise error "Constraining currently undefined operand N" |
+| `operand` (an identifier that is an operand of this constructor) | `OperandEquation`; `selfDefine`: look the same name up in the enclosing scopes ("No matching global symbol 'N'"); a value or context symbol defines the operand by its field **expression**; any other symbol becomes its defining symbol. Twice: "Redefining operand" |
+| `inst_start`, `inst_next`, `inst_next2`, a varnode | an unconstrained equation over the symbol's expression |
+| a family symbol or table **not** in the display | an *invisible* operand: a new operand symbol with that name (no print piece), defined as above, and an `OperandEquation` |
+
+*Context block* (GR:346-355): `ctxfield = expr;` → a `context_op` on the
+field's bit range, unless the expression mentions `inst_next` or
+`inst_next2` ("Cannot use 'inst_next' or 'inst_next2' to set context
+variable: N"); a non-context family symbol in such an expression is
+"Global symbol N is not allowed in action expression";
+`globalset(sym, ctxfield);` → a `commit` (word and mask from the field's
+bit range, flow from the field); `operand = expr;` → defines the operand
+by the expression and marks its offset irrelevant; an unknown name:
+"Expecting context symbol, not N". Mask and shift of both forms:
+`calc_maskword` (SY:2416-2429) — word = startbit/32 (both ends must be in
+it: "Context field not contained within one machine int"), shift = 31 −
+endbit%32, mask = the field's bits in place.
+
+*Body*: `unimpl` → no templates. Otherwise section 9.6–9.8, then
+`buildConstructor`: `finalizeSections` (9.8); on success the main and
+named templates, the equation (with the `with` prefixes) and the context
+list are attached. The scope is popped in every case.
+
+### 9.6 P-code templates (PC; GR:366-520)
+An expression is a list of ops plus the varnode holding its value.
+**Temporaries**: `buildTemporary` makes an *unnamed* varnode in the
+unique space at the next offset with size 0 (unknown); offsets start at 0
+and advance by 256 (`MAX_UNIQUE_SIZE`) per allocation, across the whole
+specification (SC:2465-2470). The final counter is `uniqbase`.
+
+| Source | Result |
+|---|---|
+| operator `a op b` | ops of `a`, ops of `b`, then `op(tmp ← a, b)`; `>`/`>=` and their signed and float forms swap operands and use the `<`/`<=` opcode |
+| unary, built-in function of one argument | ops, then `op(tmp ← a)` |
+| `carry`/`scarry`/`sborrow(a,b)`, `newobject(a[,b])` | as binary |
+| `*[space]:n p`, `*:n p`, `*p` | `LOAD(tmp ← spaceconst, p)`, space constant of size 8; size `n` forced on the result when given; default space = the default code space |
+| `userop(args…)` | args' ops in order, then `CALLOTHER(tmp ← const index:4, args…)`; as a statement, no output |
+| `cpool(a, b, …)` | `CPOOLREF`, at least two inputs ("Must be at least two inputs to cpool") |
+| integer `k`, `k:n` | constant, size 0 or `n`; `&v`, `&:n v`: constant = the varnode's offset (byte offset converted to addressable units for a fixed varnode), size `n` or the space's address size |
+| `sym(k)` | `SUBPIECE(tmp ← sym, k)` |
+| `sym:n` | bit range `[0, 8n)`; `sym[lo,len]`; a bitrange symbol — `createBitRange` (PC): an operand of unknown size and a byte-aligned range starting at 0 just takes the size; a byte-aligned range of a known-size or handle varnode is a *truncated varnode* (fixed varnode: offset adjusted by endianness; handle: an offset-plus constant with the byte offset); otherwise `INT_RIGHT` by the bit offset (if non-zero), `SUBPIECE` (if the result is narrower; a byte-aligned offset is folded into its constant), `INT_AND` mask (if the width is not whole bytes and does not reach the top). Errors: "Size of bitrange is zero", "Bitrange is bad", "Superfluous bitrange", "Illegal masked bitrange producing varnode larger than 64 bits: N", `Requested bit range out of bounds`, `Could not construct requested bit range` |
+| `v = expr;` (existing symbol) | `setOutput`: if the expression's value is an unnamed temporary, the last op's output is replaced by `v`; otherwise `COPY(v ← value)` |
+| `name = expr;`, `local name = expr;`, with `:n` | a new temporary (size `n`, else the expression's size if known) receives the value as above; **then** a varnode symbol `name` at that temporary is added to the current scope; without `local` and with `-e`: "Must use 'local' keyword to define symbol 'N'" |
+| `local name;`, `local name:n;` | a new temporary and symbol; no op |
+| `*[space]:n p = expr;` | ops of `p`, ops of `expr`, `STORE(spaceconst, p, value)`; size `n` forced on the value |
+| `v[lo,len] = expr;`, bitrange symbol `= expr;` | `assignBitRange`: value forced to `(len+7)/8` bytes; a truncated varnode if possible (`COPY`), else `INT_AND(tmp ← v, mask)`, `INT_ZEXT` of the value if `v` is wider, `INT_LEFT` by `lo` if non-zero, `INT_OR(v ← …)`. Errors: "Size of bitrange is zero", "Assigned bitrange is bad", "Assigning to bitrange is superfluous", "Assigned bitrange extends past first 64 bits" |
+| `goto dest;`, `call dest;` | `BRANCH`/`CALL`; `dest`: `inst_start`/`inst_next`/`inst_next2` → (current space, that address, address size); an integer → (current space, k, address size); `k[space]` → fixed; an operand → the operand's varnode, **and the operand is marked as a code address**; `<label>` → constant-space varnode with a `const_relative` label number, size 4 |
+| `if (c) goto dest;` | ops of `c`, `CBRANCH(dest, c)` |
+| `goto [e];`, `call [e];`, `return [e];` | `BRANCHIND`/`CALLIND`/`RETURN` |
+| `<label>` | `LABEL` directive; labels are numbered per section in order of first appearance (use or placement); "Label 'L' is placed more than once" |
+| `build operand;` | `BUILD` with the operand's index |
+| `delayslot(n);` | `DELAY_SLOT`; a second in one section: "Multiple delayslot declarations" |
+| `crossbuild v, section;` | `CROSSBUILD(v, const section id:4)`; sets the crossbuild flag (9.9); an unknown section name creates the section symbol |
+| `macro(args…);` | 9.7 |
+| `export v;` | export handle from the varnode (space, size, offset; not a pointer) |
+| `export *[space]:n v;` | export of a dereference: handle (space, size n, pointer = v) plus **a newly allocated temporary** as its temporary storage |
+
+Errors of this layer: "Unknown varnode parameter: N", "Unknown assignment
+varnode: N", "Unknown export varnode: N", "Unknown pointer varnode: N",
+"Unknown jump destination: N", "Subtable not attached to operand: N",
+"Redefinition of symbol: N", "Illegal truncation on left-hand side of
+assignment", "Illegal subpiece on left-hand side of assignment", "Must
+specify an indirect parameter for return", "Parsed integer is too big
+(overflow)", `Localtemp size mismatch`, `Expression has no output`.
+
+A symbol used as a varnode yields (`getVarnode`, SY): a varnode symbol →
+its fixed varnode; an operand → handle references (space, offset, size),
+with size forced to constant 0 when the operand is defined by an
+expression or by a value-map or name symbol; `inst_start` etc. →
+(constant space, the address constant, size 0); `epsilon` → constant 0.
+A section whose op list is empty and which exports nothing is recorded
+as a NOP ("FILE:LINE: NOP detected").
+
+### 9.7 Macros (SC:1785-1928, 3180-3255, 3397-3434, 3737-3756)
+`macro name(p₁, …) { body }`: a macro symbol (index = number of macros so
+far), a scope, an operand symbol per parameter (index i, no constructor);
+the body is compiled like a section — parameters are handle references —
+with its own label numbering. At the end: label check ("In definition of
+macro 'N': …"), nested macros expanded ("Could not expand submacro in
+definition of macro 'N'"), sizes propagated as far as possible. A macro
+must be defined before use.
+
+A use becomes a `MACROBUILD` placeholder op (inputs: constant macro
+index, then each argument's value varnode, after the arguments' own ops).
+Wrong argument count: "Invocation of macro 'N' passes too many (few)
+parameters". If a macro's parameter is used as a code address in its
+body, the caller's operand passed for it is marked as a code address.
+
+Expansion (`expandMacros`, at the end of each section) replaces each
+placeholder by a copy of the macro's ops, in order: label numbers (in
+`LABEL` directives and relative branch constants) are offset by the
+number of labels the section had before this expansion, and the
+section's label count grows by the macro's; every handle reference to
+parameter *i* is replaced by the corresponding part of the argument
+(`VarnodeTpl::transfer`, `ConstTpl::transfer`): an offset-plus reference
+to an argument that is a fixed varnode adds the byte offset; to a handle
+argument stays an offset-plus on that handle; if the argument is a local
+temporary or has unknown size, a `SUBPIECE` into a **newly allocated
+temporary** is inserted before the op (needs a known size: "Problem with
+bit range operator in macro"); such a truncation as an *output* is
+"Cannot currently assign to bitrange of macro parameter that is a
+temporary". **The macro body's own temporaries are not renamed**: every
+expansion uses the offsets allocated when the macro was defined.
+
+### 9.8 Finishing a constructor's sections (`finalizeSections`, SC:3436-3510)
+For the main section, then each named section in section-id order:
+
+1. Label check of the section's scope: "Label <L> was placed but not
+   used", "Label <L> was referenced but never placed".
+2. Macro expansion ("Could not expand macros").
+3. `BUILD` completion (`fillinBuild`, SEM:864-891): a `build` of a
+   non-subtable operand is "Unnecessary BUILD statements", two of the
+   same operand "Duplicate BUILD statements"; for every subtable operand
+   without one, a `BUILD` is inserted **at the front** of the section, in
+   ascending operand order each at position 0 (so they end up in
+   descending order).
+4. Size propagation (`propagateSize`, PC:234-262): repeatedly, for every
+   op that still has a zero-size varnode, `fillinZero` — same-size ops
+   (COPY, arithmetic, logical, float arithmetic) take the size of the
+   output if known else of the first sized input; comparisons and boolean
+   ops force the output to 1 and inputs to each other's size; shifts tie
+   output and first input, and force the shift amount to 4 if unknown…
+   (note the missing `break`: a shift falls through into the `SUBPIECE`
+   rule, which forces input 1 to size 4); `SUBPIECE` forces its constant
+   to 4; `CPOOLREF` ties output and first input and forces the rest to 8.
+   Setting the size of a local temporary sets it on every occurrence of
+   that offset in the section. Until nothing changes; any op still
+   unsized: "Could not resolve at least 1 variable size".
+5. Main section only: an export in a root constructor is "Cannot have
+   export statement in root constructor"; an export of unknown size takes
+   the size of a use of that temporary in the section (`forceExportSize`),
+   else "Size of export is unknown".
+6. A `delayslot` outside the root table: warning "Delay slot used in
+   non-root constructor table "T" constructor starting at line N";
+   `maxdelay` = the largest count seen.
+
+Errors are reported as "in table "T" constructor starting at line N"
+followed by one line per problem prefixed with the section ("   Main
+section: ", "   NAME section: "), all at the constructor's location.
+
+Named sections: `<<name>>` between sections; the section symbol is global
+and gets the next section id on first mention (by a section header or a
+`crossbuild`); `numsections` = number of section symbols.
+
+### 9.9 Unique offsets and crossbuild (`checkUniqueAllocation`, SC:3566-3674)
+If any `crossbuild` was compiled: `uniqmask` = 0xff; in every template of
+every constructor (root table, then tables in definition order), every
+unique-space varnode offset, and the unique offsets in export handles,
+gets 8 zero bits inserted at bit 8 (`(off >> 8) << 16 | (off & 0xff)`),
+making room for the address bits the runtime ORs in; and `uniqbase`
+becomes `(uniqbase + 0x100) << 8`.
+
+### 9.10 What is written (`SymbolTable::purge`, `renumber`, SY:296-380)
+Removed before writing: every symbol in a non-global scope except
+operands (locals, labels); global space, token, epsilon, section,
+bitrange and macro symbols (with the macro's parameter symbols); every
+subtable that never got a pattern (unreachable from `instruction` —
+warning "Unreferenced table 'T'"), with its constructors' operand
+symbols. Scopes left empty are removed; scopes and symbols are then
+renumbered densely in their old order. So ids in the file are the
+creation order with the removed ones squeezed out, and a constructor
+without operands has no scope in the file.
+
+### 9.11 Other checks of this half
+`checkNops` and `checkCaseSensitivity`: section 10 d.8. Label checks,
+BUILD checks: 9.8. `-e`: 9.6.
+
+
+## 10. The compiler, back half: patterns, operand offsets, decision trees, checks
+
+Compiled from line-by-line reading notes of the C++ (nothing in this
+section was run). Citations: **PE** = `CPP/slghpatexpress.cc`/`.hh`,
+**PT** = `slghpattern.cc`/`.hh`, **SY** = `slghsymbol.cc`/`.hh`, **SC** =
+`slgh_compile.cc`/`.hh`, **SEM** = `semantics.cc`/`.hh`. `uintm` is 32
+bits, `intb` is a signed 64-bit integer. Spot-checked against the source
+by the author of this inventory: `getScore`/`chooseOptimalField`
+(SY:2110-2201), the start of `orderPatterns`, `OrPattern::doOr`
+(PT:931-956) — one addition from that check: `OrPattern::doOr` with a
+negative shift calls `shiftInstruction` on the **left operand's own
+stored disjuncts** (not the copies), so it changes the pattern object it
+was called on; anything that reads that pattern afterwards sees the
+shifted blocks.
+
+The order of the passes is in section 9.1 (`process`). P-code checks and
+optimisation run **before** operand reordering, which happens inside
+`buildPatterns`; templates are remapped afterwards (c.4).
+
+### 10 (a) Pattern equations → patterns
+
+#### a.1 TokenPattern data and constructors
+
+Fields: `Pattern *pattern; vector<Token*> toklist; bool leftellipsis, rightellipsis` (PE.hh:23-27). Token size is in bytes (context.hh:29,34).
+
+| Constructor | Result | Cite |
+|---|---|---|
+| `TokenPattern()` | `InstructionPattern(true)`, no tokens, no ellipsis | PE.cc:263-269 |
+| `TokenPattern(bool tf)` | `InstructionPattern(tf)`, no tokens | PE.cc:271-277 |
+| `TokenPattern(Token*)` | TRUE instruction pattern, `toklist=[tok]` | PE.cc:279-286 |
+| `TokenPattern(tok,value,bitstart,bitend)` | `toklist=[tok]`; block from `buildBigBlock(tok->getSize(),bitstart,bitend,value)` if the token is big-endian, else `buildLittleBlock(...)`; wrapped in `InstructionPattern` | PE.cc:288-302 |
+| `TokenPattern(value,startbit,endbit)` (context) | `size=(endbit/8)+1`; `buildBigBlock(size,size*8-1-endbit,size*8-1-startbit,value)`; wrapped in `ContextPattern`; no tokens | PE.cc:304-314 |
+| private `TokenPattern(Pattern*)` | shell | PE.hh:32 |
+
+- The copy constructor and `operator=` both store `tokpat.pattern->simplifyClone()` (PE.cc:316-335). Every assignment to an equation's `resultpattern` therefore simplifies (see b.6).
+- Whether returning a `TokenPattern` by value triggers an extra `simplifyClone` depends on NRVO. This is harmless as far as I can tell, because `simplifyClone` looks idempotent (my reasoning, not tested).
+- `alwaysTrue/alwaysFalse/alwaysInstructionTrue` delegate to the `Pattern` (PE.hh:52-54).
+- `getMinimumLength()` = sum of `toklist[i]->getSize()` (PE.cc:448-455).
+
+#### a.2 Bit-block builders
+
+Bit numbering inside blocks: bit 0 is the most significant bit of byte 0 (PE.cc:157-161).
+
+**`buildSingle(startbit,endbit,byteval)`** (PE.cc:155-175):
+1. `size = endbit-startbit+1`.
+2. `offset = 0`; while `startbit >= 8`: `offset += 1; startbit -= 8; endbit -= 8`.
+3. `mask = 0xFFFFFFFF << (32-size)`.
+4. `byteval = (byteval << (32-size)) & mask`.
+5. `mask >>= startbit; byteval >>= startbit`.
+6. Return `PatternBlock(offset,mask,byteval)`.
+
+Only the low `size` bits of the value are used. Callers always pass pieces of at most 8 bits within one byte.
+
+**`buildBigBlock(size,bitstart,bitend,value)`** (PE.cc:177-205):
+1. `startbit = 8*size-1-bitend; endbit = 8*size-1-bitstart`.
+2. While `endbit >= startbit`:
+   - `tmpstart = endbit - (endbit & 7)`; if `tmpstart < startbit` then `tmpstart = startbit`.
+   - `tmp = buildSingle(tmpstart,endbit,(uintm)value)`.
+   - `block = (block==null) ? tmp : block->intersect(tmp)`.
+   - `value >>= (endbit-tmpstart+1)` — a signed `intb` shift.
+   - `endbit = tmpstart-1`.
+3. Return `block`.
+
+**`buildLittleBlock(size,bitstart,bitend,value)`** (PE.cc:207-261):
+1. `startbit=(bitstart/8)*8; endbit=(bitend/8)*8; bitend%=8; bitstart%=8`.
+2. If `startbit==endbit`: `startbit += 7-bitend; endbit += 7-bitstart; block = buildSingle(startbit,endbit,(uintm)value)`.
+3. Otherwise:
+   - `block = buildSingle(startbit,startbit+(7-bitstart),(uintm)value)`; `value >>= (8-bitstart)`; `startbit += 8`.
+   - While `startbit != endbit`: intersect in `buildSingle(startbit,startbit+7,(uintm)value)`; `value >>= 8; startbit += 8`.
+   - Finally intersect in `buildSingle(endbit+(7-bitend),endbit+7,(uintm)value)`.
+
+The `size` argument is unused in the little-endian builder.
+
+For context fields, the arithmetic at PE.cc:310-312 cancels inside `buildBigBlock`, so context bits `startbit..endbit` are used directly in MSB-first numbering.
+
+#### a.3 `resolveTokens(tok1,tok2)` (PE.cc:21-153)
+
+Sets the result's `toklist` and ellipsis flags and returns a shift `sa`. `len1`, `len2` are the token-list lengths.
+
+1. `leftellipsis=rightellipsis=false; ressa=0; reversedirection=false; minsize=min(len1,len2)` (27-31).
+2. If `minsize==0` (32-49):
+   - If tok1 has no tokens and neither ellipsis: copy tok2's list and both flags, return 0.
+   - Else if tok2 has no tokens and neither ellipsis: copy tok1's, return 0.
+   - Otherwise fall through.
+3. Case analysis (51-115):
+   - **tok1.left**: `reversedirection=true`.
+     - tok2.right → throw `"Right/left ellipsis"`.
+     - else tok2.left → `leftellipsis=true`.
+     - else if `len1 != minsize` → throw `"Mismatched pattern sizes -- <len1> != <minsize>"`.
+     - else if `len1==len2` → throw `"Pattern size cannot vary (missing '...'?)"`.
+     - Note: when tok2 has no ellipsis the result's left ellipsis stays false.
+   - **else tok1.right**:
+     - tok2.left → throw `"Left/right ellipsis"`.
+     - else tok2.right → `rightellipsis=true`.
+     - else the same two size checks and messages as above.
+   - **else** (tok1 has no ellipsis):
+     - tok2.left: `reversedirection=true`; if `len2 != minsize` → throw `"Mismatched pattern sizes -- <len2> != <minsize>"`; else if `len1==len2` → throw `"Pattern size cannot vary (missing '...'?)"`.
+     - tok2.right: the same two checks, no reverse.
+     - neither: if `len2 != len1` → throw `"Mismatched pattern sizes -- <len2> != <len1>"`.
+4. If reversed (116-135):
+   - Compare the last `minsize` tokens pairwise by pointer, from the end. On mismatch throw `"Mismatched tokens when combining patterns -- <p1> != <p2>"`. The operands printed are `Token*` pointers, so this text is pointer-dependent.
+   - `ressa` = sum of sizes of the extra leading tokens of the longer list (tok2's if `len1<=len2`, else tok1's).
+   - If `len1 < len2`: `ressa = -ressa`.
+5. If not reversed: compare the first `minsize` tokens pairwise; same exception text (137-145).
+6. `toklist = (len1 <= len2) ? tok2.toklist : tok1.toklist`; return `ressa` (148-152).
+
+Meaning of `sa` (from PT.cc:543-554): `sa>0` shifts the second operand's instruction bits right by `sa` bytes; `sa<0` shifts the first operand's by `-sa`.
+
+#### a.4 `doAnd`, `doOr`, `doCat`, `commonSubPattern`
+
+**`doAnd(tokpat)`** — `sa = res.resolveTokens(*this,tokpat); res.pattern = pattern->doAnd(tokpat.pattern,sa)` (PE.cc:337-345).
+
+**`doOr(tokpat)`** — same with `pattern->doOr` (347-355).
+
+**`doCat(tokpat)`** (357-395):
+1. `res` starts with this pattern's ellipsis flags and `toklist`.
+2. If `rightellipsis || tokpat.leftellipsis`:
+   - If `rightellipsis` and `!tokpat.alwaysInstructionTrue()` → throw `"Interior ellipsis in pattern"`.
+   - If `tokpat.leftellipsis`: if `!alwaysInstructionTrue()` → throw the same; `res.leftellipsis=true`.
+   - `sa=-1`. tokpat's tokens are not appended, and `res.rightellipsis` keeps this pattern's value.
+3. Else: `sa` = sum of this pattern's token sizes; append tokpat's tokens; `res.rightellipsis = tokpat.rightellipsis`.
+4. If `res.rightellipsis && res.leftellipsis` → throw `"Double ellipsis in pattern"`.
+5. `res.pattern = pattern->doAnd(tokpat.pattern, sa<0 ? 0 : sa)`.
+
+**`commonSubPattern(tokpat)`** (397-446):
+1. If either has a left ellipsis: if either has a right ellipsis → throw `"Right/left ellipsis in commonSubPattern"`; `reverse=true`.
+2. `res.left = l1||l2; res.right = r1||r2`.
+3. `minnum`/`maxnum` = smaller/larger list length.
+4. Reverse: for `i` in `0..minnum`, compare tokens from the end; while equal, insert at the front of `res.toklist`; break at the first mismatch. If `i<maxnum` afterwards: `res.left=true`.
+5. Forward: the same from the front with `push_back`; if `i<maxnum`: `res.right=true`.
+6. `res.pattern = pattern->commonSubPattern(tokpat.pattern,0)`. The shift is always 0, even in the reversed case with different lengths (line 444).
+
+#### a.5 PatternExpression at compile time
+
+| Class | genMinPattern(ops) | genPattern(v) | min / max | Cite |
+|---|---|---|---|---|
+| TokenField | `TokenPattern(tok)` | `TokenPattern(tok,v,bitstart,bitend)` | 0 / `zero_extend(~0,bitend-bitstart)` = 2^n−1 | PE.hh:102-105, PE.cc:597-602 |
+| ContextField | `TokenPattern()` | `TokenPattern(v,startbit,endbit)` | 0 / 2^n−1 | PE.hh:122-125, PE.cc:656-660 |
+| ConstantValue | `TokenPattern()` | `TokenPattern(val==v)` | val / val | PE.hh:136-139 |
+| Start/End/Next2InstructionValue | `TokenPattern()` | `TokenPattern()` (TRUE) | 0 / 0 | PE.hh:149-152, 162-165, 175-178 |
+| OperandValue | `ops[index]` | throws `"Operand used in pattern expression"` (also `minValue`/`maxValue`) | — | PE.hh:195, PE.cc:746-771 |
+| Binary / Unary | `TokenPattern()` | n/a | n/a | PE.hh:213, 230 |
+
+- The sign flag is ignored for min/max: `zero_extend` is at address.hh:615-620. A signed field's range at compile time is `[0, 2^n−1]`.
+- TokenField constructor (PE.cc:565-582): big-endian `byteend=(size*8-bitstart-1)/8`, `bytestart=(size*8-bitend-1)/8`; little-endian `bytestart=bitstart/8`, `byteend=bitend/8`; `shift=bitstart%8`.
+- ContextField constructor (PE.cc:633-642): `startbyte=startbit/8; endbyte=endbit/8; shift=7-(endbit%8)`.
+- `listValues`: a PatternValue pushes itself (PE.hh:83); Binary does left then right (214-215); Unary recurses (231-232).
+- `getMinMax`: a PatternValue pushes `minValue()`/`maxValue()` (84-85); Binary left then right (216-217); Unary recurses (233-235). An OperandValue leaf therefore throws.
+- `getSubValue(replace,listpos)`: a PatternValue returns `replace[listpos++]` (PE.hh:86). Binary evaluates left first, then right, and applies `+ - * << >> & | ^ /` on `intb` (PE.cc:910-1108). Unary applies `-` or `~` (1125-1152). OperandValue forwards to its operand's defining expression (793-798), which is a null dereference if there is none; I did not check whether that is reachable.
+- These are native C++ signed 64-bit operations. Overflow, shift counts ≥64 or negative, and division by zero are undefined behaviour in C++, so they are host-dependent.
+- `inst_start`, `inst_next` and `inst_next2` behave as the constant 0 and contribute a TRUE pattern in constraints.
+
+#### a.6 `genPattern` for each PatternEquation
+
+Each stores into a mutable `resultpattern` (PE.hh:354).
+
+- **OperandEquation**: `resultpattern = ops[index]` (PE.cc:1197-1201).
+- **UnconstrainedEquation**: `resultpattern = patex->genMinPattern(ops)` (1243-1247).
+- **EquationAnd / Or / Cat**: `left->genPattern(ops); right->genPattern(ops);` then `left.doAnd(right)`, `left.doOr(right)`, `left.doCat(right)` respectively (1483-1489, 1532-1538, 1581-1587).
+- **EquationLeftEllipsis / RightEllipsis**: generate the child, copy its pattern, set the flag (1632-1638, 1658-1664).
+
+**ValExpressEquation family** (`lhs` is a PatternValue, `rhs` an expression):
+
+Helpers:
+- `advance_combo(val,min,max)` (1162-1176): an odometer where index 0 varies fastest. `i=0; while i<n { val[i]+=1; if val[i]<=max[i] return true; val[i]=min[i]; i+=1 } return false`.
+- static `buildPattern(lhs,lhsval,semval,val)` (1178-1187): `p = lhs->genPattern(lhsval)`; then for `i` ascending, `p = p.doAnd(semval[i]->genPattern(val[i]))`.
+
+Common prologue (e.g. 1288-1298): `lhsmin=lhs->minValue(); lhsmax=lhs->maxValue(); rhs->listValues(semval); rhs->getMinMax(min,max); cur=min; count=0`.
+
+**EqualEquation** (1285-1312):
+1. `do {`
+2. `val = rhs->getSubValue(cur)`.
+3. If `val>=lhsmin && val<=lhsmax`: `P = buildPattern(lhs,val,semval,cur)`; if `count==0` then `resultpattern = P`, else `resultpattern = resultpattern.doOr(P)`; `count++`.
+4. `} while(advance_combo(cur,min,max))`.
+5. If `count==0` → throw `"Equal constraint is impossible to match"`.
+
+**The other five** (1314-1467) use the same outer loop. Inside, `for(lhsval=lhsmin; lhsval<=lhsmax; ++lhsval)` in ascending order, with a skip condition, then the same assign-or-`doOr` step with `buildPattern(lhs,lhsval,semval,cur)`:
+
+| Equation | Skip when | Exception text when `count==0` |
+|---|---|---|
+| NotEqual | `lhsval == val` | `"Notequal constraint is impossible to match"` |
+| Less | `lhsval >= val` | `"Less than constraint is impossible to match"` |
+| LessEqual | `lhsval > val` | `"Less than or equal constraint is impossible to match"` |
+| Greater | `lhsval <= val` | `"Greater than constraint is impossible to match"` |
+| GreaterEqual | `lhsval < val` | `"Greater than or equal constraint is impossible to match"` |
+
+Consequences, all derived from the code above:
+- `field = 5` gives one disjoint pattern: the lhs block ANDed with `TokenPattern(true)` from the constant.
+- `field < 5` gives an OrPattern of 5 disjoint patterns (values 0..4, ascending). There is no mask merging or minimisation; each disjunct later becomes a separate decision-tree entry.
+- `field = other + 1` enumerates `other` from 0 to its max. For each value whose result lies within `[0, lhsmax]`, it adds `lhs==val AND other==cur`.
+- A constant outside `[0, 2^n−1]`, such as a negative literal compared against a signed field, never matches. I verified only this back end; the parser may normalise such values first (not checked).
+- Disjunct order is: rhs combinations (first listed value fastest), then `lhsval` ascending. This holds except for the `doOr` reorderings in b.5.
+- Every assignment simplifies: FALSE disjuncts are dropped and a TRUE disjunct collapses the whole pattern to TRUE.
+
+#### a.7 `resolveOperandLeft` and `OperandResolve`
+
+State: `operands&`, `base=-1`, `offset=0`, `cur_rightmost=-1`, `size=0` (PE.hh:339-347). `base==-2` means "no anchor".
+
+- **OperandEquation** (PE.cc:1203-1219):
+  1. `sym = state.operands[index]`.
+  2. If `sym->isOffsetIrrelevant()`: `offsetbase=-1; reloffset=0; return true` (state untouched).
+  3. If `state.base==-2` return false.
+  4. `sym->offsetbase=state.base; sym->reloffset=state.offset; state.cur_rightmost=index; state.size=0; return true`.
+- **UnconstrainedEquation / ValExpressEquation** (1249-1258, 1274-1283): `state.cur_rightmost=-1; state.size = (own resultpattern has either ellipsis) ? -1 : resultpattern.getMinimumLength(); return true`.
+- **EquationAnd and EquationOr** (identical code; 1491-1509, 1540-1558):
+  1. `cur_rightmost=-1; cur_size=-1`.
+  2. Resolve the **right** child first; return false on failure.
+  3. If `state.cur_rightmost!=-1 && state.size!=-1`: save both.
+  4. Resolve the left child; return false on failure.
+  5. If `state.cur_rightmost==-1 || state.size==-1`: restore the saved pair.
+- **EquationCat** (1589-1623):
+  1. Resolve left; return false on failure.
+  2. `cur_base=state.base; cur_offset=state.offset`.
+  3. If left's pattern has neither ellipsis: `state.offset += left.getMinimumLength()`. Else if `state.cur_rightmost!=-1`: `state.base=state.cur_rightmost; state.offset=state.size`. Else if `state.size!=-1`: `state.offset += state.size`. Else `state.base=-2`.
+  4. `cur_rightmost=state.cur_rightmost; cur_size=state.size`.
+  5. Resolve right; return false on failure.
+  6. `state.base=cur_base; state.offset=cur_offset`.
+  7. If `state.cur_rightmost==-1` and `state.size!=-1 && cur_rightmost!=-1 && cur_size!=-1`: `state.cur_rightmost=cur_rightmost; state.size += cur_size`.
+- **EquationLeftEllipsis** (1640-1650): save base; `state.base=-2`; resolve child; restore base.
+- **EquationRightEllipsis** (1666-1673): resolve child; `state.size=-1`.
+
+#### a.8 `operandOrder`
+
+- Default is a no-op (PE.hh:361).
+- OperandEquation: `sym=ct->getOperand(index)`; if not marked, push and `setMark` (PE.cc:1221-1229).
+- And/Or/Cat: left then right (1511-1516, 1560-1565, 1625-1630).
+- Ellipsis nodes recurse (1652-1656, 1675-1679).
+
+---
+
+### 10 (b) slghpattern
+
+#### b.1 PatternBlock representation
+
+Fields: `offset` (byte index of the first stored mask byte), `nonzerosize`, `maskvec`, `valvec` (32-bit words) (PT.hh:24-28).
+
+- Word `k` covers bytes `offset+4k .. offset+4k+3`, with the MSB as the first byte. This follows from `getMask` (PT.cc:405-435) and `isInstructionMatch` (464-475).
+- `alwaysTrue ⇔ nonzerosize==0`; `alwaysFalse ⇔ nonzerosize==-1` (PT.hh:44-45).
+- `getLength()=offset+nonzerosize` (PT.hh:41). For a FALSE block this is −1.
+
+Constructors:
+- `PatternBlock(off,msk,val)`: one word, `nonzerosize=4`, then `normalize()` (PT.cc:229-237).
+- `PatternBlock(bool)`: `offset=0`, `nonzerosize = tf?0:-1` (239-247).
+- `clone` copies verbatim (283-293).
+- `shift(sa)`: `offset += sa; normalize()` (PT.hh:40).
+
+**`normalize()`** (PT.cc:156-227):
+1. If `nonzerosize<=0`: `offset=0`; clear both vectors; return. `nonzerosize` is kept.
+2. Drop leading mask words equal to 0 (and the matching value words); `offset += 4` for each.
+3. If non-empty:
+   - `suboff` = number of leading zero bytes of `maskvec[0]`.
+   - If `suboff != 0`: `offset += suboff`; shift both vectors left by `suboff` bytes as one big-endian bit string. For `i<n-1`: `v[i] = (v[i]<<(8*suboff)) | (v[i+1] >> (8*(4-suboff)))`; last word `<<= 8*suboff`.
+   - Erase trailing all-zero mask words (and value words).
+4. If the mask is empty: `offset=0; nonzerosize=0; return`.
+5. `nonzerosize = 4*maskvec.size()` minus the number of trailing zero bytes of the last mask word.
+
+Result: a canonical form. `offset` is the first nonzero mask byte, there are no trailing zero words, and `nonzerosize` is the byte span to the last nonzero mask byte. These fields and words are what `encode` writes (PT.cc:490-503), so they must match exactly.
+
+**`getMask(startbit,size)` and `getValue`** (405-462):
+- They return `size` bits (1..32), right-aligned, starting at absolute bit `startbit`.
+- The code subtracts `8*offset`, then uses unsigned division and modulo by 32, relying on wraparound for negative values (comment at 409-412).
+- By my analysis this is equivalent to: treat the stored words as a bit string that is zero outside `[0, 32*len)` and extract `size` bits at `startbit - 8*offset`. This is a host-`size_t` trick; implement the zero-extended semantics directly.
+
+#### b.2 Block operations
+
+- **`intersect(b)`** (323-355):
+  1. If either is FALSE, return FALSE.
+  2. `maxlength = max(getLength(), b->getLength())`.
+  3. For byte `offset = 0,4,8,… < maxlength`: read 32-bit `mask1,val1,mask2,val2` at bit `offset*8`.
+  4. `common = mask1&mask2`; if `(common&val1) != (common&val2)`, the result is FALSE.
+  5. Push `mask1|mask2` and `(mask1&val1)|(mask2&val2)`.
+  6. `nonzerosize=maxlength; normalize()`.
+- **`commonSubPattern(b)`** (295-321): same loop with `resmask = mask1 & mask2 & ~(val1^val2)` and `resval = val1&val2&resmask`; `nonzerosize=maxlength; normalize()`.
+  - There is no FALSE special case. FALSE with X yields TRUE; FALSE with FALSE yields FALSE (derived from `getLength()` being −1).
+- **`specializes(op2)`** (357-378): over `8*op2->getLength()` bits in chunks of at most 32, require `(mask1&mask2)==mask2` and `(value1&mask2)==(value2&mask2)`.
+- **`identical(op2)`** (380-403): over the max of the two lengths, require `mask1==mask2` and `(mask1&value1)==(mask2&value2)`.
+- `PatternBlock(a,b)` and `PatternBlock(vector)` are intersect folds (249-281).
+
+#### b.3 DisjointPattern helpers
+
+`getBlock(context)` returns:
+- Instruction: its block for `context=false`, null for `true` (PT.hh:87).
+- Context: the reverse (109).
+- Combine: `context->getBlock()` or `instr->getBlock()` (132).
+
+Helpers:
+- `getMask/getValue(startbit,size,context)`: the block's value, or 0 if null (PT.cc:21-37).
+- `getLength(context)`: the block's length, or 0 if null (39-46).
+- **`specializes(op2)`** (48-67): for the instruction block, then the context block: if op2's block is non-null and not alwaysTrue, this pattern's block must be non-null and `specializes` it.
+- **`identical(op2)`** (69-103): per block kind:
+  - If op2's block exists: when this pattern's is null, op2's must be alwaysTrue; otherwise the blocks must be `identical`.
+  - If op2's block is null: this pattern's must be null or alwaysTrue.
+- **`resolvesIntersect(op1,op2)`** (105-139): per block kind:
+  1. `inter` = whichever of op1's/op2's blocks is non-null, or their `intersect` if both are.
+  2. If `inter` is null: OK iff this pattern's block is null.
+  3. Else if this pattern's block is null: false.
+  4. Else `thisblock->identical(inter)`.
+  - Both the instruction and context kinds must pass.
+- `numDisjoint()` is 0 for disjoint patterns and `orlist.size()` for OrPattern (PT.hh:74,161). `getDisjoint(i)` is `orlist[i]` (162).
+
+#### b.4 `doAnd(b,sa)`
+
+- **Instruction** (PT.cc:523-556):
+  1. If b is Or → `b->doAnd(this,-sa)`.
+  2. If b is Combine → `b->doAnd(this,-sa)`.
+  3. If b is Context → `CombinePattern(b clone, this clone)`, where this clone is shifted by `-sa` if `sa<0`.
+  4. Else (Instruction): if `sa<0`, `(this shifted by -sa) ∩ b`; else `this ∩ (b shifted by sa)`.
+- **Context** (638-647): if b is not Context → `b->doAnd(this,-sa)`; else Context of the block intersect.
+- **Combine** (706-735):
+  1. If b is Or → `b->doAnd(this,-sa)`.
+  2. b Combine → `Combine(context.doAnd(b.context,0), instr.doAnd(b.instr,sa))`.
+  3. b Instruction → `Combine(context clone, instr.doAnd(b,sa))`.
+  4. b Context → `Combine(context.doAnd(b,0), instr clone shifted by -sa if sa<0)`.
+- **Or** (884-908):
+  1. b not Or → `[e.doAnd(b,sa) for e in orlist]`.
+  2. b Or → nested loop, this pattern's list outer and b's inner: `e.doAnd(f,sa)`.
+  3. Wrap in a new OrPattern; no simplification here.
+
+#### b.5 `doOr(b,sa)` — operand order is not always preserved
+
+- **Instruction** (591-609):
+  1. If b is Or or Combine → `b->doOr(this,-sa)`. The result lists b's disjuncts first, then this one.
+  2. Else `Or(this clone, b clone)`, with this clone shifted by `-sa` if `sa<0`, otherwise b's clone shifted by `sa`.
+- **Context** (628-636):
+  1. If b is not Context → `b->doOr(this,-sa)`. So Context OR Instruction gives `Or(instruction, context)`, reversed.
+  2. Else `Or(this, b)`.
+- **Combine** (761-775):
+  1. If b is Or → `b->doOr(this,-sa)` (b's list first).
+  2. Else `Or(this clone, b clone)` with the same shift rule as Instruction.
+- **Or** (931-956):
+  1. `newlist` = simplifyClones of this pattern's elements.
+  2. If `sa<0`: `shiftInstruction(-sa)` is applied to the **original** elements of this pattern, not the clones in `newlist` (lines 940-942). Net effect: nothing in the result is shifted.
+  3. Append b's clone, or the clones of b's elements in order.
+  4. If `sa>0`: shift **every** element of `newlist` by `sa`, including this pattern's own (950-952).
+  5. Return `OrPattern(newlist)`.
+
+Steps 2 and 4 look like upstream bugs. Nonzero `sa` in `doOr` only arises from left-ellipsis alignment, but the behaviour must be reproduced as written.
+
+Summary of disjunct order for `A.doOr(B)`:
+
+| A | B | Result order |
+|---|---|---|
+| Instruction | Instruction or Context | [A, B] |
+| Instruction | Combine | [B, A] |
+| Instruction | Or | [B…, A] |
+| Context | Context | [A, B] |
+| Context | Instruction | [B, A] |
+| Context | Combine | [B, A] |
+| Context | Or | [B…, A] |
+| Combine | Instruction, Context or Combine | [A, B] |
+| Combine | Or | [B…, A] |
+| Or | anything | [A…, B…] |
+
+This order feeds the decision-tree list order.
+
+#### b.6 `commonSubPattern(b,sa)`, `simplifyClone`, miscellany
+
+**commonSubPattern**
+- Instruction (558-589):
+  1. b Or or Combine → `b->commonSubPattern(this,-sa)`.
+  2. b Context → `InstructionPattern(true)`.
+  3. b Instruction → shift as in `doAnd`, then block `commonSubPattern`.
+- Context (649-658): b not Context → delegate with `-sa`; else Context of the block common.
+- Combine (737-759):
+  1. b Or → delegate.
+  2. b Combine → `Combine(context common, instr common with sa)`.
+  3. b Instruction → `instr->commonSubPattern(b,sa)` (an InstructionPattern).
+  4. b Context → `context->commonSubPattern(b,0)` (a ContextPattern).
+- Or (910-929):
+  1. `res = orlist[0]->commonSubPattern(b,sa)`.
+  2. If `sa>0` then `sa=0`.
+  3. For each later element `e`: `res = e->commonSubPattern(res,sa)`.
+
+**simplifyClone**
+- Instruction and Context: clone (PT.hh:94,115).
+- Combine (PT.cc:777-788), in this order:
+  1. If context alwaysTrue → `instr->simplifyClone()`.
+  2. If instr alwaysTrue → `context->simplifyClone()`.
+  3. If either alwaysFalse → `InstructionPattern(false)`.
+  4. Else a Combine of clones.
+- Or (958-977):
+  1. If any element alwaysTrue → `InstructionPattern(true)`.
+  2. Keep the simplifyClones of non-alwaysFalse elements, in order.
+  3. Empty → `InstructionPattern(false)`; one left → that element; else `OrPattern`.
+
+**shiftInstruction**: Instruction shifts its block (PT.hh:95); Context is a no-op (116); Combine shifts `instr` (139); Or shifts all elements (PT.cc:835-842).
+
+**alwaysTrue / alwaysFalse / alwaysInstructionTrue**
+- Instruction: block true / block false / block true (PT.hh:100-102).
+- Context: block true / block false / always `true` (121-123).
+- Combine: both true / either false / instr's (PT.cc:694-704, PT.hh:143).
+- Or: any true / all false / all instruction-true (PT.cc:853-882).
+
+---
+
+### 10 (c) buildPatterns, operand offsets, decision trees
+
+#### c.1 `SleighCompile::buildPatterns` (SC.cc:2122-2144)
+
+1. If `root==0`: `reportError(null,"No patterns to match.")`; return.
+2. `ostringstream msg; root->buildPattern(msg)`. This recursion reaches every table reachable from root.
+3. If `root->isError()`: `reportError(getLocation(root), msg.str()); errors += 1`.
+   - Root is added with `symtab.addSymbol`, not `SleighCompile::addSymbol` (SC.cc:1988-1989), so it has no location and the message has no `file:line:` prefix.
+4. For each `tables[i]` in definition order (`newTable` pushes, SC.cc:2968-2976):
+   - If `isError()`: `reportError(loc(table), "Problem in table '"+name+"':"+msg.str()); errors += 1`. `msg` is the whole accumulated stream for all tables.
+   - If `getPattern()==null`: `reportWarning(loc, "Unreferenced table '"+name+"'")`. Such tables get no decision tree (SY.cc:1977) and are not encoded (SY.cc:1932).
+
+#### c.2 `SubtableSymbol::buildPattern(s)` (SY.cc:1991-2026)
+
+1. If `pattern` is non-null, return it.
+2. `errors=false; beingbuilt=true; pattern=new TokenPattern()` (TRUE).
+3. If there are no constructors: write `"Error: There are no constructors in table: "+name` and a newline to `s`; `errors=true`; return. `beingbuilt` is left true.
+4. Build `construct.front()` in a try block. On `SleighError`, write `"Error: " << explain << ": for "`, then `printInfo`, then a newline; `errors=true`.
+   - `printInfo` text is `table "<name>" constructor starting at line <lineno>` (SY.cc:1893-1899).
+5. `*pattern = *construct.front()->getPattern()`.
+6. For `i=1..n-1`: build constructor `i` with the same catch; then `*pattern = construct[i]->getPattern()->commonSubPattern(*pattern)`. The receiver is constructor `i`; the argument is the accumulator.
+7. `beingbuilt=false`; return.
+
+Notes:
+- A constructor that threw still has a non-null TRUE pattern, because it is allocated before anything can throw (SY.cc:1809).
+- `commonSubPattern` at step 6 is outside the try. Its `"Right/left ellipsis in commonSubPattern"` exception propagates to the enclosing constructor's catch, or for root becomes an unrecoverable error.
+- The table's common pattern is what a parent sees as the operand's pattern, and it is ANDed or concatenated into the parent's pattern via OperandEquation (PE.cc:1200).
+
+#### c.3 `Constructor::buildPattern(s)` (SY.cc:1804-1891)
+
+1. If `pattern` is non-null, return it. `pattern = new TokenPattern()`.
+2. For each operand `i` in current (parse) order, with `triple=getDefiningSymbol()` and `defexp=getDefiningExpression()`:
+   - Triple is a SubtableSymbol:
+     - If `isBeingBuilt()` (recursion): if `recursion` is already true → throw `"Illegal recursion"`; else `recursion=true` and push a default TRUE TokenPattern with no tokens.
+     - Else push a copy of `*subsym->buildPattern(s)` (recursive).
+   - Triple is something else: push `triple->getPatternExpression()->genMinPattern(oppattern)`.
+     - `getPatternExpression` is: ValueSymbol family → `patval` (SY.hh:209); PatternlessSymbol (varnode, epsilon) → `ConstantValue(0)` (SY.cc:425-437); Start/End/Next2 → their value objects (SY.cc:1137-1273); FlowDest/FlowRef throw `"Cannot use symbol in pattern"` (SY.hh:421,433).
+   - Else if `defexp` is non-null: push `defexp->genMinPattern(oppattern)`.
+   - Else throw `<opname>+": operand is undefined"`.
+   - Then `sym->minimumlength = oppattern.back().getMinimumLength()`; if that pattern has either ellipsis, `sym->setVariableLength()` (1839-1842). The flag is never cleared.
+3. If `pateq==null` → throw `"Missing equation"`.
+4. `pateq->genPattern(oppattern); *pattern = pateq->getTokenPattern()`; if `alwaysFalse()` → throw `"Impossible pattern"`.
+5. If `recursion`: `pattern->setRightEllipsis(true)`.
+6. `minimumlength = pattern->getMinimumLength()` (1855). This is encoded as the constructor's length (SY.cc:1629). `Constructor::setMinimumLength` exists (SY.hh:504) but is never called (grep). There is no `Constructor::buildOperands`.
+7. `OperandResolve resolve(operands)`; if `!pateq->resolveOperandLeft(resolve)` → throw `"Unable to resolve operand offsets"`.
+8. Unravel relative offsets (1862-1883). For each operand `i` in index order:
+   - If offset-irrelevant: `offsetbase=-1; reloffset=0`; continue.
+   - `base=offsetbase; offset=reloffset`.
+   - While `base>=0`:
+     - `sym=operands[base]`; if `sym->isVariableLength()` break.
+     - `base=sym->offsetbase; offset += sym->minimumlength; offset += sym->reloffset`.
+     - If `base<0`: `operands[i]->offsetbase=base; operands[i]->reloffset=offset`.
+   - An operand's fields are only rewritten when the chain reaches −1 without crossing a variable-length operand.
+9. `context[i]->validate()` for each context change (1886-1887). `ContextOp::validate` throws `<opname>+": cannot be used in context expression"` for any OperandValue in the expression whose operand has `offsetbase != -1` (SY.cc:2447-2463, PE.cc:800-805).
+10. `orderOperands()`; return `pattern`.
+
+How operand flags are set:
+- Offset-irrelevant: set by `SleighCompile::defineOperand(sym,patexp)` (the `name = expr` form), SC.cc:3022-3030.
+- `selfDefine` and `defineInvisibleOperand`: if the global is a `value_symbol` or `context_symbol`, the operand gets `defexp = glob->getPatternExpression()`; otherwise `triple = glob` (SC.cc:3044-3091).
+- `OperandSymbol`'s constructor leaves `reloffset`, `offsetbase` and `minimumlength` uninitialised (SY.cc:974-983).
+
+#### c.4 `Constructor::orderOperands` (SY.cc:1730-1802)
+
+1. `pateq->operandOrder(this,patternorder)` — left-to-right equation order, marking each operand.
+2. For `i` over `operands`: if not marked, append to `patternorder` and mark.
+3. Repeat until a pass adds nothing. For each `sym` in `patternorder` order:
+   - Skip if unmarked (already placed) or offset-irrelevant.
+   - If `sym->offsetbase==-1 || !operands[sym->offsetbase]->isMarked()`: append to `newops` and clear its mark.
+   - A base placed earlier in the same pass counts immediately.
+4. For each `sym` in `patternorder`: if offset-irrelevant, append and clear its mark.
+5. If `newops.size() != operands.size()` → throw `"Circular offset dependency between operands"`.
+6. For each `i`: `newops[i]->hand=i; newops[i]->localexp->changeIndex(i)`.
+7. `handmap[old] = operands[old]->hand`.
+8. For each new operand with `offsetbase != -1`: `offsetbase = handmap[offsetbase]`.
+9. Apply `changeHandleIndex(handmap)` to `templ` and each non-null named section; remap operand references in `printpiece`; `operands=newops`.
+
+#### c.5 Other operand helpers
+
+- `markSubtableOperands(check)` (SY.cc:1577-1588): `check[i]=0` if operand `i`'s defining symbol is a subtable, else 2. It is used at parse time by `finalizeSections` with `fillinBuild` (SC.cc:3455-3461, SEM.cc:864-891). Errors: `"Duplicate BUILD statements"` for result 1, `"Unnecessary BUILD statements"` for result 2. Missing BUILDs are inserted at the front of the op vector, one per unchecked operand in ascending index order, each inserted at `vec.begin()` (so the final order is descending index).
+- `collectLocalExports(results)` (SY.cc:1590-1611):
+  1. Return if `templ` is null or has no result handle.
+  2. Return if the handle's space is the const space.
+  3. If `ptrspace` type is not `real`: if `temp_space` is unique, push `temp_offset.getReal()`; return.
+  4. If the space is unique: push `ptroffset.getReal()`; return.
+  5. If the space type is `handle`: call `getOperand(handleIndex)->collectLocalValues(results)`.
+- `collectLocalValues`: Operand → its triple's (SY.cc:1065-1070); Subtable → every constructor's `collectLocalExports` in order (1922-1927); VarnodeSymbol → push `fix.offset` if the space type is `IPTR_INTERNAL` (751-756); others no-op (SY.hh:161). I did not check whether recursive tables can loop here.
+- `checkLocalCollisions` / `checkLocalExports` (SC.cc:2217-2273), root then tables in order:
+  - Skip a constructor with no template, a build-only template, or fewer than 2 operands.
+  - For operands in order, collect values and insert into a `map<uintb,int4>` (offset → operand index). The first offset already owned by a different operand is a collision; stop at the first one.
+  - With `-c`: warn `"Possible operand collision between symbols 'A' and 'B'"` (A is the earlier operand).
+  - Summary warning `"<N> constructors with local collisions between operands"`, plus `"Use -c switch to list each individually"` if not `-c`.
+
+#### c.6 `buildDecisionTrees` and `SubtableSymbol::buildDecisionTree`
+
+`SleighCompile::buildDecisionTrees` (SC.cc:2086-2118):
+1. One `DecisionProperties props` is shared across all tables.
+2. `root->buildDecisionTree(props)`, then `tables[i]` in order.
+3. For each identical pair `(A,B)` in recorded order:
+   - `errors += 1`.
+   - `reportError(locA, "Constructor has identical pattern to constructor at " + locB->format())`.
+   - `reportError(locB, "Constructor has identical pattern to constructor at " + locA->format())`.
+4. Only when `!lenientconflicterrors` (i.e. `-l`): the same structure with `"Constructor pattern cannot be distinguished from constructor at "`.
+5. Without `-l`, conflicts are silently ignored; the leaf order is still whatever `orderPatterns` produced.
+
+`SubtableSymbol::buildDecisionTree` (SY.cc:1974-1989):
+1. Return if `pattern==null`.
+2. `decisiontree = new DecisionNode(null)`.
+3. For constructors in id order: `pat = construct[i]->getPattern()->getPattern()`.
+   - If `numDisjoint()==0`: `addConstructorPair(pat, ct)`.
+   - Else for `j` ascending: `addConstructorPair(pat->getDisjoint(j), ct)`.
+4. `decisiontree->split(props)`.
+
+`addConstructorPair` stores `pat->simplifyClone()` and does `num += 1` (2071-2077). `num` is encoded (2370).
+
+A new node starts with `num=0, startbit=0, bitsize=0, contextdecision=false` (2050-2058).
+
+#### c.7 `DecisionNode::split` (SY.cc:2221-2257)
+
+1. If `list.size() <= 1`: `bitsize=0`; return. This is a leaf, and `orderPatterns` is not called.
+2. `chooseOptimalField()`.
+3. If `bitsize==0`: `orderPatterns(props)`; return (leaf).
+4. If `parent != null && list.size() >= parent->num` → throw `LowlevelError("Child has as many Patterns as parent")`. This surfaces as an unrecoverable error. By my analysis of `getScore` it should be unreachable, since a positive score needs at least two distinct fully specified values.
+5. Create `1<<bitsize` children in index order.
+6. For each list entry `i` in order: `consistentValues(vals, pat)`; for each `v` in `vals` order: `children[v]->addConstructorPair(pat, ct)`; delete the original.
+   - Children receive unmodified clones (not narrowed), in parent list order.
+7. `list.clear()`; `children[i]->split(props)` for `i` ascending.
+
+`consistentValues` (2203-2219):
+- `m=(1<<bitsize)-1`.
+- `commonMask = m & pat->getMask(startbit,bitsize,contextdecision)`.
+- `commonValue = commonMask & pat->getValue(...)`.
+- `dontCare = m ^ commonMask`.
+- For `i=0..=dontCare` ascending: if `(i&dontCare)==i`, push `commonValue|i`.
+
+#### c.8 `chooseOptimalField` and scoring (SY.cc:2079-2201)
+
+- `getMaximumLength(context)`: max over the list of `pat->getLength(context)`, starting from 0 (2079-2091).
+- `getNumFixed(low,size,context)`: count of patterns with `(getMask(low,size,context) & m)==m`, where `m=(1<<size)-1` (2093-2108).
+- `getScore(low,size,context)` (2110-2138):
+  1. `numBins=1<<size`; `count[]` zeroed; `total=0`.
+  2. For each pattern in list order: skip unless fully specified; `val=getValue(...)`; `total++; count[val]++`.
+  3. If `total<=0` return −1.0.
+  4. `sc=0.0`; for `i=0..numBins-1` ascending: skip if `count[i]<=0`; if `count[i] >= list.size()` return −1.0; `p=(double)count[i]/total; sc -= p*log(p)`.
+  5. Return `sc/log(2.0)`.
+
+Algorithm:
+1. `score=0.0; maxfixed=1`.
+2. **Single-bit pass**, for `context=true` first, then `context=false` (the `do…while(!context)` loop at 2152-2180):
+   - `maxlength = 8*getMaximumLength(context)`.
+   - For `sbit=0..maxlength-1`:
+     - `numfixed=getNumFixed(sbit,1,context)`; if `numfixed < maxfixed` continue.
+     - `sc=getScore(sbit,1,context)`.
+     - If `numfixed > maxfixed && sc > 0.0`: set `score=sc; maxfixed=numfixed; startbit=sbit; bitsize=1; contextdecision=context`; continue. This resets `score` even if `sc` is lower than the old score.
+     - If `sc > score`: set `score=sc; startbit=sbit; bitsize=1; contextdecision=context`.
+3. **Multi-bit pass**, again context first then instruction (2182-2198):
+   - For `size=2..8`; for `sbit=0; sbit < maxlength-size+1; ++sbit`:
+     - If `getNumFixed(sbit,size,context) < maxfixed` continue.
+     - `sc=getScore(...)`; if `sc > score`: set `score, startbit=sbit, bitsize=size, contextdecision=context`.
+   - `maxfixed` carries over from pass 2 unchanged.
+4. If `score <= 0.0`: `bitsize=0` (leaf).
+
+Constants and tie-breaks:
+- Field width is 1..8 bits, so at most 256 children.
+- All comparisons are strict `>`. On equal score the earliest candidate wins: 1-bit before wider; context before instruction; in the multi-bit pass, context(all sizes, all sbits) before instruction; within one stream, smaller size then lower `sbit`.
+- Preference for bits fixed by more patterns comes only from `maxfixed`, which is raised only in the single-bit pass.
+- Leaf nodes keep `startbit=0, contextdecision=false`, since those are only assigned together with a positive score.
+
+**Floating-point hazard.** Scores are doubles built from libm `log`, summed in ascending bin order. Two fields with mathematically equal entropy can differ in the last ulp (different summation order or a different libm), which flips a strict `>` tie. The implementer must reproduce the exact arithmetic order (`p = count/total` as double; `sc -= p*ln(p)`; a final division by `ln(2.0)`). Exact agreement with the platform `log` that Ghidra's build used is a host dependency I cannot eliminate.
+
+#### c.9 `orderPatterns` — leaf ordering (SY.cc:2259-2342)
+
+1. Identical check, on the original order. For `i=0..n-1`, for `j=0..i-1`: if `list[i].pat->identical(list[j].pat)` → `props.identicalPattern(list[i].ct, list[j].ct)` (later entry first).
+2. `newlist = list` (copy). Insertion pass, for `i=0..n-1`:
+   - For `j=0..i-1`, comparing `ipat=newlist[i].pat` with `jpat=list[j].pat` (`list[0..i)` is the sorted prefix):
+     - If `ipat->specializes(jpat)`: break.
+     - Else if `!jpat->specializes(ipat)` and the two constructors differ: push `(ipat,iconst)` then `(jpat,jconst)` onto `conflictlist`. The same constructor means an OR within one constructor, which is not a conflict.
+   - Shift `list[j..i-1]` up by one and set `list[j]=newlist[i]`.
+   - Net effect: each pattern is inserted before the first already-placed pattern it specializes; otherwise it stays at the end. Because `specializes` is true for equal patterns, a later identical pattern is placed before the earlier one.
+3. Conflict resolution. For each recorded pair `(pat1,const1),(pat2,const2)`:
+   - Scan the final `list` from the front.
+   - Stop when the entry is `(pat1,const1)` or `(pat2,const2)`, compared by object identity.
+   - If an earlier entry has `tpat->resolvesIntersect(pat1,pat2)`, the pair is resolved.
+   - If unresolved: `props.conflictingPattern(const1,const2)`.
+
+`DecisionProperties` (SY.cc:2028-2048):
+- Both `identicalPattern(a,b)` and `conflictingPattern(a,b)` record the pair only if neither `a->isError()` nor `b->isError()`, and then set `inerror` on both.
+- The flag is shared between the two kinds and across all tables, so each constructor is reported at most once in total.
+- `a==b` (the same constructor with two identical disjuncts) is recorded and reported against itself.
+
+Encoding (SY.cc:2366-2383): `number=num`, `context`, `startbit`, `size`; then pairs in final list order (constructor id + pattern); then children in index order.
+
+---
+
+### 10 (d) ConsistencyChecker and `checkConsistency`
+
+#### d.1 Driver order (SC.cc:2148-2181)
+
+1. Construct `checker(this, root, warnunnecessarypcode, warndeadtemps)`.
+2. `testSizeRestrictions()`; if false: `errors += 1; return`.
+3. `testTruncations()`; if false: `errors += 1; return`.
+4. If not `-u` and `getNumUnnecessaryPcode() > 0`: two warnings, `"<N> unnecessary extensions/truncations were converted to copies"` and `"Use -u switch to list each individually"`.
+5. `optimizeAll()`.
+6. If `getNumReadNoWrite() > 0`: `errors += 1; return`.
+7. If not `-t` and `getNumWriteNoRead() > 0`: two warnings, `"<N> operations wrote to temporaries that were not read"` and `"Use -t switch to list each individually"`.
+8. `testLargeTemporary()`.
+
+All four passes iterate `postorder`, which contains only tables reachable from root. Unreferenced tables are never checked or optimised.
+
+#### d.2 Post-order (SC.cc:1187-1235)
+
+`setPostOrder(root)` is an iterative depth-first search:
+1. Clear `postorder` and `sizemap`; `sizemap[root]=-1`.
+2. Push `(root, ctor index 0, operand index 0)`.
+3. Loop on the top of the stack:
+   - If the constructor index is past the end: pop and append the table to `postorder`.
+   - Else if the operand index is past the end of that constructor: advance to the next constructor and reset the operand index.
+   - Else advance the operand index. If the operand's defining symbol is a SubtableSymbol not yet in `sizemap`: set `sizemap[sub]=-1` and push it.
+4. Constructors are visited in id order and operands in current (parse) order; dependencies come first.
+
+`sizemap` is a `map<SubtableSymbol*,int4>` (SC.hh:198). It is used only via `find` and `operator[]`, never iterated, so there is no pointer-order dependence. The same holds for `ctorLocationMap` and `symbolLocationMap` (SC.hh:322-323).
+
+#### d.3 `recoverSize(sizeconst,ct)` (SC.cc:320-350)
+
+- `real` → `(int4)getReal()`.
+- `handle` → `size = ct->getOperand(handleIndex)->getSize()`.
+  - If that is −1: the defining symbol must be a SubtableSymbol, else throw `"Could not recover varnode template size"`; look it up in `sizemap`, throwing `"Subtable out of order"` if absent; use the stored value.
+- Any other type → throw `"Bad constant type as varnode template size"`.
+- These throws are not caught and become unrecoverable errors.
+
+`OperandSymbol::getSize` = `triple->getSize()`, or 0 if there is no triple (SY.cc:1037-1043). Per symbol: Subtable −1 (SY.hh:600); Varnode `fix.size` (259); VarnodeList = the first non-null entry's size, else throw `"No register attached to: "+name` (SY.cc:904-913); default 0 (SY.hh:159).
+
+Size 0 means unknown/wildcard. Size −1 means a subtable with no export, or a recursive reference not yet computed.
+
+#### d.4 `checkSubtable(sym)` (SC.cc:1115-1178)
+
+State: `tablesize=-1`, `seenemptyexport=false`, `seennonemptyexport=false`.
+
+For each constructor in id order:
+1. `checkConstructorSection(ct, main)`, then each named section `j=0..getNumSections()-1`. A null section passes.
+   - Within a section, for each op in order, call `sizeRestriction` and then `checkOpMisuse`; both always run (987-1003).
+2. If the main template is null (unimplemented): continue.
+3. If the constructor has an export handle:
+   - If `seenemptyexport && !seennonemptyexport`: error `"Table '<name>' exports inconsistently; Constructor starting at line <N> is first inconsistency"`.
+   - `seennonemptyexport=true`.
+   - `exsize=recoverSize(export size, ct)`; if `tablesize==-1` then `tablesize=exsize`.
+   - If `exsize != tablesize`: error `"Table '<name>' has inconsistent export size; Constructor starting at line <N> is first conflict"`.
+4. Else (no export):
+   - If `seennonemptyexport && !seenemptyexport`: the same "exports inconsistently" error.
+   - `seenemptyexport=true`.
+
+After the loop:
+- If `seennonemptyexport`: when `tablesize==0`, warn `"Table '<name>' exports size 0"`; then `sizemap[sym]=tablesize`.
+- Else `sizemap[sym]=-1`.
+
+#### d.5 `sizeRestriction(op,ct)` (SC.cc:427-690) — all violations are errors
+
+Throughout, `vnout`/`vn0`/`vn1` are `recoverSize` of the output, input 0 and input 1. Any that equals −1 gives `printOpError(op,ct,slot,slot,"Using subtable with exports in expression")` and returns false, with slot −1 for the output, 0 or 1 for inputs. Checks happen in the order listed.
+
+| Opcodes | Rule (in order) | Error slots and message |
+|---|---|---|
+| COPY, INT_2COMP, INT_NEGATE, FLOAT_NEG, FLOAT_ABS, FLOAT_SQRT, FLOAT_CEIL, FLOAT_FLOOR, FLOAT_ROUND (435-457) | out, in0; OK if equal or either is 0 | (−1,0) `"Input and output sizes must match"` |
+| INT_ADD, SUB, XOR, AND, OR, MULT, DIV, SDIV, REM, SREM, FLOAT_ADD, DIV, MULT, SUB (458-499) | out, in0, in1; pairwise equal ignoring zeros, tested out/in0, out/in1, in0/in1 | (−1,0), (−1,1), (0,1) `"The output and all input sizes must match"` |
+| FLOAT_NAN (500-510) | out must be 1 | (−1,−1) `"Output must be a boolean (size 1)"` |
+| INT_EQUAL, NOTEQUAL, SLESS, SLESSEQUAL, LESS, LESSEQUAL, CARRY, SCARRY, SBORROW, FLOAT_EQUAL, NOTEQUAL, LESS, LESSEQUAL (511-548) | out must be 1; then in0, in1; OK if either is 0; else must be equal | (−1,−1) `"Output must be a boolean (size 1)"`; (0,1) `"Inputs must be the same size"` |
+| BOOL_XOR, AND, OR (549-570) | out must be 1; in0 must be 1; in1 is not checked | (−1,−1) `"Output must be a boolean (size 1)"`; (0,0) `"Input must be a boolean (size 1)"` |
+| BOOL_NEGATE (571-590) | out must be 1; in0 must be 1 | same two messages |
+| INT_LEFT, RIGHT, SRIGHT (593-611) | out, in0; OK if either is 0; else must be equal | (−1,0) `"Output and first input must be the same size"` |
+| INT_ZEXT, SEXT (612-633) | out, in0; OK if either is 0; if equal → `dealWithUnnecessaryExt`, return true; if out < in0 → error | (−1,0) `"Output size must be strictly bigger than input size"` |
+| CBRANCH (634-644) | in1 must be 1 | (1,1) `"Input must be a boolean (size 1)"` |
+| LOAD, STORE (645-659) | if in0's offset is not a `spaceid`, return true; else in1 must be 0 or equal the space's address size | (1,1) `"Pointer size must match size of space"` |
+| SUBPIECE (660-685) | out, in0; `vn1 = in1 offset real`; OK if out or in0 is 0; if `out==in0 && vn1==0` → `dealWithUnnecessaryTrunc`, return true; else if `out>=in0` → error; if `out > in0-vn1` → error | (−1,0) `"Output must be strictly smaller than input"`; (−1,0) `"Too much truncation"` |
+| everything else | no check | — |
+
+- `dealWithUnnecessaryExt` (359-370): with `-u`, warn `"Unnecessary " + opname`; change the opcode to COPY; `unnecessarypcode++`.
+- `dealWithUnnecessaryTrunc` (379-391): the same, and additionally `removeInput(1)`.
+- `checkOpMisuse` (401-417): for INT_LESS whose input 1 is in the const space with a literal-zero offset, warn `"Unsigned comparison with zero is always false"`. It always returns true (warning only).
+
+`printOpError` (949-977) builds this error text:
+
+```
+Size restriction error in table '<table>'\n
+  Problem with operands '<a>' and '<b>'      (both slots map to operands)
+  Problem with operand 1 '<a>'               (only the first)
+  Problem with operand 2 '<b>'               (only the second)
+  Problem                                    (neither)
+ in <opname> operator\n  <msg>
+```
+
+- The lead-in line is one of the four alternatives, followed directly by `" in "`, the op name, `" operator"`, a newline, two spaces and the message.
+- A slot maps to an operand only if that varnode's size ConstTpl is of `handle` type (914-936).
+- When `err1==err2`, the second operand is forced to null.
+- Op names come from the switch at SC.cc:697-902, e.g. `"Copy(=)"`, `"Zero extension(zext)"`, `"Signed extension(sext)"`, `"Truncation(:)"`, `"Addition(+)"`, `"Less than(<)"`. Copy that table verbatim, including `"Float subtractions(f-)"`. Opcodes not in the switch print nothing.
+
+#### d.6 Truncations (SC.cc:1053-1106, 1704-1731)
+
+`testTruncations` iterates postorder tables, constructors in id order, and sections `k=-1..numSections-1` (skipping null). Endianness comes from the global `slgh->isBigEndian()` (1708).
+
+`checkSectionTruncations`: for each op, the output (if any, slot −1) and then each input are passed to `checkVarnodeTruncation`:
+1. If the offset is not of `handle` type, or its select is not `v_offset_plus`: OK.
+2. If the size type is neither `real` nor `handle`: error (slot,slot) `"Bad truncation expression"`.
+3. `sz = recoverSize(offset ConstTpl, ct)` (the operand's size); if `sz<=0`: error `"Could not recover size"`.
+4. `vn->adjustTruncation(sz,isbigendian)`; if false: error `"Truncation operator out of bounds"`.
+
+`adjustTruncation` (SEM.cc:555-577):
+1. If the size is not `real`, return false.
+2. `numbytes=size; byteoffset=(int4)offset.getReal()`; if `numbytes+byteoffset > sz` return false.
+3. `val = byteoffset<<16`; OR in `sz-(numbytes+byteoffset)` if big-endian, else `byteoffset`.
+4. `offset = ConstTpl(handle, sameIndex, v_offset_plus, val)`.
+
+#### d.7 Optimisation (`optimizeAll` → `optimize(ct)`)
+
+`optimizeAll` iterates postorder tables and constructors in id order (1760-1772).
+
+`optimize(ct)` (1666-1683):
+1. Clear the state.
+2. For `i=-1..numSections-1`: `optimizeGather1(ct,state,i)`, then `optimizeGather2(ct,state,i)`.
+3. `rec = findValidRule(ct,state)`.
+4. If found: `applyOptimization(ct,*rec)` and go back to step 1.
+5. Otherwise: `checkUnusedTemps(ct,state)` using the final state.
+
+**OptimizeRecord** (SC.hh:149-175, SC.cc:215-289):
+- Fields and initial values: `offset`, `size`, `writeop=-1`, `readop=-1`, `inslot=-1`, `writecount=0`, `readcount=0`, `writesection=-2`, `readsection=-2`, `opttype=-1`.
+- `updateRead(i,inslot,sec)`: set `readop`, `inslot`, `readsection`; `readcount++`.
+- `updateWrite(i,sec)`: set `writeop`, `writesection`; `writecount++`.
+- `updateExport()`: `writeop=0; readop=0; writecount=2; readcount=2; readsection=-2; writesection=-2`.
+- Merging constructor: `offset` = minimum offset; `size` = (maximum end) − minimum; then for each source record in vector order call `updateCombine`. That takes `writeop`/`writesection` from any source with `writecount != 0` (the last one wins), likewise `readop`/`inslot`/`readsection`, and sums both counts.
+
+**UniqueState** — `map<uintb,OptimizeRecord> recs`, kept disjoint (SC.hh:178-188).
+
+`getDefinitions(result,offset,size)` (SC.cc:1269-1301):
+1. If `size==0` then `size=1`.
+2. `iter` = last record with key < `offset` (`lesserIter`, 1239-1251); `cursor=offset`.
+3. If such a record exists and its end > `offset`: push it; `cursor = its end`.
+4. `end=offset+size`; iterate from `lower_bound(offset)` while key < `end`:
+   - If key > `cursor`: insert a fresh gap record `(cursor, key-cursor)` and push it.
+   - Push the record; `cursor = its end`.
+5. If `end > cursor`: insert and push a fresh record `(cursor, end-cursor)`.
+
+Inserted keys go through `pair<uint4,OptimizeRecord>`, so they are truncated to 32 bits (lines 1263, 1288, 1298).
+
+`set(rec)` (1255-1264):
+1. `records = getDefinitions(rec.offset, rec.size)`; push `&rec` last.
+2. `coalesced = OptimizeRecord(records)`.
+3. Erase `[lower_bound(coalesced.offset), lower_bound(coalesced.offset+coalesced.size))`.
+4. Insert `coalesced`.
+
+**`examineVn(state,vn,i,inslot,secnum)`** (1401-1422):
+- Ignore null varnodes, non-unique space, or an offset that is not `real`.
+- `offset = offset.getReal(); size = (int4)size.getReal()`.
+- Read (`inslot>=0`): `updateRead(i,inslot,secnum)` on every record from `getDefinitions`.
+- Write: build a fresh record, `updateWrite(i,secnum)`, then `state.set(rec)`.
+
+**`optimizeGather1`** (1431-1451): section −1 is the main template, otherwise the named section; skip if null. For each op index `i` in order: all inputs `j` ascending first, then the output with slot −1.
+
+**`optimizeGather2`** (1461-1500): let `hand` be the section's result; return if null.
+- If `hand.ptrspace` is the unique space and `ptroffset` is `real`: `updateExport()` on `getDefinitions(ptroffset, ptrsize.getReal())`.
+- If `hand.space` is the unique space and both `ptrspace` and `ptroffset` are of `real` type: `updateExport()` on `getDefinitions(ptroffset, hand.size.getReal())`.
+
+**`findValidRule`** (1513-1575): iterate records in ascending key order. For a record with `writecount==1 && readcount==1 && readsection==writesection`:
+1. Get the section's ops (main if `readsection<0`).
+2. If `writeop >= readop` → throw `SleighError("Read of temporary before write")` (uncaught, so unrecoverable).
+3. `writevn = ops[writeop]->getOut(); readvn = ops[readop]->getIn(inslot)`. If `*writevn != *readvn`, continue.
+   - VarnodeTpl equality compares space, offset and size ConstTpls (SEM.cc:603-607, 91-108).
+4. If the read op is COPY: `opttype=0`; `vn` = the read op's output. If no op strictly between `writeop` and `readop` has `readWriteInterference(vn, op, true)`, return this record.
+5. If the write op is COPY: `opttype=1`; `vn` = the write op's input 0. Same loop with `checkread=false`; return on success.
+6. If nothing matches, return null.
+
+**`readWriteInterference(vn,op,checkread)`** (1352-1389):
+- Always true for BUILD, CROSSBUILD, DELAY_SLOT, MACROBUILD, LOAD, STORE, BRANCH, CBRANCH, BRANCHIND, CALL, CALLIND, CALLOTHER, RETURN, LABELBUILD. The directive opcodes are aliases defined at SEM.hh:30-42.
+- Otherwise: if `checkread`, true when any input has `possibleIntersection(vn,in)`.
+- Always: true when the output is non-null and `possibleIntersection(vn,out)`.
+
+**`possibleIntersection(vn1,vn2)`** (1310-1340), in order:
+1. Either in the const space → false.
+2. `isUniqueSpace` differs between them → false.
+3. Either space ConstTpl is not of `spaceid` type → true.
+4. Different `AddrSpace` → false.
+5. vn2's offset or size not `real` → true; vn1's offset or size not `real` → true.
+6. Unsigned range test: `off2+size2-1 < off1` → false; `off2 > off1+size1-1` → false; else true.
+
+`isUniqueSpace`/`isConstSpace` are false for non-`spaceid` ConstTpls (SEM.cc:72-86). So a handle-space varnode against a unique varnode gives "no intersection" at step 2.
+
+**`applyOptimization`** (1587-1612), on the section given by `rec.readsection`:
+- `opttype==0`: copy the COPY's output varnode; `setOutput(copy, rec.writeop)`; delete the op at `readop`.
+- `opttype==1`: copy the COPY's input 0; `setInput(copy, rec.readop, rec.inslot)`; delete the op at `writeop`.
+- `deleteOps` compacts the vector while preserving order (SEM.cc:957-974).
+
+**`checkUnusedTemps`** (1620-1638), over records in ascending key order:
+- `readcount==0`: with `-t`, warn `"Temporary is written but not read"`; `writenoread++`.
+- else `writecount==0`: error `"Temporary is read but not written"`; `readnowrite++`.
+
+**Large temporaries** (1011-1037, 1647-1659, 1735-1758):
+- Iterate postorder tables, constructors, and sections −1 upward.
+- For each section, the first op with an output or input in the unique space whose `size.getReal() > 256` produces `reportError(loc(ct), "Constructor uses temporary varnode larger than 256 bytes.")`, then moves to the next section.
+- `MAX_UNIQUE_SIZE` is 256 (sleighbase.cc:20).
+- This is an error (it uses `reportError`), despite the doc comment calling it a warning.
+
+#### d.8 Other post-parse checks
+
+- `checkNops` (SC.cc:2277-2291): if `noplist` is non-empty:
+  - With `-n`, each stored message is emitted as a warning. They were formatted at parse time as `"<file>:<line>: NOP detected"` (3758-3764); the trigger is an empty op vector and no export (slghparse.y:355).
+  - Always: `"<N> NOP constructors found"`.
+  - Without `-n`: `"Use -n switch to list each individually"`.
+- `checkCaseSensitivity` (2297-2327): active unless `-s`. For varnode symbols in `IPTR_PROCESSOR` spaces, an uppercase-name collision is an error: `"Name collision: <sym> --- Duplicate symbol <old>"`, plus `" defined at <loc>"` when the old symbol has a location.
+
+#### d.9 Command-line flags (SC.cc:3926-4009)
+
+Only `argv[i][1]` is examined; parsing stops at the first argument not starting with `-`.
+
+| Flag | Effect | Default |
+|---|---|---|
+| `-a` | compile all `.slaspec` files under a directory | off |
+| `-DNAME=VALUE` | preprocessor define; a missing `=` prints `"Bad sleigh option: <arg>"` and exits 1 | — |
+| `-u` | `warnunnecessarypcode=true` (individual "Unnecessary …" warnings) | false |
+| `-l` | `lenientconflicterrors=false` (pattern conflicts become errors) | true (lenient) |
+| `-c` | `warnalllocalcollisions=true` | false |
+| `-n` | `warnallnops=true` | false |
+| `-t` | `warndeadtemps=true` | false |
+| `-e` | enforce the `local` keyword; error `"Must use 'local' keyword to define symbol '<name>'"` (pcodecompile.cc:384-385) | false |
+| `-s` | `failinsensitivedups=false` (case-sensitive register names) | true (duplicates fail) |
+| `-y` | write the XML debug format instead of binary `.sla` | false |
+| `-x` | parser debug; only compiled under `YYDEBUG` | — |
+
+- Anything else prints `"Unknown option: <arg>"` and exits 1.
+- **There are no `-o`, `-f` or `-i` options in this C++ `main`.**
+- Defaults are at SC.cc:1960-1977 and 3958-3965; the mapping is `setAllOptions` (3901-3918).
+
+---
+
+### 10 (e) Hazards and unverified items
+
+1. **Float tie-breaks** in `chooseOptimalField` (c.8). This is the only place I found where a host library (`log`) can change the output.
+2. **Undefined-behaviour-dependent arithmetic** in constraint expressions (`<<`, `>>`, `/` on `intb`, a.5).
+3. **Pointer-dependent text only**: the token-mismatch exception prints `Token*` values (PE.cc:120-125, 139-144). Pointer-keyed maps are lookup-only. There is no `std::sort` in the back half; the only sort in these files is `stable_sort` on the context table (SC.cc:2523), outside my scope.
+4. **`doOr` operand reversal and the Or-shift quirks** (b.5) affect disjunct order, and therefore the decision-tree list order.
+5. **Uninitialised fields**: `OperandSymbol`'s `reloffset`/`offsetbase`/`minimumlength` (SY.cc:974-983), and `Constructor::flowthruindex` in the parsing constructor (SY.cc:1408-1417; only the decode constructor sets it). I did not check whether the encoder reads `flowthruindex`.
+6. **`errors` is over-counted**: several sites do `errors += 1` in addition to `reportError`'s own increment. This is harmless, since only `errors > 0` matters.
+7. **Not verified**:
+   - the value of `lineno.back()` at EOF (affects the error-line prefix);
+   - parser-side normalisation of negative constants;
+   - whether named sections can carry a result handle;
+   - whether `collectLocalValues` can recurse infinitely on recursive tables;
+   - the behaviour of `PcodeCompile::propagateSize` and `forceExportSize`;
+   - idempotence of `simplifyClone` (reasoned, not tested);
+   - unreachability of the `"Child has as many Patterns as parent"` guard (reasoned, not tested).
+
+## 11. Java and C++: where they differ, and which to follow
+
+Verified by reading the Java lines cited (2026-11-12/13). The Java
+runtime was not run. Items marked [unverified] were not read.
+
+**Format and loading.** Both require version 4, in the header byte and in
+the `version` attribute (`SM/pcode/utils/SlaFormat.java:39,202-203`,
+`SL/SleighLanguage.java:876-878`; `SL` =
+`SM/app/plugin/processors/sleigh/`). Java caps the inflated size at 2 GiB
+(`SlaFormat.java:44`). Java's expression decoder handles `next2_exp`
+(`SL/expression/PatternExpression.java:60`); the C++ one does not
+(section 1.3). Java distinguishes RAM-type and register-type spaces by
+`delay`, applies `<truncate_space>` only to RAM-type spaces, requires the
+`.slaspec` to exist, and checks the `.sla`'s endianness against the
+`.ldefs` (`SleighLanguage.java:146-148, 879-885, 896-1001`). Only Java
+recompiles a missing or stale `.sla` (`SL/SleighLanguageFile.java:315-429`).
+
+**Expressions.** Same operators on `long`: `<<` and `>>` use the count
+modulo 64 by the language definition, `>>` is arithmetic, `/` by zero
+throws (`SL/expression/LeftShiftExpression.java:40`,
+`RightShiftExpression.java:40`, `DivExpression.java:39`). C++ is
+undefined in exactly these cases (section 8), so the port follows Java
+there.
+
+**P-code generation.** Java's `PcodeEmit` is the same algorithm as
+`SleighBuilder` (same `generateLocation`: constants masked for sizes up
+to 8, unique offsets ORed with `(address & uniqmask) << 8`;
+`SL/PcodeEmit.java:436-449`) plus what C++ lacks: flow overrides,
+fall-through overrides, overriding references, and a final `BRANCH` for
+a fall-through override (`PcodeEmit.java:183-260, 770-894`). A failed
+emission yields one `UNIMPLEMENTED` op. See `features/sleigh-language.md`.
+
+**Instruction information.** Flow type, fall-through, operand types and
+objects, the `_` mnemonic prefix in delay slots, prototype sharing by
+hash: Java only (`SL/SleighInstructionPrototype.java`).
+
+**Context.** C++: section 4. Java keeps context as values of the context
+register in the program (`ProgramContext`), and the disassembler decides
+how a committed value flows along the instructions it follows; `noflow`
+fields are register bits flagged `TYPE_DOES_NOT_FOLLOW_FLOW`. That
+machinery belongs to M5 and was not read [unverified].
+
+**Compiler.** The Java compiler (`SM/pcodeCPort/**`, ANTLR front end) is
+a port of the C++ one. Ghidra's `SleighCompileRegressionTest`
+(`Ghidra/Test/IntegrationTest/src/test.slow/java/ghidra/pcodeCPort/
+slgh_compile/regression/`) compiles every `.slaspec` with both, with
+`-y`, and requires the two XML texts to be equal line by line, except
+that lines consisting of `<print piece=" "/>` are skipped on either side
+(the two differ in white-space print pieces at the end of a display
+section). Front-end differences are recorded in
+`features/sleigh-syntax.md` §8. Option differences: section 9.1. Whether
+the Java back end differs from the C++ in anything else observable
+(messages, order of diagnostics) was not read [unverified]; the port
+follows the C++, which is the runnable oracle.
+
+**P-code snippets.** C++ `PcodeSnippet` (`CPP/pcodeparse.y`) and Java
+`PcodeParser` (`SM/program/model/lang/PcodeParser.java`) compile the
+`<pcode>` bodies of `.cspec`/`.pspec` files against a loaded language.
+C++: temporaries advance by 16 per allocation from a base
+(`pcodeparse.cc:3133`), which the injection library starts at `uniqbase +
+0x200` and carries from snippet to snippet, and sets to 0x2000 for
+executable p-code (`CPP/inject_sleigh.cc:377, 422-465`). Java
+(`PcodeParserTest`): temporaries at `uniqueBase + n·0x100`. The two
+therefore number temporaries differently [the Java side is from the
+test's expectations, not from reading `PcodeParser`].
+
+## 12. Corpus facts (census of the 150 reference `.sla` files)
+
+Method: `docs/agents/spec-sleigh.md`. Totals over all files.
+
+| Elements | Count | | Elements | Count |
+|---|---:|---|---|---:|
+| `const_real` | 3,274,472 | | `constructor` | 131,955 |
+| `varnode_tpl` | 1,962,013 | | `construct_tpl` | 129,783 |
+| `const_spaceid` | 1,682,002 | | `scope` | 118,196 |
+| `const_handle` | 1,083,260 | | `varnode_sym` | 84,032 |
+| `op_tpl` | 816,132 | | `tokenfield` | 59,776 |
+| `mask_word` | 518,292 | | `userop` | 24,845 |
+| `pat_block` | 489,230 | | `handle_tpl` | 23,658 |
+| `print` / `opprint` | 410,430 / 273,693 | | `value_sym` | 20,653 |
+| `decision` | 361,879 | | `subtable_sym` | 15,323 |
+| `operand_sym` | 338,715 | | `context_op` / `commit` | 13,636 / 1,323 |
+| `pair` | 312,280 | | `varlist_sym` | 7,381 |
+| `context_pat` / `instruct_pat` / `combine_pat` | 68,183 / 67,147 / 176,950 as pair patterns | | `context_sym` / `name_sym` / `valuemap_sym` | 1,089 / 323 / 17 |
+
+Never present: `epsilon_sym`, `next2_exp`, `or_pat`, `const_flowref`,
+`const_flowref_size`, `const_flowdest`, `const_flowdest_size`; attribute
+`contain`. Present once per file: `start_sym`, `end_sym`, `next2_sym`.
+`const_next2` occurs 13 times (Toy), `const_relative` 3,042,
+`const_curspace` 2,099. `construct_tpl` attributes: `delay` on 685,
+`labels` on 1,824, `section` on 553. `constructor.first` is negative
+(−1) on 5,412. Expression operators: `lshift_exp` 4,596, `plus_exp`
+4,012, `or_exp` 2,667, `mult_exp` 2,416, `sub_exp` 1,749, `and_exp` 773,
+`minus_exp` 404, `rshift_exp` 378, `not_exp` 262, `xor_exp` 151,
+`div_exp` 32 (always an operand divided by a constant).
+
+Per-file maxima: 20,356 operand symbols; 5,055 scopes; 4,646 constructors
+in one table; 3,273 varnode symbols; 1,711 user ops; 646 tables; 1,024
+entries in one varnode list; 571 ops in one template; 27 operands, 19
+print pieces, 16 context changes and 4 commits in one constructor; 10
+inputs to one op; 256 children and 16 pairs in one decision node;
+decision depth 19; element nesting 27; 3 mask words in a block; 24 source
+files; 9 `space` elements.
+
+Language features by spec source: `delayslot` in 10 source files (26
+compiled languages have `maxdelay`), `globalset` in 22 source files,
+`crossbuild` in Hexagon only, `inst_next2` in Toy only.
