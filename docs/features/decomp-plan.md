@@ -4,8 +4,11 @@ Not a feature spec: this is the plan that the decompiler's feature specs
 hang from — the crate split, the tracks and their order, what gates each,
 and how parity with Ghidra is measured while the port is incomplete. Facts
 about Ghidra are in `docs/inventory/02-decompiler.md` ("the inventory");
-section numbers below marked *inv.* refer to it. Decisions here that need
-the coordinator's confirmation are collected in section 9.
+section numbers below marked *inv.* refer to it. ADR-025 (profiles, and six
+properties the port has from its first version) binds this plan; section 8
+says which track builds each property and how its acceptance shows it.
+Decisions here that need the coordinator's confirmation, and two places
+where Ghidra's code does not fit ADR-025 as worded, are in section 9.
 
 Path abbreviations: `CPP/`, `UT/`, `DT/`, `REF/` as in the inventory.
 
@@ -45,7 +48,9 @@ change of IR representation is confined to two crates.
 ```
 bk-decomp                    pipeline assembly in Ghidra's order, root actions, options,
   │                          public API (decompile → tokens + function result), parallel driver
-  ├── bk-decomp-print        Emit, pretty printer, PrintC, token markup model
+  ├── bk-decomp-print        output tree → tokens: Emit, markup, pretty printer (stage 2)
+  ├── bk-decomp-out          typed output tree, its builder (PrintC's decisions) and
+  │                          output passes (stage 1; ADR-025 3c)
   ├── bk-decomp-merge        HighVariable construction, covers intersection, naming, casts
   ├── bk-decomp-jumptable    switch recovery, value-set solver
   ├── bk-decomp-struct       structuring actions that touch ops (for-loops, switches, conditions)
@@ -65,7 +70,8 @@ bk-decomp                    pipeline assembly in Ghidra's order, root actions, 
   ├── bk-cspec               .cspec reader, prototype models, parameter assignment
   ├── bk-decomp-types        Datatype, TypeFactory, data organisation, C declaration parser
   └── bk-decomp-range        CircleRange
-        (all on bk-core, bk-marshal, bk-pcode; bk-cspec and the top also on bk-lang)
+        (all on bk-core, bk-marshal, bk-pcode; bk-cspec and the top also on bk-lang;
+         the top on bk-sleigh and bk-sleigh-snippet when they exist — ADR-023)
 ```
 
 Notes on the split:
@@ -99,18 +105,17 @@ Notes on the split:
 
 ## 3. Design constraints shared by all tracks
 
-These hold across specs so that tracks written apart fit together. Those
-the quality research (`docs/research/decompiler-quality.md`) may overturn
-are marked ◇ and listed again in section 8.
+These hold across specs so that tracks written apart fit together. They
+include what ADR-025 requires of the port from its first version.
 
 1. **Arenas and typed indices** (ADR-012): `VarnodeId`, `OpId`, `BlockId`,
    `TypeId`, `SymbolId`, `HighId`, `CallSpecId` are `u32` newtypes. No
-   `Rc<RefCell<…>>`, no `unsafe` (ADR-020). ◇ (the layout, not the rule)
+   `Rc<RefCell<…>>`, no `unsafe` (ADR-020).
 2. **The IR's representation is private to `bk-decomp-ir`.** Passes use an
    API that mirrors `Funcdata`'s mutation methods (inv. 3.4) and read
    through accessor methods and iterators; no pass touches arena storage,
    and hot fields may move between array-of-structs and struct-of-arrays
-   without touching passes. ◇
+   without touching passes.
 3. **Ghidra's orderings are part of the behaviour**, because rule
    application order depends on them: ops are visited in `SeqNum` order,
    varnodes are kept in the two orders of `VarnodeBank`, readers of a
@@ -123,15 +128,26 @@ are marked ◇ and listed again in section 8.
    and destroy freely. Destroyed ops and varnodes keep their slot until
    the function is cleared (Ghidra's `deadandgone`), so a stale id never
    aliases a new object; debug builds check liveness on access.
-5. **Rules are data-like units**: a `Rule` is a value with a name, a base
-   group, an opcode list and an apply function; pools are built from
-   tables; enabling, disabling and reordering are table operations. ◇
+5. **Units and profiles** (ADR-025 items 1 and 2). Every rule, action,
+   merge pass, structuring step and output pass is a *unit*: a value with
+   Ghidra's name, an origin (`ghidra` or `basilisk`), a base group and,
+   for rules, an opcode list. Units are registered in one table; a
+   *profile* names the units and their arrangement, and the pipeline is
+   built from the table by a profile. The `ghidra` profile is
+   `universalAction` exactly (inv. 5.2) and is the target of every
+   differential test in this plan; Ghidra's units are never edited to
+   improve them. Ghidra's *root actions* (`decompile`, `jumptable`,
+   `normalize`, `paramid`, `register`, `firstpass`; inv. 5.1) are group
+   filters applied to a profile's pipeline, so the two are independent.
+   Every decompiler test names its profile; snapshots are per profile.
 6. **Provenance is never dropped.** An op keeps the address and sequence
-   number of the instruction it came from through every transformation; a
-   new op records the op it was derived from; output tokens carry the
-   `OpId`/`VarnodeId`/`HighId`/`TypeId` they print (as Ghidra's markup
-   does, inv. 3.9). Any representation change must keep token → op →
-   address resolvable.
+   number of the instruction it came from through every transformation;
+   output-tree nodes and tokens carry the `OpId`/`VarnodeId`/`HighId`/
+   `TypeId` they print (as Ghidra's markup does, inv. 3.9); names and
+   types carry where they came from (ADR-025 3f: user, debug information,
+   import, library signature, analysis, model). The optional record of
+   unit applications (ADR-025 3a) links an op to the unit that produced
+   it.
 7. **Per-function work is independent and deterministic.** Program-wide
    state (`Architecture`: spaces, models, base types, symbols) is
    immutable and `Send + Sync` during decompilation; whatever a function
@@ -147,8 +163,11 @@ are marked ◇ and listed again in section 8.
    message where a test or a user sees it. A function that fails to
    decompile yields an error result and leaves the program state intact.
 10. **The host is a trait** (ADR-004): the queries of inv. 9.2, minus
-    those the engine can answer itself once `bk-sleigh` exists. In-memory
-    implementations (for data tests) live in `bk-decomp-symbols`.
+    those the engine can answer itself once `bk-sleigh` exists, **plus**
+    what ADR-025 3d and 3f add: function summaries of callees, "does the
+    call at this site return", and provenance on every name and type that
+    crosses it, in both directions. In-memory implementations (for data
+    tests) live in `bk-decomp-symbols`.
 
 ## 4. How parity is measured
 
@@ -234,13 +253,19 @@ does not constrain the IR design (section 8).
   124 of 161 rules apply at least once; **37 never apply and 54 more
   apply in at most two files** (table in section 10). The data tests
   alone cannot accept those rules.
-* **Extended corpus** (track `D19`): functions cut from real object code
-  for the data tests' nine processor families and wrapped as
-  `<binaryimage>` files generated at test time from binaries referenced
-  in place (Ghidra's own test binaries under `Ghidra/Test/TestResources`
-  and the ELF fixtures `bk-elf` already uses), chosen so that every rule
-  applies at least 20 times in the reference console. Selection is by
-  `print actionstats`, mechanical.
+* **The research corpus** (`docs/research/decompiler-quality/`: 74
+  fragments in the data tests' `<binaryimage>` form with their console
+  scripts and the reference output, 0.5 MB) is the second corpus and the
+  one ADR-025's scorecard starts from. Measured the same way, it makes
+  five of those 37 rules apply (`rightshiftand`, `highorderand`,
+  `andcommute`, `bxor2notequal`, `subright`); **32 rules apply in neither
+  corpus**.
+* **Extended corpus** (track `D19`): further fragments in the same form,
+  built the research corpus's way (`tools/run.py`, `elf2frag.py`), chosen
+  so that every rule applies at least 20 times in the reference console.
+  Selection is by `print actionstats`, mechanical. Rules that no compiled
+  code can be found for (`segment` needs a segmented address space,
+  `transformcpool` a constant pool) are listed with the reason.
 * Corpus results are **captured** (trace, dumps at chosen break points,
   `print C`) into checked-in compressed fixtures where they are small, and
   regenerated on demand where they are large (the fixture then holds
@@ -280,7 +305,26 @@ Every acceptance check is one of three kinds, stated per track in section
 A track's acceptance must not rest on L alone: whatever proves it right is
 captured and replayed (S, or G when the input is a Ghidra spec file).
 
-### 4.6 Reporting
+### 4.6 Gate and nightly (ADR-025 item 4)
+
+The split of `docs/research/decompiler-quality.md` 5.3 applies to every
+track's tests: the **gate** runs only kind S and G checks — replays of
+checked-in tables, dumps, traces and recordings, `insta` snapshots of the
+`ghidra` profile's output against the checked-in reference output, and the
+bounded stage-equivalence check (lifted p-code against the final IR on a
+fixed seed and a per-function budget) once D07 exists; **nightly** runs
+kind L: regeneration of every capture from the reference tools with a
+drift report, the unbounded comparisons, the compiler matrix. Scorecard:
+`docs/QUALITY.md`, three columns (Ghidra reference, `ghidra` profile,
+default profile).
+
+A detail of the console that script replay must reproduce (found by the
+research, by running it): `load function` follows flow immediately, so a
+flow override given after it takes effect only on a second `decompile`.
+The data-test runner (D09) executes commands in the script's order with
+the same side effects, and does not "tidy" a script.
+
+### 4.7 Reporting
 
 `docs/PARITY.md` gets a decompiler table maintained from test output, per
 corpus function: trace prefix agreed / trace length, break points whose
@@ -293,42 +337,44 @@ for documented differences.
 
 Size is hand-written C++ lines of the Ghidra code the track ports (`.cc` +
 `.hh`, measured; inv. 2), as a guide to effort: **S** under 3,000, **M**
-3,000–7,000, **L** 7,000–10,000. Tracks above L are split. "Research" says
-whether the track must wait for the reconciliation of
-`docs/research/decompiler-quality.md` with this plan: **leaf** = safe to
-start regardless; **wait** = its design is what the research may change.
+3,000–7,000, **L** 7,000–10,000. Tracks above L are split. The last
+column names the ADR-025 properties the track must build in (3a–3f; "units"
+= items 1 and 2); section 8 says how each is shown. **Leaf** tracks need
+no other decompiler crate.
 
-| Id | Track | Crates owned | Ghidra code | Size | Needs merged | Research |
+| Id | Track | Crates owned | Ghidra code | Size | Needs merged | ADR-025 |
 |---|---|---|---|---|---|---|
-| D00 | `decomp-oracle` | `tools/reference/consoleext_bk.cc`, additions to `scripts/build-reference.sh` and `bk-testkit` (`decomp_dbg` wrapper, dump/trace/recording parsers) | — (tooling, C++ and Rust) | S | — | **leaf** |
-| D01 | `decomp-range` | `bk-decomp-range` | `rangeutil.cc` 21–1,490 | S (1,500) | — | **leaf** |
-| D02 | `decomp-types` | `bk-decomp-types` | `type.*` minus IR-bound methods, `metatype.*`, the C parser of `grammar.y` | L (7,500) | — | **leaf** |
-| D03 | `decomp-cspec` | `bk-cspec` | `fspec.*` minus `FuncCallSpecs` and symbol-backed stores, `modelrules.*`, the `.cspec` decoding of `architecture.cc`, payload/user-op declarations of `pcodeinject`/`userop` | L (8,500) | — | **leaf** |
-| D04 | `decomp-cfg` | `bk-decomp-cfg` | `block.*` (graph, the structured kinds), `blockaction.cc` (`CollapseStructure`, `LoopBody`, `TraceDAG`, `FloatingEdge`) | M (6,500) | — | **leaf for parity**; the research is likely to add a second structuring algorithm beside it, not replace this one's behaviour |
-| D05 | `decomp-ir` | `bk-decomp-ir` | `varnode.*`, `op.*`, `cover.*`, `BlockBasic`, the low-level halves of `funcdata_op.cc` and `funcdata_varnode.cc`, dumps and state load | L (8,000) | D00, D02, D04 | **wait** |
-| D06 | `decomp-symbols` | `bk-decomp-symbols` | `database.*`, `comment.*`, `stringmanage.*`, `cpool.*`, `loadimage.*`, `loadimage_xml.*`, `globalcontext.*`, `override.*`, `partmap`/`rangemap` | L (9,000) | D02, D03 | **leaf** |
-| D07 | `decomp-core` | `bk-decomp-core` | `funcdata.cc` and the rest of the `funcdata_*` files, `architecture.*` (assembly, not decoding), `options.*`, `action.*` (framework, trace, statistics), `expression.*`, `transform.*`, `FuncCallSpecs`, `userop.*`, `pcodeinject.*` (run time), `dynamic.*` | L (10,000) | D03, D05, D06, D08's `TypeOp` table through a trait | **wait** (action/rule machinery) |
-| D08 | `decomp-typeop` | `bk-decomp-typeop` | `typeop.*`, `cast.*`, `unionresolve.*`, the IR-bound methods of `type.cc` | M (7,000) | D05 | wait (follows D05) |
-| D09 | `decomp-flow` | `bk-decomp-flow`, the data-test runner crate `bk-decomp-datatest` | `flow.*`, flow methods of `Funcdata`, `xml_arch`, `testfunction`, the console commands data tests use | M (5,000) | D07 | leaf once D07 exists |
-| D10 | `decomp-heritage` | `bk-decomp-heritage` | `heritage.*`, `prefersplit.*` | M (4,000) | D07 | leaf once D07 exists |
-| D11 | `decomp-actions-a` | `bk-decomp-actions` (first half) | `coreaction.cc`: set-up and main-loop actions up to `restructure_varnode`, dead code, non-zero mask, `varmap.*` | L (8,000) | D07, D08 | leaf once D07 exists |
-| D12 | `decomp-actions-b` | `bk-decomp-actions` (second half; module-disjoint from D11, started after D11 merges) | The stack-stall actions, branch and block clean-up, `condexe.*`, conditional constants, likely trash, switch normalisation, return split, prototype fixation | M (6,000) | D11 | leaf once D07 exists |
-| R1 | `rules-basic` | `bk-decomp-rules-basic` | Families "dead code and copy propagation", "canonical form of arithmetic" (inv. 6.1): 21 rules | S | D07, D08 | leaf once D07 exists |
-| R2 | `rules-bits` | `bk-decomp-rules-bits` | "Bit masks and logical ops", "shifts": 26 rules | S | D07, D08 | 〃 |
-| R3 | `rules-compare` | `bk-decomp-rules-compare` | "Comparisons and booleans": 31 rules | M | D07, D08 | 〃 |
-| R4 | `rules-piece` | `bk-decomp-rules-piece` | "Pieces", "cleanup" (without `dumptyhumplate`, which is in `subflow.cc`): 27 rules | M | D07, D08 | 〃 |
-| R5 | `rules-divide` | `bk-decomp-rules-divide` | "Division and modulus recovery", "floating point" (without `subfloat_convert`): 18 rules | S | D07, D08 | 〃 |
-| R6 | `rules-pointer` | `bk-decomp-rules-pointer` | "Pointers and data types", "control flow" (without `orpredicate`): 13 rules | M | D07, D08, D06 | 〃 |
-| R7 | `rules-subflow` | `bk-decomp-rules-subflow` | `subflow.*`: 12 rules, `SubvariableFlow`, `SplitFlow`, `SplitDatatype`, `SubfloatFlow`, `LaneDivide` | M (4,600) | D07, D08 | 〃 |
-| R8 | `rules-double` | `bk-decomp-rules-double` | `double.*`: 4 rules | M (4,000) | D07, D08 | 〃 |
-| R9 | `rules-bitfield` | `bk-decomp-rules-bitfield` | `bitfield.*`, `constseq.*`: 8 rules | M (3,900) | D07, D08 | 〃 |
-| D13 | `decomp-jumptable` | `bk-decomp-jumptable` | `jumptable.*`, `emulateutil.*`, the value-set half of `rangeutil.cc`, jump-table methods of `Funcdata` | L (7,500) | D01, D09, D10 | leaf once D07 exists |
-| D14 | `decomp-merge` | `bk-decomp-merge` | `merge.*`, `variable.*`, the merge, marking and naming actions | M (6,000) | D11 | leaf once D07 exists |
-| D15 | `decomp-struct` | `bk-decomp-struct` | `blockaction.cc` actions, the op-touching methods of the structured blocks (`BlockWhileDo` for-loops, `BlockSwitch`, condition negation) | S | D04, D07 | follows the research's structuring decision |
-| D16 | `decomp-print` | `bk-decomp-print` | `prettyprint.*`, `printlanguage.*`, `printc.*`, `printjava.*`, `CommentSorter`, `ActionSetCasts` | L (9,500) | D14, D15 | **wait** (token/provenance model) |
-| D17 | `decomp-driver` | `bk-decomp`, `basilisk decompile` | `universalAction`, `buildDefaultGroups`, `paramid.*`, the result encoding (`Funcdata::encode`), parallel driver, benchmarks | M | all | — |
-| D18 | `decomp-inject` | `bk-decomp-inject` | `inject_sleigh.*` on top of the p-code snippet compiler | S | `bk-sleigh`'s snippet parser | — |
-| D19 | `decomp-corpus` | `bk-decomp-corpus` (dev-only) | — (extended corpus, section 4.3; parity table) | S | D00, D09 | leaf |
+| D00 | `decomp-oracle` | `tools/reference/consoleext_bk.cc`, additions to `scripts/build-reference.sh` and `bk-testkit` (`decomp_dbg` wrapper, dump/trace/recording parsers) | — (tooling, C++ and Rust) | S | — (leaf) | — |
+| D01 | `decomp-range` | `bk-decomp-range` | `rangeutil.cc` 21–1,490 | S (1,500) | — (leaf) | — |
+| D02 | `decomp-types` | `bk-decomp-types` | `type.*` minus IR-bound methods, `metatype.*`, the C parser of `grammar.y` | L (7,500) | — (leaf) | 3e (inferred category), 3f (type provenance) |
+| D03 | `decomp-cspec` | `bk-cspec` | `fspec.*` minus `FuncCallSpecs` and symbol-backed stores, `modelrules.*`, the `.cspec` decoding of `architecture.cc`, payload/user-op declarations of `pcodeinject`/`userop` | L (8,500) | — (leaf) | 3d (the `FunctionSummary` type), 3f (prototype provenance) |
+| D04 | `decomp-cfg` | `bk-decomp-cfg` | `block.*` (graph, the structured kinds), `blockaction.cc` (`CollapseStructure`, `LoopBody`, `TraceDAG`, `FloatingEdge`) | M (6,500) | — (leaf) | 3b; units (goto selection as a replaceable step) |
+| D05 | `decomp-ir` | `bk-decomp-ir` | `varnode.*`, `op.*`, `cover.*`, `BlockBasic`, the low-level halves of `funcdata_op.cc` and `funcdata_varnode.cc`, dumps and state load | L (8,000) | D00, D02, D04 | **3a**; the unit table's data model |
+| D06 | `decomp-symbols` | `bk-decomp-symbols` | `database.*`, `comment.*`, `stringmanage.*`, `cpool.*`, `loadimage.*`, `loadimage_xml.*`, `globalcontext.*`, `override.*`, `partmap`/`rangemap` | L (9,000) | D02, D03 | **3d** (summaries through the program trait, call-site "returns?"), **3f** |
+| D07 | `decomp-core` | `bk-decomp-core` | `funcdata.cc` and the rest of the `funcdata_*` files, `architecture.*` (assembly, not decoding), `options.*`, `action.*` (framework, trace, statistics), `expression.*`, `transform.*`, `FuncCallSpecs`, `userop.*`, `pcodeinject.*` (run time), `dynamic.*` | L (10,000) | D03, D05, D06 | **units and profiles**; 3a (recorder attached; evaluator); 3e (the access table's type) |
+| D08 | `decomp-typeop` | `bk-decomp-typeop` | `typeop.*`, `cast.*`, `unionresolve.*`, the IR-bound methods of `type.cc` | M (7,000) | D05 | units (propagation policy per opcode is a unit); 3e (fills the access table at pointer ops) |
+| D09 | `decomp-flow` | `bk-decomp-flow`, the data-test runner crate `bk-decomp-datatest` | `flow.*`, flow methods of `Funcdata`, `xml_arch`, `testfunction`, the console commands data tests use | M (5,000) | D07 | 3d (asks the trait whether a call returns, with the call site) |
+| D10 | `decomp-heritage` | `bk-decomp-heritage` | `heritage.*`, `prefersplit.*` | M (4,000) | D07 | 3a (each pass ends evaluable) |
+| D11 | `decomp-actions-a` | `bk-decomp-actions` (first half) | `coreaction.cc`: set-up and main-loop actions up to `restructure_varnode`, dead code, non-zero mask, `varmap.*` | L (8,000) | D07, D08 | units; 3e (`ActionInferTypes` fills the access table) |
+| D12 | `decomp-actions-b` | `bk-decomp-actions` (second half; started after D11 merges) | The stack-stall actions, branch and block clean-up, `condexe.*`, conditional constants, likely trash, switch normalisation, return split, prototype fixation | M (6,000) | D11 | units |
+| R1 | `rules-basic` | `bk-decomp-rules-basic` | Families "dead code and copy propagation", "canonical form of arithmetic" (inv. 6.1): 21 rules | S | D07, D08 | units |
+| R2 | `rules-bits` | `bk-decomp-rules-bits` | "Bit masks and logical ops", "shifts": 26 rules | S | D07, D08 | units |
+| R3 | `rules-compare` | `bk-decomp-rules-compare` | "Comparisons and booleans": 31 rules | M | D07, D08 | units |
+| R4 | `rules-piece` | `bk-decomp-rules-piece` | "Pieces", "cleanup" (without `dumptyhumplate`, which is in `subflow.cc`): 27 rules | M | D07, D08 | units |
+| R5 | `rules-divide` | `bk-decomp-rules-divide` | "Division and modulus recovery", "floating point" (without `subfloat_convert`): 18 rules | S | D07, D08 | units |
+| R6 | `rules-pointer` | `bk-decomp-rules-pointer` | "Pointers and data types", "control flow" (without `orpredicate`): 13 rules | M | D07, D08, D06 | units |
+| R7 | `rules-subflow` | `bk-decomp-rules-subflow` | `subflow.*`: 12 rules, `SubvariableFlow`, `SplitFlow`, `SplitDatatype`, `SubfloatFlow`, `LaneDivide` | M (4,600) | D07, D08 | units |
+| R8 | `rules-double` | `bk-decomp-rules-double` | `double.*`: 4 rules | M (4,000) | D07, D08 | units |
+| R9 | `rules-bitfield` | `bk-decomp-rules-bitfield` | `bitfield.*`, `constseq.*`: 8 rules | M (3,900) | D07, D08 | units |
+| D13 | `decomp-jumptable` | `bk-decomp-jumptable` | `jumptable.*`, `emulateutil.*`, the value-set half of `rangeutil.cc`, jump-table methods of `Funcdata` | L (7,500) | D01, D09, D10 | 3a (shares the evaluator) |
+| D14 | `decomp-merge` | `bk-decomp-merge` | `merge.*`, `variable.*`, the merge, marking and naming actions | M (6,000) | D11 | units (each merge pass); a high variable records the passes that formed it |
+| D15 | `decomp-struct` | `bk-decomp-struct` | `blockaction.cc` actions, the op-touching methods of the structured blocks (`BlockWhileDo` for-loops, `BlockSwitch`, condition negation) | S | D04, D07 | 3b (applies the structurer's result to the IR), units |
+| D16a | `decomp-out-spike` | none (a report and a throw-away prototype) | `printc.*`, `printlanguage.*` read against the 93 data tests | S | D00 | **3c's condition** |
+| D16b | `decomp-out` | `bk-decomp-out` | `printlanguage.*` (the reverse-Polish machinery as a tree builder), `printc.*` and `printjava.*` (what is pushed and when), `CommentSorter`, `ActionSetCasts` | L (7,500) | D14, D15, D16a | **3c**; units (output passes) |
+| D16c | `decomp-print` | `bk-decomp-print` | `prettyprint.*`, the `Emit` family, markup encoding | S (2,500) | D16a | 3c (stage 2), 3f (a token can show the provenance of its name or type) |
+| D17 | `decomp-driver` | `bk-decomp`, `basilisk decompile` | `universalAction`, `buildDefaultGroups`, `paramid.*`, the result encoding (`Funcdata::encode`), parallel driver, benchmarks | M | all | **profiles** (`ghidra`, `basilisk`), **3d** (summary as an output), item 4 (scorecard, gate) |
+| D18 | `decomp-inject` | `bk-decomp-inject` | `inject_sleigh.*` on top of `bk-sleigh-snippet` | S | `bk-sleigh-snippet` | — |
+| D19 | `decomp-corpus` | `bk-decomp-corpus` (dev-only) | — (corpus runner, extended corpus, counters, stage-equivalence harness, parity and quality tables) | M | D00; grows with D07, D09 | item 4 |
 
 Not in M3: `signature.*` (BSim, M10), `callgraph.*`, `raw_arch.*` (with
 the CLI and loaders), `codedata`, `rulecompile`/`unify` (never built).
@@ -342,30 +388,31 @@ together as slots allow.
 
 | Wave | Tracks | Why here |
 |---|---|---|
-| **1 — now** | D01, D02, D03, D00 (then D04 when a slot frees) | Leaf tracks; no IR, no lifter, no research dependency. D00 is tooling every later track's acceptance uses |
-| 2 | D05, D06 (and D04 if not done) | D05 after the research reconciliation; D06 needs only D02 and D03 |
-| 3 | D07, D08 | The function and program state, the framework, op typing. D08 may run with D07 because it needs only D05 |
-| 4 | D09, D10, D11, R1–R9, D19 | With state loading (4.2) these do not wait for each other: each is accepted from Ghidra's state before its pass. This is the wide wave; rule tracks are taken in the order R1, R4, R6, R3, R2, R7, R5, R8, R9 (by how often their rules apply in the corpus, section 10) |
+| **1 — now** | D01, D02, D03, D00, D04 | Leaf tracks: no IR, no lifter. D00 is tooling that every later track's acceptance uses |
+| 2 | D05, D06, D16a | D05 needs D00, D02, D04; D06 needs D02, D03; the spike needs only D00's final-state dumps and decides how D16b is built |
+| 3 | D07, D08, D16c | The function and program state, the unit table and profiles, op typing. D08 may run with D07 because it needs only D05; D16c needs only the tree format the spike fixed |
+| 4 | D09, D10, D11, R1–R9, D19 | With state loading (4.2) these do not wait for each other: each is accepted from Ghidra's state before its pass. Rule tracks are taken in the order R1, R4, R6, R3, R2, R7, R5, R8, R9 (by how often their rules apply in the corpora, section 10) |
 | 5 | D12, D13, D14 | Need D11's or D09/D10's merged code |
-| 6 | D15, D16 | Structuring with the IR; printing |
-| 7 | D17, then D18 when `bk-sleigh` has the snippet compiler | Assembly, whole-output parity, performance |
+| 6 | D15, D16b | Structuring with the IR; the output tree |
+| 7 | D17, then D18 when `bk-sleigh-snippet` exists | Assembly, whole-output parity, the scorecard, performance |
 
-The critical path is D02 → D05 → D07 → D11 → D14 → D16 → D17: seven
+The critical path is D02 → D05 → D07 → D11 → D14 → D16b → D17: seven
 tracks. Without state loading it would be every track in pipeline order.
 
 ### 5.2 What can start now
 
-**D01, D02, D03 and D00**, today, in any combination; **D04** as soon as
-there is a slot. None of them reads `docs/research/decompiler-quality.md`
-territory: they port self-contained Ghidra behaviour whose representation
-is private to their crate. Specs: `features/decomp-range.md`,
+**D01, D02, D03, D00 and D04**, today, in any combination. They port
+self-contained Ghidra behaviour whose representation is private to their
+crate; ADR-025 asks of them only additive things (a provenance field, an
+inferred-type category, a summary type, a pure structurer), which their
+specs include. Specs: `features/decomp-range.md`,
 `features/decomp-types.md`, `features/decomp-cspec.md`; D00 and D04 are
-specified in section 6 below to the level needed to brief an agent, and
+specified in sections 4.2 and 6 to the level needed to brief an agent and
 get their own feature documents when started.
 
-**D05 waits** for the reconciliation, because the IR's interface is the
-thing the research may reshape; its draft spec is
-`features/decomp-ir.md`. D06 does not wait but needs D02 and D03 merged.
+**D05** no longer waits for a design decision — the research is done and
+ADR-025 settles what the IR must offer — but it needs D00, D02 and D04
+merged. Its spec is `features/decomp-ir.md`.
 
 ## 6. Acceptance per track
 
@@ -425,10 +472,13 @@ dominators, reverse post-order indices, spanning-tree edge labels,
 irreducible edges, loop bodies (S replay); **the structured result** of
 each graph from the console command `structure blocks`, i.e. the full
 block hierarchy (S replay, L regeneration); property tests (every node
-appears once in the hierarchy; edges preserved). The op-dependent hooks
-(condition negation, statement complexity, last-op queries) are a trait
-with a neutral implementation for bare graphs, which is how Ghidra's
-`structure blocks` runs.
+appears once in the hierarchy; edges preserved; structuring a copy
+leaves the input untouched and gives an equal result — ADR-025 3b). What
+Ghidra's rules read from or do to basic blocks (statement complexity,
+last-op kind; condition negation) enters as per-block input facts and
+leaves as a list of condition flips in the result (section 9.1); with
+neutral facts this is exactly how `structure blocks` runs on a bare
+graph. The result carries a measure (gotos, depth).
 
 **D05 `decomp-ir`.** Owns no unit test alone. Evidence: **round trip** of
 Ghidra's state dumps for every data-test function at four break points
@@ -505,76 +555,199 @@ tables (addresses, labels, default) equal to Ghidra's dump for every
 (`assignhigh` … `copymarker`), including high-variable membership and
 names, equal to Ghidra's.
 
-**D15 `decomp-struct`, D16 `decomp-print`.** Evidence: `print tree block`
-equal after each structuring action (S subset); `print C` and `print C
-xml` equal to the console's for every corpus function, starting from
-Ghidra's final state dump (so printing is accepted independently of the
-pipeline) (S subset, L all); the pretty printer against a table of token
-streams and line widths from Ghidra's `EmitPrettyPrint` (S).
+**D15 `decomp-struct`.** Evidence: from Ghidra's dump before each
+structuring action, the state after it and `print tree block` equal to
+Ghidra's (S subset, L all); the flips and goto edges D04 returned are
+applied and the resulting op flags equal Ghidra's.
+
+**D16a `decomp-out-spike`.** A report answering ADR-025 3c with evidence
+from all 93 data tests (section 8.1); no crate.
+
+**D16b `decomp-out`, D16c `decomp-print`.** Evidence: from Ghidra's final
+state dump (so output is accepted independently of the pipeline), the
+tree built by D16b printed by D16c equals `print C` and `print C xml` of
+the console token for token, for every function of both corpora (S
+subset as `insta` snapshots, L all); D16c alone: printing the trees
+logged from the reference console by D16a's instrumentation gives the
+console's text; the pretty printer against a table of token streams and
+line widths from Ghidra's `EmitPrettyPrint` (S); every token resolves to
+an op or varnode and an address wherever Ghidra's markup has one.
 
 **D17 `decomp-driver`.** Owns the 93 data tests
 (`inventory/tests/decompiler-cpp.md`). Evidence: all 760 checks (L4, G);
 whole output equal on both corpora with nothing loaded from Ghidra (L5);
 identical results for 1 and N threads; per-function time against the
-reference console (`PERF.md`).
+reference console (`PERF.md`); the `ghidra` profile is `universalAction`
+and the `basilisk` profile exists and equals it until an improvement is
+accepted; each decompilation returns a `FunctionSummary`; `insta`
+snapshots of the `ghidra` profile for both corpora in the gate
+(ADR-025 item 4).
 
 ## 7. Things other tracks and the coordinator must provide
 
 * **The reference build** gains `decomp_dbg`, the console extension and an
   x86-64 Linux container target (D00). Until then, L2/L3 evidence cannot
   be produced, which is why D00 is in wave 1.
-* **`bk-sleigh`** is needed only by D18 and for running the engine on
-  bytes that were never recorded. The interface it must satisfy is the
-  `PcodeSource` trait of D07; the SLEIGH track should be told its eleven
+* **`bk-sleigh`** (ADR-023; language model in `bk-sla`, registers and
+  flow types in `bk-language`) is needed for running the engine on bytes
+  that were never recorded. The interface it must satisfy is the
+  `PcodeSource` trait of D07; the SLEIGH tracks should be told its eleven
   methods (inv. 3.1) and that context changes made by instructions must be
   visible to later lifts within one function.
-* **The p-code snippet compiler** (`pcodeparse.y`, in Ghidra's `SLEIGH`
-  group) is needed by D18 for `.cspec` call fixups and `<pcode>` bodies;
-  108 `<body>` elements exist in the corpus. Until then `bk-cspec` keeps
-  payloads as uncompiled text, and the data tests that need injection
-  (`injectoverride.xml` and any that call a fixed-up function) stay open.
+* **`bk-sleigh-snippet`** (ADR-023) compiles `.cspec` call fixups and
+  `<pcode>` bodies and is needed by D18; 108 `<body>` elements exist in
+  the 107 files. Until then `bk-cspec` keeps payloads as uncompiled text,
+  and the data tests that need injection (`injectoverride.xml` and any
+  that call a fixed-up function) stay open.
 * **`globalcontext`** (`ContextDatabase`) is in D06 here; the SLEIGH
   runtime needs the context-variable half of it earlier. Whichever track
   lands first owns it; the other adopts it. To be settled between the two
   specs (section 9).
 
-## 8. Design decisions the quality research could overturn
+## 8. ADR-025 in this plan
 
-Listed so that the reconciliation is a checklist. For each: what this plan
-assumes, and what it has done to make a change cheap.
+The research is finished and ADR-025 records what it requires. None of it
+changes Ghidra-profile output; all of it is cheap only if built in from
+the first version. Per property: who builds it, and what in that track's
+acceptance shows it is there.
 
-1. **SSA over raw p-code with Ghidra's varnode identity** (address + size
-   + version). A typed or structured IR above it would change D05, D07 and
-   every pass. Mitigation: passes see the IR through an interface (3.2);
-   state dumps describe Ghidra's state, not ours.
-2. **Rule application order equal to Ghidra's** (3.3). A better rewriting
-   strategy (e-graphs, priorities, cost-directed) cannot be both
-   order-faithful and different. Mitigation: rules are values in tables
-   (3.5); the pool driver is one module; a second driver can run the same
-   rules — but its results cannot be accepted by trace equality.
-3. **Rules written as hand-coded matchers** on the mutation API, as in
-   Ghidra. A declarative pattern language would change R1–R9 wholesale.
-   This is the largest exposure: nine tracks. They are scheduled after
-   the reconciliation for that reason, although D07 is all they need.
-4. **One structuring algorithm, Ghidra's** (D04). Research may add
-   another for output quality; D04's behaviour is still needed as the
-   baseline, and the block-hierarchy data structure is its private matter.
-5. **Types as Ghidra's lattice** (`compare`'s ordering, propagation by
-   `TypeOp`). A constraint-based type inference would replace
-   `ActionInferTypes` (in D11) and parts of D08, not D02's data model —
-   but D02's choice to intern types in a factory with per-function
-   overlays would need to carry type variables.
-6. **Merging and naming as Ghidra does them** (D14), and **casts decided
-   by `CastStrategy`** (D08/D16).
-7. **The token model equal to Ghidra's markup** (D16). Richer provenance
-   (expression trees, confidence, alternative renderings) would extend it.
-8. **Per-function overlays for types and join records** (3.7).
-9. **Crate boundaries by pass** (section 2): a research proposal to
-   interleave passes differently changes `bk-decomp`'s assembly only.
+| ADR-025 | Built by | What is built | How acceptance shows it |
+|---|---|---|---|
+| Items 1, 2 — units, origins, profiles | D05 (data model), D07 (table, profiles, driver), every pass track (its units), D17 (the two profiles) | `UnitId`, `UnitInfo { name, origin, group, kind, soundness }`; a `UnitTable` each pass crate contributes to; `Profile` = an arrangement of units by name; the pipeline builder; one switch per unit in the option registry | D07: `list action` text generated from the `ghidra` profile equals the console's for all six root actions; building a profile fails on an unknown or duplicate unit name; a test profile that adds a `basilisk`-origin unit and one that replaces a Ghidra unit, with the `ghidra` profile's traces unchanged. Every pass track: its units appear in the table with Ghidra's names and groups (checked against inv. 5.2 and 6 mechanically) |
+| 3a — evaluable IR, one mutation interface, recorder | D05 (interface, recorder hook, op semantics table), D07 (evaluator over a function with an environment; recorder → trace), D10 and every pass (leave the IR evaluable) | All structural edits through the `Funcdata`-shaped API of `bk-decomp-ir`; a `Recorder` trait called on every edit with the unit in force; an evaluator giving `MULTIEQUAL` (by predecessor edge) and `INDIRECT` (through the environment's effect of the named op) a meaning, with free varnodes read by storage | D05: the recorder's output for a scripted edit sequence equals Ghidra's debug trace records for the same edits (the trace *is* a recorder of this kind); the round trip of state dumps proves nothing bypasses the interface (a field changed outside it would not be dumped as Ghidra's). D07 and D19: the bounded stage-equivalence check runs in the gate on both corpora |
+| 3b — structurer on a copy, returning a hierarchy and a measure | D04 (structurer), D15 (applies results to the IR) | `structure(graph, block facts, options) -> Structured { hierarchy, condition flips, goto edges, measure { gotos, depth, … } }`, a pure function of its inputs; the block graph is cheap to copy | D04: structuring a graph twice, or a copy of it, gives equal results and leaves the input untouched (property test); results equal `structure blocks` from the reference console; the measure's goto count equals the number of `goto` edges Ghidra marks |
+| 3c — typed output tree | D16a (spike), D16b (tree and builder), D16c (printing) | See section 8.1 | D16a's report; then D16b/c: token-for-token equality with `print C` and `print C xml` from Ghidra's final state |
+| 3d — function summaries | D03 (the `FunctionSummary` type), D06 (trait methods: summary of a callee; "does the call at this site return"), D09 (asks at call sites during flow), D17 (produces a summary per decompiled function) | Plain data in `bk-cspec`; two trait methods with defaults that answer what Ghidra's engine knows (the callee's prototype and its `no_return` flag; flow overrides at the site) | D06: with the default implementation every data test behaves as before; a test host that answers "does not return" for one call site changes flow exactly as the console's `override flow <addr> callreturn` does (compared with the console). D17: the summary's parameters and return agree with the function's recovered prototype in the reference output |
+| 3e — inferred types, table of observed accesses | D02 (category), D07 (the table's type, owned by the function state), D08 and D11 (fill it during propagation) | Types created during a function's decompilation live in a per-function overlay and are marked inferred; `AccessTable` rows (base varnode, offset, size, stride, read/write, op) | D02: an overlay type never changes the identity or order of base types, and dropping the overlay restores the factory (tests). D08/D11: for each `LOAD`, `STORE`, `PTRADD` and `PTRSUB` in the final state of a corpus function there is a row, checked against Ghidra's final state dump |
+| 3f — provenance on names and types | D02 (types), D03 (prototype pieces), D06 (symbols; across the trait in both directions), D16c (visible on tokens) | One `Provenance` enum (user, debug information, import, library signature, analysis, model, default) carried as an attribute that takes no part in comparison or identity | D02/D03/D06: round trip through the trait preserves it; changing only the provenance of an input never changes `ghidra`-profile output (property test over the data tests) |
+| Item 4 — scorecard, gate | D19 (runner, counters, equivalence harness), D17 (the `ghidra`-profile snapshots) | Section 4.6 | `docs/QUALITY.md` with its command |
 
-Not exposed: D00, D01, D02's data model and C parser, D03, D06.
+### 8.1 The printer in two stages
 
-## 9. For the coordinator to confirm
+ADR-025 3c is conditional on a spike. Planned so that no printer code is
+written before the question is answered:
+
+1. **D16a, the spike** (wave 2; needs only D00's dumps and the reference
+   console). Question: can `PrintC`'s output for the 93 data tests be
+   reproduced token for token from a tree that is built first and printed
+   afterwards? Method: instrument the reference console through
+   `consoleext_bk.cc` to log, for every function of every data test and of
+   the research corpus, (i) the sequence of `PrintLanguage` pushes
+   (`pushOp`, `pushAtom`, `pushVn*`, with the `OpToken`, the op, the
+   varnode, the modifier word in force) and block emissions, and (ii) the
+   resulting `Emit` call sequence; then show with a small prototype that
+   (ii) is a function of a tree built from (i) alone, or list the places
+   where it is not. Ghidra's printer already holds an implicit tree —
+   `ReversePolish { tok, visited, paren, op, id, id2 }` nodes over `Atom {
+   name, type, highlight, op, vn | fd | ct }` leaves, driven by 51
+   `OpToken`s and 16 modifier flags (`printlanguage.hh`, `printc.hh`) —
+   so the expected answer is yes. What the spike must look at
+   specifically, because these are where emission and tree building are
+   interleaved in `printc.cc`: prefix tokens emitted when an operator is
+   pushed, before its operands exist; parenthesis decisions taken at push
+   time from the enclosing token; modifier flags that change how the same
+   node prints (`force_hex`, `print_load_value`, `comma_separate`,
+   `negatetoken`, `hide_thisparam`, `pending_brace`, …); `PendPrint`
+   (braces that are emitted only if something follows); comments placed
+   by `CommentSorter` between statements; declarations and type
+   printing, which use the same stack; string and character constants
+   fetched from the string manager during printing; the `flat` and
+   `no_branch`/`only_branch` modes used when a block is printed inside a
+   condition. Output: a report with the answer, the node kinds, and the
+   list of facts each node must carry. Accepted by the coordinator, who
+   then confirms or revises 3c.
+2. **D16b, the tree** (`bk-decomp-out`): node types (statements, blocks,
+   expressions, declarations, comments) each referring to ops, varnodes,
+   high variables, types and addresses; the builder, which is `PrintC`'s
+   decision logic emitting nodes instead of tokens; the unit interface
+   for output passes (none in the `ghidra` profile).
+3. **D16c, the emitter** (`bk-decomp-print`): tree → `Emit` calls →
+   markup or text, with Ghidra's pretty printer. It can be written as
+   soon as the spike has fixed the node kinds, from logged trees, without
+   waiting for the builder.
+
+If the spike's answer is no, D16b builds from the structured block
+hierarchy directly, as `PrintC` does, D16c stays as planned, and output
+passes are defined over the hierarchy; the plan's track list does not
+change, only D16b's design.
+
+### 8.2 What remains exposed to later decisions
+
+* **Rule application order equal to Ghidra's** is fixed for the `ghidra`
+  profile and is what the trace compares. A `basilisk`-profile driver
+  with another strategy can run the same units but cannot be accepted by
+  trace equality; it is accepted by the scorecard and the
+  stage-equivalence check (ADR-025 item 5).
+* **Rules as hand-written matchers** over the mutation interface, as in
+  Ghidra. ADR-025 does not ask for a pattern language; if one is wanted
+  later it adds units, it does not replace these.
+* **Cross-function type unification** is explicitly undecided in ADR-025;
+  D02's overlay and D07's access table are the hooks it would use.
+* **Per-function overlays** for types and join records (3.7).
+
+## 9. For the coordinator
+
+### 9.1 Where Ghidra's code does not fit ADR-025 as worded
+
+1. **3b: Ghidra's structurer already works on a copy, but it edits the
+   original while doing so.** `ActionBlockStructure::apply` builds the
+   structured graph with `graph.buildCopy(data.getBasicBlocks())` and
+   runs `CollapseStructure` on it (`blockaction.cc`). Ten call sites in
+   `CollapseStructure`'s rules call `negateCondition(true)` on a block of
+   the copy; `BlockCopy::negateCondition` forwards to the original
+   (`copy->negateCondition(true)`, `block.hh:557`), and
+   `BlockBasic::negateCondition` flips `boolean_flip` and `fallthru_true`
+   on the block's real `CBRANCH` and swaps the real block's out-edges
+   (`block.cc`). The rules also *read* the IR through the copy:
+   `isComplex` counts statements from ops, readers and
+   `max_implied_ref`. So "run it on a copy and throw the result away"
+   is not side-effect free in Ghidra. **Proposed reading, used in this
+   plan:** the structurer takes per-block facts as input (two-way
+   branch, complexity, last-op kind) and returns the condition flips and
+   goto edges as part of its result; D15 applies them to the IR when a
+   result is adopted. For the `ghidra` profile this is the same final
+   state provided no rule of `CollapseStructure` reads back a flag it
+   flipped on the original — true by my reading (the rules consult the
+   copy's own edge order, which the flip also swaps), and checked by D04's
+   and D15's acceptance against the console. If the ADR means this, its
+   wording can stay with "and the edits it wants made to the blocks".
+2. **3a: "evaluated at every stage" holds at unit boundaries and under
+   stated assumptions, not absolutely.** (i) Inside a unit the graph is
+   transiently inconsistent (heritage mid-pass, `TransformManager`
+   between building and applying); the property is "after every unit".
+   (ii) Until a space is heritaged its varnodes are *free*: they denote
+   storage, not a value, so the evaluator needs a machine state beside
+   the SSA values — defined in `features/decomp-ir.md`, but it means the
+   IR at early stages is evaluated as an emulator would, which is the
+   lifted p-code's own semantics. (iii) Ghidra marks some ops `special`
+   (`CALL*`, `LOAD`, `STORE`, `BRANCHIND`, `RETURN`, `INDIRECT`,
+   `SEGMENTOP`, `CPOOLREF`, `NEW`); they are evaluable only against an
+   environment. (iv) **Several Ghidra units change the function's
+   meaning on purpose**, under assumptions: `ignorenan` (no NaN reaches a
+   comparison; option `nanignore`), dead-code removal driven by the
+   prototype model's effect lists and `ActionLikelyTrash`, read-only
+   memory treated as constant (`option readonly`), parameter and return
+   recovery deciding which registers are observable, `funcptrencoding`.
+   A stage-equivalence check of lifted p-code against final IR therefore
+   has to compare *observable* effects (calls and their targets, stores
+   outside the frame, the recovered return storage) and has to know
+   which assumption-making units fired. **Proposed addition:** each unit
+   declares `soundness`: `Exact`, or `Assumes(<name>)`; the recorder
+   reports which fired; the equivalence check qualifies or skips
+   accordingly. This is one field in the unit table and is in the IR
+   spec. Without it the gate's equivalence check would fail on correct
+   ports of Ghidra's rules.
+3. **3c**: nothing found by reading that makes it unworkable; the
+   interleavings to examine are listed in 8.1. The conclusion belongs to
+   the spike.
+4. **3e/3f**: workable only if category and provenance stay out of type
+   identity and ordering. `TypeFactory` interns by `compareDependency`;
+   if an inferred `int4 *` were a different type from a user's `int4 *`,
+   propagation would choose differently and the `ghidra` profile's output
+   would change. The specs make both attributes of the *entry*, not of
+   the type's identity.
+
+### 9.2 To confirm
 
 1. **Crate tree of section 2** in place of `bk-decomp` +
    `bk-decomp-print` (update `PLAN.md`'s map). Proposed ADR: "The
@@ -582,30 +755,38 @@ Not exposed: D00, D01, D02's data model and C parser, D03, D06.
    data; passes are functions."
 2. **State dumps through a console extension compiled with
    `-fno-access-control`** (D00), and the debug console in `REF/`.
-   Proposed ADR: "The decompiler's intermediate state is compared with and
-   loaded from Ghidra's through a basilisk-defined dump format." It adds
-   C++ to `tools/reference/` and one file to the reference build's copy —
-   no change to `../ghidra`.
-3. **Rule families accepted in rule-subset configurations** (section 6).
-   This makes "the reference console with rules X enabled" an accepted
-   oracle, in addition to the default configuration.
-4. **`bk-cspec` outside the decompiler namespace, generic over a type
-   query trait**, to be shared with the program model.
-5. **Corrections to project documents**: 163 rule classes (161 in the
+   Proposed ADR: "The decompiler's intermediate state is compared with
+   and loaded from Ghidra's through a basilisk-defined dump format." It
+   adds C++ to `tools/reference/` and one file to the reference build's
+   copy — no change to `../ghidra`.
+3. **Rule families accepted in rule-subset configurations** (section 6):
+   "the reference console with only rules X enabled" becomes an accepted
+   oracle beside the default configuration. It is still the `ghidra`
+   profile in ADR-025's sense — same units, fewer enabled.
+4. **`bk-cspec` outside the decompiler namespace, seeing types through a
+   query trait**, shared with the program model; it also holds
+   `FunctionSummary`.
+5. **`Provenance` in `bk-core`.** D02, D03 and D06 all carry it and D02
+   and D03 run in the same wave, so it must exist before they start: one
+   enum (`Default`, `Analysis`, `Model`, `Imported`, `LibrarySignature`,
+   `DebugInfo`, `User`, ordered by trust as Ghidra's `SourceType` is) with
+   a doc comment. Requested as a coordinator commit to `bk-core`; the
+   specs name `bk_core::Provenance`.
+6. **Corrections to project documents**: 163 rule classes (161 in the
    pipeline) and 71 action classes (80 instances), not 167 and 77
-   (ADR-004, `00-overview.md`); 107 `.cspec` files, not 110;
-   `PLAN.md`'s M3 list omits the nine Java prototype-model test classes,
-   the oracle tooling, the extended corpus, and attributes all eight
-   `testtypes` tests to the type system (five need the IR and `TypeOp`).
-6. **Who owns `globalcontext`** (section 7).
-7. **Recorded p-code as the interim lifter** (4.4), and its hand-over to
-   the SLEIGH track as a differential test.
-8. **Per-function type overlays** (3.7, detailed in
-   `features/decomp-types.md`): accepted now, or deferred until the
-   parallel driver (D17)? The spec asks for it now because type ids are
-   hard to re-shape later.
+   (ADR-004, ADR-013, `00-overview.md`, the research's D1); 107 `.cspec`
+   files, not 110; `PLAN.md`'s M3 list omits the nine Java
+   prototype-model test classes and the oracle tooling, and attributes
+   all eight `testtypes` tests to the type system (five need the IR and
+   `TypeOp`).
+7. **Who owns `globalcontext`** (section 7).
+8. **Recorded p-code as the interim lifter** (4.4), and its hand-over to
+   the SLEIGH tracks as a differential test.
+9. **Coverage**: 32 rules apply in neither the data tests nor the
+   research corpus (section 10). D19 extends the corpus; until then
+   those rules can be ported but not accepted.
 
-## 10. Rule coverage of the data tests (measured)
+## 10. Rule coverage of the corpora (measured)
 
 Applications of each rule summed over all 93 data tests in the reference
 console (`print actionstats`), with the number of files in which the rule
@@ -651,7 +832,13 @@ applied at least once. Command in `docs/agents/spec-decompiler.md`.
 (1), `signdiv2` 1 (1), `lessnotequal` 1 (1), `lessone` 1 (1),
 `lzcountshiftbool` 1 (1), `floatsign` 1 (1), `subvar_shift` 1 (1).
 
-Never applied by any data test (37): `scarry`, `rightshiftand`,
+The research corpus (74 fragments, the same measurement; two `a07_switch`
+scripts printed no statistics and are not counted) adds applications of
+`rightshiftand` 2, `highorderand` 2, `andcommute` 6, `bxor2notequal` 2 and
+`subright` 20.
+
+Never applied by any data test (37; the 32 without the five above apply in
+neither corpus): `scarry`, `rightshiftand`,
 `highorderand`, `andcommute`, `concatshift`, `leftright`, `carryelim`,
 `bxor2notequal`, `less2zero`, `lessequal2zero`, `threewaycomp`,
 `transformcpool`, `slesstoless`, `zextsless`, `boolzext`,
