@@ -195,7 +195,21 @@ doubles the snapshots for the cases it touches.
 ### 2.2 Design requirements for the port
 
 Each is a decision for the M3 feature specs. "Why now" says what breaks if it
-is left out.
+is left out. The table is the short form, by area of the port; D1–D8 below
+give the reasons. Everything in the right-hand column can wait until parity is
+measured; nothing in the middle column changes Ghidra's output.
+
+| Area of the port (M3 task) | Decide at the start | Can follow parity |
+|---|---|---|
+| **IR**: varnodes, ops, blocks, function data | Every op can be evaluated at every stage, with defined meaning for `MULTIEQUAL` and `INDIRECT` (D3). All edits of the IR go through one small mutation interface, as they do through `Funcdata`'s `op…` methods in Ghidra, so that a recorder can be attached (D3). Ops keep the address and instruction they came from (D8). The block graph can be copied cheaply (D5). No global state; the same input gives the same output | Nothing: later improvements add units, not IR |
+| **Rule and action machinery** | Rules and actions are values in a table with Ghidra's name, an origin (`ghidra` or `basilisk`) and a group; the pipeline is built from the table by a named profile; a unit can be replaced or added by a profile without editing another unit; switches live in the option registry (D1). An optional record of applications (D3) | Every new rule; replacements of Ghidra rules (R2, R5) |
+| **Prototypes and parameters** (`fspec`, `modelrules`) | A `FunctionSummary` type as an output of decompilation and as an input through the program trait; the trait's "does this call return" question takes the call site, not only the callee (D4). Prototype facts carry provenance (D7) | The inference that fills summaries; bottom-up scheduling (R1) |
+| **Type system and recovery** | A category of *inferred* types distinct from user and debug-information types (D6). A per-function table of observed accesses, filled while types are propagated (D6). Propagation policy per op kind is a unit like any rule, so that a profile can change one edge (R3 step 1) | Pointer-ness from use, structure synthesis, cross-function unification (R3) |
+| **Variables and merging** | Each merge pass is a unit (D1). A high-level variable records which merges formed it (D3) | Changed merge policy, splitting reused parameters (R6) |
+| **Structuring** | The structurer is a function of a block graph and options that returns a hierarchy and a measure of it (gotos, depth), runnable on a copy (D5). Goto selection is a replaceable unit. Loop bodies and induction variables found before structuring are kept (D8) | All de-optimisations (R4) |
+| **C printing** | The engine produces a typed output tree with links back to ops, varnodes and addresses; printing is a separate stage; tree passes are units (D2) | All presentation passes (R6), idiom rendering (R5), suggested names (R7) |
+| **Interface to the program** (ADR-004 trait) | Summaries in both directions (D4); names and types with provenance in both directions (D7) | The analyzers that compute and store them |
+| **Tests** | Every decompiler test names its profile; snapshots are per profile; the corpus runner and the stage-equivalence check exist as soon as there is IR to run them on (R0) | Ground truth from debug information; recompile-and-run |
 
 **D1. Units, origins, profiles.** Rules and actions are values registered in
 a table with a stable name (Ghidra's), an origin and a group; the pipeline is
@@ -261,7 +275,8 @@ reject if gotos increase (`StructuringOptimizationPass` with
 copying a block graph cheap if it is planned for.
 
 **D6. Type facts and provisional types.** Ghidra propagates one concrete
-data-type per varnode and keeps no record of *why*. Keep a per-function table
+data-type per varnode (`Varnode::type` **[G]** `varnode.hh`) and, as far as I
+read `typeop.cc` and `coreaction.cc`, keeps no record of *why* **[P]**. Keep a per-function table
 of observed accesses (base value, offset, size, stride, read or write, the
 op), which costs nothing to collect and feeds structure synthesis, summaries
 and any later constraint solver. Give the type system a category of types
@@ -271,7 +286,9 @@ early M3 task; adding a category later touches every match on type kinds.
 
 **D7. Provenance on names and types.** A symbol or type records where it came
 from and how sure the source was. Ghidra's program model has this for symbols
-(`SourceType`) and the engine reduces it to "locked or not". *Why now:* it is
+(`SourceType`: `USER_DEFINED`, `IMPORTED`, `ANALYSIS` and — already at the
+pinned commit — `AI`, then `DEFAULT` **[G]**) and the engine reduces it to
+"locked or not". *Why now:* it is
 one field while the symbol table is being designed; it decides later which
 names a model may overwrite and how the UI shows a guessed name.
 
