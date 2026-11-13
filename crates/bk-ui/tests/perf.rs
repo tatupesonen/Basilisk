@@ -53,7 +53,7 @@ fn scrolling_ten_million_rows() {
 
     // One frame: input → layout → tessellation (what the UI thread does
     // before the GPU gets the triangles).
-    let mut frame = |h: &mut egui_kittest::Harness<'static, bk_ui::BasiliskApp>| {
+    let frame = |h: &mut egui_kittest::Harness<'static, bk_ui::BasiliskApp>| {
         let t0 = Instant::now();
         h.step();
         let shapes = h.output().shapes.clone();

@@ -10,6 +10,7 @@ pub mod notifications;
 pub mod options;
 pub mod overlay;
 pub mod palette;
+pub mod selftest;
 pub mod tool;
 pub mod welcome;
 pub mod workspace;
@@ -28,14 +29,22 @@ pub fn run_native() -> eframe::Result {
     if let Some(icon) = brand::icon() {
         viewport = viewport.with_icon(std::sync::Arc::new(icon));
     }
+    let selftest = selftest::SelfTest::from_env();
     let options = eframe::NativeOptions {
         viewport,
         persist_window: true,
+        persistence_path: selftest.as_ref().map(selftest::SelfTest::settings_dir),
         ..eframe::NativeOptions::default()
     };
     eframe::run_native(
         "basilisk",
         options,
-        Box::new(|cc| Ok(Box::new(BasiliskApp::from_creation_context(cc)))),
+        Box::new(move |cc| {
+            let app = BasiliskApp::from_creation_context(cc);
+            Ok(Box::new(match selftest {
+                Some(st) => app.with_selftest(st),
+                None => app,
+            }))
+        }),
     )
 }

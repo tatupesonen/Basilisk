@@ -24,7 +24,7 @@ use crate::views::Request;
 pub const PREFS_KEY: &str = "basilisk-prefs";
 
 /// The basilisk application.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BasiliskApp {
     tool: Arc<Mutex<Tool>>,
     /// The detached windows' viewports, for repainting them when data
@@ -33,6 +33,8 @@ pub struct BasiliskApp {
     viewports: Arc<Mutex<Vec<egui::ViewportId>>>,
     /// The shared state last frame, to notice changes made in one window.
     seen: u64,
+    /// The native-window self-test, when asked for.
+    selftest: Option<super::selftest::SelfTest>,
 }
 
 /// The demo program's opener.
@@ -54,6 +56,7 @@ impl BasiliskApp {
             tool: Arc::new(Mutex::new(tool)),
             viewports: Arc::new(Mutex::new(Vec::new())),
             seen: 0,
+            selftest: None,
         };
         app.install_waker(ctx);
         app
@@ -81,6 +84,13 @@ impl BasiliskApp {
                 }
             }));
         }
+    }
+
+    /// Runs the native-window self-test (see `selftest`).
+    #[must_use]
+    pub fn with_selftest(mut self, st: super::selftest::SelfTest) -> Self {
+        self.selftest = Some(st);
+        self
     }
 
     /// The tool (tests and the binary).
@@ -131,6 +141,9 @@ impl BasiliskApp {
             }
         }
         *self.viewports.lock() = ids;
+        if let Some(st) = &mut self.selftest {
+            st.tick(&ctx, &mut self.tool.lock());
+        }
         for w in windows {
             self.detached(&ctx, &w);
         }
@@ -153,15 +166,30 @@ impl BasiliskApp {
         }
         let tool = Arc::clone(&self.tool);
         let wid = w.id;
+        let probe = self.selftest.as_ref().map(|s| Arc::clone(&s.probe));
         ctx.show_viewport_deferred(id, builder, move |ui, _class| {
             let mut tool = tool.lock();
             detached_window(ui, &mut tool, wid, id);
+            if let (Some(probe), Some(ws)) = (&probe, &tool.ws) {
+                probe
+                    .painted
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let titles = ws
+                    .layout
+                    .windows
+                    .iter()
+                    .filter(|w| w.id == wid)
+                    .flat_map(Detached::tabs)
+                    .filter_map(|t| ws.views.get(&t.id).map(|v| v.title(&ws.shared)))
+                    .collect();
+                *probe.titles.lock() = titles;
+            }
         });
     }
 }
 
 /// The viewport of detached window `wid`.
-fn viewport_id(wid: u64) -> egui::ViewportId {
+pub(crate) fn viewport_id(wid: u64) -> egui::ViewportId {
     egui::ViewportId::from_hash_of(("bk-window", wid))
 }
 
