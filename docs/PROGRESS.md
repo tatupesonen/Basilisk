@@ -16,11 +16,11 @@ reference tools in `../reference/`. Per-track history is in the log below.
 agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
-### Running (state at 2026-11-13 17:40)
+### Running (state at 2026-11-13 17:55)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `spec-decompiler` | Fable | `a0c25da932de14a37` | resumed 17:05; writes `inventory/02-decompiler.md`, `features/decomp-plan.md` and the first decompiler track specs. Told at 17:20 that ADR-025 binds the plan (profiles; six properties the port has from its first version) and to say so with evidence if any of them is unworkable. |
+| `decomp-types` | Opus | `ae9088c291801e2f1` | started 17:55; D02 of `features/decomp-plan.md`: `bk-decomp-types` from `features/decomp-types.md` (first decompiler track, on the critical path). |
 | `sla` | Opus | `a10095edf70216b9d` | started 17:20; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
 | `store-spike` | Fable | `a8012f27279847feb` | started 17:20 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
 | `spec-pe` | Fable | `a53aca50251d9e64c` | started 17:35 (fresh agent); `features/pe.md` for `bk-pe` with the crate decision by experiment (`docs/agents/spec-pe-crate-eval/`), from four helper fact sheets it must verify. |
@@ -71,7 +71,19 @@ fresh agent briefed from the branch's files.
 1. `sleigh-decode` and `sleigh-compiler-front` (Opus) — both start when
    `sla` is merged, in parallel (ADR-023). Then `sleigh-pcode`,
    `sleigh-compiler-back`, `sleigh-snippet`.
-2. Decompiler leaf tracks named by `spec-decompiler` when it reports.
+2. Decompiler wave 1 (`features/decomp-plan.md`; ADR-026, 027, 028):
+   a. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — resume
+      the spec agent `a0c25da932de14a37` (Fable; its worktree
+      `../basilisk-wt/spec-decompiler` is kept, at master) to write
+      `features/decomp-oracle.md` and `features/decomp-cfg.md`; the plan's
+      sections 4.2, 6 and 9.1 are the briefs. Both tracks can start as
+      soon as their specs exist, and D05 (IR) needs both.
+   b. D03 `decomp-cspec` (Opus) — `bk-cspec` from
+      `features/decomp-cspec.md`; spec complete, can start now.
+   c. D01 `decomp-range` (Opus, small) — `bk-decomp-range` from
+      `features/decomp-range.md`; spec complete, can start now.
+   d. Then D00 and D04 implementation, then wave 2 (D05 needs D00, D02,
+      D04; D06 needs D02, D03; D16a printer spike).
 3. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
    `features/program-model-plan.md` (M4); reads the store-spike notes and,
    when it exists, `research/storage-engine.md`.
@@ -112,8 +124,8 @@ fresh agent briefed from the branch's files.
    when CI has shown the build working.
 3. `sla` reports → review against `features/sla.md` section 7, merge,
    start `sleigh-decode` and `sleigh-compiler-front`.
-4. `spec-decompiler` reports → read critically, check it against ADR-025,
-   merge, start the leaf tracks.
+4. `decomp-types` reports → review against `features/decomp-types.md`,
+   merge; with D00 and D04 merged, start D05.
 5. `store-spike` reports → decide ADR-003's engine; then
    `spec-program-model`.
 6. `features/sleigh-language.md` is a draft with open `[to verify]` items
@@ -172,7 +184,7 @@ fresh agent briefed from the branch's files.
 
 ## Log
 
-### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH specs and decompiler research merged
+### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH and decompiler specs, decompiler research merged
 * **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
   system (two themes, two densities, contrast asserted in tests), Ghidra's
   menus, tool bar and key bindings from one action registry, docking with
@@ -198,6 +210,19 @@ fresh agent briefed from the branch's files.
   `SleighCompileRegressionTest` checks Java/C++ output equality, not
   diagnostics; the snippet parser needs the compiler's template builder.
   `sleigh-language.md` is a draft.
+* **`spec-decompiler` merged**: `inventory/02-decompiler.md`,
+  `features/decomp-plan.md` (31 tracks in seven waves, acceptance per
+  track, six levels of parity), and specs for D01 range, D02 types, D03
+  cspec and D05 IR. Its proposals are ADR-026 (state crates and pass
+  crates; `bk-cspec` outside the decompiler), ADR-027 (parity from
+  Ghidra's own state: a dump format, the debug console, rule-subset
+  oracles, recorded p-code as the interim lifter) and ADR-028 (where
+  ADR-025's wording did not fit Ghidra's code). Measured: 163 rule
+  classes, 161 in the pipeline (not 167); 32 of them apply in no corpus
+  yet; the C++ engine is one 48-module cycle. Two Ghidra bugs in
+  `parseCompilerConfig` not to reproduce. No specs yet for D00, D04 and
+  D06 onward. `bk_core::Provenance` was added by the coordinator at the
+  plan's request (types, cspec and symbols all carry it).
 * **`decomp-research` merged**: `research/decompiler-quality.md` with a
   corpus of 36 C cases (74 builds, 209 decompiled functions) and a
   harness. Measured on Ghidra's reference build: 25 of 174 non-`void`
