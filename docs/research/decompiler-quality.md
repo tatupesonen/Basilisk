@@ -21,6 +21,17 @@ No Rust code; experiment inputs, commands and Ghidra's output are in
 Numbers from papers are the papers' own, on the benchmark named; they are not
 predictions for basilisk.
 
+**Where to find what.**
+
+| Question | Section |
+|---|---|
+| Where is Ghidra's output weak, and how is each claim known? | 3 (catalogue, all **[E]**), 1.1 (summary) |
+| What must the port decide at the start, and what can follow parity? | 2.2 (table by area, then D1–D8), 2.1 (staging) |
+| What to improve, in what order, at what cost and risk? | 2.3 |
+| How is quality measured, and what runs in the gate? | 5 (5.3 for gate and nightly) |
+| What is known to work elsewhere? | 4 |
+| The decision to record | 8 (proposed ADR, ready to paste) |
+
 ---
 
 ## 1. Conclusions
@@ -1056,7 +1067,7 @@ at two rates, split by what each run needs **[J]**:
 | **Counters** | Computed for both profiles and compared with the checked-in scorecard; a counter that gets worse fails unless the scorecard was updated in the same commit | Scorecard for the matrix and the real programs; trend kept |
 | **Equivalence** | Lifted p-code against final IR on a fixed seed and a small number of inputs per function (bounded: a budget per function, a total budget) | Many inputs, NaN and boundary values, generated programs |
 | **Ground truth** | — | Signatures, then types and variables, against DWARF |
-| **Cost** | Seconds: the reference console decompiles the 209 functions of this corpus in well under the 100 s that a full rebuild takes, almost all of which is container start-up **[E]** | Minutes to hours; every tool run has a time limit and every function a budget, so a hang is a recorded failure and not a stuck run |
+| **Cost** | Seconds: the reference console runs all 74 fragments of this corpus (430 decompilations, counting the repeated ones) in 4.7 s on this machine; a full rebuild takes about 100 s, almost all of it container start-up **[E]** | Minutes to hours; every tool run has a time limit and every function a budget, so a hang is a recorded failure and not a stuck run |
 
 * The scorecard has three columns — **Ghidra reference | basilisk `ghidra`
   profile | basilisk default profile** — per corpus. `docs/QUALITY.md` records
@@ -1137,3 +1148,80 @@ Corrections the helpers made to my brief, kept for the record: FidelityGPT
 and the human–model study are NDSS 2026, not 2025; Guilfanov's "Decompilers
 and beyond" could not be found; no documentation of Hex-Rays' structuring
 algorithm exists (SAILR says the same).
+
+---
+
+## 8. Proposed ADR
+
+Ready to paste into `docs/DECISIONS.md`; the coordinator assigns the number.
+It records decisions only; the reasons and evidence stay in this document.
+
+```markdown
+## ADR-NNN — Decompiler improvements live in profiles; the port carries the hooks for them from the start
+(Proposed by the `decomp-research` track; evidence and reasons in
+`docs/research/decompiler-quality.md`.)
+
+ADR-004 ports Ghidra's decompiler to measured parity and allows improvements
+afterwards. This record says how the two coexist and what the port must
+contain so that the improvements are possible without rewriting it.
+
+1. **Profiles.** Every rule, action, merge pass, structuring step and output
+   pass of `bk-decomp` is a named unit with an origin (`ghidra` or `basilisk`)
+   and a group. A pipeline is built from the unit table by a named profile.
+   The `ghidra` profile is Ghidra's pipeline and nothing else; it reproduces
+   Ghidra's output including its faults, and it is the target of every
+   differential test (ADR-007), permanently. The `basilisk` profile is the
+   `ghidra` profile plus accepted improvements. The default profile is
+   `ghidra` until M3 is accepted and `basilisk` afterwards.
+2. **Ghidra's units are not edited to improve them.** An improvement is a new
+   unit, or a replacement unit selected by the `basilisk` profile, with one
+   switch in the option registry. A difference in the `ghidra` profile is a
+   bug (ADR-001).
+3. **The port has these properties from its first version**, none of which
+   changes output:
+   a. the IR can be evaluated at every stage, and every edit of it goes
+      through one mutation interface to which a recorder of unit applications
+      can be attached;
+   b. the structurer runs on a copy of the block graph and returns a
+      hierarchy with a measure of it;
+   c. the engine hands the printer a typed output tree whose nodes refer to
+      ops, varnodes and addresses; output passes work on that tree;
+   d. decompiling a function produces a function summary (parameters, return,
+      whether it can return, tail call, accesses through pointer parameters),
+      and the program trait can serve summaries of callees to the engine,
+      including an answer to "does this call return" that depends on the call
+      site;
+   e. the type system has a category of inferred types, and type recovery
+      fills a per-function table of observed accesses;
+   f. names and types carry their provenance (user, debug information,
+      import, library signature, analysis, model) across the program trait.
+   Item c is confirmed by a spike on Ghidra's 93 data tests when the printer
+   is specified; if the tree cannot reproduce `printc.cc` token for token,
+   output passes work on the structured block hierarchy instead and this item
+   is revised by a new record.
+4. **Quality is measured, not asserted.** `docs/QUALITY.md` holds a scorecard
+   with three columns — Ghidra's reference build, the `ghidra` profile, the
+   default profile — over a fixed corpus that starts from
+   `docs/research/decompiler-quality/`. The gate runs, without tools from
+   outside the repository: parity of the `ghidra` profile against checked-in
+   snapshots, per-case assertions for the default profile, the counters, and
+   a bounded stage-equivalence check (lifted p-code against final IR on the
+   same inputs). Compiler matrices, the reference tools, ground truth from
+   debug information and long equivalence runs are nightly.
+5. **An improvement is accepted with**: its entry under "Differences from
+   Ghidra"; snapshots of the affected cases in both profiles; the change in
+   the scorecard; and, if it acts before structuring, a clean
+   stage-equivalence run. Improvements are taken in order of how little they
+   disturb: output passes first, then units outside the engine (summaries),
+   then rules, then type propagation and merging.
+6. **Language models never edit decompiled code.** They may propose names,
+   comments and types through the plugin interface (ADR-014); the decompiler
+   applies proposals with its own rename and retype operations, records their
+   provenance and can remove them. This is off by default.
+
+Consequences: each improved case has two snapshots; the program trait is
+larger than the set of queries Ghidra's `DecompileCallback` answers; the
+printer is ported as two stages. Not decided here: the method for
+cross-function type unification (a licence and patent check comes first), and
+which readability counters, if any, may fail the gate on their own.
+```
