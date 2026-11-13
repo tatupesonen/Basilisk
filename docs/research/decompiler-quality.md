@@ -35,13 +35,15 @@ predictions for basilisk.
    in cases written to show something else. The cause is one deliberate
    heuristic (`ActionReturnRecovery` → `Funcdata::ancestorOpUse`), and the same
    code is printed correctly as soon as a prototype is supplied. **[E][G]**
-2. **By default Ghidra prints floating-point comparisons that are wrong for
-   NaN.** `!(a >= b)` is printed as `a < b`; `a < b ? a : b` is printed with
-   the operands' roles swapped under NaN. The engine removes the NaN terms on
-   purpose (`nan_ignore_compare` defaults to true); with the option off it
-   prints `(NAN(a) || NAN(b)) || a < b`, which is right and unreadable. The
-   form that is both right and readable — `!(a >= b)` — is not produced.
-   **[E][G]**
+2. **Ghidra prints floating-point comparisons that are wrong for NaN, by two
+   separate mechanisms.** `!(a >= b)` is printed as `a < b` because the engine
+   removes NaN terms on purpose (`nan_ignore_compare` defaults to true); with
+   the option off it prints `(NAN(a) || NAN(b)) || a < b`, which is right and
+   unreadable. And `a < b ? a : b` is printed as `if (b <= a) a = b;`, which
+   picks the other operand when one is NaN, because the engine's negation of
+   `a < b` is `b <= a` (`TypeOpFloatLess`); no option changes that. The form
+   that is both right and readable — `!(a >= b)`, `!(a < b)` — is never
+   produced. **[E][G]**
 3. **The engine depends on facts it does not compute.** Whether a callee
    returns, whether a jump is a tail call, what a callee's parameters are: all
    come from outside (in Ghidra, from Java analyzers; the one that stores
@@ -344,14 +346,22 @@ requirements above cannot.
 
 * **Gain:** removes a default unsoundness; output equal to the source in the
   common cases (`!(a >= b)`, `a < b ? a : b`).
-* **How:** instead of dropping `NAN(a) || NAN(b)` (`RuleIgnoreNan`), fold
-  `NAN(a) || NAN(b) || a < b` into `!(a >= b)` and the dual forms; print a
-  bare `a < b` only where the NaN case is provably excluded.
-* **Evidence:** **[E]** a13 (`below`, `fmin2`), verified against the raw
-  p-code and with `option nanignore none`; **[G]** `architecture.cc` (default),
-  `ruleaction.hh` (`RuleIgnoreNan`).
-* **Effort:** S. **Risk:** low; slightly more `!(…)` in float code.
-* **Where:** one rule and the Boolean-negation table. **When:** after parity.
+* **How:** two changes. (a) Instead of dropping `NAN(a) || NAN(b)`
+  (`RuleIgnoreNan`), fold `NAN(a) || NAN(b) || a < b` into `!(a >= b)` and
+  the dual forms; print a bare `a < b` only where the NaN case is provably
+  excluded. (b) Stop treating `b <= a` as the negation of `a < b` for
+  floating-point operands: the negation is printed as `!(a < b)`, and a
+  conditional is flipped only when that does not need the negation.
+* **Evidence:** **[E]** a13 (`below`, `fmin2`), both verified against the
+  lifted p-code, `fmin2` also with `option nanignore none` (unchanged);
+  **[G]** `architecture.cc` (default), `ruleaction.hh` (`RuleIgnoreNan`),
+  `typeop.cc` (`TypeOpFloatLess`: `booleanFlip = CPUI_FLOAT_LESSEQUAL` with
+  `boolean_reorder`), `printc.cc` (`opCbranch`, `checkPrintNegation`).
+* **Effort:** S. **Risk:** low; more `!(…)` in float code, and (b) touches
+  how conditions are normalised before structuring, so the corpus must be
+  re-reviewed for changed `if`/`else` order.
+* **Where:** one rule, the Boolean-negation table and its users. **When:**
+  after parity.
 
 #### R3. Pointer, array and structure recovery
 
@@ -606,8 +616,8 @@ reason, even when the callee's prototype is known (r01 `classify`, r10
 `create`). 25 of 174 non-`void` functions in the corpus; with prototypes
 given (a17) all are right.
 
-**A2. Floating-point comparisons wrong for NaN.** Scope: engine, default
-option.
+**A2. Floating-point comparisons wrong for NaN.** Scope: engine; `below` with
+the default option, `fmin2` always.
 
 ```c
 int below(double a, double b) { return !(a >= b); }      /* a13 */
@@ -620,11 +630,22 @@ float8 fmin2(float8 param_1,float8 param_2)
 { if (param_2 <= param_1) { param_1 = param_2; } return param_1; }
 ```
 
-The machine code returns 1 for `below(NaN, x)`; the printed C returns 0. The
-lifted p-code has `CF = NAN(a) || NAN(b) || a < b`; `RuleIgnoreNan` removes
-the NaN terms because `nan_ignore_compare` is true by default. With
-`option nanignore none`: `return (NAN(param_1) || NAN(param_2)) || param_1 <
-param_2;`. Wanted: `return !(param_1 >= param_2);`.
+Two mechanisms, both read in the source and checked on the lifted p-code:
+
+* `below`: the machine code returns 1 for `below(NaN, x)`; the printed C
+  returns 0. The lifted p-code has `CF = NAN(a) || NAN(b) || a < b`;
+  `RuleIgnoreNan` removes the NaN terms because `nan_ignore_compare` is true by
+  default. With `option nanignore none`: `return (NAN(param_1) ||
+  NAN(param_2)) || param_1 < param_2;`. Wanted: `return !(param_1 >=
+  param_2);`.
+* `fmin2`: the lifted p-code is "if `a < b` keep `a`, else `a = b`", so
+  `fmin2(NaN, 1.0)` is 1.0. The printed C tests `param_2 <= param_1`, which is
+  false for NaN, and returns NaN. The engine negates `a < b` to `b <= a`
+  (`TypeOpFloatLess` in `typeop.cc` registers `CPUI_FLOAT_LESSEQUAL` with
+  reordered operands as its Boolean flip; `PrintC::opCbranch` uses it), which
+  is not a negation when an operand is NaN. `option nanignore none` does not
+  change this output. Wanted: `if (!(param_1 < param_2)) { param_1 =
+  param_2; }`, or the source's conditional expression.
 
 **A3. Code after a call that does not return.** Scope: analysis.
 
@@ -746,8 +767,8 @@ array.** Scope: engine. In r12 the return address pushed by the call to
 
 **A12. An invented loop.** Scope: language definition plus engine.
 `__builtin_clz` compiled to `bsr` is printed as `for (; param_1 >> uVar1 ==
-0; uVar1 = uVar1 - 1) {}` (r09): the instruction's p-code is a loop and
-nothing recognises it.
+0; uVar1 = uVar1 - 1) {}` (r09): the instruction's p-code is a loop (`BSR` in
+`Processors/x86/data/languages/ia.sinc` **[G]**) and nothing recognises it.
 
 **Not found.** No case here shows an unsound *integer* rewrite; the
 overflow-check cases (a09) are printed correctly, if oddly (`CARRY4(param_1,
@@ -759,7 +780,7 @@ FuzzFlesh 12 control-flow miscompilations **[S]**.
 
 | Id | Class | Example (case) | Ghidra prints | Wanted | Stage |
 |---|---|---|---|---|---|
-| R1 | Loop shape | `for (i = 0; i < n; i++) a[i] = v + i;` (r02, AArch64 GCC) | `if (0 < param_2) { iVar1 = 0; do { …; iVar1 = iVar1 + 1; } while (iVar1 != param_2); }` | the `for` | `block.cc`, `blockaction.cc`: `for` is made only from a top-tested loop |
+| R1 | Loop shape | `for (i = 0; i < n; i++) a[i] = v + i;` (r02, AArch64 GCC) | `if (0 < param_2) { iVar1 = 0; do { …; iVar1 = iVar1 + 1; } while (iVar1 != param_2); }` | the `for` | `block.cc`: `for` is made in `BlockWhileDo::finalTransform`, that is, only from a loop already recognised as top-tested **[G]** |
 | R2 | Unrolled loops | the same loop from clang (r02, t_smoke, a01) | a 4× or 8× body, then a remainder loop: 25 lines for 1 | one loop | none; open problem |
 | R3 | Switch lowered to compares | `switch (x) { case 1: … case 10000: … }` (a07 `sparse`; `dense` on AArch64 GCC) | nested `if (param_1 == 100) … if (param_1 < 0x65) …` | `switch` | `jumptable.cc` handles only indirect branches |
 | R4 | Switch lowered to a bit test | `case ' ': case '\t': case '\n': case '\r': case ',': case ';': return 1;` (a07) | `(param_1 < 0x3c) && ((0x800100100002600U >> ((uint8)param_1 & 0x3f) & 1) != 0)` | the `switch`, or the six comparisons | none |
@@ -785,7 +806,7 @@ FuzzFlesh 12 control-flow miscompilations **[S]**.
 From `tools/metrics.py` over all 209 function bodies (2,695 lines) **[E]**:
 12 gotos; 424 casts; 29 `CONCAT`/`SUB`/carry artefacts; 63 `do … while`,
 10 `for`, 13 `while`; 3 `switch` (the sources have five switch functions,
-built 2–3 times each); 21 warnings; 83 raw addresses; 2,520 automatic names;
+built three times each); 21 warnings; 83 raw addresses; 2,520 automatic names;
 320 declarations; 49 `void` functions of which 25 are not `void` in the
 source. These are the baseline the `ghidra` profile must reproduce and the
 `basilisk` profile should move.
@@ -1029,8 +1050,9 @@ improvement is written.
 1. Can the output tree (D2) reproduce `printc.cc` token for token? A spike on
    the 93 data tests when the printer is specified would answer it.
 2. How expensive are bottom-up summaries on a large binary, and can they be
-   on by default? Ghidra's own analyzer warns that it "can take a significant
-   amount of time" **[G]**.
+   on by default? The description of Ghidra's own analyzer says "WARNING: This
+   can take a SIGNIFICANT Amount of Time!" **[G]**
+   (`DecompilerFunctionAnalyzer.java`).
 3. Which unification method for R3 step 3, and is there a patent obstacle?
 4. Is there a reliable way to re-roll unrolled loops and undo induction
    variable rewrites? Nothing published was found.
