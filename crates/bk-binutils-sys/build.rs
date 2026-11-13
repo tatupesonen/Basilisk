@@ -6,9 +6,9 @@
 //! binutils' `configure` and `make` — and the evidence for it are in
 //! `docs/features/gnu-disasm.md`.
 //!
-//! On Windows nothing is compiled: the crate then builds its stub, which
-//! reports that GNU disassembly is unavailable (recorded as a gap in the
-//! feature document).
+//! Unix-like and Windows targets build the C. On any other target family
+//! (WebAssembly, bare metal) nothing is compiled, and the crate builds its
+//! stub, which reports that GNU disassembly is unavailable.
 
 #![expect(
     clippy::print_stderr,
@@ -55,7 +55,8 @@ fn run() -> Result<(), String> {
         println!("cargo:rerun-if-changed={}", path.display());
     }
 
-    if env::var_os("CARGO_CFG_WINDOWS").is_some() {
+    let family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
+    if !family.split(',').any(|f| f == "unix" || f == "windows") {
         // No C is built; `src/stub.rs` reports the feature as unavailable.
         return Ok(());
     }

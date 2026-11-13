@@ -37,7 +37,7 @@
     clippy::tests_outside_test_module,
     reason = "test code"
 )]
-#![cfg(not(windows))]
+#![cfg(any(unix, windows))]
 
 mod common;
 

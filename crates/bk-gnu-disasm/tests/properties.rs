@@ -11,7 +11,7 @@
     clippy::tests_outside_test_module,
     reason = "test code"
 )]
-#![cfg(not(windows))]
+#![cfg(any(unix, windows))]
 
 use std::sync::OnceLock;
 

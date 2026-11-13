@@ -10,7 +10,7 @@
     clippy::tests_outside_test_module,
     reason = "test code"
 )]
-#![cfg(not(windows))]
+#![cfg(any(unix, windows))]
 
 use bk_binutils_sys::{
     RawDisassembler, RawError, TEXT_CAPACITY, architecture_names, is_available, scan_architecture,

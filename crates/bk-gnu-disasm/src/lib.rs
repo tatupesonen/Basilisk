@@ -54,7 +54,7 @@
 //! endless loop inside binutils is not contained: the fuzz target and the
 //! sanitizer runs look for those.
 //!
-//! On platforms where binutils is not built (Windows, for now) every
+//! On targets where binutils is not built (neither Unix-like nor Windows) every
 //! operation fails with `RawError::Unavailable`; see [`is_available`].
 
 mod arch;

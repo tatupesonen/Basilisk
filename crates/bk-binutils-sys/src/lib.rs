@@ -28,7 +28,8 @@
 //! memory-safety bug or an endless loop inside binutils' C code is not
 //! contained (the fuzz target looks for those).
 //!
-//! On platforms where the C code is not built (Windows, for now) the crate
+//! On targets that are neither Unix-like nor Windows, where the C is not
+//! built (WebAssembly, bare metal), the crate
 //! still compiles: [`is_available`] returns `false` and every operation
 //! returns [`RawError::Unavailable`].
 
