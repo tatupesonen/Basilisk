@@ -581,6 +581,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-sla"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+ "bk-marshal",
+ "bk-pcode",
+ "bk-testkit",
+ "dhat",
+ "flate2",
+ "proptest",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "bk-sleigh-syntax"
 version = "0.0.1"
 dependencies = [
