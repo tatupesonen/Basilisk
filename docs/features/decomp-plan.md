@@ -242,7 +242,7 @@ format into their own structures and write it back. Three uses:
 The dump format is basilisk's, versioned, and documented in
 `tools/reference/README.md`; captured dumps are gzip-compressed fixtures.
 Because the format describes Ghidra's state, not basilisk's layout, it
-does not constrain the IR design (section 8).
+does not constrain the IR design.
 
 ### 4.3 Corpus
 
