@@ -1,0 +1,42 @@
+<binaryimage arch="x86:LE:64:default:gcc">
+<bytechunk space="ram" offset="0x401000" readonly="true">
+48c7c0ffffffffe9240000000f1f4000534889f0803f07488d4f010f87dfffff
+ff0fb617ff24d5002040000f1f4400005bc3660f1f4400004885c075730fb67f
+014801cfebce662e0f1f8400000000000fb67701488d5f024889c7e8a9000000
+4889dfebaf0f1f004883f0554889cfeba30f1f800000000048f7d84889cfeb94
+0fb657014883c702480fafc2eb8666900fb657014883c7024829d0e974ffffff
+0fb657014883c7024801d0e964ffffff4883c702e95bffffff904889f8c34889
+f8c3b800000000c3b800000000c34889f8c3b800000000c3b800000000c3b800
+000000c3c390ebfeebfeb800000000c3b800000000c3b800000000c3b8000000
+00c3ebfe89f8c3c3c3488d0437c3
+</bytechunk>
+<bytechunk space="ram" offset="0x402000" readonly="true">
+3010400000000000a01040000000000090104000000000008010400000000000
+7810400000000000681040000000000050104000000000003810400000000000
+</bytechunk>
+<bytechunk space="ram" offset="0x403040">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x401000" name="interp.cold"/>
+<symbol space="ram" offset="0x401010" name="interp"/>
+<symbol space="ram" offset="0x4010ba" name="memcpy"/>
+<symbol space="ram" offset="0x4010be" name="memset"/>
+<symbol space="ram" offset="0x4010c2" name="strlen"/>
+<symbol space="ram" offset="0x4010c8" name="strcmp"/>
+<symbol space="ram" offset="0x4010ce" name="strcpy"/>
+<symbol space="ram" offset="0x4010d2" name="printf"/>
+<symbol space="ram" offset="0x4010d8" name="puts"/>
+<symbol space="ram" offset="0x4010de" name="malloc"/>
+<symbol space="ram" offset="0x4010e4" name="free"/>
+<symbol space="ram" offset="0x4010e5" name="exit"/>
+<symbol space="ram" offset="0x4010e8" name="abort"/>
+<symbol space="ram" offset="0x4010ea" name="read"/>
+<symbol space="ram" offset="0x4010f0" name="write"/>
+<symbol space="ram" offset="0x4010f6" name="open"/>
+<symbol space="ram" offset="0x4010fc" name="close"/>
+<symbol space="ram" offset="0x401102" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x401104" name="ext_i"/>
+<symbol space="ram" offset="0x401107" name="ext_v"/>
+<symbol space="ram" offset="0x401108" name="ext_p"/>
+<symbol space="ram" offset="0x401109" name="ext_l"/>
+</binaryimage>

@@ -1,0 +1,66 @@
+load file frag/r09_bits.a64-gcc-O2.xml
+option readonly on
+parse line typedef uint8 size_t;
+parse line typedef int8 ssize_t;
+parse line extern void *memcpy(void *dst, void *src, size_t n);
+parse line extern void *memset(void *dst, int4 c, size_t n);
+parse line extern size_t strlen(char *s);
+parse line extern int4 strcmp(char *a, char *b);
+parse line extern char *strcpy(char *dst, char *src);
+parse line extern int4 printf(char *fmt, ...);
+parse line extern int4 puts(char *s);
+parse line extern void *malloc(size_t n);
+parse line extern void free(void *p);
+parse line extern void exit(int4 status);
+parse line extern void abort(void);
+parse line extern ssize_t read(int4 fd, void *buf, size_t n);
+parse line extern ssize_t write(int4 fd, void *buf, size_t n);
+parse line extern int4 open(char *path, int4 flags, ...);
+parse line extern int4 close(int4 fd);
+parse line extern void __stack_chk_fail(void);
+option noreturn exit
+option noreturn abort
+option noreturn __stack_chk_fail
+load function bswap
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+load function rotl
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+load function popcnt
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+load function clz
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+load function align_up
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+load function is_pow2
+override flow r0x4001d4 callreturn
+override flow r0x4001d8 callreturn
+override flow r0x4001fc callreturn
+decompile
+decompile
+print C
+quit

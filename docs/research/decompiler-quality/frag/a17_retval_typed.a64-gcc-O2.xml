@@ -1,0 +1,57 @@
+<binaryimage arch="AARCH64:LE:64:v8A:default">
+<bytechunk space="ram" offset="0x400120" readonly="true">
+e20300aa010040b920040011400000b9c0035fd61f2003d51f2003d51f2003d5
+3f000071ed010054247c4093030080d204000014630400917f0004ebe0000054
+017863b8e503032a3f00026b41ffff54e003032ac0035fd6a0040011c0035fd6
+00008052c0035fd6fd7bbda9e10300aafd030091e04300910b000094e0430091
+0c000094fd7bc3a8c0035fd6c0035fd6c0035fd6000080d2c0035fd600008052
+c0035fd6c0035fd600008052c0035fd600008052c0035fd6000080d2c0035fd6
+c0035fd60000001400000014000080d2c0035fd6000080d2c0035fd600008052
+c0035fd600008052c0035fd600000014c0035fd6c0035fd6c0035fd60000018b
+c0035fd6
+</bytechunk>
+<bytechunk space="ram" offset="0x400228" readonly="true">
+1000000000000000017a520004781e011b0c1f001000000018000000dcfeffff
+1400000000000000100000002c000000e8feffff480000000000000020000000
+400000001cffffff2400000000410e309d069e0547dedd0e0000000000000000
+10000000640000001cffffff040000000000000010000000780000000cffffff
+0400000000000000100000008c000000fcfeffff080000000000000010000000
+a0000000f0feffff080000000000000010000000b4000000e4feffff04000000
+0000000010000000c8000000d4feffff080000000000000010000000dc000000
+c8feffff080000000000000010000000f0000000bcfeffff0800000000000000
+1000000004010000b0feffff04000000000000001000000018010000a0feffff
+0400000000000000100000002c01000090feffff040000000000000010000000
+4001000080feffff0800000000000000100000005401000074feffff08000000
+00000000100000006801000068feffff0800000000000000100000007c010000
+5cfeffff0800000000000000100000009001000050feffff0400000000000000
+10000000a401000040feffff040000000000000010000000b801000030feffff
+040000000000000010000000cc01000020feffff040000000000000010000000
+e001000010feffff0800000000000000
+</bytechunk>
+<bytechunk space="ram" offset="0x41ffe8">
+66a7fd94bd9f5e59
+</bytechunk>
+<symbol space="ram" offset="0x400120" name="inc"/>
+<symbol space="ram" offset="0x400140" name="find_idx"/>
+<symbol space="ram" offset="0x400188" name="after_call"/>
+<symbol space="ram" offset="0x4001ac" name="memcpy"/>
+<symbol space="ram" offset="0x4001b0" name="memset"/>
+<symbol space="ram" offset="0x4001b4" name="strlen"/>
+<symbol space="ram" offset="0x4001bc" name="strcmp"/>
+<symbol space="ram" offset="0x4001c4" name="strcpy"/>
+<symbol space="ram" offset="0x4001c8" name="printf"/>
+<symbol space="ram" offset="0x4001d0" name="puts"/>
+<symbol space="ram" offset="0x4001d8" name="malloc"/>
+<symbol space="ram" offset="0x4001e0" name="free"/>
+<symbol space="ram" offset="0x4001e4" name="exit"/>
+<symbol space="ram" offset="0x4001e8" name="abort"/>
+<symbol space="ram" offset="0x4001ec" name="read"/>
+<symbol space="ram" offset="0x4001f4" name="write"/>
+<symbol space="ram" offset="0x4001fc" name="open"/>
+<symbol space="ram" offset="0x400204" name="close"/>
+<symbol space="ram" offset="0x40020c" name="__stack_chk_fail"/>
+<symbol space="ram" offset="0x400210" name="ext_i"/>
+<symbol space="ram" offset="0x400214" name="ext_v"/>
+<symbol space="ram" offset="0x400218" name="ext_p"/>
+<symbol space="ram" offset="0x40021c" name="ext_l"/>
+</binaryimage>
