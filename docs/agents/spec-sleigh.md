@@ -9,18 +9,19 @@ files alone.
 - `docs/inventory/01-sleigh.md` sections 0–8a: model, `.sla` format,
   loading, context, decoding, disassembly text, p-code generation,
   undefined behaviour in the C++ runtime, measured baselines.
+- `docs/features/sla.md` — crate `bk-sla` (model, reader, writer).
+- `docs/features/sleigh-decode.md` — crate `bk-sleigh`, part 1.
+- `docs/features/sleigh-pcode.md` — crate `bk-sleigh`, part 2.
 
 ## In progress / next (in this order)
-1. `docs/features/sla.md` — crate `bk-sla` (model, reader, writer).
-2. `docs/features/sleigh-decode.md` — crate `bk-sleigh`, part 1.
-3. `docs/features/sleigh-pcode.md` — crate `bk-sleigh`, part 2.
-4. `docs/features/sleigh-language.md` — Java-side language services.
-5. Inventory sections 9–12 (compiler front half — still to be read in
+1. `docs/features/sleigh-language.md` — Java-side language services
+   (registers as a model, flow and operand types, overrides, recompiling).
+2. Inventory sections 9–12 (compiler front half — still to be read in
    `CPP/slgh_compile.cc` 1930–4091, `pcodecompile.cc`, `slghparse.y`;
    compiler back half — notes exist, see below; Java differences; census).
-6. `docs/features/sleigh-compiler-front.md`, `sleigh-compiler-back.md`,
+3. `docs/features/sleigh-compiler-front.md`, `sleigh-compiler-back.md`,
    `sleigh-snippet.md`.
-7. Final report (end of this file).
+4. Final report (end of this file).
 
 ## Material outside the repository (session scratchpad; may vanish)
 - Notes on the compiler back half (patterns, operand offsets, decision

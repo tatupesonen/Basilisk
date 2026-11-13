@@ -252,6 +252,13 @@ diff(&a, &b) -> Vec<Difference>   — structural, with a path for each differenc
               ("table `instruction` constructor 12 (ia.sinc:155) main op 3
               input 1 offset: const_real 0x10 ≠ const_real 0x20"), capped
 ```
+A template can also live outside a file: `Template` is an owned value
+with the same `ConstTpl`/`VarnodeTpl`/op/handle types and its own small
+arenas, with `encode_xml`/`encode_packed`/`decode` of a lone
+`construct_tpl` element. P-code snippets compiled for injection
+(`features/sleigh-snippet.md`) are such templates, and the runtime builds
+p-code from either kind through one borrowed view (`TemplateRef`).
+
 `SlaError` (`thiserror`) distinguishes container errors (header, zlib,
 size), stream errors (from `bk-marshal`, with offset), structure errors
 (validation 1–6) and limit errors.
