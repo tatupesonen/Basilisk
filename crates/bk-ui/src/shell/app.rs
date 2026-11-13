@@ -168,18 +168,18 @@ impl BasiliskApp {
         let wid = w.id;
         let probe = self.selftest.as_ref().map(|s| Arc::clone(&s.probe));
         ctx.show_viewport_deferred(id, builder, move |ui, _class| {
-            if let Some(p) = &probe {
-                if p.inject_g.swap(false, std::sync::atomic::Ordering::Relaxed) {
-                    ui.ctx().input_mut(|i| {
-                        i.events.push(egui::Event::Key {
-                            key: egui::Key::G,
-                            physical_key: None,
-                            pressed: true,
-                            repeat: false,
-                            modifiers: egui::Modifiers::NONE,
-                        });
+            if let Some(p) = &probe
+                && p.inject_g.swap(false, std::sync::atomic::Ordering::Relaxed)
+            {
+                ui.ctx().input_mut(|i| {
+                    i.events.push(egui::Event::Key {
+                        key: egui::Key::G,
+                        physical_key: None,
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
                     });
-                }
+                });
             }
             let mut tool = tool.lock();
             detached_window(ui, &mut tool, wid, id);

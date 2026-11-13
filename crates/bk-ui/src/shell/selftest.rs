@@ -207,10 +207,10 @@ impl SelfTest {
                     matches!(&ws.overlay, Some((at, Overlay::Palette(_))) if Some(*at) == vp);
                 // Activating the app makes the main window key; keep asking
                 // the window system to focus the detached one.
-                if let Some(v) = vp {
-                    if self.since.elapsed().as_millis() % 1000 < 60 {
-                        ctx.send_viewport_cmd_to(v, egui::ViewportCommand::Focus);
-                    }
+                if let Some(v) = vp
+                    && self.since.elapsed().as_millis() % 1000 < 60
+                {
+                    ctx.send_viewport_cmd_to(v, egui::ViewportCommand::Focus);
                 }
                 if matches!(&ws.overlay, Some((at, Overlay::Palette(_))) if *at == egui::ViewportId::ROOT)
                 {
