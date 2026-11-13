@@ -4,14 +4,17 @@ Research track (no Rust code). Worktree `basilisk-wt/decomp-research`, branch
 `decomp-research`. Brief: how basilisk's decompiler can be more accurate and
 more readable than Ghidra's, with a plan the project can build from.
 
-**State on 2026-11-13: in progress — see "Next" below.** This file is kept
-current after every commit so another agent can continue from the files.
+**State on 2026-11-13: done.** The document answers the four things the
+coordinator asked of it — the weakness catalogue with measured against cited
+claims (its section 3 and the marks throughout), what the port must decide at
+the start (2.2), the harness for gate and nightly runs (5.3), and a proposed
+ADR in ready-to-paste form (8). Gaps are in section 7 below.
 
 ## 1. Deliverables
 
 | Path | What | State |
 |---|---|---|
-| `docs/research/decompiler-quality.md` | The research document: conclusions, recommendations, weakness catalogue, survey, measurement plan, proposed ADR | Full draft committed (`ba6569f`); being revised |
+| `docs/research/decompiler-quality.md` | The research document: conclusions, recommendations, weakness catalogue, survey, measurement plan, proposed ADR (about 1,240 lines) | Done |
 | `docs/research/decompiler-quality/` | Experiment corpus and harness: `src/` (36 cases, 104 functions), `frag/` (fragments and console scripts fed to `decomp`), `out/` (Ghidra's output), `tools/` (`run.py`, `elf2frag.py`, `metrics.py`), `README.md` | Committed (`aa6f47e`, `f31dc0f`) |
 | `docs/agents/decomp-research.md` | This report | Current |
 
@@ -60,6 +63,9 @@ Findings checked by hand beyond the corpus run:
 |---|---|---|
 | The `void` results are not caused by decompiling twice | `load function inc` / `decompile` / `print C` once, for `inc`, `after_call`, `find_first` (x86-64 and AArch64), `bump`, `my_strlen`, `greet` | All still `void` |
 | NaN terms are removed by default | `load function below`, `print raw` before and after `decompile`; then `option nanignore none`, `decompile`, `print C` on `frag/a13_float.x64-clang-O2.xml` | Lifted p-code has `CF = NAN(a) \|\| NAN(b) \|\| a f< b`; default output `param_1 < param_2`; with the option `(NAN(param_1) \|\| NAN(param_2)) \|\| param_1 < param_2` |
+| `fmin2` is wrong for NaN independently of that option | `load function fmin2`, `print raw`, `option nanignore none`, `decompile`, `print C` | Lifted p-code: "if `a f< b` keep `a`, else `a = b`"; printed `if (param_2 <= param_1) { param_1 = param_2; }` with and without the option. Cause read in `typeop.cc`: `TypeOpFloatLess` has `booleanFlip = CPUI_FLOAT_LESSEQUAL` |
+| The stray store in the variable-length-array case is the call's return address | `llvm-objdump -d --disassemble-symbols=reverse_print build/r12_vla.x64-clang-O2.elf` | `0x2001ec` is the instruction after `callq puts` |
+| Cost of the reference console on the corpus | all 74 `frag/*.script` through `decomp`, timed | 4.7 s, 430 decompilations |
 | A flow override is only read while flow is followed | `load function direct_tail`, `override flow r0x200122 callreturn`, `decompile` once against twice | Once: the callee's body is printed inline. Twice: `ext_i(param_1 + 1); return;` |
 
 Sources re-opened by me to check the helpers' reports: SAILR's result tables,
@@ -104,14 +110,37 @@ marked `[S]` or `[S?]` in the document.
   cap on workers; all finished then. None has been started since and none is
   running.
 
-## 6. Next
+## 6. Follow-ups for the coordinator
 
-1. Re-read the draft against the corpus numbers; mark any claim still
-   unmarked.
-2. Add to the document: a per-area table of what the port must decide at the
-   start against what can follow parity; the split of the harness into gate
-   and nightly runs; a proposed ADR in ready-to-paste form.
-3. Final report.
+* **Proposed ADR**: section 8 of the document, ready to paste; it needs a
+  number. It fixes profiles (`ghidra` for parity, `basilisk` for
+  improvements), six properties the port must have from its first version,
+  the scorecard, and the rule that language models never edit code.
+* **For the M3 specs** (the port plan being written in parallel): the table
+  at the start of section 2.2 lists, per area of the port, what has to be
+  decided at the start. The one item with real uncertainty is the typed output
+  tree between engine and printer (D2); the proposed ADR makes it conditional
+  on a spike against the 93 data tests.
+* **Things found in Ghidra that the plan should know:**
+  * The engine is wrong, not just ugly, without three analyses that Ghidra
+    keeps in Java: tail-call marking (`SharedReturnAnalyzer`), discovery of
+    non-returning functions (`FindNoReturnFunctionsAnalyzer`) and stored
+    prototypes (`DecompilerFunctionAnalyzer`, off by default except for PE
+    files under 2 MiB of addresses). They belong to M5 and decide what the
+    decompiler prints.
+  * The console's `load function` follows flow at once; a flow override given
+    afterwards only takes effect on a second `decompile`. A basilisk test
+    runner that replays console scripts must reproduce this order.
+  * Ghidra's `SourceType` already has an `AI` level at the pinned commit.
+  * `TypeOpFloatLess` flips to `FLOAT_LESSEQUAL`: the `ghidra` profile must
+    reproduce an output that is wrong for NaN.
+* **The corpus as tests.** `docs/research/decompiler-quality/` is laid out to
+  become a test corpus: fragments are checked in, so a gate test needs no
+  compiler. Moving it under `bk-testkit` and replacing the Python tools with
+  Rust is a small task for the decompiler track.
+* **The gate was not run** on this branch: it contains no Rust change, and a
+  full build on the shared machine would have cost another track its cores.
+  The gate's file-size rule covers `crates/**/*.rs` only.
 
 ## 7. Gaps
 
