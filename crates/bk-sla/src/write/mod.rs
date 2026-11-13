@@ -10,7 +10,7 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 
 use crate::error::SlaError;
-use crate::ids::{self, *};
+use crate::ids::*;
 use crate::model::Sla;
 use crate::model::handles::SymbolId;
 use crate::model::symbol::{SpaceKind, SymbolKind};
