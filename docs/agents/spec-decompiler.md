@@ -11,14 +11,31 @@ reading Ghidra's source, not executed.
 
 ## Deliverables
 
+All committed on branch `spec-decompiler` (not pushed, not merged).
+
 | File | State |
 |---|---|
-| `docs/inventory/02-decompiler.md` | done (committed) |
-| `docs/features/decomp-plan.md` | in progress |
-| `docs/features/decomp-range.md` (circle ranges) | next |
-| `docs/features/decomp-types.md` (type system, C declaration parser) | next |
-| `docs/features/decomp-cspec.md` (compiler spec, prototype models) | next |
-| `docs/features/decomp-ir.md` (varnodes, ops, blocks; waits for research reconciliation) | next |
+| `docs/inventory/02-decompiler.md` | done |
+| `docs/features/decomp-plan.md` | done; ADR-025 folded in (sections 3, 4.6, 5, 8, 9) |
+| `docs/features/decomp-range.md` (D01, `bk-decomp-range`) | done — can start now |
+| `docs/features/decomp-types.md` (D02, `bk-decomp-types`) | done — can start now |
+| `docs/features/decomp-cspec.md` (D03, `bk-cspec`) | done — can start now |
+| `docs/features/decomp-ir.md` (D05, `bk-decomp-ir`) | done — needs D00, D02, D04 merged |
+| Feature documents for D00 (`decomp-oracle`) and D04 (`decomp-cfg`) | **not written**; both are leaf tracks, described in the plan (4.2, 6, 9.1) to the level of a brief. Next thing to write |
+| Specs for D06 onward | not written |
+
+## What a successor should do next
+
+1. Write `docs/features/decomp-oracle.md` (D00) and
+   `docs/features/decomp-cfg.md` (D04) from plan sections 4.2, 6 and 9.1.
+   For D04 read `block.cc` (`BlockGraph`), `blockaction.cc`
+   (`CollapseStructure`, `LoopBody`, `TraceDAG`) and run the console's
+   `structure blocks` once to fix the XML it reads and writes (not run
+   in this track).
+2. Before D02 and D03 start, `bk_core::Provenance` must exist (plan
+   9.2 item 5).
+3. The scratch debug console used here was built outside the
+   repositories and is gone; D00 rebuilds it properly.
 
 ## Measurements and how to repeat them
 
@@ -102,4 +119,13 @@ All commands read Ghidra at `/Users/tatu/slop/ghidra` (commit
   the four not-yet-ported unit tests, `testfunction.cc`,
   `ifacedecomp.cc`, `ghidra_process.cc`, `ghidra_arch.cc`; ran the
   console as above. Stopped by a usage limit before writing.
-* 2026-11-13: resumed; writing documents first, committing after each.
+* 2026-11-13: resumed; wrote and committed, in order: this file, the
+  inventory, the plan, the range spec, the types spec, the cspec spec,
+  the IR spec. Read ADR-022, ADR-023, ADR-024, ADR-025 and the research
+  report's sections 2.2 and 5.3 from the main checkout and revised the
+  plan and the IR spec for ADR-025. Further measurements: rule coverage
+  of the research corpus (same script as for the data tests, over
+  `docs/research/decompiler-quality/frag/*.script` with `print
+  actionstats` appended: five more rules apply; 32 apply in neither
+  corpus); no `.cspec` has a prototype before `<stackpointer>` (shell
+  loop over the 107 files).

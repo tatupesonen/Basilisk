@@ -433,7 +433,15 @@ replays inside the reference console to the same `print raw` after
 `ActionStart` (L); (4) `bk-testkit` parses dumps, traces
 (`DEBUG n: name` records) and recordings into typed structures, with unit
 tests on checked-in samples (S); (5) the dump format is documented and
-versioned. It must also add an x86-64 Linux container target, so that
+versioned; (6) two optional logs for later tracks, each behind a console
+command: every `Funcdata` mutation call with its arguments (for D05's
+replay test) and every `PrintLanguage` push and `Emit` call (for D16a).
+`Emit` is virtual and can be logged from the extension; the mutation
+methods and the push methods are not, so those logs need a small logging
+patch to the build's **copy** of the source, kept under
+`tools/reference/patches/` like the existing one. If such a patch proves
+impractical, D00 reports it and the two consumers use their stated
+fall-backs. It must also add an x86-64 Linux container target, so that
 ADR-021's reference host finally exists.
 
 **D01 `decomp-range`.** Owns `unittests/testcirclerange.cc` (117). Evidence:
@@ -627,8 +635,8 @@ acceptance shows it is there.
 ADR-025 3c is conditional on a spike. Planned so that no printer code is
 written before the question is answered:
 
-1. **D16a, the spike** (wave 2; needs only D00's dumps and the reference
-   console). Question: can `PrintC`'s output for the 93 data tests be
+1. **D16a, the spike** (wave 2; needs only D00's dumps and logs and the
+   reference console). Question: can `PrintC`'s output for the 93 data tests be
    reproduced token for token from a tree that is built first and printed
    afterwards? Method: instrument the reference console through
    `consoleext_bk.cc` to log, for every function of every data test and of
