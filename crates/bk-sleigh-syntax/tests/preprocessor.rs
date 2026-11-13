@@ -415,12 +415,15 @@ fn file_identity_does_not_depend_on_how_a_path_is_spelled() {
     // One file for both spellings of t.sinc, and the cycle is caught at once.
     assert_eq!(p.sources.files().len(), 3);
     assert_eq!(output(&p), ["t", "t", "s"]);
+    // The message shows the path as joined, which on Windows puts a `\`
+    // between the including file's directory and the name as written.
+    let spelled = Path::new("d").join("../d/./self.sinc");
     assert_eq!(
         errors(&p),
         [err(
             "self.sinc",
             2,
-            "included file \"d/../d/./self.sinc\": includes itself"
+            &format!("included file \"{}\": includes itself", spelled.display())
         )]
     );
 }

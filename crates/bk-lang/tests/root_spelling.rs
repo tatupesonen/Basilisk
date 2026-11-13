@@ -92,7 +92,20 @@ fn every_spelling_of_a_root_gives_the_same_registry() {
     );
     let root = canonical(dir.path());
     let expected = describe(&build(&root, overlay.path()));
-    assert!(expected.contains("/Ghidra/Processors/Zeta/data/languages/zeta.sla"));
+    let zeta_sla = [
+        "Ghidra",
+        "Processors",
+        "Zeta",
+        "data",
+        "languages",
+        "zeta.sla",
+    ]
+    .iter()
+    .fold(canonical(overlay.path()), |path, name| path.join(name));
+    assert!(
+        expected.contains(&format!("sla {:?}", Some(&zeta_sla))),
+        "{expected}"
+    );
     // The fixture shares alpha.pspec between a .ldefs beside it and one in
     // a subdirectory, which finds it by name: one file, counted once.
     assert_eq!(build(&root, overlay.path()).pspec_files().count(), 2);
