@@ -1,0 +1,21 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 fd2ea7b2         ".word\t\t0xb2a72efd"  [NonInstruction delay=0 size=0 target=0x10000]
+00010004  4 7c0de57e         ".word\t\t0x7ee50d7c"  [NonInstruction delay=0 size=0 target=0x10004]
+00010008  4 40a8cd8a         ".word\t\t0x8acda840"  [NonInstruction delay=0 size=0 target=0x10008]
+0001000c  4 ae9d963c         ".word\t\t0x3c969dae"  [NonInstruction delay=0 size=0 target=0x1000c]
+00010010  4 1e2750cc         ".word\t\t0xcc50271e"  [NonInstruction delay=0 size=0 target=0x10010]
+00010014  4 950ba204         "csrxchg     \t$r21, $s5, 0x2882"  [NonBranch delay=0 size=0 target=0x10014]
+00010018  4 4c50a621         "sc.w        \t$t0, $tp, -22960"  [NonBranch delay=0 size=0 target=0x10018]
+0001001c  4 a4502df3         ".word\t\t0xf32d50a4"  [NonInstruction delay=0 size=0 target=0x1001c]
+00010020  4 2a52ade9         ".word\t\t0xe9ad522a"  [NonInstruction delay=0 size=0 target=0x10020]
+00010024  4 1478b60f         ".word\t\t0x0fb67814"  [NonInstruction delay=0 size=0 target=0x10024]
+00010028  4 7e448543         "beqz        \t$sp, -293564\t# 0xfffffffffffc856c"  [Branch delay=0 size=0 target=0xfffffffffffc856c]
+0001002c  4 9a71b7a1         ".word\t\t0xa1b7719a"  [NonInstruction delay=0 size=0 target=0x1002c]
+00010030  4 b0156a26         "ldptr.d     \t$t4, $t1, 27156"  [NonBranch delay=0 size=0 target=0x10030]
+00010034  4 543673fe         ".word\t\t0xfe733654"  [NonInstruction delay=0 size=0 target=0x10034]
+00010038  4 e61f7ca6         ".word\t\t0xa67c1fe6"  [NonInstruction delay=0 size=0 target=0x10038]
+0001003c  4 ccc96c46         "bnez        \t$t2, 3304648\t# 0x00336d04"  [Branch delay=0 size=0 target=0x336d04]
+end: Complete

@@ -1,0 +1,25 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 9421fff0         "stwu    r1,-16(r1)"
+00010004  4 7c0802a6         "mflr    r0"
+00010008  4 48000005         "bl      0x0001000c"
+0001000c  4 4e800020         "blr"
+00010010  4 b7d2cb8f         "sthu    r30,-13425(r18)"
+00010014  4 0e3f443c         "twi     17,r31,17468"
+00010018  4 d80ab4ff         "stfd    f0,-19201(r10)"
+0001001c  4 219d7f00         "subfic  r12,r29,32512"
+00010020  4 58ff8866         "rlmi    r31,r7,r17,1,19"
+00010024  4 cadc033f         "lfd     f22,831(r28)"
+00010028  4 45a91d2d         ".long 0x45a91d2d"
+0001002c  4 24edb753         "dozi    r7,r13,-18605"
+00010030  4 a625b405         "lhzu    r17,-19451(r5)"
+00010034  4 a7ae568e         "lhzu    r29,22158(r14)"
+00010038  4 cee88caf         "lfdu    f23,-29521(r8)"
+0001003c  4 06a49e21         ".long 0x6a49e21"
+00010040  4 5901d03b         "rlmi.   r1,r8,r26,0,29"
+00010044  4 8bbbf013         "lbz     r29,-4077(r27)"
+00010048  4 f72cb0a0         "psq_stu f25,160(r12),1,3"
+0001004c  4 d4247fb2         "stfsu   f1,32690(r4)"
+end: Complete

@@ -1,0 +1,21 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 bd22c9e7         ".word\t\t0xe7c922bd"  [NonInstruction delay=0 size=0 target=0x10000]
+00010004  4 ece80e6a         "bltu        \t$a3, $t0, -127256\t# 0xffffffffffff0eec"  [Branch delay=0 size=0 target=0xffffffffffff0eec]
+00010008  4 da9a47bd         ".word\t\t0xbd479ada"  [NonInstruction delay=0 size=0 target=0x10008]
+0001000c  4 3894c2da         ".word\t\t0xdac29438"  [NonInstruction delay=0 size=0 target=0x1000c]
+00010010  4 b5219db7         ".word\t\t0xb79d21b5"  [NonInstruction delay=0 size=0 target=0x10010]
+00010014  4 5d9902dd         ".word\t\t0xdd02995d"  [NonInstruction delay=0 size=0 target=0x10014]
+00010018  4 2015fc74         ".word\t\t0x74fc1520"  [NonInstruction delay=0 size=0 target=0x10018]
+0001001c  4 d8303e81         ".word\t\t0x813e30d8"  [NonInstruction delay=0 size=0 target=0x1001c]
+00010020  4 0015f303         "xori        \t$zero, $a4, 0xcc5"  [NonBranch delay=0 size=0 target=0x10020]
+00010024  4 301c3996         ".word\t\t0x96391c30"  [NonInstruction delay=0 size=0 target=0x10024]
+00010028  4 a160c44c         "jirl        \t$ra, $a1, 50272"  [NonBranch delay=0 size=0 target=0x10028]
+0001002c  4 d28eaae0         ".word\t\t0xe0aa8ed2"  [NonInstruction delay=0 size=0 target=0x1002c]
+00010030  4 2a7e69c5         ".word\t\t0xc5697e2a"  [NonInstruction delay=0 size=0 target=0x10030]
+00010034  4 ea3b9e8b         ".word\t\t0x8b9e3bea"  [NonInstruction delay=0 size=0 target=0x10034]
+00010038  4 6d20a9aa         ".word\t\t0xaaa9206d"  [NonInstruction delay=0 size=0 target=0x10038]
+0001003c  4 d510cecf         ".word\t\t0xcfce10d5"  [NonInstruction delay=0 size=0 target=0x1003c]
+end: Complete

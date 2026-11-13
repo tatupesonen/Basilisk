@@ -238,3 +238,37 @@ jumping to any row is O(1); only visible rows are touched; rows arrive in
 waits); each row's text is laid out once into a cached galley and only
 re-painted afterwards. The worst frames (≈ 11–12 ms) are the frames in
 which several pages arrive and are laid out at once.
+### `bk-gnu-disasm` / `bk-binutils-sys`
+
+2026-11-12, Apple silicon (8 cores), macOS 25.5, Apple clang 17, rustc
+1.97.1, with other agents' builds and a 3-CPU fuzzing container running
+(load average 9–16): wall times are pessimistic.
+
+Throughput, `--release`, one thread, 1 MiB of a repeated real function:
+
+    CARGO_BUILD_JOBS=2 cargo test --release -p bk-gnu-disasm --test bench -- --ignored --nocapture
+
+| Architecture | `block` | `instruction_at` per instruction |
+|---|---:|---:|
+| x86-64 | 2.14 M instructions/s | 1.89 M instructions/s |
+| AArch64 | 1.36 M instructions/s | 1.23 M instructions/s |
+
+Each instruction allocates its text (`String`); binutils' own printing
+dominates. `instruction_at` hands binutils a 320-byte window, so per-call
+cost does not grow with the slice.
+
+Building `bk-binutils-sys` (`cargo clean -p bk-binutils-sys`, then
+`time CARGO_BUILD_JOBS=2 cargo build [--release] -p bk-binutils-sys`; 280
+C files through the `cc` crate and Cargo's jobserver):
+
+| | dev (C at `-O1`) | release (C at `-O3`) |
+|---|---:|---:|
+| clean build | 15.8 s (20.1 s with C debug info) | 19.6 s |
+| after a change to Rust only | 0.2 s | 0.4 s |
+| nothing changed | 0.07 s | — |
+| static library | 18.6 MB (40.2 MB with C debug info) | 18.7 MB |
+
+C debug info is off by default (`CFLAGS=-g` to have it). Size added to a
+stripped `dist`-profile binary (fat LTO) by using `bk-gnu-disasm`:
+13.4 MB (13.7 MB against 0.3 MB for the same program without it) — the
+tables of every libopcodes target.

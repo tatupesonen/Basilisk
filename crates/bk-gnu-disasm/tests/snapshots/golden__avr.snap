@@ -1,0 +1,43 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  2 cf93             "push\tr28"
+00010002  2 df93             "push\tr29"
+00010004  4 0e940000         "call\t0\t;  0x00000000"  [Call delay=0 size=0 target=0x0]
+00010008  2 df91             "pop\tr29"
+0001000a  2 cf91             "pop\tr28"
+0001000c  2 0895             "ret"
+0001000e  2 bb72             "andi\tr27, 0x2B\t; 43"
+00010010  2 37c0             "rjmp\t.+110    \t;  0x00010080"  [Branch delay=0 size=0 target=0x10080]
+00010012  2 4abe             "out\t0x3a, r4\t; 58"
+00010014  2 11a8             "ldd\tr1, Z+49\t; 0x31"
+00010016  2 405e             "subi\tr20, 0xE0\t; 224"
+00010018  2 d5c7             "rjmp\t.+4010   \t;  0x00010fc4"  [Branch delay=0 size=0 target=0x10fc4]
+0001001a  2 a98f             "std\tY+25, r26\t; 0x19"
+0001001c  2 8c46             "sbci\tr24, 0x6C\t; 108"
+0001001e  2 be49             "sbci\tr27, 0x9E\t; 158"
+00010020  2 405e             "subi\tr20, 0xE0\t; 224"
+00010022  2 e51c             "adc\tr14, r5"
+00010024  2 6556             "subi\tr22, 0x65\t; 101"
+00010026  2 3841             "sbci\tr19, 0x18\t; 24"
+00010028  2 52c8             "rjmp\t.-3932   \t;  0x0000f0ce"  [Branch delay=0 size=0 target=0xf0ce]
+0001002a  2 7838             "cpi\tr23, 0x88\t; 136"
+0001002c  2 b5ea             "ldi\tr27, 0xA5\t; 165"
+0001002e  2 307b             "andi\tr19, 0xB0\t; 176"
+00010030  2 43f8             "bld\tr4, 3"
+00010032  2 b3f3             "brvs\t.-20     \t;  0x00010020"  [ConditionalBranch delay=0 size=0 target=0x10020]
+00010034  2 feac             "ldd\tr15, Y+62\t; 0x3e"
+00010036  2 dcb0             "in\tr13, 0x0c\t; 12"
+00010038  2 31ca             "rjmp\t.-2974   \t;  0x0000f49c"  [Branch delay=0 size=0 target=0xf49c]
+0001003a  2 18c6             "rjmp\t.+3120   \t;  0x00010c6c"  [Branch delay=0 size=0 target=0x10c6c]
+0001003c  2 7fd6             "rcall\t.+3326   \t;  0x00010d3c"  [Branch delay=0 size=0 target=0x10d3c]
+0001003e  2 689c             "mul\tr6, r8"
+00010040  2 b323             "and\tr27, r19"
+00010042  2 65e6             "ldi\tr22, 0x65\t; 101"
+00010044  2 cd47             "sbci\tr28, 0x7D\t; 125"
+00010046  2 5240             "sbci\tr21, 0x02\t; 2"
+00010048  2 8d49             "sbci\tr24, 0x9D\t; 157"
+0001004a  2 1f41             "sbci\tr17, 0x1F\t; 31"
+0001004c  2 14bd             "out\t0x24, r17\t; 36"
+end: Complete

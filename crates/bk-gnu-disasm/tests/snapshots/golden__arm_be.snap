@@ -1,0 +1,24 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 e52de004         "push\t{lr}\t\t@ (str lr, [sp, #-4]!)"
+00010004  4 e24dd000         "sub\tsp, sp, #0"
+00010008  4 e12fff1e         "bx\tlr"
+0001000c  4 32aa4a3b         "adccc\tr4, sl, #241664\t@ 0x3b000"
+00010010  4 7bc6463c         "blvc\t0xffffffffff1a1908"  [Branch delay=0 size=0 target=0xffffffffff1a1908]
+00010014  4 b2e2d37e         "rsclt\tsp, r2, #-134217727\t@ 0xf8000001"
+00010018  4 9bd3a6f3         "blls\t0xffffffffff4f9bec"  [Branch delay=0 size=0 target=0xffffffffff4f9bec]
+0001001c  4 7b7067e2         "blvc\t0x01c29fac"  [Branch delay=0 size=0 target=0x1c29fac]
+00010020  4 8c33d3a5         "ldchi\t3, cr13, [r3], #-660\t@ 0xfffffd6c"
+00010024  4 da176d0b         "ble\t0x005eb458"  [Branch delay=0 size=0 target=0x5eb458]
+00010028  4 71828766         "orrvc\tr8, r2, r6, ror #14"
+0001002c  4 e0614a51         "rsb\tr4, r1, r1, asr sl"
+00010030  4 ef8a7f93         "svc\t0x008a7f93"
+00010034  4 e3752ea2         "cmn\tr5, #2592\t@ 0xa20"
+00010038  4 72ddeb8d         "sbcsvc\tlr, sp, #144384\t@ 0x23400"
+0001003c  4 73843de2         "orrvc\tr3, r4, #14464\t@ 0x3880"
+00010040  4 e07f73dd         "ldrsbt\tr7, [pc], #-61"
+00010044  4 40e49cd8         "ldrdmi\tr9, [r4], #200\t@ 0xc8\t@ <UNPREDICTABLE>"
+00010048  4 22af7ecd         "adccs\tr7, pc, #3280\t@ 0xcd0"
+end: Complete

@@ -1,0 +1,25 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 27bdffe8         "addiu\tsp,sp,-24"  [NonBranch delay=0 size=0 target=0x0]
+00010004  4 afbf0014         "sw\tra,20(sp)"  [DataReference delay=0 size=0 target=0x0]
+00010008  4 0c000010         "jal\t0x00000040"  [Call delay=1 size=0 target=0x40]
+0001000c  4 00000000         "nop"  [NonBranch delay=0 size=0 target=0x0]
+00010010  4 74f6da49         "jalx\t0x03db6924"  [Call delay=1 size=0 target=0x3db6924]
+00010014  4 4d75b2ea         ".word\t0x4d75b2ea"  [NonInstruction delay=0 size=0 target=0x0]
+00010018  4 b214cb33         "sdl\ts4,-13517(s0)"  [DataReference delay=0 size=0 target=0x0]
+0001001c  4 9cc1bc89         "lwu\tat,-17271(a2)"  [DataReference delay=0 size=0 target=0x0]
+00010020  4 db1e7770         "ldc2\t$30,30576(t8)"  [DataReference delay=0 size=0 target=0x0]
+00010024  4 fc2414f7         "sd\ta0,5367(at)"  [DataReference delay=0 size=0 target=0x0]
+00010028  4 ae0699e2         "sw\ta2,-26142(s0)"  [DataReference delay=0 size=0 target=0x0]
+0001002c  4 adea1f7f         "sw\tt2,8063(t7)"  [DataReference delay=0 size=0 target=0x0]
+00010030  4 fa48a440         "sdc2\t$8,-23488(s2)"  [DataReference delay=0 size=0 target=0x0]
+00010034  4 48013730         ".word\t0x48013730"  [NonInstruction delay=0 size=0 target=0x0]
+00010038  4 41819a2b         ".word\t0x41819a2b"  [NonInstruction delay=0 size=0 target=0x0]
+0001003c  4 f06a23fa         "scd\tt2,9210(v1)"  [DataReference delay=0 size=0 target=0x0]
+00010040  4 ab0de4e7         "swl\tt5,-6937(t8)"  [DataReference delay=0 size=0 target=0x0]
+00010044  4 d1afcd64         "lld\tt7,-12956(t5)"  [DataReference delay=0 size=0 target=0x0]
+00010048  4 f4bb6d37         "sdc1\t$f27,27959(a1)"  [DataReference delay=0 size=0 target=0x0]
+0001004c  4 f1270636         "scd\ta3,1590(t1)"  [DataReference delay=0 size=0 target=0x0]
+end: Complete

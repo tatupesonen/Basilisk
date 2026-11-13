@@ -1,0 +1,106 @@
+[package]
+name = "bk-binutils-sys"
+description = "basilisk: binutils 2.41's disassemblers (libopcodes), built from vendored source and wrapped in a minimal sound interface"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+build = "build.rs"
+links = "bk_binutils"
+
+[dependencies]
+thiserror = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }
+
+# This crate cannot inherit `[workspace.lints]`: the workspace forbids
+# `unsafe_code`, and a forbid cannot be relaxed from inside a crate. The
+# tables below are a copy of the root Cargo.toml's, differing only in
+# `unsafe_code` ("deny") and `undocumented_unsafe_blocks` ("deny").
+# Keep them in step with the root Cargo.toml.
+[lints.rust]
+# "deny", not the workspace's "forbid", so that src/lib.rs can opt out once,
+# with its reason (ADR-019, ADR-020; unsafe-crates.txt).
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+unreachable_pub = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
+unused_macro_rules = "warn"
+trivial_numeric_casts = "warn"
+redundant_lifetimes = "warn"
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "warn"
+bare_urls = "warn"
+invalid_rust_codeblocks = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Pedantic lints that fight binary-parsing and compiler-style code more than they help.
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+similar_names = "allow"
+too_many_lines = "allow"
+struct_excessive_bools = "allow"
+
+# No panics on untrusted input (ADR-009). Tests are exempt through clippy.toml.
+indexing_slicing = "warn"
+string_slice = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+get_unwrap = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+exit = "warn"
+mem_forget = "warn"
+
+# Unsafe code, where a crate is allowed any (ADR-020).
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "warn"
+
+# Output goes through `tracing`, not the console.
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+
+# A suppressed lint says why, and stops compiling once it is no longer needed.
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# Performance and data layout (ADR-012).
+clone_on_ref_ptr = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+needless_collect = "warn"
+or_fun_call = "warn"
+iter_with_drain = "warn"
+verbose_file_reads = "warn"
+
+# Clarity and correctness.
+use_self = "warn"
+if_then_some_else_none = "warn"
+map_err_ignore = "warn"
+unused_result_ok = "warn"
+float_cmp_const = "warn"
+lossy_float_literal = "warn"
+same_name_method = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+tests_outside_test_module = "warn"
+debug_assert_with_mut_call = "warn"
+wildcard_dependencies = "warn"

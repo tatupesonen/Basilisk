@@ -1,0 +1,29 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  1 55               "push   %rbp"
+00010001  3 4889e5           "mov    %rsp,%rbp"
+00010004  4 488b45f8         "mov    -0x8(%rbp),%rax"
+00010008  5 e800000000       "call   0x0001000d"  [Call delay=0 size=0 target=0x1000d]
+0001000d  1 c9               "leave"
+0001000e  1 c3               "ret"
+0001000f  6 f3bef1e0a5be     "repz mov $0xbea5e0f1,%esi"
+00010015  5 bd48948a8b       "mov    $0x8b8a9448,%ebp"
+0001001a  6 65a913c39fc6     "gs test $0xc69fc313,%eax"
+00010020  2 7659             "jbe    0x0001007b"  [ConditionalBranch delay=0 size=0 target=0x1007b]
+00010022  1 6c               "insb   (%dx),%es:(%rdi)"
+00010023  2 e4e0             "in     $0xe0,%al"
+00010025  2 3e9b             "ds fwait"
+00010027  1 60               "(bad)"
+00010028  2 b1d5             "mov    $0xd5,%cl"
+0001002a  1 4b               "rex.WXB"
+0001002b 10 4da3c385aba271ab8d96 "rex.WRB movabs %rax,0x968dab71a2ab85c3"
+00010035  6 0ab67a5469e9     "or     -0x1696ab86(%rsi),%dh"
+0001003b  4 c8168613         "enter  $0x8616,$0x13"
+0001003f  1 ee               "out    %al,(%dx)"
+00010040  1 06               "(bad)"
+00010041  6 4de8e07a4cdb     "rex.WRB call 0xffffffffdb4d7b27"  [Call delay=0 size=0 target=0xffffffffdb4d7b27]
+00010047  2 3a33             "cmp    (%rbx),%dh"
+00010049  6 8ebfaccce504     "mov    0x4e5ccac(%rdi),%?"
+end: Complete

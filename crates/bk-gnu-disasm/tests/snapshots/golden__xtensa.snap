@@ -1,0 +1,29 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  3 6016de           "excw"  [NonBranch delay=0 size=0 target=0x0]
+00010003  2 9888             "l32i.n\ta9, a8, 32"  [NonBranch delay=0 size=0 target=0x0]
+00010005  2 db07             "addi.n\ta0, a7, 13"  [NonBranch delay=0 size=0 target=0x0]
+00010007  3 66a605           "bnei\ta6, 12, 0x00010010"  [ConditionalBranch delay=0 size=0 target=0x10010]
+0001000a  2 bc26             "beqz.n\ta6, 0x00010040"  [ConditionalBranch delay=0 size=0 target=0x10040]
+0001000c  3 438f21           "lsiu\tf4, a15, 132"  [NonBranch delay=0 size=0 target=0x0]
+0001000f  3 5524ca           "call4\t0xfffda254"  [Call delay=0 size=0 target=0xfffda254]
+00010012  3 87df36           "bbs\ta15, a8, 0x0001004c"  [ConditionalBranch delay=0 size=0 target=0x1004c]
+00010015  3 f60dbc           "bgeui\ta13, 0x8000, 0x0000ffd5"  [ConditionalBranch delay=0 size=0 target=0xffd5]
+00010018  3 86401b           "j\t0x00016d1e"  [Branch delay=0 size=0 target=0x16d1e]
+0001001b  2 8987             "s32i.n\ta8, a7, 32"  [NonBranch delay=0 size=0 target=0x0]
+0001001d  3 83f03e           "excw"  [NonBranch delay=0 size=0 target=0x0]
+00010020  2 2b48             "addi.n\ta4, a8, 2"  [NonBranch delay=0 size=0 target=0x0]
+00010022  3 10c10f           "excw"  [NonBranch delay=0 size=0 target=0x0]
+00010025  3 7012f2           "rems\ta1, a2, a7"  [NonBranch delay=0 size=0 target=0x0]
+00010028  3 74b476           "excw"  [NonBranch delay=0 size=0 target=0x0]
+0001002b  2 fb6a             "addi.n\ta6, a10, 15"  [NonBranch delay=0 size=0 target=0x0]
+0001002d  3 262e80           "beqi\ta14, 2, 0x0000ffb1"  [ConditionalBranch delay=0 size=0 target=0xffb1]
+00010030  3 a4f7b1           "excw"  [NonBranch delay=0 size=0 target=0x0]
+00010033  2 98ae             "l32i.n\ta9, a14, 40"  [NonBranch delay=0 size=0 target=0x0]
+00010035  3 716424           "l32r\ta7, 0xfffd91c8"  [NonBranch delay=0 size=0 target=0x0]
+00010038  2 ad9f             "excw"  [NonBranch delay=0 size=0 target=0x0]
+0001003a  3 833de0           "excw"  [NonBranch delay=0 size=0 target=0x0]
+0001003d  3 b471b4           "excw"  [NonBranch delay=0 size=0 target=0x0]
+end: Complete

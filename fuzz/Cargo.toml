@@ -15,12 +15,20 @@ cargo-fuzz = true
 
 [dependencies]
 bk-bin = { path = "../crates/bk-bin" }
+bk-binutils-sys = { path = "../crates/bk-binutils-sys" }
 bk-core = { path = "../crates/bk-core" }
 bk-elf = { path = "../crates/bk-elf" }
 bk-lang = { path = "../crates/bk-lang" }
 bk-marshal = { path = "../crates/bk-marshal" }
 bk-sleigh-syntax = { path = "../crates/bk-sleigh-syntax" }
 libfuzzer-sys = "0.4.13"
+
+[[bin]]
+name = "bk_binutils_sys_disassemble"
+path = "fuzz_targets/bk_binutils_sys_disassemble.rs"
+test = false
+doc = false
+bench = false
 
 [[bin]]
 name = "bk_elf_parse"

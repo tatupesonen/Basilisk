@@ -1,0 +1,33 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  1 55               "push   %ebp"
+00010001  2 89e5             "mov    %esp,%ebp"
+00010003  3 8b4508           "mov    0x8(%ebp),%eax"
+00010006  5 e800000000       "call   0x0001000b"  [Call delay=0 size=0 target=0x1000b]
+0001000b  1 5d               "pop    %ebp"
+0001000c  1 c3               "ret"
+0001000d  2 7096             "jo     0x0000ffa5"  [ConditionalBranch delay=0 size=0 target=0xffa5]
+0001000f  3 8e7376           "mov    0x76(%ebx),%?"
+00010012  6 11a08a64a67e     "adc    %esp,0x7ea6648a(%eax)"
+00010018  1 9e               "sahf"
+00010019  4 824654f0         "addb   $0xf0,0x54(%esi)"
+0001001d  1 ee               "out    %al,(%dx)"
+0001001e  1 91               "xchg   %eax,%ecx"
+0001001f  3 6b011a           "imul   $0x1a,(%ecx),%eax"
+00010022  6 8a898ae75b0b     "mov    0xb5be78a(%ecx),%cl"
+00010028  6 d1b8c478dbdd     "sarl   -0x2224873c(%eax)"
+0001002e  2 883f             "mov    %bh,(%edi)"
+00010030  2 0446             "add    $0x46,%al"
+00010032  1 5d               "pop    %ebp"
+00010033  2 e491             "in     $0x91,%al"
+00010035  2 2a19             "sub    (%ecx),%bl"
+00010037  4 3e627627         "bound  %esi,%ds:0x27(%esi)"
+0001003b  7 268986617ad704   "mov    %eax,%es:0x4d77a61(%esi)"
+00010042  7 639cd9b29b8624   "arpl   %bx,0x24869bb2(%ecx,%ebx,8)"
+00010049  1 90               "nop"
+0001004a  1 16               "push   %ss"
+0001004b  1 3e               "ds"
+0001004c  1 09               ".byte 0x9"
+end: Complete

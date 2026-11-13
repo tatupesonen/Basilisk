@@ -1,0 +1,37 @@
+--- a/opcodes/cris-dis.c
++++ b/opcodes/cris-dis.c
+@@ -105,6 +105,14 @@
+ {
+   struct cris_disasm_data *disdata;
+ 
++  /* bk-binutils-sys: this runs once per disassemble_info, which starts a
++     new sequence of instructions; a case table begun by an earlier one
++     (possibly another disassembler's) does not continue into it.  */
++  case_offset = 0;
++  case_offset_counter = 0;
++  no_of_case_offsets = 0;
++  last_immediate = 0;
++
+   info->private_data = calloc (1, sizeof (struct cris_disasm_data));
+   disdata = (struct cris_disasm_data *) info->private_data;
+   if (disdata == NULL)
+--- a/opcodes/xgate-dis.c
++++ b/opcodes/xgate-dis.c
+@@ -274,6 +274,17 @@
+ int
+ print_insn_xgate (bfd_vma memaddr, struct disassemble_info* info)
+ {
++  /* bk-binutils-sys: a new disassemble_info starts a new sequence of
++     instructions; the instruction before it, which may have belonged to
++     another disassembler, must not be combined with its first one.  This
++     target does not otherwise use private_data, and
++     disassemble_free_target does not free it for this architecture.  */
++  if (info->private_data == NULL)
++    {
++      previousOpName[0] = 0;
++      perviousBin = 0;
++      info->private_data = previousOpName;
++    }
+   return print_insn (memaddr, info);
+ }
+ 

@@ -1,0 +1,21 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 36ca1e01         "addic.  r22,r10,7681"
+00010004  4 40a2545c         "bne+    0x00015460"
+00010008  4 645066d3         "oris    r16,r2,26323"
+0001000c  4 85544e8a         "lwzu    r10,20106(r20)"
+00010010  4 4eff7b93         ".long 0x4eff7b93"
+00010014  4 6a9d4ed8         "xori    r29,r20,20184"
+00010018  4 934aff38         "stw     r26,-200(r10)"
+0001001c  4 64ace0c2         "oris    r12,r5,57538"
+00010020  4 c7a1d115         ".long 0xc7a1d115"
+00010024  4 e1d6ac32         ".long 0xe1d6ac32"
+00010028  4 88ed8aeb         "lbz     r7,-29973(r13)"
+0001002c  4 f490eefe         ".long 0xf490eefe"
+00010030  4 5ee8a3d2         "rlwnm   r8,r23,r20,15,9"
+00010034  4 35b32260         "addic.  r13,r19,8800"
+00010038  4 06c477cb         ".long 0x6c477cb"
+0001003c  4 439e46f2         ".long 0x439e46f2"
+end: Complete

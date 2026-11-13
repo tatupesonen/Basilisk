@@ -1,0 +1,39 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  1 55               "push   rbp"
+00010001  3 4889e5           "mov    rbp,rsp"
+00010004  4 488b45f8         "mov    rax,QWORD PTR [rbp-0x8]"
+00010008  5 e800000000       "call   0x0001000d"  [Call delay=0 size=0 target=0x1000d]
+0001000d  1 c9               "leave"
+0001000e  1 c3               "ret"
+0001000f  2 b3b2             "mov    bl,0xb2"
+00010011  1 9f               "lahf"
+00010012  2 b535             "mov    ch,0x35"
+00010014  1 5b               "pop    rbx"
+00010015  1 56               "push   rsi"
+00010016  1 5c               "pop    rsp"
+00010017  1 0e               "(bad)"
+00010018  5 b801523f1a       "mov    eax,0x1a3f5201"
+0001001d  1 97               "xchg   edi,eax"
+0001001e  2 796d             "jns    0x0001008d"  [ConditionalBranch delay=0 size=0 target=0x1008d]
+00010020  2 7094             "jo     0x0000ffb6"  [ConditionalBranch delay=0 size=0 target=0xffb6]
+00010022  1 17               "(bad)"
+00010023  2 2c72             "sub    al,0x72"
+00010025  1 9e               "sahf"
+00010026  3 420cf4           "rex.X or al,0xf4"
+00010029  1 8f               "(bad)"
+0001002a  1 1e               "(bad)"
+0001002b  2 31c3             "xor    ebx,eax"
+0001002d  2 d0f7             "shl    bh,1"
+0001002f  6 81e52f41a9f2     "and    ebp,0xf2a9412f"
+00010035  2 852f             "test   DWORD PTR [rdi],ebp"
+00010037  1 a5               "movs   DWORD PTR es:[rdi],DWORD PTR ds:[rsi]"
+00010038  2 7028             "jo     0x00010062"  [ConditionalBranch delay=0 size=0 target=0x10062]
+0001003a  2 e680             "out    0x80,al"
+0001003c  5 e99b52746d       "jmp    0x6d7552dc"  [Branch delay=0 size=0 target=0x6d7552dc]
+00010041  4 4e0b5e77         "rex.WRX or r11,QWORD PTR [rsi+0x77]"
+00010045  9 a1aeb10c5bb3b51547 "movabs eax,ds:0x4715b5b35b0cb1ae"
+0001004e  1 8d               ".byte 0x8d"
+end: Complete

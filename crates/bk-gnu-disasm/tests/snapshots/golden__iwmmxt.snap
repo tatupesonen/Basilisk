@@ -1,0 +1,21 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 e33ea10b         "bleq\t0xfffffffffe85fb94"  [Branch delay=0 size=0 target=0xfffffffffe85fb94]
+00010004  4 5b741aa4         "ldrge\tr7, [sl], #-1115\t@ 0xfffffba5"
+00010008  4 562949dd         "vstrle.16\ts5, [r9, #-172]\t@ 0xffffff54\t@ <UNPREDICTABLE>"
+0001000c  4 68dab63a         "bcc\t0xfffffffffedc69b4"  [Branch delay=0 size=0 target=0xfffffffffedc69b4]
+00010010  4 0c2db5b2         "adcslt\tr2, r5, #12, 26\t@ 0x300"
+00010014  4 c89cbaad         "ldcge\t12, cr9, [sl, #800]!\t@ 0x320"
+00010018  4 01aac513         "bicne\tsl, r5, #4096\t@ 0x1000"
+0001001c  4 72e44b60         "subvs\tlr, fp, r2, ror r4"
+00010020  4 5d625e6e         "mrcvs\t2, 2, r6, cr14, cr13, {2}"
+00010024  4 c4bbfcd5         "ldrble\tfp, [ip, #3012]!\t@ 0xbc4"
+00010028  4 24f92170         "eorvc\tpc, r1, r4, lsr #18"
+0001002c  4 d4178e1a         "bne\t0xfffffffffe395f84"  [Branch delay=0 size=0 target=0xfffffffffe395f84]
+00010030  4 cc9086a7         "strge\tr9, [r6, ip, asr #1]"
+00010034  4 4a68b426         "ldrtcs\tr6, [r4], sl, asr #16"
+00010038  4 25378ba6         "strge\tr3, [fp], r5, lsr #14"
+0001003c  4 dc6eaab9         "stmiblt\tsl!, {r2, r3, r4, r6, r7, r9, sl, fp, sp, lr}"
+end: Complete

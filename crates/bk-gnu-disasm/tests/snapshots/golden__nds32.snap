@@ -1,0 +1,26 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 7e06d821         "*unknown*"
+00010004  2 afa2             "sbi333 $r6, [$r4 + #2]"
+00010006  2 f8bc             "*unknown*"
+00010008  2 b084             "addri36.sp $r2, #0x10"
+0001000a  4 387185c8         "*unknown*"
+0001000e  4 015336c0         "lbi\t$r21, [$r6 + #0x36c0]"
+00010012  4 62a16b61         "*unknown*"
+00010016  4 1515cbba         "swi\t$r17, [$r11 + #-53528]"
+0001001a  4 78bb5137         "*unknown*"
+0001001e  2 96ad             "x11b33 $r2, $r5"
+00010020  4 5c78e346         "slti\t$r7, $r17, #-7354"
+00010024  2 dfb3             "bnes38 $r7, 0x0000ff8a"
+00010026  4 58282e09         "ori\t$r2, $r16, #0x2e09"
+0001002a  2 d2c8             "beqs38 $r2, 0x0000ffba"
+0001002c  4 2440173b         "*unknown*"
+00010030  2 d872             "bnes38 $r0, 0x00010114"
+00010032  4 5d19b02f         "slti\t$r17, $r19, #0x302f"
+00010036  2 a3fc             "lwi333.bi $r7, [$r7], #0x10"
+00010038  4 6eb7743d         "*unknown*"
+0001003c  2 f013             "lwi37.sp $r0, [ + #0x4c]"
+0001003e  2 b74b             "swi450 $r10, [$r11]"
+end: Complete

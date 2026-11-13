@@ -1,0 +1,24 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 04e02de5         "push\t{lr}\t\t@ (str lr, [sp, #-4]!)"
+00010004  4 00d04de2         "sub\tsp, sp, #0"
+00010008  4 1eff2fe1         "bx\tlr"
+0001000c  4 72a6246e         "mcrvs\t6, 1, sl, cr4, cr2, {3}"
+00010010  4 eb23ad28         "stmiacs\tsp!, {r0, r1, r3, r5, r6, r7, r8, r9, sp}"
+00010014  4 28d05949         "ldmdbmi\tr9, {r3, r5, ip, lr, pc}^"
+00010018  4 0ddaf215         "ldrbne\tsp, [r2, #2573]!\t@ 0xa0d"
+0001001c  4 d076aa99         "stmibls\tsl!, {r4, r6, r7, r9, sl, ip, sp, lr}"
+00010020  4 44a1737c         "ldfvcp\tf2, [r3], #-272\t@ 0xfffffef0"
+00010024  4 b652375e         "mrcpl\t2, 1, r5, cr7, cr6, {5}"
+00010028  4 0de29414         "ldrne\tlr, [r4], #525\t@ 0x20d"
+0001002c  4 ca2614bb         "bllt\t0x00519b5c"  [Branch delay=0 size=0 target=0x519b5c]
+00010030  4 cbeef00a         "beq\t0xffffffffffc4bb64"  [Branch delay=0 size=0 target=0xffffffffffc4bb64]
+00010034  4 3c516fad         "stfgee\tf5, [pc, #-240]!\t@ 0x0000ff4c"
+00010038  4 3a22f6cc         "lfmgt\tf2, 2, [r6], #232\t@ 0xe8"
+0001003c  4 e9ef3e01         "teqeq\tlr, r9, ror #31"
+00010040  4 5e729ea8         "ldmge\tlr, {r1, r2, r3, r4, r6, r9, ip, sp, lr}"
+00010044  4 cbdb49d4         "strble\tsp, [r9], #-3019\t@ 0xfffff435"
+00010048  4 3b76dc44         "ldrbmi\tr7, [ip], #1595\t@ 0x63b"
+end: Complete

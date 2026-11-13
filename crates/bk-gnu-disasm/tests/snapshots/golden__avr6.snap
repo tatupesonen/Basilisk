@@ -1,0 +1,37 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  2 7a66             "ori\tr23, 0x6A\t; 106"
+00010002  2 8c1b             "sub\tr24, r28"
+00010004  2 94c6             "rjmp\t.+3368   \t;  0x00010d2e"  [Branch delay=0 size=0 target=0x10d2e]
+00010006  2 eadc             "rcall\t.-1580   \t;  0x0000f9dc"  [Branch delay=0 size=0 target=0xf9dc]
+00010008  2 6636             "cpi\tr22, 0x66\t; 102"
+0001000a  2 8ddc             "rcall\t.-1766   \t;  0x0000f926"  [Branch delay=0 size=0 target=0xf926]
+0001000c  2 9b4f             "sbci\tr25, 0xFB\t; 251"
+0001000e  2 e92a             "or\tr14, r25"
+00010010  2 034f             "sbci\tr16, 0xF3\t; 243"
+00010012  2 7ed0             "rcall\t.+252    \t;  0x00010110"  [Branch delay=0 size=0 target=0x10110]
+00010014  2 8dcf             "rjmp\t.-230    \t;  0x0000ff30"  [Branch delay=0 size=0 target=0xff30]
+00010016  2 8868             "ori\tr24, 0x88\t; 136"
+00010018  2 82e7             "ldi\tr24, 0x72\t; 114"
+0001001a  2 ea88             "ldd\tr14, Y+18\t; 0x12"
+0001001c  2 4419             "sub\tr20, r4"
+0001001e  2 f109             "sbc\tr31, r1"
+00010020  2 7bb8             "out\t0x0b, r7\t; 11"
+00010022  2 7802             "muls\tr23, r24"
+00010024  2 d1ef             "ldi\tr29, 0xF1\t; 241"
+00010026  2 8b89             "ldd\tr24, Y+19\t; 0x13"
+00010028  2 4591             "lpm\tr20, Z+"
+0001002a  2 7681             "ldd\tr23, Z+6\t; 0x06"
+0001002c  2 a20d             "add\tr26, r2"
+0001002e  2 1248             "sbci\tr17, 0x82\t; 130"
+00010030  2 f51e             "adc\tr15, r21"
+00010032  2 c329             "or\tr28, r3"
+00010034  2 65e3             "ldi\tr22, 0x35\t; 53"
+00010036  2 f241             "sbci\tr31, 0x12\t; 18"
+00010038  2 2897             "sbiw\tr28, 0x08\t; 8"
+0001003a  2 9f2e             "mov\tr9, r31"
+0001003c  2 9122             "and\tr9, r17"
+0001003e  2 8f74             "andi\tr24, 0x4F\t; 79"
+end: Complete

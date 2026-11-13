@@ -1,0 +1,26 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 fd7bbfa9         "stp\tx29, x30, [sp, #-16]!"  [NonInstruction delay=0 size=0 target=0x0]
+00010004  4 fd030091         "mov\tx29, sp"  [NonInstruction delay=0 size=0 target=0x0]
+00010008  4 e0031f2a         "mov\tw0, wzr"  [NonInstruction delay=0 size=0 target=0x0]
+0001000c  4 fd7bc1a8         "ldp\tx29, x30, [sp], #16"  [NonInstruction delay=0 size=0 target=0x0]
+00010010  4 c0035fd6         "ret"  [NonInstruction delay=0 size=0 target=0x0]
+00010014  4 b5e26192         "and\tx21, x21, #0xffffffff80ffffff"  [NonInstruction delay=0 size=0 target=0x0]
+00010018  4 930d499e         ".inst\t0x9e490d93 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+0001001c  4 947c9328         "stp\tw20, wzr, [x4], #152"  [NonInstruction delay=0 size=0 target=0x0]
+00010020  4 ae01d9e5         ".inst\t0xe5d901ae ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010024  4 661849fe         ".inst\t0xfe491866 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010028  4 94f7f9c9         ".inst\t0xc9f9f794 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+0001002c  4 14a021a2         ".inst\t0xa221a014 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010030  4 91cb5b9c         "ldr\tq17, 0x000c79a0"  [NonInstruction delay=0 size=0 target=0xc79a0]
+00010034  4 b18b9fba         ".inst\t0xba9f8bb1 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010038  4 2a1d4215         "b\t0x050974e0"  [NonInstruction delay=0 size=0 target=0x50974e0]
+0001003c  4 d8a0dd60         ".inst\t0x60dda0d8 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010040  4 4aa14e64         ".inst\t0x644ea14a ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010044  4 368f94ed         ".inst\t0xed948f36 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+00010048  4 d1aaf262         ".inst\t0x62f2aad1 ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+0001004c  4 8e6c7f50         "adr\tx14, 0x0010edde"  [NonInstruction delay=0 size=0 target=0x10edde]
+00010050  4 7f449dff         ".inst\t0xff9d447f ; undefined"  [NonInstruction delay=0 size=0 target=0x0]
+end: Complete

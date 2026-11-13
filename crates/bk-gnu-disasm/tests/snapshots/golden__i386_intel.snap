@@ -1,0 +1,42 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  1 55               "push   ebp"
+00010001  2 89e5             "mov    ebp,esp"
+00010003  3 8b4508           "mov    eax,DWORD PTR [ebp+0x8]"
+00010006  5 e800000000       "call   0x0001000b"  [Call delay=0 size=0 target=0x1000b]
+0001000b  1 5d               "pop    ebp"
+0001000c  1 c3               "ret"
+0001000d  6 309ae026e6f4     "xor    BYTE PTR [edx-0xb19d920],bl"
+00010013  1 4b               "dec    ebx"
+00010014  1 9e               "sahf"
+00010015  1 fe               "(bad)"
+00010016  1 94               "xchg   esp,eax"
+00010017  1 f4               "hlt"
+00010018  5 a9144f0016       "test   eax,0x16004f14"
+0001001d  1 45               "inc    ebp"
+0001001e  1 97               "xchg   edi,eax"
+0001001f  1 a6               "cmps   BYTE PTR ds:[esi],BYTE PTR es:[edi]"
+00010020  2 7ad2             "jp     0x0000fff4"  [ConditionalBranch delay=0 size=0 target=0xfff4]
+00010022  2 1829             "sbb    BYTE PTR [ecx],ch"
+00010024  1 53               "push   ebx"
+00010025  2 8b1e             "mov    ebx,DWORD PTR [esi]"
+00010027  1 51               "push   ecx"
+00010028  2 84c4             "test   ah,al"
+0001002a  1 a4               "movs   BYTE PTR es:[edi],BYTE PTR ds:[esi]"
+0001002b  7 6ba9f7cf61ee62   "imul   ebp,DWORD PTR [ecx-0x119e3009],0x62"
+00010032  3 396b08           "cmp    DWORD PTR [ebx+0x8],ebp"
+00010035  1 f5               "cmc"
+00010036  5 3d7f6d3ed8       "cmp    eax,0xd83e6d7f"
+0001003b  2 3bc8             "cmp    ecx,eax"
+0001003d  2 1c0a             "sbb    al,0xa"
+0001003f  2 7934             "jns    0x00010075"  [ConditionalBranch delay=0 size=0 target=0x10075]
+00010041  5 ba6e71ac39       "mov    edx,0x39ac716e"
+00010046  1 a4               "movs   BYTE PTR es:[edi],BYTE PTR ds:[esi]"
+00010047  1 53               "push   ebx"
+00010048  1 28               ".byte 0x28"
+00010049  2 89cf             "mov    edi,ecx"
+0001004b  1 9c               "pushf"
+0001004c  1 80               ".byte 0x80"
+end: Complete

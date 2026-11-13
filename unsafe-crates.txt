@@ -2,3 +2,4 @@
 #   <crate>  <miri | no-miri:reason>  — <why unsafe is absolutely necessary>
 # scripts/check-unsafe.sh rejects `unsafe` anywhere else; scripts/miri.sh runs
 # the tests of every crate marked `miri` under Miri.
+bk-binutils-sys  no-miri:calls-into-C  — its unsafe is FFI to the vendored binutils C (ADR-019), which Miri cannot execute; checked with AddressSanitizer and UndefinedBehaviorSanitizer builds of its tests and fuzz target instead. All of it is in src/real.rs.

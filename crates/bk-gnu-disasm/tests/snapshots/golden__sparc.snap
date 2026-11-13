@@ -1,0 +1,26 @@
+---
+source: crates/bk-gnu-disasm/tests/golden.rs
+expression: "render(&block, &bytes)"
+---
+00010000  4 9de3bfa0         "save  %sp, -96, %sp"  [NonBranch delay=0 size=0 target=0x0]
+00010004  4 40000004         "call  0x00010014"  [Call delay=1 size=0 target=0x10014]
+00010008  4 01000000         "nop "  [NonBranch delay=0 size=0 target=0x0]
+0001000c  4 81c7e008         "ret "  [Branch delay=1 size=0 target=0x0]
+00010010  4 81e80000         "restore "  [NonBranch delay=0 size=0 target=0x0]
+00010014  4 78562606         "call  0xffffffffe159982c"  [Call delay=1 size=0 target=0xffffffffe159982c]
+00010018  4 09f4e77e         "cb1  0xffffffffffd49e10"  [ConditionalBranch delay=1 size=0 target=0xffffffffffd49e10]
+0001001c  4 2a40aa0b         "bcs,a,pn   %icc, 0x0003a848"  [ConditionalBranch delay=1 size=0 target=0x3a848]
+00010020  4 14d34fcf         "unknown"  [NonInstruction delay=0 size=0 target=0x0]
+00010024  4 3da8bf48         "fbule,a   0xffffffffffa3fd44"  [ConditionalBranch delay=1 size=0 target=0xffffffffffa3fd44]
+00010028  4 d3e4729e         "casa  [ %l1 ] %asi, %fp, %o1"  [NonBranch delay=0 size=0 target=0x0]
+0001002c  4 d3eed607         "prefetcha  [ %i3 + %g7 ] #ASI_PIC, 9"  [NonBranch delay=0 size=0 target=0x0]
+00010030  4 f13f1dc6         "unknown"  [NonInstruction delay=0 size=0 target=0x0]
+00010034  4 6c1653bd         "call  0xffffffffb05a4f28"  [Call delay=1 size=0 target=0xffffffffb05a4f28]
+00010038  4 5c5c9f12         "call  0x71737c80"  [Call delay=1 size=0 target=0x71737c80]
+0001003c  4 53d9274e         "call  0x4f659d74"  [Call delay=1 size=0 target=0x4f659d74]
+00010040  4 ee08c20d         "unknown"  [NonInstruction delay=0 size=0 target=0x0]
+00010044  4 9a9087ff         "unknown"  [NonInstruction delay=0 size=0 target=0x0]
+00010048  4 3ff2f030         "cb012,a   0xffffffffffccc108"  [ConditionalBranch delay=1 size=0 target=0xffffffffffccc108]
+0001004c  4 51d750de         "call  0x475e43c4"  [Call delay=1 size=0 target=0x475e43c4]
+00010050  4 3a426d39         "bcc,a,pn   %icc, 0x000ab534"  [ConditionalBranch delay=1 size=0 target=0xab534]
+end: Complete

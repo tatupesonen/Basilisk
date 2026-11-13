@@ -1,0 +1,18 @@
+--- a/opcodes/arm-dis.c
++++ b/opcodes/arm-dis.c
+@@ -12726,6 +12726,15 @@
+     {
+       static struct arm_private_data private;
+ 
++      /* bk-binutils-sys: a new disassemble_info starts a new sequence of
++	 instructions.  IT and VPT block state left by an earlier one (which
++	 may have belonged to another disassembler) does not apply to it; IT
++	 state is recomputed from the bytes before PC, as on a jump.  */
++      ifthen_state = 0;
++      ifthen_next_state = 0;
++      ifthen_address = pc + 1;
++      mark_outside_vpt_block ();
++
+       if ((info->flags & USER_SPECIFIED_MACHINE_TYPE) == 0)
+ 	/* If the user did not use the -m command line switch then default to
+ 	   disassembling all types of ARM instruction.

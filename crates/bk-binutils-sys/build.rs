@@ -1,0 +1,220 @@
+//! Builds the vendored binutils 2.41 subset (`vendor/binutils-2.41`) and the
+//! C shim into one static library.
+//!
+//! The approach — compiling the sources named in `sources.list` with the
+//! `cc` crate against a prepared `config/config.h`, instead of running
+//! binutils' `configure` and `make` — and the evidence for it are in
+//! `docs/features/gnu-disasm.md`.
+//!
+//! Unix-like and Windows targets build the C. On any other target family
+//! (WebAssembly, bare metal) nothing is compiled, and the crate builds its
+//! stub, which reports that GNU disassembly is unavailable.
+
+#![expect(
+    clippy::print_stderr,
+    reason = "a build script reports failures to the developer on stderr"
+)]
+
+use std::env;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::process::ExitCode;
+
+/// The `@name@` placeholders of `bfd/bfd-in2.h` that binutils' `configure`
+/// fills in, and the values of a 64-bit BFD with all targets and without
+/// plugin (dlopen) support.
+const BFD_H_SUBSTITUTIONS: [(&str, &str); 5] = [
+    ("@supports_plugins@", "0"),
+    ("@wordsize@", "64"),
+    ("@bfd_default_target_size@", "64"),
+    ("@bfd_file_ptr@", "int64_t"),
+    ("@bfd_ufile_ptr@", "uint64_t"),
+];
+
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("bk-binutils-sys: {message}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<(), String> {
+    let crate_dir = PathBuf::from(var("CARGO_MANIFEST_DIR")?);
+    let out_dir = PathBuf::from(var("OUT_DIR")?);
+    let vendor = crate_dir.join("../../vendor/binutils-2.41");
+    let shim = crate_dir.join("shim");
+    let config = crate_dir.join("config");
+    let list = crate_dir.join("sources.list");
+
+    println!("cargo:rustc-check-cfg=cfg(bk_binutils_built)");
+    println!("cargo:rustc-check-cfg=cfg(fuzzing)");
+    for path in [&crate_dir.join("build.rs"), &list, &shim, &config, &vendor] {
+        println!("cargo:rerun-if-changed={}", path.display());
+    }
+
+    let family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
+    if !family.split(',').any(|f| f == "unix" || f == "windows") {
+        // No C is built; `src/stub.rs` reports the feature as unavailable.
+        return Ok(());
+    }
+
+    if !vendor.join("MANIFEST").is_file() {
+        return Err(format!(
+            "{} is missing; it is produced by scripts/vendor-binutils.sh",
+            vendor.display()
+        ));
+    }
+
+    let generated = out_dir.join("include");
+    fs::create_dir_all(&generated).map_err(|e| format!("{}: {e}", generated.display()))?;
+    write_bfd_h(&vendor.join("bfd/bfd-in2.h"), &generated.join("bfd.h"))?;
+
+    let mut build = cc::Build::new();
+    if target_env_is_msvc() && !compiler_configured() {
+        // MSVC's cl.exe rejects C that binutils 2.41 uses (GNU case ranges
+        // in aarch64-dis.c, arithmetic on void * in elfxx-riscv.c, zero-size
+        // arrays in xtensa-modules.c); clang-cl, LLVM's cl-compatible
+        // driver, accepts it and links against the same MSVC runtime.
+        let found = Command::new("clang-cl").arg("--version").output();
+        if !found.is_ok_and(|o| o.status.success()) {
+            return Err(
+                "building for an MSVC target needs clang-cl (LLVM's cl-compatible \
+                        compiler: install LLVM, or Visual Studio's \"C++ Clang tools for \
+                        Windows\"), or a C compiler named in CC"
+                    .to_owned(),
+            );
+        }
+        build.compiler("clang-cl");
+    }
+    build
+        .warnings(false)
+        .extra_warnings(false)
+        // No C debug info in any profile: with it the dev library is 40 MB
+        // instead of 19 MB and a clean build about a quarter slower, for
+        // code nobody steps through. `CFLAGS=-g` brings it back (the
+        // sanitizer and fuzz builds pass it).
+        .debug(false)
+        // First, so that the vendored sources get the shim's <assert.h>.
+        .include(shim.join("include"))
+        .include(&config)
+        .include(&generated)
+        .include(vendor.join("include"))
+        .include(vendor.join("bfd"))
+        .include(vendor.join("opcodes"))
+        .include(&shim)
+        .define("HAVE_CONFIG_H", None)
+        // opcodes/disassemble.c: every disassembler (--enable-targets=all).
+        .define("ARCH_all", None);
+    // abort() and exit() inside binutils end the shim call, not the process
+    // (shim/include/bk_prelude.h).
+    let prelude = shim.join("include/bk_prelude.h");
+    if build.get_compiler().is_like_msvc() {
+        build.flag(format!("/FI{}", prelude.display()));
+    } else {
+        build.flag("-include").flag(prelude.display().to_string());
+    }
+    if target_env_is_msvc() {
+        // Headers MSVC's C library lacks (shim/include-msvc).
+        build.include(shim.join("include-msvc"));
+    }
+    for unit in compilation_units(&list)? {
+        let path = vendor.join(&unit);
+        if !path.is_file() {
+            return Err(format!(
+                "{unit} is named in sources.list but not vendored; run scripts/vendor-binutils.sh"
+            ));
+        }
+        build.file(path);
+    }
+    build
+        .file(shim.join("bk_gdis.c"))
+        .file(shim.join("bk_state.c"))
+        .file(shim.join("bk_compat.c"))
+        .file(shim.join("bfd_nofile.c"));
+    build
+        .try_compile("bk_binutils")
+        .map_err(|e| e.to_string())?;
+
+    println!("cargo:rustc-cfg=bk_binutils_built");
+    Ok(())
+}
+
+fn target_env_is_msvc() -> bool {
+    env::var("CARGO_CFG_TARGET_ENV").is_ok_and(|e| e == "msvc")
+}
+
+/// Whether the developer named a C compiler, in any of the variables the
+/// `cc` crate reads.
+fn compiler_configured() -> bool {
+    let target = env::var("TARGET").unwrap_or_default();
+    let names = [
+        "CC".to_owned(),
+        "TARGET_CC".to_owned(),
+        format!("CC_{target}"),
+        format!("CC_{}", target.replace('-', "_")),
+    ];
+    names.iter().any(|name| {
+        println!("cargo:rerun-if-env-changed={name}");
+        env::var_os(name).is_some_and(|v| !v.is_empty())
+    })
+}
+
+fn var(name: &str) -> Result<String, String> {
+    env::var(name).map_err(|e| format!("{name}: {e}"))
+}
+
+/// The paths in `sources.list`, without comments and blank lines.
+fn compilation_units(list: &Path) -> Result<Vec<String>, String> {
+    let text = fs::read_to_string(list).map_err(|e| format!("{}: {e}", list.display()))?;
+    Ok(text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_owned)
+        .collect())
+}
+
+/// Generates `bfd.h` from `bfd-in2.h` the way binutils' `configure` does:
+/// by filling in its placeholders.
+fn write_bfd_h(template: &Path, dest: &Path) -> Result<(), String> {
+    let mut text =
+        fs::read_to_string(template).map_err(|e| format!("{}: {e}", template.display()))?;
+    for (placeholder, value) in BFD_H_SUBSTITUTIONS {
+        if !text.contains(placeholder) {
+            return Err(format!("{} has no {placeholder}", template.display()));
+        }
+        text = text.replace(placeholder, value);
+    }
+    if let Some(left) = find_placeholder(&text) {
+        return Err(format!(
+            "{}: unhandled placeholder {left}",
+            template.display()
+        ));
+    }
+    // Leave an up-to-date file alone so its timestamp does not change.
+    if fs::read_to_string(dest).is_ok_and(|old| old == text) {
+        return Ok(());
+    }
+    fs::write(dest, text).map_err(|e| format!("{}: {e}", dest.display()))
+}
+
+/// Finds an `@identifier@` that `configure` would have substituted.
+fn find_placeholder(text: &str) -> Option<&str> {
+    let mut rest = text;
+    while let Some(start) = rest.find('@') {
+        let after = rest.get(start + 1..)?;
+        let ident_len = after
+            .bytes()
+            .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
+            .count();
+        if ident_len > 0 && after.as_bytes().get(ident_len) == Some(&b'@') {
+            return rest.get(start..start + ident_len + 2);
+        }
+        rest = after;
+    }
+    None
+}

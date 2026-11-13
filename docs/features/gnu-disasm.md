@@ -205,6 +205,91 @@ now (a recorded gap).*
 (The implementing agent appends further differences here, and lists any
 patches to the vendored source.)
 
+Added by the track:
+
+- **No dummy BFD, no PEF flavour.** gdis opens `little.elf`/`big.elf` with
+  target `pef` and hands that BFD to `disassembler()`. The shim fills in
+  `disassemble_info` directly with flavour ELF and passes no BFD, except to
+  CRIS, the one target that reads the BFD (for its v32 decoder), which
+  gets a stand-in with the same properties. Every use of `info->flavour`
+  and of the BFD argument in `opcodes/` was read: with no section and no
+  symbols ELF and PEF behave the same.
+- **Options before initialisation.** gdis stores the option string after
+  `disassemble_init_for_target`, so PowerPC and S/390, which read options
+  there, never see them; the shim sets them first, as objdump does.
+- **`endian_code` is set** (gdis leaves it unknown, which makes CGEN
+  targets decode big-endian instruction words little-endian). As objdump.
+- **A disassembler behaves the same whatever came before it.** gdis is one
+  process per configuration; binutils keeps options in statics. The shim
+  restores defaults (ARM, AArch64, RISC-V option prefixes; C-SKY's flag),
+  and refuses (`OptionsConflict`) a second option set for targets that
+  apply options once per process (ARC, LoongArch, VAX, RISC-V `priv-spec`).
+  Ghidra's ARM Thumb/ARM switching has exactly this bug in gdis.
+- **Sequence state lasts one call.** binutils keeps ARM IT/VPT blocks,
+  xgate's instruction pairing and CRIS case tables in statics; gdis carries
+  them from one request into the next (even across disassemblers). Here
+  each `block`/`instruction` call starts fresh (patches 0001, 0003).
+- **Memory errors are reported, not printed.** gdis prints
+  "Address 0x… is out of bounds." into the text, which Ghidra then skips;
+  here the instruction carries `read_fault`, and a failed decode is
+  `Error::NoInstruction`/`BlockEnd::NoInstruction`.
+- **Blocks stop at a zero or negative length.** gdis loops forever on 0 and
+  steps backwards on a negative length; it also stops after 64 entries and
+  at 128 bytes of input. Here there are no limits; within gdis' limits the
+  results are the same.
+- **Names.** gdis accepts only exact `bfd_arch_list` names and dereferences
+  NULL for `tms320c3x`/`tms320c4x` (listed but not found by
+  `bfd_scan_arch`); here other `bfd_scan_arch` aliases are accepted too
+  and those two are an error.
+- **ARM ignores the machine, as in gdis.** Neither sets
+  `USER_SPECIFIED_MACHINE_TYPE`, so ARM decodes every instruction whatever
+  machine is named (`armv4` like `arm`); `objdump -m armv4` would restrict
+  it. Kept for parity.
+- **binutils is patched** (`crates/bk-binutils-sys/patches/`, applied by
+  `scripts/vendor-binutils.sh`, listed in `vendor/binutils-2.41/MANIFEST`):
+  `0001` ARM IT/VPT state reset per `disassemble_info`; `0002` the CGEN
+  descriptor cache (13 targets) keyed on instruction byte order and
+  updated on a switch back (m16c big-endian after little-endian used the
+  wrong descriptor); `0003` xgate and CRIS sequence state reset per
+  `disassemble_info`.
+- **binutils' `abort()`/`exit()`/`assert` do not end the process**; the
+  call fails and the architecture family is not used again in the process.
+- **`0x18:0x5` (Hexagon) is m9s12x.** Upstream binutils has no Hexagon;
+  in 2.41's numbering 0x18 is `bfd_arch_m9s12x`. gdis built from 2.41
+  does the same. Recorded, not changed.
+
 ## 9. Status
 
-Not implemented yet.
+Implemented (track `gnu-disasm`, 2026-11-12); the full report is
+`docs/agents/gnu-disasm.md`.
+
+- `vendor/binutils-2.41/`: 474 files, 30 MB, produced by
+  `scripts/vendor-binutils.sh` from tag `binutils-2_41` with three patches
+  (section 8); `--check` reproduces it. Never line-ending-converted
+  (`.gitattributes`).
+- `bk-binutils-sys`: every libopcodes disassembler, compiled with `cc`
+  against `config/config.h` (no C debug info by default), the C shim
+  (`shim/bk_gdis.c`, `bk_state.c`, `bfd_nofile.c`), `src/real.rs` (all of
+  the workspace's `unsafe`; `no-miri` in `unsafe-crates.txt`), and a stub
+  for Windows.
+- `bk-gnu-disasm`: `Architecture` (GNU names as gdis resolves them, plus
+  aliases and `0x<arch>:0x<mach>`), `Disassembler` (`instruction`,
+  `instruction_at`, `block`), `Instruction` with `InstructionInfo`, and
+  `gdis_config` (`.gdis` model and reader, `options_for`,
+  `display_prefix_for`).
+- Platforms: macOS (arm64) builds and passes; Linux (Debian 13, aarch64,
+  GCC and clang) builds and passes, also under AddressSanitizer and
+  UndefinedBehaviorSanitizer, in a container; Windows x86_64 (ADR-022)
+  builds for real: `x86_64-pc-windows-gnu` with MinGW-w64 GCC and
+  `x86_64-pc-windows-msvc` with **clang-cl** (MSVC's `cl.exe` rejects C that
+  binutils uses), both cross-compiled here and all tests passing under Wine;
+  not yet seen on a real Windows machine (CI's `windows-latest`). The stub
+  remains only for targets that are neither Unix-like nor Windows.
+- Every one of the 65 `gnu` names in Ghidra's `.ldefs` resolves and
+  decodes; `0x18:0x5` (Hexagon) is m9s12x in binutils 2.41, which has no
+  Hexagon (section 8). Both `.gdis` files parse.
+- Not done: wiring to `bk-lang`'s external names and the listing field
+  (follow-ups).
+- Requirement on Windows with the MSVC toolchain: `clang-cl` on `PATH`
+  (LLVM, or Visual Studio's "C++ Clang tools for Windows"), or a C compiler
+  named in `CC`.
