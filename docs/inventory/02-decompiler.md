@@ -887,7 +887,7 @@ splitting the port into modules and tracks (names are the console names).
 
 | Family | Rules |
 |---|---|
-| Dead code and copy propagation | `earlyremoval`, `propagatecopy`, `aliasupdate`, `multicollapse`, `pushmulti`, `pullsub_multi`, `pullsub_indirect`, `selectcse`, `negatenegate` |
+| Dead code and copy propagation | `earlyremoval`, `propagatecopy`, `aliasupdate`, `multicollapse`, `push_multi`, `pullsub_multi`, `pullsub_indirect`, `selectcse`, `negatenegate` |
 | Canonical form of arithmetic | `termorder`, `collect_terms`, `sub2add`, `2comp2mult`, `shift2mult`, `addmultcollapse`, `collapseconstants`, `identityel`, `trivialarith`, `trivialshift`, `xorcollapse`, `xorswap` |
 | Bit masks and logical ops | `ormask`, `andmask`, `orconsume`, `orcollapse`, `andorlump`, `negateidentity`, `shiftbitops`, `rightshiftand`, `highorderand`, `anddistribute`, `andcommute`, `andpiece`, `andzext`, `andcompare`, `bitundistribute`, `shiftand`, `humptyor`, `orcompare` |
 | Shifts | `doubleshift`, `doublearithshift`, `concatshift`, `leftright`, `shiftcompare`, `shiftpiece`, `shiftsub`, `signshift` |
