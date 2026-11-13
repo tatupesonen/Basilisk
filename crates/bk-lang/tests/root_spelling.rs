@@ -121,18 +121,33 @@ fn every_spelling_of_a_root_gives_the_same_registry() {
     }
 }
 
-#[cfg(unix)]
+/// Makes `link` a symbolic link to the directory `target`.
+fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
+    #[cfg(unix)]
+    return std::os::unix::fs::symlink(target, link);
+    #[cfg(windows)]
+    return std::os::windows::fs::symlink_dir(target, link);
+    #[cfg(not(any(unix, windows)))]
+    return Err(std::io::ErrorKind::Unsupported.into());
+}
+
 #[test]
 fn a_root_reached_through_a_symbolic_link_gives_the_same_registry() {
     let dir = tree();
     let overlay = tempfile::tempdir().unwrap();
     let links = tempfile::tempdir().unwrap();
     let link = links.path().join("ghidra-link");
-    std::os::unix::fs::symlink(dir.path(), &link).unwrap();
+    // Windows lets only administrators, or anyone in Developer Mode,
+    // create symbolic links.
+    if let Err(error) = symlink_dir(dir.path(), &link) {
+        eprintln!("SKIPPED a_root_reached_through_a_symbolic_link: cannot create a link: {error}");
+        return;
+    }
     let expected = describe(&build(&canonical(dir.path()), overlay.path()));
     assert_eq!(describe(&build(&link, overlay.path())), expected);
     // A `..` after a link leaves the link's target, as the file system
-    // resolves it, not the directory holding the link.
+    // resolves it, not the directory holding the link. (Windows removes
+    // `..` lexically before following links; here both give the target.)
     let through = link.join("Ghidra/Processors/..").join("..");
     assert_eq!(describe(&build(&through, overlay.path())), expected);
 }
