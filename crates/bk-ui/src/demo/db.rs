@@ -209,6 +209,10 @@ fn data_value(d: &super::parse::RawData) -> (String, Option<u64>) {
     if d.bytes.is_empty() || d.bytes.iter().all(|b| *b == 0) && d.datatype.contains('[') {
         return ("??".into(), None);
     }
+    if d.datatype.contains('[') && d.datatype != "char[65]" {
+        // Arrays show their type; Ghidra lists no value until expanded.
+        return (String::new(), None);
+    }
     if d.datatype == "char[65]" {
         let s: String = d
             .bytes
