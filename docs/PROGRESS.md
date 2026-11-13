@@ -81,9 +81,8 @@ fresh agent briefed from the branch's files.
   `perl -e 'alarm N; exec @ARGV' <cmd> …`.
 * The unattended loop is the session's self-paced `/loop` (restarted by
   the owner 2026-11-13); the earlier 30-minute cron job is gone. The
-  session cannot compact its context until the Claude desktop app is
-  updated (2.1.290 or newer), so the coordinator keeps its own reading
-  small and relies on these files.
+  `/compact` failures of 2026-11-13 came from the usage limit (owner);
+  compaction works otherwise.
 * CI: `gh` is authenticated. macOS and Linux jobs green; the Windows test
   job is red on `master` (see `windows-ci`).
 * Keep-awake: `caffeinate -ims -t 604800` restarted 2026-11-13 17:05. It
@@ -118,9 +117,6 @@ fresh agent briefed from the branch's files.
   x86-64), regenerate `bk-pcode`'s C++ oracle table there
   (`crates/bk-pcode/tests/data/README.md`) and compare it with the
   checked-in aarch64 one. Nothing else waits on this.
-* **Update the Claude desktop app** (2.1.290 or newer): `/compact` fails
-  in the coordinator session on the current version, so a long unattended
-  run will eventually fill its context.
 
 ## Log
 
