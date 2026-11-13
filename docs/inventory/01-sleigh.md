@@ -332,6 +332,11 @@ Details that are easy to get wrong:
   makes every `space` an `IPTR_PROCESSOR` space.
 * A constructor has no id attribute; its id is its position in the
   subtable. `pair.id` and `operand_exp.ct` are such positions.
+* `first` may equal the number of print pieces: the compiler records
+  the index of the first white-space piece and afterwards removes a
+  trailing white-space piece, without adjusting `first` ([run] 39,921
+  shipped constructors, e.g. a mnemonic followed by a space and nothing
+  else). The mnemonic is then all pieces and the body is empty.
 * A constructor whose only print piece is one operand "flows through":
   the decoder sets `flowthruindex` to that operand (section 6).
 * `pat_block` is normalised after reading (leading zero mask bytes move

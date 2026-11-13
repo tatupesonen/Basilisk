@@ -108,7 +108,10 @@ runtime with unchecked-by-construction indices.
    children when `size` is 0, exactly `2^size` children and no pairs
    otherwise; a constructor has at most one main template and at most one
    template per section number, each section number < `numsections`;
-   `first` is −1 or an index of a print piece; `opprint.id` and every
+   `first` is between −1 and the number of print pieces inclusive (it
+   equals the number of pieces when the white space it pointed at was the
+   trailing piece the compiler removed — [run] 39,921 shipped
+   constructors); `opprint.id` and every
    `const_handle.val`, `BUILD` operand index and `operand_exp.index` is <
    the number of operands of the constructor it belongs to; `operand.index`
    equals the operand's position in its constructor; `operand.base` is −1
@@ -135,7 +138,11 @@ runtime with unchecked-by-construction indices.
    two global symbols may not share a name; exactly one global symbol is
    named `instruction` and it is a subtable.
 
-Checks 1–6 pass on all 150 reference files (acceptance 3). Where Ghidra
+Checks 1–6 pass on all 150 reference files (acceptance 1; the operand
+rules of check 2 — position equals `index`, `base` below `index`, exactly
+one of defining symbol and expression, the first child naming the operand
+itself, one owning constructor — were confirmed on the 338,715 shipped
+operands when this spec was written). Where Ghidra
 accepts a file that these checks reject, that is a deliberate difference
 (section 8), except that no shipped or compiler-produced file may be
 rejected.
