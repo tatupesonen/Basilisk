@@ -32,6 +32,12 @@ void bk_gdis_abort (void);
 void bk_gdis_exit (int);
 #endif
 
+#ifdef _WIN32
+/* Neither the UCRT nor MinGW-w64 has stpcpy, which i386-dis.c and
+   aarch64-dis.c use; shim/bk_compat.c defines it. */
+char *stpcpy (char *dst, const char *src);
+#endif
+
 #define abort bk_gdis_abort
 #define exit bk_gdis_exit
 
