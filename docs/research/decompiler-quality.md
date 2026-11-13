@@ -201,7 +201,7 @@ measured; nothing in the middle column changes Ghidra's output.
 
 | Area of the port (M3 task) | Decide at the start | Can follow parity |
 |---|---|---|
-| **IR**: varnodes, ops, blocks, function data | Every op can be evaluated at every stage, with defined meaning for `MULTIEQUAL` and `INDIRECT` (D3). All edits of the IR go through one small mutation interface, as they do through `Funcdata`'s `op…` methods in Ghidra, so that a recorder can be attached (D3). Ops keep the address and instruction they came from (D8). The block graph can be copied cheaply (D5). No global state; the same input gives the same output | Nothing: later improvements add units, not IR |
+| **IR**: varnodes, ops, blocks, function data | Every op can be evaluated at every stage, with defined meaning for `MULTIEQUAL` and `INDIRECT` (D3). All edits of the IR go through one small mutation interface, as they do through `Funcdata`'s `op…` methods in Ghidra (`PcodeOp`'s setters are private to it **[G]** `op.hh`, `funcdata.hh`), so that a recorder can be attached (D3). Ops keep the address and instruction they came from (D8). The block graph can be copied cheaply (D5). No global state; the same input gives the same output | Nothing: later improvements add units, not IR |
 | **Rule and action machinery** | Rules and actions are values in a table with Ghidra's name, an origin (`ghidra` or `basilisk`) and a group; the pipeline is built from the table by a named profile; a unit can be replaced or added by a profile without editing another unit; switches live in the option registry (D1). An optional record of applications (D3) | Every new rule; replacements of Ghidra rules (R2, R5) |
 | **Prototypes and parameters** (`fspec`, `modelrules`) | A `FunctionSummary` type as an output of decompilation and as an input through the program trait; the trait's "does this call return" question takes the call site, not only the callee (D4). Prototype facts carry provenance (D7) | The inference that fills summaries; bottom-up scheduling (R1) |
 | **Type system and recovery** | A category of *inferred* types distinct from user and debug-information types (D6). A per-function table of observed accesses, filled while types are propagated (D6). Propagation policy per op kind is a unit like any rule, so that a profile can change one edge (R3 step 1) | Pointer-ness from use, structure synthesis, cross-function unification (R3) |
@@ -1041,18 +1041,34 @@ person reading a fixed sample at each milestone.
 
 ### 5.3 How it runs in this project
 
-* `bk-testkit` already runs Ghidra's `decomp` and parses data tests. Add a
-  corpus runner that builds the fragments itself with `bk-elf` (replacing
-  `elf2frag.py`), a counter module (replacing `metrics.py`), and the DWARF
-  comparison.
-* A dev-only command (for example `cargo run -p bk-quality`) writes a
-  scorecard: every metric for **Ghidra reference | basilisk `ghidra` profile
-  | basilisk default profile**, per corpus. `docs/QUALITY.md` records the
-  numbers with the command, as `PERF.md` does for speed.
-* The gate checks: the `ghidra` profile matches the reference on corpora 1–2;
-  no assertion of corpus 2 regresses; counters of the default profile do not
-  get worse beyond a stated tolerance without a recorded reason.
-* Milestone reviews: the owner reads the same 30 functions each time.
+`bk-testkit` already runs Ghidra's `decomp` with a time limit and parses data
+tests. The harness adds three things to it — a corpus runner, a counter
+module (what `tools/metrics.py` prototypes) and, later, the comparison with
+debug information — and one dev-only command that writes a scorecard. It runs
+at two rates, split by what each run needs **[J]**:
+
+| | In the gate (every merge) | Nightly (or on demand) |
+|---|---|---|
+| **Needs** | Nothing outside the repository: no compiler, no container, no reference tools | Pinned compilers in containers (named by digest *and* platform), the reference tools, later a full Ghidra |
+| **Input** | The checked-in fragments (`frag/*.xml`, the `<binaryimage>` form; 0.5 MB for the present corpus) and Ghidra's 93 data tests | Fragments rebuilt from `src/` across the compiler matrix; generated programs; real programs |
+| **Parity** | `ghidra` profile output equals the checked-in snapshot of the reference output (`insta`) | The reference `decomp` is re-run on everything and compared directly; the checked-in snapshots are checked for drift |
+| **Assertions** | Per-case "must print / must not print" patterns for the default profile | The same over the matrix |
+| **Counters** | Computed for both profiles and compared with the checked-in scorecard; a counter that gets worse fails unless the scorecard was updated in the same commit | Scorecard for the matrix and the real programs; trend kept |
+| **Equivalence** | Lifted p-code against final IR on a fixed seed and a small number of inputs per function (bounded: a budget per function, a total budget) | Many inputs, NaN and boundary values, generated programs |
+| **Ground truth** | — | Signatures, then types and variables, against DWARF |
+| **Cost** | Seconds: the reference console decompiles the 209 functions of this corpus in well under the 100 s that a full rebuild takes, almost all of which is container start-up **[E]** | Minutes to hours; every tool run has a time limit and every function a budget, so a hang is a recorded failure and not a stuck run |
+
+* The scorecard has three columns — **Ghidra reference | basilisk `ghidra`
+  profile | basilisk default profile** — per corpus. `docs/QUALITY.md` records
+  it with the command that produces it, as `PERF.md` does for speed.
+* Tests that need the reference tools skip when they are absent and fail
+  under `BASILISK_REQUIRE_REFERENCE=1`, as everywhere else (ADR-007).
+* Fragments are rebuilt only nightly, and a rebuilt fragment that differs
+  from the checked-in one is reported, not silently replaced: a compiler or
+  image that changed under the harness is exactly the failure that produced
+  wrong output during this research (section 3.1).
+* Milestone reviews: the owner reads the same 30 functions each time. This is
+  the only check of whether the counters still mean anything.
 
 **Cheap first.** (1) The corpus, the counters and snapshots of the reference
 output: done here in prototype, needs no decompiler. (2) Signature ground
