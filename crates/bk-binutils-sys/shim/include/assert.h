@@ -22,6 +22,5 @@ void bk_gdis_assert_fail (const char *expr, const char *file, int line);
 #define assert(e) \
   ((e) ? (void) 0 : bk_gdis_assert_fail (#e, __FILE__, __LINE__))
 
-#if !defined(static_assert) && !defined(__cplusplus)
-# define static_assert _Static_assert
-#endif
+/* Unlike C11's <assert.h>, no static_assert macro: binutils never uses one,
+   and opcodes/mips-formats.h names an array static_assert. */

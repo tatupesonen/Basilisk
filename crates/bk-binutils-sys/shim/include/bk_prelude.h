@@ -38,6 +38,27 @@ void bk_gdis_exit (int);
 char *stpcpy (char *dst, const char *src);
 #endif
 
+#ifdef _MSC_VER
+/* MSVC's C library (and clang-cl, which defines _MSC_VER): the BSD names
+   are spelled differently, alloca is declared in <malloc.h>, and __STDC__
+   is not defined, without which include/symcat.h falls back to K&R token
+   pasting (a/[comment]b) that a C99 preprocessor does not paste.  */
+# include <string.h>
+# include <malloc.h>
+# define strcasecmp _stricmp
+# define strncasecmp _strnicmp
+# ifndef alloca
+#  define alloca _alloca
+# endif
+# ifndef ALMOST_STDC
+#  define ALMOST_STDC 1
+# endif
+/* In MSVC mode static_assert is a keyword even in C, but
+   opcodes/mips-formats.h names an array static_assert (its compile-time
+   check, one per block); binutils never uses static_assert itself.  */
+# define static_assert bk_static_assert_array
+#endif
+
 #define abort bk_gdis_abort
 #define exit bk_gdis_exit
 

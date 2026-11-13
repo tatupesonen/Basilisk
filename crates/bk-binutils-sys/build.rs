@@ -18,6 +18,7 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::process::ExitCode;
 
 /// The `@name@` placeholders of `bfd/bfd-in2.h` that binutils' `configure`
@@ -73,6 +74,22 @@ fn run() -> Result<(), String> {
     write_bfd_h(&vendor.join("bfd/bfd-in2.h"), &generated.join("bfd.h"))?;
 
     let mut build = cc::Build::new();
+    if target_env_is_msvc() && !compiler_configured() {
+        // MSVC's cl.exe rejects C that binutils 2.41 uses (GNU case ranges
+        // in aarch64-dis.c, arithmetic on void * in elfxx-riscv.c, zero-size
+        // arrays in xtensa-modules.c); clang-cl, LLVM's cl-compatible
+        // driver, accepts it and links against the same MSVC runtime.
+        let found = Command::new("clang-cl").arg("--version").output();
+        if !found.is_ok_and(|o| o.status.success()) {
+            return Err(
+                "building for an MSVC target needs clang-cl (LLVM's cl-compatible \
+                        compiler: install LLVM, or Visual Studio's \"C++ Clang tools for \
+                        Windows\"), or a C compiler named in CC"
+                    .to_owned(),
+            );
+        }
+        build.compiler("clang-cl");
+    }
     build
         .warnings(false)
         .extra_warnings(false)
@@ -100,6 +117,10 @@ fn run() -> Result<(), String> {
     } else {
         build.flag("-include").flag(prelude.display().to_string());
     }
+    if target_env_is_msvc() {
+        // Headers MSVC's C library lacks (shim/include-msvc).
+        build.include(shim.join("include-msvc"));
+    }
     for unit in compilation_units(&list)? {
         let path = vendor.join(&unit);
         if !path.is_file() {
@@ -120,6 +141,26 @@ fn run() -> Result<(), String> {
 
     println!("cargo:rustc-cfg=bk_binutils_built");
     Ok(())
+}
+
+fn target_env_is_msvc() -> bool {
+    env::var("CARGO_CFG_TARGET_ENV").is_ok_and(|e| e == "msvc")
+}
+
+/// Whether the developer named a C compiler, in any of the variables the
+/// `cc` crate reads.
+fn compiler_configured() -> bool {
+    let target = env::var("TARGET").unwrap_or_default();
+    let names = [
+        "CC".to_owned(),
+        "TARGET_CC".to_owned(),
+        format!("CC_{target}"),
+        format!("CC_{}", target.replace('-', "_")),
+    ];
+    names.iter().any(|name| {
+        println!("cargo:rerun-if-env-changed={name}");
+        env::var_os(name).is_some_and(|v| !v.is_empty())
+    })
 }
 
 fn var(name: &str) -> Result<String, String> {
