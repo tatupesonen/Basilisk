@@ -917,8 +917,9 @@ the fidelity taxonomy (Dramko et al.)
   **[S?]** — which is the principled way to remove copies such as R14's.
   Plausible, not demonstrated for a decompiler **[J]**.
 * **Splitting.** Hex-Rays and Binary Ninja expose manual split and merge of
-  variables for reused stack slots **[S]**; Ghidra has the same overrides. No
-  automatic method with evidence was found.
+  variables for reused stack slots **[S]**; Ghidra has a split override
+  (`isolate` in the console, `IfcIsolate` **[G]**). No automatic method with
+  evidence was found.
 * **Folding single-use variables.** 85.9% of once-written, once-read locals
   are decompiler-made on the DIRE data **[S✓]**; a print-time rule.
 * **Stack layout.** Value-set analysis recovers more (DIVINE: 88% of locals
@@ -933,7 +934,8 @@ the fidelity taxonomy (Dramko et al.)
   (R5) is the reference; Hex-Rays' notes show the risk of over-matching
   **[S]**.
 * **Stack and obfuscated strings**: FLOSS is the reference tool **[S?]**;
-  Ghidra's `constseq.cc` covers stores of constants to a `char` array.
+  Ghidra's `constseq.cc` (`RuleStringCopy`, `RuleStringStore` **[G]**, names
+  only) produced the `builtin_strncpy` of r06 and missed r07 and a08 **[E]**.
 * **Constants to names**: library constants are recoverable from typed
   prototypes; the general case is guesswork (Dramko et al. call it
   "probabilistic") **[S]**.
@@ -946,9 +948,9 @@ Sources: outlining <https://docs.binary.ninja/dev/outlining.html>; Hex-Rays
 
 * **Without learning**: debug information, exports and imports, signature
   databases, run-time type information, and names derived from calls. Ghidra
-  already borrows a callee's parameter names **[E]**; Binary Ninja 3.5 and
-  Hex-Rays 7.6 add loop counters and names inferred from assignments and
-  calls **[S]**. Cheap and deterministic: R6.
+  already borrows a callee's parameter names **[E]**; Binary Ninja 3.5 adds
+  loop counters, Hex-Rays 7.6 names inferred from assignments and calls
+  **[S]**. Cheap and deterministic: R6.
 * **Learned**: DIRE, DIRTY, VarBERT, GenNm and others. Reported accuracies
   fell once train/test leakage was removed: VarBERT measured 79.9% and 65.5%
   overlap in the DIRE and DIRTY data and reports 40–46% top-1 on its own
@@ -966,8 +968,9 @@ DIRTY <https://github.com/CMUSTRUDEL/DIRTY> (MIT).
 
 * Dramko et al.'s taxonomy (15 classes, 52 codes, 25 functions from each of
   four decompilers; the authors warn the sample is small): names outnumber
-  everything; then non-idiomatic dereference, extra variables, casts,
-  non-idiomatic literals. Ghidra had the fewest non-equivalent expressions
+  everything and were not counted; among the counted classes reported to me,
+  non-idiomatic dereference and extra variables lead for Ghidra (22 and 16
+  occurrences). Ghidra had the fewest non-equivalent expressions
   (2, against 9 for Hex-Rays, 28 for RetDec, 52 for angr) **[S]** — its
   conservatism is an asset to keep.
 * DREAM++ (2016) added expression and control simplification and
@@ -1015,7 +1018,7 @@ ReSym <https://www.cs.purdue.edu/homes/lintan/publications/resym-ccs24.pdf>.
 | Stage equivalence | The engine did not change behaviour between lifted p-code and final IR | Execute both on the same random register and memory states; compare the returned value, the memory written, and the sequence of calls with their arguments. Callees are stubs that return recorded values | Coverage of inputs; does not test the printer; floating point needs NaN and infinity in the inputs (it would have caught A2) | Medium; needs D3 and a small interpreter (`bk-emu`'s core, pulled forward) |
 | Signature ground truth | Parameters, return, calling convention are right | Compile the corpus with `-g`, decompile the stripped build, compare with DWARF: `void` or not, parameter count, pointer or integer or float per parameter, order | Needs debug information; inlining and optimised-away parameters need care | Medium; `llvm-dwarfdump` output at first, `bk-dwarf` later |
 | Type and variable ground truth | Types and variable boundaries match | Per variable with a DWARF location: same storage, compatible type; structure fields recalled | Optimised code loses variables; "compatible" must be defined (TIE's distance and conservativeness **[S?]**) | Medium–high |
-| Recompile and run | The printed C means what the binary does | Self-checking programs (GCC's `c-torture/execute` tests call `abort()` on failure **[S?]**; Csmith programs print a checksum), decompile, recompile, run | Output must compile first: DecompileBench reports 41.3% recompile success for Ghidra and 58.3% for Hex-Rays **[S✓]**; passing tests is not equivalence | High; needs a recompilable printing mode |
+| Recompile and run | The printed C means what the binary does | Self-checking programs (GCC's `c-torture/execute` tests call `abort()` on failure **[S?]**; Csmith programs print a checksum **[P]**), decompile, recompile, run | Output must compile first: DecompileBench reports 41.3% recompile success for Ghidra and 58.3% for Hex-Rays **[S✓]**; passing tests is not equivalence | High; needs a recompilable printing mode |
 | Equivalence by symbolic execution (D-Helix) | As above, without tests | Symbolic comparison of binary and recompiled output | Return values only; path explosion; D-LiFT's use of it covered 80.7% of functions **[S✓]** | High; outside tools |
 
 **Readability**
