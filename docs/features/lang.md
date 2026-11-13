@@ -235,6 +235,17 @@ Appended by the `lang` track (2026-11-12):
   not once a bin would be turned into a tree (nine or more results in one
   bin of a table of 64 or more); `OpinionDatabase::order_is_exact` reports
   that case, which no shipped `.opinion` file reaches.
+* **A file name with a directory part matches on Windows** (`windows-ci`,
+  2026-11-13). Ghidra compares the text of the absolute path, which
+  Windows spells with `\`, with the name as a definition writes it,
+  usually with `/`, so on Windows a name such as `sub/x.cspec` that occurs
+  in several modules never resolves. Here a `/` in the name stands for
+  the platform's separator, which gives Ghidra's Unix behaviour
+  everywhere.
+* **Every Windows spelling of a root reaches the same directory**
+  (`windows-ci`): verbatim paths (`\\?\C:\…`) have `.` and `..` removed
+  and `/` read as a separator before they are canonicalised, and drive
+  letters compare without regard to case.
 
 ## 9. Status
 
