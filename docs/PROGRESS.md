@@ -31,20 +31,13 @@ fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* **`windows-ci`** (branch and worktree still present): finished about 17:10,
-  reviewed, **not merged yet** — merge `--no-ff`, gate, push, then read
-  the Windows job (`gh run list`, `gh run view <id> --log-failed`). The
-  agent (`af713570d2e64dbed`, resumable) fixes whatever CI still shows.
-  Its report: `../basilisk-wt/windows-ci/docs/agents/windows-ci.md`. After
-  the merge, record under "Differences from Ghidra" in `features/lang.md`
-  that a `/` in a file name of a definition stands for the platform's
-  separator (Ghidra's text comparison never matches on Windows).
-* **Two-week rule is not checked by the gate.** The UI branch's lock file
-  had seven crates younger than two weeks. Add `scripts/check-dep-age.py`
-  (compare `Cargo.lock` with `master`'s, ask crates.io for each new
-  package's publish date, fail on anything under 14 days) and run it at
-  every merge; a first version is in the session scratchpad only, so
-  write it again if the session is gone. Not part of the offline gate.
+* **Windows job**: `windows-ci` was merged and pushed at 17:30 (gate on
+  the merge: green, 1,612 tests). CI run 43452049262 is the first time
+  the fix runs on Windows. If the Windows job is still red, resume agent
+  `af713570d2e64dbed` (its worktree was removed: make a new one) with the
+  exact failure from `gh run view <id> --log-failed`.
+* The two-week rule now has a check: `scripts/check-dep-age.py [base]`
+  (network; run on every merge result before committing).
 
 ### Queue (start as slots free, in this order)
 
@@ -75,7 +68,7 @@ fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. Merge `windows-ci` (above).
+1. Read the Windows job of the CI run on the `windows-ci` merge (above).
 2. `gnu-disasm` reports → review against `features/gnu-disasm.md`; the
    branch is far behind master, so merge with care (lock file: keep
    master's versions, check the age of every new package) and gate.

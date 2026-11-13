@@ -37,6 +37,11 @@ rules so merges are clean and the result is shippable.
     `[workspace.dependencies]`; add third-party dependencies there with
     exact versions, each at least two weeks old, after an ADR-011
     evaluation. Check what the workspace already has before adding.
+    Before your final commit run `scripts/check-dep-age.py master`: every
+    package your branch adds to `Cargo.lock`, transitive ones included,
+    must be at least two weeks old (pin a younger one back with
+    `cargo update -p <name> --precise <version>`), and no version that
+    `master` has may move (`git diff master -- Cargo.lock` only adds).
   - `docs/inventory/tests/*.md`: mark only the lines for your tests.
   - `docs/features/<feature>.md`: append to "Differences from Ghidra" and
     fill in "Status". Do not rewrite the spec; if the spec is wrong or

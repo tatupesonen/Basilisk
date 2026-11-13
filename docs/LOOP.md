@@ -135,7 +135,13 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   rejects.
 - **Dependencies**: prefer an existing crate when it passes ADR-011;
   record the evaluation. Exact versions in `[workspace.dependencies]`,
-  each at least two weeks old. Pure Rust; a C dependency needs an ADR.
+  each at least two weeks old — and so is every package a change adds to
+  `Cargo.lock`, transitive ones included: `scripts/check-dep-age.py
+  [base-ref]` asks crates.io and fails on anything younger (it needs the
+  network, so it is not in the gate; the coordinator runs it on every
+  merge result). A change to `Cargo.lock` only adds packages; it never
+  moves a version `master` already has. Pure Rust; a C dependency needs
+  an ADR.
 - **Metric units** (SI prefixes) and ISO-8601 timestamps in all output.
 
 ## Testing rules
