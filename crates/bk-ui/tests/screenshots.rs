@@ -40,8 +40,16 @@ fn dir() -> Option<PathBuf> {
     Some(d)
 }
 
+/// The main-window shots are 2× (for review); the per-view shots 1.5×
+/// (smaller files, still sharp).
+fn app_at(theme: ThemeKind, density: Density, ppp: f32) -> H {
+    let mut h = gpu_harness(theme, density, 1440.0, 900.0, ppp);
+    settle(&mut h);
+    h
+}
+
 fn app(theme: ThemeKind, density: Density) -> H {
-    let mut h = gpu_harness(theme, density, 1440.0, 900.0);
+    let mut h = gpu_harness(theme, density, 1440.0, 900.0, 1.5);
     settle(&mut h);
     h
 }
@@ -95,7 +103,7 @@ fn screenshots() {
             // The main window: main in the listing and the decompiler, the
             // decompiler's cursor on a call, its instructions marked in the
             // listing.
-            let mut h = app(theme, density);
+            let mut h = app_at(theme, density, 2.0);
             cursor_on_call(&mut h, "check_debugger");
             shot(&mut h, &d, &format!("main-{tn}-{dn}"));
         }

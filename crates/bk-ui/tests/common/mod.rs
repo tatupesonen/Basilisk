@@ -56,6 +56,7 @@ pub(crate) fn gpu_harness(
     density: Density,
     w: f32,
     h: f32,
+    ppp: f32,
 ) -> Harness<'static, BasiliskApp> {
     let ctx = egui::Context::default();
     let app = BasiliskApp::new(
@@ -65,7 +66,7 @@ pub(crate) fn gpu_harness(
     );
     Harness::builder()
         .with_size(egui::vec2(w, h))
-        .with_pixels_per_point(2.0)
+        .with_pixels_per_point(ppp)
         .with_step_dt(1.0 / 60.0)
         .wgpu()
         .build_ui_state(|ui, app: &mut BasiliskApp| app.frame(ui), app)
@@ -119,8 +120,24 @@ pub(crate) fn go_to(h: &mut Harness<'_, BasiliskApp>, name: &str) {
 
 /// Renders and saves a PNG.
 pub(crate) fn save(h: &mut Harness<'_, BasiliskApp>, path: &Path) {
-    let img = h.render().unwrap();
-    img.save(path).unwrap();
+    use image::ImageEncoder as _;
+    let img = image::DynamicImage::ImageRgba8(h.render().unwrap()).to_rgb8();
+    // Smallest lossless PNG the image crate makes (the pictures are kept
+    // in the repository).
+    let file = std::io::BufWriter::new(std::fs::File::create(path).unwrap());
+    let encoder = image::codecs::png::PngEncoder::new_with_quality(
+        file,
+        image::codecs::png::CompressionType::Best,
+        image::codecs::png::FilterType::Adaptive,
+    );
+    encoder
+        .write_image(
+            img.as_raw(),
+            img.width(),
+            img.height(),
+            image::ExtendedColorType::Rgb8,
+        )
+        .unwrap();
 }
 
 /// A source that records every command sent to it (and applies it to the
