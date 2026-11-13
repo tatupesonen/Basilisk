@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-13 (`bk-ui` merged on demo data; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
+Last updated: 2026-11-13 (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -109,5 +109,5 @@ Ported like any other code, as ordinary crates called directly.
 | Ghidra module | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `bk-demangle-gnu` | M6 | Missing | |
-| GPL/GnuDisassembler (`gdis` over binutils) | `bk-binutils-sys`, `bk-gnu-disasm` | M10 | In progress | binutils 2.41 built from source as its own crate (ADR-019) |
+| GPL/GnuDisassembler (`gdis` over binutils) | `bk-binutils-sys`, `bk-gnu-disasm` | M10 | Partial | On `master`: binutils 2.41 built from source (ADR-019), safe API, `.gdis` configuration, all 65 of Ghidra's `gnu` names resolve. Missing: the listing field (M7) and the block script (M9) that use it; `bk-lang`'s external names are not wired to it yet. Windows verified under Wine only. |
 | GPL/DMG (DMG/HFS+ reader) | `bk-fs-dmg` | M10 | Missing | |

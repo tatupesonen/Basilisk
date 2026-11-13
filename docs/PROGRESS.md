@@ -6,7 +6,8 @@ Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-(gate green, 1,608 tests). M0:
+and the GNU disassembler crates
+(gate green, 1,677 tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
@@ -15,14 +16,14 @@ reference tools in `../reference/`. Per-track history is in the log below.
 agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
-### Running (state at 2026-11-13 about 17:20)
+### Running (state at 2026-11-13 17:40)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `spec-decompiler` | Fable | `a0c25da932de14a37` | resumed 17:05; writes `inventory/02-decompiler.md`, `features/decomp-plan.md` and the first decompiler track specs. Told at 17:20 that ADR-025 binds the plan (profiles; six properties the port has from its first version) and to say so with evidence if any of them is unworkable. |
-| `gnu-disasm` | Opus | `a5b2605fa521b5dd2` | resumed 17:00; had 20 commits plus 12 uncommitted files; finishing the Windows container driver (MinGW/MSVC under Wine). |
 | `sla` | Opus | `a10095edf70216b9d` | started 17:20; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
 | `store-spike` | Fable | `a8012f27279847feb` | started 17:20 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
+| `spec-pe` | Fable | `a53aca50251d9e64c` | started 17:35 (fresh agent); `features/pe.md` for `bk-pe` with the crate decision by experiment (`docs/agents/spec-pe-crate-eval/`), from four helper fact sheets it must verify. |
 
 An agent stopped by a usage limit or a session restart can be resumed with
 its context intact by sending a message to its agent id (worked on
@@ -31,13 +32,39 @@ fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* **Windows job**: `windows-ci` was merged and pushed at 17:30 (gate on
-  the merge: green, 1,612 tests). CI run 43452049262 is the first time
-  the fix runs on Windows. If the Windows job is still red, resume agent
-  `af713570d2e64dbed` (its worktree was removed: make a new one) with the
-  exact failure from `gh run view <id> --log-failed`.
-* The two-week rule now has a check: `scripts/check-dep-age.py [base]`
-  (network; run on every merge result before committing).
+* **Unpushed commits on `master`** (at 17:40): the `gnu-disasm` merge
+  (gate on the merge: green, 1,677 tests), `scripts/check-dep-age.py`,
+  and the `deny.toml` advisories fix. They are held back only so that CI
+  run 43452049262 is not cancelled by a new push; push when it finishes
+  (`git status -sb` shows "ahead").
+* **Windows job**: `windows-ci` was merged and pushed at 17:30. CI run
+  43452049262 is the first time the fix runs on Windows. If the Windows
+  job is still red, resume agent `af713570d2e64dbed` (its worktree was
+  removed: make a new one) with the exact failure from
+  `gh run view <id> --log-failed`.
+* **CI's `cargo-deny` job went red when `bk-ui` merged**: it checks
+  advisories, which the offline gate does not. Four "unmaintained"
+  notices from the GUI stack (`paste` via `egui_dock`; `zvariant`,
+  `zbus_names`, `zvariant_derive` via accesskit on Linux) are now
+  accepted in `deny.toml` with reasons. On every merge result run
+  `scripts/check-dep-age.py` and `cargo deny check advisories` (both need
+  the network).
+* **After the next push, the Windows job builds `bk-binutils-sys` for
+  the first time on a real Windows machine.** It needs `clang-cl` on
+  `PATH` (hosted runners ship LLVM; unverified). If it fails, resume
+  agent `a5b2605fa521b5dd2` with the log; its worktree
+  `../basilisk-wt/gnu-disasm` is kept for that and for the next point.
+* **Windows tests can be run locally under Wine**, as `gnu-disasm` did
+  (MinGW and MSVC targets, cross-compiled; `cargo-xwin` for the MSVC CRT
+  and SDK). Its container scripts are scratch files in
+  `../basilisk-wt/gnu-disasm/target/windows/` and `target/linux/`
+  (sanitizers), not committed. Queue item `win-local` turns them into
+  committed tooling so every track can run its Windows tests before CI.
+  Do not remove that worktree before then.
+* **Owner should know**: `cargo-xwin` downloaded Microsoft's CRT and SDK
+  to this Mac for that check, accepting Microsoft's licence terms on the
+  machine's behalf. Nothing from it is in the repository. Reported to the
+  owner in the session on 2026-11-13.
 
 ### Queue (start as slots free, in this order)
 
@@ -53,7 +80,17 @@ fresh agent briefed from the branch's files.
    `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md` (debug directory,
    load config/exception/security, resources/rich header, CLI metadata).
 5. `spec-macho` (Fable) — `features/macho.md` (M4).
-6. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
+6. `win-local` (Opus, small): `scripts/windows-test.sh` (and the
+   sanitizer runner) from `gnu-disasm`'s scratch container scripts — run a
+   crate's or the workspace's tests for `x86_64-pc-windows-gnu` and
+   `-msvc` under Wine, bounded, documented in `LOOP.md` and `RULES.md`.
+   Also from `gnu-disasm`'s follow-ups: make `bk-binutils-sys` an
+   optional feature of the fuzz crate so other targets' fuzz builds do
+   not compile binutils; wire `bk-lang`'s external names (`gnu`,
+   `gdis.disassembler.options.file`) to `Architecture` and `gdis_config`;
+   mark Hexagon's `0x18:0x5` (binutils 2.41 has no Hexagon disassembler;
+   the number decodes as M9S12X).
+6b. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
    `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in place
    of local "find Ghidra" helpers; differential test of `bk-marshal`'s
    encoders against Ghidra's binary; move `windows_spelling` (duplicated
@@ -68,10 +105,11 @@ fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. Read the Windows job of the CI run on the `windows-ci` merge (above).
-2. `gnu-disasm` reports → review against `features/gnu-disasm.md`; the
-   branch is far behind master, so merge with care (lock file: keep
-   master's versions, check the age of every new package) and gate.
+1. Read CI run 43452049262, then push (above), then read the run of
+   that push: Windows job with `bk-binutils-sys`, and `cargo-deny`.
+2. ADR to write: Windows builds of `bk-binutils-sys` use `clang-cl`, not
+   `cl.exe` (binutils uses GNU C extensions `cl` rejects) — amend ADR-019
+   when CI has shown the build working.
 3. `sla` reports → review against `features/sla.md` section 7, merge,
    start `sleigh-decode` and `sleigh-compiler-front`.
 4. `spec-decompiler` reports → read critically, check it against ADR-025,
@@ -134,7 +172,7 @@ fresh agent briefed from the branch's files.
 
 ## Log
 
-### 2026-11-13 — work resumed; `ui`, SLEIGH specs and decompiler research merged
+### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH specs and decompiler research merged
 * **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
   system (two themes, two densities, contrast asserted in tests), Ghidra's
   menus, tool bar and key bindings from one action registry, docking with
@@ -168,7 +206,20 @@ fresh agent briefed from the branch's files.
   call. Its proposal is ADR-025 (profiles; the hooks the port carries
   from the start; a quality scorecard). Not established: how full Ghidra
   with its Java analyzers prints the analysis-dependent cases.
-* **`windows-ci` finished**, merge pending: the three failing Windows
+* **`gnu-disasm` merged** (gate on the merge: green, 1,677 tests):
+  `bk-binutils-sys` builds binutils 2.41's disassemblers with `cc` on
+  Unix and Windows targets; `bk-gnu-disasm` is the safe API
+  (`Architecture::from_gnu_name`, `Disassembler`, `gdis_config`). Three
+  patches to the vendored tree for state that leaked between requests
+  (ARM IT/VPT, the CGEN descriptor cache's byte order, xgate/CRIS);
+  RISC-V decoding nothing after the first request fixed in the shim; an
+  aborting family is quarantined for the rest of the process. 69 tests,
+  37 golden snapshots checked against GNU objdump 2.41; ASan and UBSan
+  clean on Linux aarch64; 30 M fuzz executions over all 90 families
+  clean. Windows: MinGW and MSVC (clang-cl) targets pass under Wine;
+  `cl.exe` is not supported; never run on a real Windows machine. Adds
+  13.4 MB to a stripped release binary and 29 MB of vendored source.
+* **`windows-ci` merged** (gate on the merge: green, 1,612 tests): the three failing Windows
   tests were test assumptions about `/`; two product bugs on Windows
   fixed besides (verbatim `\\?\C:\…` paths; a definition's file name
   with a directory part never matched).
