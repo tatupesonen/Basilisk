@@ -724,3 +724,115 @@ larger than the set of queries Ghidra's `DecompileCallback` answers; the
 printer is ported as two stages. Not decided here: the method for
 cross-function type unification (a licence and patent check comes first), and
 which readability counters, if any, may fail the gate on their own.
+
+## ADR-026 — The decompiler is state crates and pass crates; `bk-cspec` stands outside it
+(Coordinator, 2026-11-13, from the `spec-decompiler` track;
+`features/decomp-plan.md` section 2, `inventory/02-decompiler.md`.)
+
+ADR-004 ports Ghidra's C++ decompiler. In C++ it is one strongly connected
+component of 48 modules, so the crate split follows what each part calls,
+not the include graph. **State sits in low crates and passes in crates
+above them; `Funcdata` and `Architecture` are plain data and passes are
+functions over them.** This replaces `bk-decomp` + `bk-decomp-print` in the
+crate map:
+
+`bk-decomp-range` (circle ranges), `bk-decomp-types` (types, factory, C
+declaration parser), `bk-cspec` (`.cspec` reader, prototype models),
+`bk-decomp-cfg` (block graph, dominators, structuring), `bk-decomp-ir`
+(varnodes, ops, blocks, covers, the mutation interface, state load and
+dump), `bk-decomp-symbols` (scopes, symbols, the ADR-004 host trait),
+`bk-decomp-core` (function and architecture state, the unit table,
+profiles, drivers), `bk-decomp-typeop`, the rule families
+`bk-decomp-rules-{basic,bits,compare,piece,divide,pointer,subflow,double,bitfield}`,
+`bk-decomp-{flow,heritage,actions,jumptable,merge,struct}`,
+`bk-decomp-out` and `bk-decomp-print` (the two-stage printer of ADR-025
+3c), and `bk-decomp` (pipeline assembly, public API, parallel driver).
+
+* **Why**: passes can be written by several agents at once without sharing
+  files (`ruleaction.cc` alone becomes six crates of one-rule modules), and
+  a change to the IR is confined to the state crates.
+* **`bk-cspec` is not decompiler-specific.** It sees types through a small
+  query trait (about ten questions, three kinds of type it creates), so it
+  does not depend on `bk-decomp-types`, the types and prototype tracks run
+  in parallel, and the M4 program model uses the same crate. It also holds
+  `FunctionSummary` (ADR-025 3d).
+* **`Provenance` lives in `bk-core`** (ADR-025 3f): the types, cspec and
+  symbols crates all carry it.
+* **The context database (`globalcontext`) belongs to the SLEIGH runtime**
+  (`bk-sleigh`, `features/sleigh-decode.md` 4.2), which needs it first;
+  the decompiler's symbol and flow crates use it from there.
+* **Per-function type overlays are built with the type system**, not
+  deferred to the parallel driver (`features/decomp-types.md` 4.10): a
+  forked factory per function is what makes inferred types a category
+  (ADR-025 3e) and ids independent of what other functions create.
+* **Counts corrected** (measured by the track; earlier records say 167
+  rules and 77 actions): 163 classes derive from `Rule`, 161 are in the
+  pipeline; 71 leaf `Action` classes with 80 instances; 107 `.cspec` files
+  under `Ghidra/Processors`; the engine is about 126,000 hand-written
+  lines of the directory's 190,000.
+* Tracks, waves and acceptance per track: `features/decomp-plan.md`.
+
+## ADR-027 — Decompiler parity is measured at six levels, with Ghidra's own state as the starting point
+(Coordinator, 2026-11-13, from the `spec-decompiler` track;
+`features/decomp-plan.md` sections 4 and 6. Extends ADR-007.)
+
+The decompiler cannot wait for "whole output equals Ghidra's" to learn
+whether a pass is right. Parity is measured at six levels: ported unit
+tests; replayed oracle tables; **state after a pass, starting from
+Ghidra's state before it**; the trace of rule applications; the 760
+data-test checks; whole output. To make the middle levels possible:
+
+* **A basilisk-defined dump format for complete function state.** A
+  console extension, compiled into the reference build's copy of the
+  decompiler with `-fno-access-control`, writes it; `bk-decomp-ir` loads
+  it. Heritage, the actions and the rule families are then each accepted
+  from Ghidra's state before their pass and do not wait for each other.
+  The extension is C++ under `tools/reference/` plus one file added to the
+  build's copy; nothing in `../ghidra` changes (ADR-002's rule stands).
+* **The debug console** (`CPUI_DEBUG`) is added to `../reference`: it logs
+  one record per rule or action application with each modified op before
+  and after.
+* **Rule-subset configurations are an accepted oracle.** The reference
+  console with exactly the rules basilisk has ported enabled
+  (`option togglerule`) is what a rule family is compared with. It is
+  still the `ghidra` profile in ADR-025's sense: the same units, fewer
+  enabled.
+* **Recorded p-code is the interim lifter.** Until `bk-sleigh` exists, the
+  decompiler reads p-code recorded inside the reference console by a proxy
+  `Translate`, through a `PcodeSource` trait. The recordings are later
+  handed to the SLEIGH tracks as a differential test.
+* **Coverage is known and incomplete**: 32 of the 161 rules apply in
+  neither the 93 data tests nor the research corpus. Such a rule can be
+  ported but is not accepted until the corpus track (D19) has a case that
+  applies it.
+* Each track's acceptance has checks that run without the live tools
+  (checked-in tables and dumps, on all three platforms); no track rests
+  on the live reference tools alone.
+
+## ADR-028 — How ADR-025's properties meet Ghidra's code
+(Coordinator, 2026-11-13. `features/decomp-plan.md` section 8 found four
+places where ADR-025 as worded does not fit what Ghidra does; this record
+says how each is read. ADR-025 otherwise stands.)
+
+* **3a, "evaluable at every stage"** means at unit boundaries, with free
+  varnodes denoting storage and `special` ops needing an environment.
+  Several of Ghidra's units change meaning on purpose under an assumption
+  (`ignorenan`, dead-code removal driven by prototype effect lists,
+  read-only memory taken as constant, parameter recovery). Every unit
+  therefore declares its **soundness** — `Exact` or `Assumes(name)` — in
+  the unit table, and the stage-equivalence check qualifies or skips a
+  unit by it. A correct port of such a unit is not a failure of the check.
+* **3b, "the structurer runs on a copy"**: Ghidra's already does, but it
+  edits the original through the copy (ten `negateCondition` sites flip
+  the real `CBRANCH` and swap the real block's out-edges). In basilisk the
+  structurer takes per-block facts as input and **returns** the condition
+  flips and goto edges as part of its result; the track that puts
+  structuring on the IR applies them. Unverified: that no structuring
+  rule reads back a flag it flipped (not every rule was read for it); the
+  structuring track checks this first.
+* **3c** stands as written; the interleavings the printer spike must
+  examine are listed in `decomp-plan.md` 8.1.
+* **3e and 3f**: the category of a type and its provenance are attributes
+  of the factory entry and **take no part in type identity, comparison,
+  hashing or interning**. Otherwise interning, and so the `ghidra`
+  profile's output, would change.

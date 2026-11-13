@@ -51,7 +51,9 @@ Planned crates (those marked ● exist or are in the current wave):
    │                   bk-analyzers-* (function start, references, switch tables, data, strings, …)
    │                   bk-disasm (flow-following disassembler)      bk-fid   bk-demangle-gnu  bk-demangle-ms
    │
-   ├── decompiler      bk-decomp (engine)   bk-decomp-print (C output, token markup)
+   ├── decompiler      bk-decomp (pipeline, API, parallel driver)   bk-decomp-out, bk-decomp-print (two-stage printer)
+   │                   passes: bk-decomp-{flow,heritage,actions,jumptable,merge,struct,typeop}, bk-decomp-rules-* (nine families)
+   │                   state: bk-decomp-core, -symbols, -ir, -cfg, -types, -range   bk-cspec (.cspec, prototype models)   (ADR-026)
    │
    ├── program         bk-program (memory, listing, symbols, references, functions, …)
    │                   bk-datatypes (types, archives, C parser)     bk-store (program database, ADR-003)
@@ -132,13 +134,17 @@ Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
 
 ### M3 — Decompiler core, standalone
 Runs on Ghidra's `<decompilertest>` data tests (bytes + language + script),
-with no program database.
-- [ ] IR: varnodes, p-code ops, basic blocks, function data in arenas; address-space manager, load image, context
-- [ ] Compiler spec and prototype models (`fspec`, `modelrules`); the 21 `testfuncproto` and 5 `testparamstore` tests
-- [ ] Type system (`type`, `typeop`, `cast`, unions, bitfields); the 8 `testtypes` tests
-- [ ] Flow following, heritage (SSA), range utilities (117 `testcirclerange` tests), jump tables
-- [ ] Action/rule framework; the rules, one module family at a time; subvariable flow, double precision, merging
-- [ ] Control-flow structuring; C printing with token markup
+with no program database. Crates: ADR-026. How parity is measured: ADR-027.
+What the port carries for later improvements: ADR-025, ADR-028. The 31
+tracks, their order, sizes and acceptance are in `features/decomp-plan.md`;
+this list follows its waves.
+- [ ] Wave 1 (leaf tracks): D01 `bk-decomp-range` (117 `testcirclerange` tests; `features/decomp-range.md`) · D02 `bk-decomp-types` (3 of the 8 `testtypes` tests, the other five need the IR and move to D08; `features/decomp-types.md`) · D03 `bk-cspec` (21 `testfuncproto`, 5 `testparamstore`, nine Java prototype-model classes; `features/decomp-cspec.md`) · D00 oracle tooling (state dumps, debug console, recorded p-code; spec to write) · D04 `bk-decomp-cfg` block graph and structuring (spec to write)
+- [ ] Wave 2: D05 `bk-decomp-ir` (`features/decomp-ir.md`) · D06 symbols and the host trait · D16a printer spike
+- [ ] Wave 3: D07 core (function state, units, profiles, drivers) · D08 typeop and casts · D16c emitter
+- [ ] Wave 4: D09 flow and the data-test runner · D10 heritage · D11 actions A · R1–R9 rule families · D19 corpus extension (32 rules apply in no corpus yet)
+- [ ] Wave 5: D12 actions B · D13 jump tables · D14 merge
+- [ ] Wave 6: D15 structuring on the IR · D16b output tree
+- [ ] Wave 7: D17 driver · D18 injection (needs `bk-sleigh-snippet`)
 - [ ] All 93 data tests pass; differential runs against reference `decomp`
 - [ ] `basilisk decompile` on a data-test file; per-function benchmark against Ghidra
 
