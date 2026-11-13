@@ -583,3 +583,76 @@ deferred.
 * Tier definitions: x86-64 and AArch64 on each of the three systems where
   the Rust toolchain and CI offer them; CI covers what GitHub's hosted
   runners provide, and anything not covered by CI is stated as unverified.
+
+## ADR-023 — The compiled language is its own crate, `bk-sla`; SLEIGH is built in six tracks
+(Coordinator, 2026-11-13, from the `spec-sleigh` track;
+`inventory/01-sleigh.md`, `features/sla.md`.)
+
+The model of a compiled `.sla` file — symbols, constructors, decision
+trees, pattern blocks, expressions, p-code templates — lives in **`bk-sla`**
+together with the validating reader and the writers that reproduce Ghidra's
+bytes. It is one immutable value of flat arenas with typed `u32` indices,
+laid out for decoding (ADR-012). The runtime (`bk-sleigh`) decodes straight
+from it; the compiler (`bk-sleigh-compiler`) lowers into it through a
+builder. `decodeSlaSpaces` belongs to `bk-sla`.
+
+* **Why a separate crate.** The format is checked against Ghidra (all 150
+  reference files re-encoded byte for byte, XML text equal to `sleigh -y`)
+  before either user of it exists; the runtime and the compiler no longer
+  depend on each other and are built in parallel; the compiler's tests get
+  a structural diff instead of "bytes differ at offset N".
+* **Tracks and order** (each has a spec in `docs/features/`):
+  `sla` → `sleigh-decode` → `sleigh-pcode` (runtime, crate `bk-sleigh`);
+  `sla` → `sleigh-compiler-front` → `sleigh-compiler-back` (crate
+  `bk-sleigh-compiler`); `sleigh-compiler-front` → `sleigh-snippet` (crate
+  `bk-sleigh-snippet`, p-code snippets of `.cspec`/`.pspec` for injection);
+  `sleigh-language` (crates `bk-sleigh`, `bk-language`: registers as a
+  model, flow and operand types, overrides, compile on demand) is a later
+  wave and its spec is a draft.
+* **Oracles.** Runtime: `pcodedump` records for every language, over
+  directed samples per decision-tree leaf, random bytes and real code,
+  with coverage thresholds. Compiler: Ghidra's **C++** compiler, and
+  acceptance is byte equality of the inflated stream for all 150
+  specifications. Two places follow the Java compiler instead (the
+  unsigned range test in `EqualEquation`; the command line's `-f`, `-d`,
+  `-i`). Snippets: a new reference tool `snippetdump`, added to
+  `scripts/build-reference.sh` by the `sleigh-snippet` track.
+* **`basilisk disasm`** writes `pcodedump`'s record format in M1, because
+  that is what the differential test compares. The user-facing listing
+  format is decided with the CLI in M6; the record format then stays
+  available as an option.
+
+## ADR-024 — Where Ghidra's C++ SLEIGH engine is undefined, basilisk defines the result
+(Coordinator, 2026-11-13, from the `spec-sleigh` track; extends ADR-021.)
+
+Ghidra's C++ SLEIGH runtime has undefined behaviour on some inputs. A
+panic-free port (ADR-009) needs a defined result for each; they are:
+
+* **Shifts in pattern expressions**: counts are taken modulo 64; right
+  shift of a signed value is arithmetic.
+* **Division by zero in a pattern expression** is a decode error for that
+  instruction (the Java engine throws; the C++ is undefined).
+* **Instruction bytes past index 15** read as zero.
+* **Constructors with more than 20 operands are decoded.** The C++ engine
+  cannot: PowerPC AltiVec constructors with 24 and 27 operands make
+  `pcodedump` print "SLEIGH parser out of state space". The differential
+  harness expects the oracle's error for these and checks basilisk's
+  result by other means (the spec says how). The M1 goal "match the
+  reference tool for every language" carries this exception.
+* **No address-keyed parse cache.** Each decode starts from the context
+  database. This differs from Ghidra only for an instruction that both
+  uses `inst_next2` and commits context affecting the next one; of the
+  shipped languages only Toy uses `inst_next2`.
+* **`bk-sla` rejects a file whose use would be undefined behaviour in
+  Ghidra** (dangling ids, decision nodes wider than 8 bits, operand
+  expression cycles, …; `features/sla.md` 4.3) even though Ghidra would
+  load it. No shipped or compiler-produced file may be rejected; the rules
+  were checked on the 150 reference files.
+* **Decision-tree scoring uses a host-independent `log`** (the `libm`
+  crate, subject to the ADR-011 evaluation in the track) so the compiler's
+  output cannot depend on the host's C library. Whether Ghidra's own
+  output differs between hosts is unverified until the x86-64 reference
+  build is read (`PROGRESS.md`, Blockers).
+
+Each is listed under "Differences from Ghidra" in the feature document of
+the track that implements it.

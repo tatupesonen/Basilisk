@@ -61,6 +61,8 @@ Planned crates (those marked ● exist or are in the current wave):
    │                   bk-bin ● (byte providers, binary reader)
    │
    ├── language        bk-sleigh (runtime: decode, disassemble, lift)   bk-sleigh-compiler (.slaspec → .sla)
+   │                   bk-sla ● (compiled-language model, reader, writer; ADR-023)   bk-sleigh-snippet (p-code snippets)
+   │                   bk-language (registers, flow and operand types, overrides; later wave)
    │                   bk-sleigh-syntax ● (preprocessor, lexer, parser)  bk-lang ● (.ldefs, .pspec, .opinion, registry)
    │                   bk-emu (p-code emulator)   bk-asm (assembler)
    │
@@ -115,19 +117,18 @@ it is reached; later milestones are intentionally coarse.
 - [x] `bk-testkit` + reference tools: build Ghidra's `sleigh` and `decomp`, compile every `.sla`, oracle wrappers (`features/reference-tools.md`)
 
 ### M1 — SLEIGH runtime
-- [ ] `.sla` loader (format 4) into arena-based symbol tables and decision trees
-- [ ] Context database, instruction decoding, operand printing (disassembly text)
-- [ ] P-code generation: templates, handles, delay slots, crossbuild, user ops, injection hooks
-- [ ] Differential test: disassembly and p-code for every language match the reference tool
-- [ ] `basilisk disasm` (raw bytes + language id)
-- [ ] Benchmarks: language load time, decode throughput (`PERF.md`)
+Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
+- [ ] `sla` — `bk-sla`: the compiled-language model, validating reader, byte-exact writers; all 150 reference files round-trip (`features/sla.md`)
+- [ ] `sleigh-decode` — `bk-sleigh`: loading, context database, instruction decoding, operand printing; `I`/`E`/`T` records equal to `pcodedump` for every language (`features/sleigh-decode.md`)
+- [ ] `sleigh-pcode` — `bk-sleigh`: p-code generation (templates, handles, delay slots, crossbuild, user ops), `Translate`, `basilisk disasm`; every record equal to `pcodedump`, the 20-operand exception aside (`features/sleigh-pcode.md`)
+- [ ] Benchmarks: language load time, decode and lift throughput at or above the reference (`PERF.md`)
+- [ ] `sleigh-language` — `bk-sleigh`, `bk-language`: registers as a model, flow and operand types, overrides, compile on demand (`features/sleigh-language.md`, a draft; later wave)
 
 ### M2 — SLEIGH compiler
-- [ ] Semantic analysis over `bk-sleigh-syntax` (symbols, tokens, constructors, pattern equations, macros, `with` blocks)
-- [ ] Pattern resolution and decision-tree construction; p-code template compilation and consistency checks
-- [ ] `.sla` writer; output decodes to the same content as Ghidra's compiler for all 150 languages
-- [ ] Compiler diagnostics matching Ghidra's (`SleighCompileRegressionTest` and options tests)
-- [ ] `basilisk sleigh compile`
+- [ ] `sleigh-compiler-front` — `bk-sleigh-compiler`: semantic analysis over `bk-sleigh-syntax` (symbols, tokens, constructors, macros, `with` blocks), p-code template compilation; symbols, print pieces, context changes and templates equal to Ghidra's for all 150 specifications (`features/sleigh-compiler-front.md`)
+- [ ] `sleigh-compiler-back` — `bk-sleigh-compiler`: pattern resolution, decision-tree construction, consistency checks, `basilisk sleigh compile`; all 150 specifications compile to the same inflated bytes as Ghidra's C++ compiler; `SleighCompileRegressionTest` ported as that equality (`features/sleigh-compiler-back.md`)
+- [ ] `sleigh-snippet` — `bk-sleigh-snippet`: p-code snippets of `.cspec`/`.pspec` (132 elements in 47 files) compile to Ghidra's template XML; reference tool `snippetdump`; `PcodeParserTest` ported (`features/sleigh-snippet.md`)
+- [ ] Compiler diagnostics equal to the C++ compiler's, one case per message (in `sleigh-compiler-front`/`-back`)
 
 ### M3 — Decompiler core, standalone
 Runs on Ghidra's `<decompilertest>` data tests (bytes + language + script),
