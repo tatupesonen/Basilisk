@@ -153,7 +153,17 @@ Fonts: Inter 4.1 and JetBrains Mono NL 2.304 (OFL 1.1), Phosphor (MIT).
 
 ## Build cost
 
-To be filled: clean build time of `basilisk` with the GUI.
+Clean `cargo build -p basilisk` (dev profile, `CARGO_BUILD_JOBS=2`, fresh
+target folder, this machine while other agents were building): **4 min
+36 s**; with `bk-ui`'s test dependencies (`egui_kittest`, snapshot) the
+first build of the track took 7 min 09 s. Of the 537 s of summed crate
+compile time (205 crates): wgpu/naga/Metal 25 %, egui/eframe/winit/
+accesskit 18 %, image and its PNG/colour crates 11 % (pulled in by eframe
+anyway), `bk-ui` and `basilisk` 6 %, the rest 41 % (font shaping
+`read-fonts`/`skrifa`/`harfrust` for epaint, `syn`, `serde_derive`, …).
+Excluding the GUI crates from the default workspace build would save
+almost all of this for the other crates' gates. `cargo-deny` reports 24
+duplicate-version warnings from the GUI stack (warnings, not errors).
 
 ## Gaps
 
@@ -197,6 +207,30 @@ To be filled: clean build time of `basilisk` with the GUI.
   if CI time matters (figures above).
 - Upgrade to egui 0.37 when `egui_dock` releases for it.
 
+## Gate
+
+`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` → `0`;
+last lines `bans ok, licenses ok, sources ok` and
+`tests: 79 passed, 0 failed`.
+
 ## Commits
 
-To be filled from `git log --oneline master..HEAD`.
+```
+697ef5e docs(ui): escape a bracket in a doc comment
+c7b0764 style(ui): collapse nested ifs in the self-test
+9fc94de docs(ui): status report
+d16504e docs(ui): screenshots of every view in both themes, main window also compact
+f69f822 test(ui): self-test places a key in the detached window when keystrokes cannot be sent; log osascript errors
+d0de9d2 docs(ui): status report skeleton
+f1982b2 test(ui): native-window self-test for the real binary
+e3e454d fix(ui): show no value for array data, as Ghidra's listing does
+ac5c1c8 feat(ui): repaint detached windows on shared changes; scrolling benchmark and design document
+9ef9821 style(ui): tidy flow test imports
+de8d066 style(ui): clean clippy (pedantic and restriction lints), colours as #RRGGBB
+dc14f0f fix(ui): row counts past four XREFs, first-frame reveal, dialog height, submenu arrows, shared hover preview
+db0c723 test(ui): headless flow tests for every task in spec 4.1, and accessible names
+9fff734 feat(ui): design system, shell, docking with native pop-out windows, and the core views
+a143fae feat(ui): data interface, background client and licd demo program
+```
+(plus this report's commit). Branch not merged or rebased; it is behind
+`master`, which the coordinator merges.
