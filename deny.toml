@@ -41,3 +41,12 @@ unknown-git = "deny"
 
 [advisories]
 yanked = "deny"
+# "Unmaintained" notices (no vulnerability) for crates that arrive only
+# through the GUI stack and have no upgrade. Each is removed when the
+# dependency that pulls it in moves on; a new advisory still fails the check.
+ignore = [
+    { id = "RUSTSEC-2024-0436", reason = "paste (proc-macro) is unmaintained; pulled in by egui_dock 0.21.1, no replacement release yet" },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant is no longer released standalone (folded into zbus); pulled in by accesskit's Linux backend through eframe 0.36.2" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names: as zvariant" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive: as zvariant" },
+]

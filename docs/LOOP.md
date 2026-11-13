@@ -139,7 +139,8 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
   `Cargo.lock`, transitive ones included: `scripts/check-dep-age.py
   [base-ref]` asks crates.io and fails on anything younger (it needs the
   network, so it is not in the gate; the coordinator runs it on every
-  merge result). A change to `Cargo.lock` only adds packages; it never
+  merge result, together with `cargo deny check advisories`, which CI
+  runs and the offline gate cannot). A change to `Cargo.lock` only adds packages; it never
   moves a version `master` already has. Pure Rust; a C dependency needs
   an ADR.
 - **Metric units** (SI prefixes) and ISO-8601 timestamps in all output.
