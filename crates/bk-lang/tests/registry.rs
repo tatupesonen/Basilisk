@@ -14,6 +14,8 @@
 
 mod common;
 
+use std::path::Path;
+
 use bk_lang::{LanguageRegistry, LoadFailure, Mode, RegistryError};
 use common::tree::{canonical, id, ids, language, ldefs, registry, tree, write};
 
@@ -113,6 +115,16 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
                 "omega.pspec",
                 &[("default", "./shared.cspec")],
             ),
+            // A name with a directory that does not exist beside the
+            // definition: found by file name, on Windows too, where the
+            // path searched for is spelled with `\`.
+            language(
+                "Omega:LE:32:subdir",
+                "",
+                "omega.sla",
+                "omega.pspec",
+                &[("default", "nowhere/shared.cspec")],
+            ),
         ]),
     );
     write(languages.join("omega.slaspec"), "");
@@ -126,6 +138,7 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
     // Not beside the definition: the first module in name order wins.
     assert_eq!(cspec("Omega:LE:32:plain"), beta);
     assert_eq!(cspec("Omega:LE:32:dotted"), beta);
+    assert_eq!(cspec("Omega:LE:32:subdir"), beta);
     // A relative path that exists is taken as written.
     assert_eq!(cspec("Omega:LE:32:relative"), gamma);
 }
@@ -192,14 +205,34 @@ fn a_language_with_a_missing_file_is_reported_and_left_out() {
                 .replace(&languages.parent().unwrap().display().to_string(), "<data>")
         })
         .collect();
+    // Expected paths are built from `Path` values: the registry reports a
+    // path as the operating system spells it (with `\` on Windows).
+    let in_dir = |name: &str| Path::new("<dir>").join(name).display().to_string();
+    let ldefs_file = in_dir("c.ldefs");
+    let manual = Path::new("<data>").join("manuals").join("alpha.idx");
     assert_eq!(
         failures,
         [
-            "language Alpha:LE:8:nocspec in <dir>/c.ldefs: missing sleigh file(.cspec): <dir>/missing.cspec",
-            "language Alpha:LE:8:nopspec in <dir>/c.ldefs: missing sleigh file(.pspec): <dir>/missing.pspec",
-            "language Alpha:LE:8:nosla in <dir>/c.ldefs: missing sleigh file(.slaspec): <dir>/missing.slaspec",
-            "language Alpha:LE:8:case in <dir>/c.ldefs: missing sleigh file(.pspec): <dir>/Alpha.pspec",
-            "language Alpha:LE:8:nomanual: missing manual index <data>/manuals/alpha.idx",
+            format!(
+                "language Alpha:LE:8:nocspec in {ldefs_file}: missing sleigh file(.cspec): {}",
+                in_dir("missing.cspec")
+            ),
+            format!(
+                "language Alpha:LE:8:nopspec in {ldefs_file}: missing sleigh file(.pspec): {}",
+                in_dir("missing.pspec")
+            ),
+            format!(
+                "language Alpha:LE:8:nosla in {ldefs_file}: missing sleigh file(.slaspec): {}",
+                in_dir("missing.slaspec")
+            ),
+            format!(
+                "language Alpha:LE:8:case in {ldefs_file}: missing sleigh file(.pspec): {}",
+                in_dir("Alpha.pspec")
+            ),
+            format!(
+                "language Alpha:LE:8:nomanual: missing manual index {}",
+                manual.display()
+            ),
         ]
     );
     // The language without a manual and the one after the failures exist.

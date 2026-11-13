@@ -1,0 +1,15 @@
+# Line endings (ADR-022). Text files keep the platform's line endings in a
+# checkout, so a Windows checkout with core.autocrlf has CRLF: the product
+# reads specifications with either ending, and tests and snapshots must
+# pass both ways. Only what a CRLF would break is pinned here.
+* text=auto
+
+# Shell scripts and patches are read by tools that take CR as content.
+*.sh    text eol=lf
+*.patch text eol=lf
+
+# Binary fixtures and assets: never converted.
+*.so  binary
+*.o   binary
+*.gz  binary
+*.png binary

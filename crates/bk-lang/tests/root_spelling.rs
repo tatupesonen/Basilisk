@@ -92,7 +92,20 @@ fn every_spelling_of_a_root_gives_the_same_registry() {
     );
     let root = canonical(dir.path());
     let expected = describe(&build(&root, overlay.path()));
-    assert!(expected.contains("/Ghidra/Processors/Zeta/data/languages/zeta.sla"));
+    let zeta_sla = [
+        "Ghidra",
+        "Processors",
+        "Zeta",
+        "data",
+        "languages",
+        "zeta.sla",
+    ]
+    .iter()
+    .fold(canonical(overlay.path()), |path, name| path.join(name));
+    assert!(
+        expected.contains(&format!("sla {:?}", Some(&zeta_sla))),
+        "{expected}"
+    );
     // The fixture shares alpha.pspec between a .ldefs beside it and one in
     // a subdirectory, which finds it by name: one file, counted once.
     assert_eq!(build(&root, overlay.path()).pspec_files().count(), 2);
@@ -108,20 +121,66 @@ fn every_spelling_of_a_root_gives_the_same_registry() {
     }
 }
 
-#[cfg(unix)]
+/// Makes `link` a symbolic link to the directory `target`.
+fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
+    #[cfg(unix)]
+    return std::os::unix::fs::symlink(target, link);
+    #[cfg(windows)]
+    return std::os::windows::fs::symlink_dir(target, link);
+    #[cfg(not(any(unix, windows)))]
+    return Err(std::io::ErrorKind::Unsupported.into());
+}
+
 #[test]
 fn a_root_reached_through_a_symbolic_link_gives_the_same_registry() {
     let dir = tree();
     let overlay = tempfile::tempdir().unwrap();
     let links = tempfile::tempdir().unwrap();
     let link = links.path().join("ghidra-link");
-    std::os::unix::fs::symlink(dir.path(), &link).unwrap();
+    // Windows lets only administrators, or anyone in Developer Mode,
+    // create symbolic links.
+    if let Err(error) = symlink_dir(dir.path(), &link) {
+        eprintln!("SKIPPED a_root_reached_through_a_symbolic_link: cannot create a link: {error}");
+        return;
+    }
     let expected = describe(&build(&canonical(dir.path()), overlay.path()));
     assert_eq!(describe(&build(&link, overlay.path())), expected);
     // A `..` after a link leaves the link's target, as the file system
-    // resolves it, not the directory holding the link.
+    // resolves it, not the directory holding the link. (Windows removes
+    // `..` lexically before following links; here both give the target.)
     let through = link.join("Ghidra/Processors/..").join("..");
     assert_eq!(describe(&build(&through, overlay.path())), expected);
+}
+
+/// Windows spellings of one directory: verbatim (`\\?\C:\…`, the
+/// canonical form) and plain, with either drive-letter case, with `/`
+/// separators, and verbatim with `.` and `..` (which Windows does not
+/// resolve in a verbatim path by itself).
+#[cfg(windows)]
+#[test]
+fn every_windows_spelling_of_a_root_gives_the_same_registry() {
+    let dir = tree();
+    let overlay = tempfile::tempdir().unwrap();
+    let root = canonical(dir.path());
+    let verbatim = root.to_str().unwrap().to_owned();
+    let plain = verbatim.strip_prefix(r"\\?\").unwrap().to_owned();
+    assert_eq!(plain.as_bytes()[1], b':', "{plain}");
+    let lower = plain.get(..1).unwrap().to_ascii_lowercase() + plain.get(1..).unwrap();
+    let expected = describe(&build(&root, overlay.path()));
+    for spelling in [
+        plain.clone(),
+        lower.clone(),
+        format!(r"\\?\{lower}"),
+        plain.replace('\\', "/"),
+        format!(r"{verbatim}\Ghidra\..\.\"),
+        format!("{verbatim}/Ghidra/../"),
+    ] {
+        assert_eq!(
+            describe(&build(Path::new(&spelling), overlay.path())),
+            expected,
+            "root spelled {spelling}"
+        );
+    }
 }
 
 #[test]
