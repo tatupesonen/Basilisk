@@ -13,8 +13,8 @@ reading Ghidra's source, not executed.
 
 | File | State |
 |---|---|
-| `docs/inventory/02-decompiler.md` | in progress |
-| `docs/features/decomp-plan.md` | next |
+| `docs/inventory/02-decompiler.md` | done (committed) |
+| `docs/features/decomp-plan.md` | in progress |
 | `docs/features/decomp-range.md` (circle ranges) | next |
 | `docs/features/decomp-types.md` (type system, C declaration parser) | next |
 | `docs/features/decomp-cspec.md` (compiler spec, prototype models) | next |
@@ -49,6 +49,34 @@ All commands read Ghidra at `/Users/tatu/slop/ghidra` (commit
   `DEBUG n: <rule or action name>` each followed by every modified op
   before and after. `scripts/build-reference.sh` does not build this
   binary yet.
+* **Single rules can be switched off in the reference console** (ran):
+  `option togglerule <rulename> off` (also with the full path
+  `universal:fullloop:mainloop:stackstall:oppool1:propagatecopy`) answers
+  "Successfully disabled rule"; decompilation of `elseif.xml` still
+  completes and the other rules' counts change (`earlyremoval` applied 179
+  times instead of 483). `option currentaction <root> <group> on|off`
+  toggles a whole group (read).
+* **How much of the rule set the data tests exercise** (ran): for each of
+  the 93 files, `load test file F` / `execute test command 1-N` (N = the
+  script without its final `quit`) / `print actionstats`, summed with a
+  Python script (about one minute in total). 32,788 rule applications;
+  `earlyremoval` 12,757 and `propagatecopy` 7,846 are 63 % of them; 124 of
+  the 161 rules apply at least once; **37 never apply** (`scarry`,
+  `rightshiftand`, `highorderand`, `andcommute`, `concatshift`,
+  `leftright`, `carryelim`, `bxor2notequal`, `less2zero`,
+  `lessequal2zero`, `threewaycomp`, `transformcpool`, `slesstoless`,
+  `zextsless`, `boolzext`, `concatleftshift`, `humptyor`,
+  `negateidentity`, `positivediv`, `signform2`, `signnearmult`,
+  `switchsingle`, `popcountboolxor`, `xorswap`, `splitflow`, `ptrflow`,
+  `negatenegate`, `orpredicate`, `floatcast`, `ptrsubundo`, `segment`,
+  `piecepathology`, `doublestore`, `subright`, `floatsigncleanup`,
+  `extensionpush`, `andstructure`) and 54 more apply in at most two files.
+  The full table is reproduced in `docs/features/decomp-plan.md`.
+* **Console extensions and private state** (ran): the Makefile compiles
+  every `*.cc` in the directory into the console, so a file added to the
+  reference *copy* (`reference/src/cpp`) becomes part of it; Apple clang
+  17 accepts `-fno-access-control`, which lets such a file read private
+  members without patching Ghidra's source.
 * **Counts from source** (ran, scripts over `CPP/*.hh`, `CPP/coreaction.cc`):
   163 classes derive from `Rule` (137 `ruleaction.hh`, 12 `subflow.hh`, 6
   `bitfield.hh`, 4 `double.hh`, 2 `constseq.hh`, 1 `condexe.hh`, 1
