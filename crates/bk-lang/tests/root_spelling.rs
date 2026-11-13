@@ -137,6 +137,37 @@ fn a_root_reached_through_a_symbolic_link_gives_the_same_registry() {
     assert_eq!(describe(&build(&through, overlay.path())), expected);
 }
 
+/// Windows spellings of one directory: verbatim (`\\?\C:\…`, the
+/// canonical form) and plain, with either drive-letter case, with `/`
+/// separators, and verbatim with `.` and `..` (which Windows does not
+/// resolve in a verbatim path by itself).
+#[cfg(windows)]
+#[test]
+fn every_windows_spelling_of_a_root_gives_the_same_registry() {
+    let dir = tree();
+    let overlay = tempfile::tempdir().unwrap();
+    let root = canonical(dir.path());
+    let verbatim = root.to_str().unwrap().to_owned();
+    let plain = verbatim.strip_prefix(r"\\?\").unwrap().to_owned();
+    assert_eq!(plain.as_bytes()[1], b':', "{plain}");
+    let lower = plain.get(..1).unwrap().to_ascii_lowercase() + plain.get(1..).unwrap();
+    let expected = describe(&build(&root, overlay.path()));
+    for spelling in [
+        plain.clone(),
+        lower.clone(),
+        format!(r"\\?\{lower}"),
+        plain.replace('\\', "/"),
+        format!(r"{verbatim}\Ghidra\..\.\"),
+        format!("{verbatim}/Ghidra/../"),
+    ] {
+        assert_eq!(
+            describe(&build(Path::new(&spelling), overlay.path())),
+            expected,
+            "root spelled {spelling}"
+        );
+    }
+}
+
 #[test]
 fn every_spelling_of_the_ghidra_tree_gives_the_same_registry() {
     let Some(ghidra) = common::ghidra_dir() else {

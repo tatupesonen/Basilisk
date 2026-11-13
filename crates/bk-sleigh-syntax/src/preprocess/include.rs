@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::loader::windows_spelling;
+
 /// Whether an include name is taken as is rather than relative to the
 /// including file: it starts with `/` or `\`, or with a drive or scheme
 /// prefix (`[A-Za-z0-9_]+:`), as in Ghidra's `SleighPreprocessor`.
@@ -17,11 +19,15 @@ pub(crate) fn is_absolute(name: &str) -> bool {
 }
 
 /// The path of `name` included from the file at `including`.
+///
+/// The directory of `including` is taken from the spelling Windows would
+/// use: in a verbatim path such as `\\?\C:\d/a.slaspec` the `/` is not
+/// a separator, so its parent would otherwise be `\\?\C:\`.
 pub(crate) fn resolve(including: &Path, name: &str) -> PathBuf {
     if is_absolute(name) {
         PathBuf::from(name)
     } else {
-        including
+        windows_spelling(including)
             .parent()
             .unwrap_or_else(|| Path::new(""))
             .join(name)

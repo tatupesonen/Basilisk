@@ -115,6 +115,16 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
                 "omega.pspec",
                 &[("default", "./shared.cspec")],
             ),
+            // A name with a directory that does not exist beside the
+            // definition: found by file name, on Windows too, where the
+            // path searched for is spelled with `\`.
+            language(
+                "Omega:LE:32:subdir",
+                "",
+                "omega.sla",
+                "omega.pspec",
+                &[("default", "nowhere/shared.cspec")],
+            ),
         ]),
     );
     write(languages.join("omega.slaspec"), "");
@@ -128,6 +138,7 @@ fn a_name_found_in_several_modules_resolves_to_the_first_module() {
     // Not beside the definition: the first module in name order wins.
     assert_eq!(cspec("Omega:LE:32:plain"), beta);
     assert_eq!(cspec("Omega:LE:32:dotted"), beta);
+    assert_eq!(cspec("Omega:LE:32:subdir"), beta);
     // A relative path that exists is taken as written.
     assert_eq!(cspec("Omega:LE:32:relative"), gamma);
 }

@@ -9,10 +9,11 @@
 //! here from one listing of the modules' `data` trees.
 
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     ffi::OsString,
     fs,
-    path::{Component, Path, PathBuf},
+    path::{Component, MAIN_SEPARATOR_STR, Path, PathBuf, Prefix},
 };
 
 /// The file-name suffixes that are indexed for application-wide lookup.
@@ -58,15 +59,78 @@ pub(crate) fn normalize(path: &Path) -> PathBuf {
 /// to resolve; a root spelled `basilisk/../ghidra` otherwise reaches the
 /// same file under two names.
 pub(crate) fn canonical_root(path: &Path) -> PathBuf {
-    fs::canonicalize(path).unwrap_or_else(|_missing| {
-        std::path::absolute(path).map_or_else(|_unsupported| normalize(path), |p| normalize(&p))
+    let path = windows_spelling(path);
+    fs::canonicalize(&path).unwrap_or_else(|_missing| {
+        std::path::absolute(&path).map_or_else(|_unsupported| normalize(&path), |p| normalize(&p))
     })
+}
+
+/// The spelling of `path` that Windows itself would use for it. Elsewhere
+/// a path has no prefix and comes back unchanged.
+///
+/// A verbatim path (`\\?\C:\…`) reaches the file system exactly as
+/// written: `/` is then part of a name and `.` and `..` are names, so
+/// `\\?\C:\a\..\b` names no file although `C:\a\..\b` does. Windows
+/// removes them lexically from every other spelling; doing the same here,
+/// and writing the drive letter in upper case (as a canonical path does),
+/// makes every spelling of a directory reach it, and two spellings of a
+/// directory that does not exist yet compare equal.
+pub(crate) fn windows_spelling(path: &Path) -> Cow<'_, Path> {
+    let mut components = path.components();
+    let Some(Component::Prefix(prefix)) = components.next() else {
+        return Cow::Borrowed(path);
+    };
+    let kind = prefix.kind();
+    let letter = match kind {
+        Prefix::Disk(letter) | Prefix::VerbatimDisk(letter) => Some(letter),
+        _ => None,
+    };
+    if !kind.is_verbatim() && !letter.is_some_and(|l| l.is_ascii_lowercase()) {
+        return Cow::Borrowed(path);
+    }
+    let mut out = match letter {
+        Some(letter) => {
+            let verbatim = if kind.is_verbatim() { r"\\?\" } else { "" };
+            PathBuf::from(format!(
+                "{verbatim}{}:",
+                char::from(letter.to_ascii_uppercase())
+            ))
+        }
+        None => PathBuf::from(prefix.as_os_str()),
+    };
+    let rest = components.as_path();
+    if !kind.is_verbatim() {
+        out.push(rest);
+        return Cow::Owned(out);
+    }
+    // Read without the prefix, the rest is split at `/` as well as `\`.
+    for component in rest.components() {
+        match component {
+            Component::CurDir => {}
+            // `..` at the root stays there, as Windows has it.
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
+    }
+    Cow::Owned(out)
 }
 
 /// The last component of a `/`- or `\`-separated name
 /// (`FilenameUtils.getName`).
 fn file_name(name: &str) -> &str {
     name.rsplit(['/', '\\']).next().unwrap_or(name)
+}
+
+/// Whether the text of `path` ends with `name`, a name written in a
+/// definition. Ghidra compares the absolute path, which Windows spells
+/// with `\`, with the name as written, usually with `/`, so on Windows a
+/// name with a directory part never matched; here a `/` in the name
+/// stands for the platform's separator.
+fn ends_with_name(path: &Path, name: &str) -> bool {
+    path.to_string_lossy()
+        .ends_with(&*name.replace('/', MAIN_SEPARATOR_STR))
 }
 
 /// A file name without its last extension (`FilenameUtils.removeExtension`).
@@ -205,10 +269,7 @@ impl FileIndex {
         // provided the path it was looking for ends with the name it was
         // given minus any leading relative part.
         let relative = discard_relative_path(name);
-        candidate
-            .to_string_lossy()
-            .ends_with(&relative)
-            .then(|| first.clone())
+        ends_with_name(&candidate, &relative).then(|| first.clone())
     }
 
     /// Finds the `.slaspec` and `.sla` paths for a `slafile` attribute
@@ -264,6 +325,41 @@ mod tests {
             PathBuf::from("/a/c/d")
         );
         assert_eq!(normalize(Path::new("a/../../b")), PathBuf::from("../b"));
+    }
+
+    #[test]
+    fn a_name_matches_the_end_of_a_path_whatever_its_separator() {
+        let path: PathBuf = ["base", "manuals", "x86.idx"].iter().collect();
+        assert!(ends_with_name(&path, "manuals/x86.idx"));
+        assert!(ends_with_name(&path, "x86.idx"));
+        assert!(!ends_with_name(&path, "other/x86.idx"));
+    }
+
+    #[test]
+    fn paths_without_a_prefix_keep_their_spelling() {
+        for path in ["/a/./b/../c", "a//b/", "../x"] {
+            assert!(matches!(
+                windows_spelling(Path::new(path)),
+                Cow::Borrowed(p) if p == Path::new(path)
+            ));
+        }
+    }
+
+    #[cfg(windows)]
+    #[rstest]
+    #[case(r"C:\a\b", r"C:\a\b")]
+    #[case(r"c:\a\b", r"C:\a\b")]
+    #[case(r"c:/a/b", r"C:/a/b")]
+    #[case(r"\\?\C:\a\b", r"\\?\C:\a\b")]
+    #[case(r"\\?\c:\a\b", r"\\?\C:\a\b")]
+    #[case(r"\\?\C:\a\.\x\..\b", r"\\?\C:\a\b")]
+    #[case(r"\\?\C:\a/x/../b/", r"\\?\C:\a\b")]
+    #[case(r"\\?\C:\..\a", r"\\?\C:\a")]
+    #[case(r"\\?\UNC\server\share\a\..\b", r"\\?\UNC\server\share\b")]
+    #[case(r"\\server\share\a", r"\\server\share\a")]
+    fn windows_spellings(#[case] path: &str, #[case] expected: &str) {
+        let spelled = windows_spelling(Path::new(path));
+        assert_eq!(spelled.as_os_str(), std::ffi::OsStr::new(expected));
     }
 
     #[test]

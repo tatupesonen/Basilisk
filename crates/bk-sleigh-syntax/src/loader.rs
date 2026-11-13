@@ -3,9 +3,10 @@
 //! The preprocessor never touches the file system itself: it asks a
 //! [`FileLoader`], so tests and tools can supply sources from memory.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf, Prefix};
 
 /// Why a source file could not be loaded.
 #[derive(Debug, thiserror::Error)]
@@ -44,7 +45,6 @@ pub trait FileLoader {
 /// `path` with `.` components removed and each `..` cancelling the
 /// component before it, where there is one.
 pub fn normalize(path: &Path) -> PathBuf {
-    use std::path::Component;
     let mut out: Vec<Component<'_>> = Vec::new();
     for component in path.components() {
         match component {
@@ -73,7 +73,7 @@ pub struct FsLoader;
 
 impl FileLoader for FsLoader {
     fn load(&mut self, path: &Path) -> Result<String, LoadError> {
-        let bytes = std::fs::read(path).map_err(|e| {
+        let bytes = std::fs::read(windows_spelling(path)).map_err(|e| {
             if e.kind() == io::ErrorKind::NotFound {
                 LoadError::NotFound
             } else {
@@ -86,8 +86,65 @@ impl FileLoader for FsLoader {
     /// The canonical path, which also resolves symbolic links; the lexical
     /// form if the file cannot be resolved.
     fn identity(&mut self, path: &Path) -> PathBuf {
-        std::fs::canonicalize(path).unwrap_or_else(|_| normalize(path))
+        let path = windows_spelling(path);
+        std::fs::canonicalize(&path).unwrap_or_else(|_| normalize(&path))
     }
+}
+
+/// The spelling of `path` that Windows itself would use for it. Elsewhere
+/// a path has no prefix and comes back unchanged.
+///
+/// A verbatim path (`\\?\C:\…`) reaches the file system exactly as
+/// written: `/` is then part of a name and `.` and `..` are names, so
+/// `\\?\C:\a\..\b.slaspec` names no file although `C:\a\..\b.slaspec`
+/// does. Windows removes them lexically from every other spelling; doing
+/// the same here, and writing the drive letter in upper case (as a
+/// canonical path does), makes every spelling of a file reach it, and two
+/// spellings of a missing file compare equal.
+///
+/// The file loader reads and identifies files through it, and include
+/// names are resolved against it. `bk-lang` has the same function for its
+/// registry roots; the two crates share no dependency to hold it.
+pub(crate) fn windows_spelling(path: &Path) -> Cow<'_, Path> {
+    let mut components = path.components();
+    let Some(Component::Prefix(prefix)) = components.next() else {
+        return Cow::Borrowed(path);
+    };
+    let kind = prefix.kind();
+    let letter = match kind {
+        Prefix::Disk(letter) | Prefix::VerbatimDisk(letter) => Some(letter),
+        _ => None,
+    };
+    if !kind.is_verbatim() && !letter.is_some_and(|l| l.is_ascii_lowercase()) {
+        return Cow::Borrowed(path);
+    }
+    let mut out = match letter {
+        Some(letter) => {
+            let verbatim = if kind.is_verbatim() { r"\\?\" } else { "" };
+            PathBuf::from(format!(
+                "{verbatim}{}:",
+                char::from(letter.to_ascii_uppercase())
+            ))
+        }
+        None => PathBuf::from(prefix.as_os_str()),
+    };
+    let rest = components.as_path();
+    if !kind.is_verbatim() {
+        out.push(rest);
+        return Cow::Owned(out);
+    }
+    // Read without the prefix, the rest is split at `/` as well as `\`.
+    for component in rest.components() {
+        match component {
+            Component::CurDir => {}
+            // `..` at the root stays there, as Windows has it.
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
+    }
+    Cow::Owned(out)
 }
 
 /// Decodes file bytes: UTF-8 when valid, otherwise ISO-8859-1.
@@ -163,6 +220,40 @@ mod tests {
         assert_eq!(normalize(Path::new("x/y/../../..")), Path::new(".."));
         let mut loader = MemoryLoader::new().with("d/b.sinc", "t");
         assert_eq!(loader.load(Path::new("d/x/.././b.sinc")).unwrap(), "t");
+    }
+
+    #[test]
+    fn paths_without_a_prefix_keep_their_spelling() {
+        for path in ["/a/./b/../c", "a//b/", "../x"] {
+            assert!(matches!(
+                windows_spelling(Path::new(path)),
+                Cow::Borrowed(p) if p == Path::new(path)
+            ));
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_spellings() {
+        for (path, expected) in [
+            (r"C:\a\b", r"C:\a\b"),
+            (r"c:\a\b", r"C:\a\b"),
+            (r"c:/a/b", r"C:/a/b"),
+            (r"\\?\C:\a\b", r"\\?\C:\a\b"),
+            (r"\\?\c:\a\b", r"\\?\C:\a\b"),
+            (r"\\?\C:\a\.\x\..\b", r"\\?\C:\a\b"),
+            (r"\\?\C:\a/x/../b/", r"\\?\C:\a\b"),
+            (r"\\?\C:\..\a", r"\\?\C:\a"),
+            (r"\\?\UNC\server\share\a\..\b", r"\\?\UNC\server\share\b"),
+            (r"\\server\share\a", r"\\server\share\a"),
+        ] {
+            let spelled = windows_spelling(Path::new(path));
+            assert_eq!(
+                spelled.as_os_str(),
+                std::ffi::OsStr::new(expected),
+                "{path}"
+            );
+        }
     }
 
     #[test]
