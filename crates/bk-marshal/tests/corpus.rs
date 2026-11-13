@@ -173,7 +173,12 @@ fn compare(path: &Path, ours: ElementRef<'_>, theirs: roxmltree::Node<'_, '_>) -
         "{}",
         at()
     );
-    ours.content() != their_content
+    // roxmltree also turns CRLF and CR into LF, as XML asks, while the
+    // decoder keeps the text as written. A checkout with CRLF line endings
+    // (Windows with core.autocrlf) must not count as a white-space rule
+    // difference, so line endings are compared as LF.
+    let ours = ours.content().replace("\r\n", "\n").replace('\r', "\n");
+    ours != their_content
 }
 
 #[test]
