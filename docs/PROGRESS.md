@@ -301,6 +301,13 @@ start a fresh agent briefed from the branch's files.
    not met there. Profile on the build host (`perf` is installed), find where the time goes (allocator, bounds
    checks, code layout, the x86-64 code generator against AArch64's),
    fix it without `unsafe`, and report numbers on both machines.
+   Note (coordinator, 2026-11-14): the build host's virtual CPU is
+   QEMU's baseline model — no AVX, AVX2, FMA, BMI1/2 or LZCNT — so
+   those numbers are for a baseline x86-64 CPU, and glibc there uses its
+   non-FMA `log` (the 150 `.sla` are byte-identical all the same). The
+   owner may switch the VM to the host CPU model; that needs the VM
+   stopped, so no job may be running. Measure again after it and say
+   which CPU model each number is for.
 4. D01 `bk-decomp-range`, then the rest of the order below.
 
 -2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
