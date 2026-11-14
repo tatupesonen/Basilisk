@@ -6,7 +6,7 @@
 //! | Wrapper | Tool | Result |
 //! |---|---|---|
 //! | [`Sleigh`] | Ghidra's SLEIGH compiler | the compiler's messages |
-//! | [`Decomp`] | Ghidra's decompiler console | the transcript, command by command |
+//! | [`Decomp`] | Ghidra's decompiler consoles (`decomp`, `decomp_dbg`) and Basilisk's (`decomp_bk`, `decomp_bk_dbg`) | the transcript, command by command |
 //! | [`DecompTest`] | Ghidra's test runner | pass or fail per test |
 //! | [`Pcodedump`] | Basilisk's p-code oracle | parsed instructions and p-code ops |
 //! | [`Snippetdump`] | Basilisk's p-code snippet oracle | one outcome per snippet |
@@ -149,7 +149,29 @@ impl ReferenceDir {
 
     /// Ghidra's decompiler console, finding its languages in this directory.
     pub fn decomp(&self) -> Decomp {
-        Decomp::new(self.tool_path(Tool::Decomp), self.root().to_path_buf())
+        self.console(Tool::Decomp)
+    }
+
+    /// Ghidra's `CPUI_DEBUG` console (`decomp_dbg`): the same commands plus
+    /// `trace` and `debug action`.
+    pub fn decomp_dbg(&self) -> Decomp {
+        self.console(Tool::DecompDbg)
+    }
+
+    /// The console with Basilisk's extension (`decomp_bk`): Ghidra's
+    /// commands plus the `bk …` commands of `docs/features/decomp-oracle.md`.
+    pub fn decomp_bk(&self) -> Decomp {
+        self.console(Tool::DecompBk)
+    }
+
+    /// The `CPUI_DEBUG` console with Basilisk's extension (`decomp_bk_dbg`).
+    pub fn decomp_bk_dbg(&self) -> Decomp {
+        self.console(Tool::DecompBkDbg)
+    }
+
+    /// One of the four decompiler consoles.
+    fn console(&self, tool: Tool) -> Decomp {
+        Decomp::new(tool, self.tool_path(tool), self.root().to_path_buf())
     }
 
     /// Ghidra's decompiler test runner, finding its languages in this directory.

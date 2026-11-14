@@ -759,6 +759,7 @@ dependencies = [
 name = "bk-testkit"
 version = "0.0.1"
 dependencies = [
+ "flate2",
  "insta",
  "proptest",
  "roxmltree",

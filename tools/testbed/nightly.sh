@@ -2,8 +2,9 @@
 # The nightly run (docs/agents/testbed.md), started by nightly-boot.sh from
 # the checkout of master it prepared (the current directory).
 #
-# Every night: the gate (with the reference) and the Windows tests under
-# Wine. Then one slot of the long runs, in rotation by date:
+# Every night: the gate (with the reference), the Windows tests under Wine
+# and the decompiler oracle's captures (oracle.sh, about a minute). Then one
+# slot of the long runs, in rotation by date:
 #   0 fuzz (every target, 600 s each)   1 differential
 #   2 proptest (1,000,000 cases)        3 sanitizers, miri, ubuntu, arm64
 # within a core budget and a time bound, below normal priority. One report
@@ -50,7 +51,7 @@ fi
 # ------------------------------------------------------------------- items
 slots=("fuzz" "differential" "proptest" "sanitizers miri ubuntu arm64")
 slot=$(( $(date +%s) / 86400 % ${#slots[@]} ))
-items=${BK_NIGHTLY_ITEMS:-gate wine ${slots[$slot]}}
+items=${BK_NIGHTLY_ITEMS:-gate wine oracle ${slots[$slot]}}
 
 export CARGO_BUILD_JOBS=$cores CARGO_TERM_COLOR=never TMPDIR="$BK/tmp/@nightly"
 export BASILISK_GHIDRA_DIR="$HOME/basilisk-ref/ghidra" BASILISK_REFERENCE_DIR="$BK/reference"
@@ -90,6 +91,7 @@ else
     case $item in
       gate) run_item gate 5400 scripts/gate.sh ;;
       wine) run_item wine 5400 "$TB_DIR/wine.sh" ;;
+      oracle) run_item oracle 3600 "$TB_DIR/oracle.sh" ;;
       fuzz) run_item fuzz 10800 "$TB_DIR/fuzz.sh" "${BK_NIGHTLY_FUZZ_SECONDS:-600}" ;;
       differential) run_item differential 10800 "$TB_DIR/differential.sh" ;;
       proptest) run_item proptest 14400 "$TB_DIR/proptest.sh" ;;
