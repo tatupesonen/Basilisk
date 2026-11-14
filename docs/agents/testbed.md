@@ -46,6 +46,7 @@ the results).
 
     scripts/remote.sh wine [--no-ref] [--msvc] [-- CARGO-TEST-ARGS]
     scripts/remote.sh ubuntu [--no-ref] [-- CARGO-TEST-ARGS]
+    scripts/remote.sh arm64 [--no-ref] [-- CARGO-TEST-ARGS]   # default: bk-sleigh-compiler, bk-pcode, bk-sla
     scripts/remote.sh long [--no-ref] miri
     scripts/remote.sh long fuzz [SECONDS [TARGET...]]      # default 600 s per target
     scripts/remote.sh long proptest [CASES]                # default 1,000,000
@@ -53,14 +54,14 @@ the results).
     scripts/remote.sh long differential [ITEM...]
     scripts/remote.sh long all
     scripts/remote.sh publish                              # local master -> the host's master
-    scripts/remote.sh nightly install [CRON-SCHEDULE] | remove | run | status
+    scripts/remote.sh nightly install [CRON-SCHEDULE] | remove | run [ITEM...] | status
     scripts/remote.sh report [--all | DATE]
     scripts/remote.sh clean --target BRANCH                # build output only
 
 The scripts also run on any Linux x86-64 machine with Docker, clang 19
 (with `libclang-rt-19-dev`), the pinned toolchain, nightly and cargo-fuzz,
 from the root of a checkout: `tools/testbed/wine.sh`, `ubuntu.sh`,
-`long.sh <what>`, `fuzz.sh`, `proptest.sh`, `sanitizers.sh`,
+`arm64.sh`, `long.sh <what>`, `fuzz.sh`, `proptest.sh`, `sanitizers.sh`,
 `differential.sh`. Each writes `summary.txt` and `failures.txt` to
 `$BK_OUT` (default `target/testbed/out`); `lib.sh` documents the contract.
 
@@ -261,6 +262,24 @@ Re-run on this branch (`6e9bb41`) from the checks in `remote-build.md`:
 `clean --merged` and `clean --all` were not run, because they would remove
 other agents' checkouts. Their code did not change.
 
+## Housekeeping (deliverable 6)
+
+- `clean --target BRANCH` removes `~/bk/wt/<branch>/target` and the
+  branch's temporary directory under the branch lock, and keeps the
+  checkout.
+- **`cargo fetch` before `cargo deny --offline`.** Every job (and the
+  nightly run) already runs `cargo fetch --locked` first, so the gate works
+  on a fresh machine without any change to `scripts/gate.sh`, which was not
+  edited.
+- **"cargo fetch failed; continuing"**: the fetch used to run in the
+  `start` step with all its output discarded, so the cause was lost. It now
+  runs inside the detached job, within its own 600 s bound. On failure the
+  job log says `remote: cargo fetch --locked failed (the job goes on;
+  offline steps such as cargo deny may then fail):`, followed by cargo's
+  own last error lines. The message cannot be made impossible: a stale
+  `Cargo.lock` on a branch (`--locked`), the network, or the 600 s bound
+  can each cause it. Now the log says which.
+
 ## Nightly run
 
 * **Schedule**: the host user's crontab, `30 1 * * *` in host time
@@ -383,6 +402,9 @@ For `docs/LOOP.md`, a subsection after "The build host":
 >   final word. `wine --msvc` builds with cargo-xwin and clang-cl instead.
 > - `ubuntu` — the crates that compile C and the reference tools with
 >   Ubuntu 26.04's GCC 15.
+> - `arm64 [-- -p <crate>…]` — tests cross-built for Linux AArch64 and run
+>   under qemu-user (by default the floating-point-contraction crates,
+>   ADR-029/ADR-039).
 > - `long miri|sanitizers|fuzz|proptest|differential|all` — Miri, ASan and
 >   UBSan on the C-binding crates, every fuzz target for 10 minutes, the
 >   property tests at 1,000,000 cases (where a suite leaves the count to
@@ -402,6 +424,8 @@ For `docs/agents/RULES.md`, "Build hygiene", after the build-host bullet:
 >   anything under `cfg(windows)` runs `scripts/remote.sh wine -- -p
 >   <crate> …` for its crates and reports the counts; a track that adds or
 >   changes a parser runs `scripts/remote.sh long fuzz 300 <its targets>`;
+>   a track whose results depend on floating point runs
+>   `scripts/remote.sh arm64 -- -p <crate>`;
 >   a track that changes C code or `build.rs` of a C-binding crate runs
 >   `scripts/remote.sh long sanitizers` and `scripts/remote.sh ubuntu`; a
 >   track with `unsafe` runs `scripts/remote.sh long miri`. The whole-
