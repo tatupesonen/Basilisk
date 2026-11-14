@@ -1,0 +1,3 @@
+@include "prelude.sinc"
+define token extra(8) x8=(0,7);
+:a is (... op=1) ; (x8=2 ...) { }

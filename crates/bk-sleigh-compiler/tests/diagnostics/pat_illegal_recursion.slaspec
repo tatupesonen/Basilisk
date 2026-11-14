@@ -1,0 +1,6 @@
+@include "prelude.sinc"
+tA: "x" is op=4 { }
+tB: "y" is op=3 { }
+tA: tB is op=1 ; tB { }
+tB: tA tB is op=2 ; tA ; tB { }
+:a tA is op=5 ; tA { }

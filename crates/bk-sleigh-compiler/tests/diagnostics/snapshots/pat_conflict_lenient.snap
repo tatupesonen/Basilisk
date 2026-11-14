@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 2 NOP constructors found
+warning: Use -n switch to list each individually
+=> elaborated
