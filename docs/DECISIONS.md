@@ -1054,3 +1054,74 @@ walker on its own stack when `UnimplError` unwinds, and the handler in
 returns "instruction not implemented in p-code" with the full flow length
 there, naming the innermost such instruction, and never leaves stale
 builder state behind an early return (ADR-009).
+
+## ADR-035 — Python hosts basilisk: the plugin bindings are an extension module, not an embedded interpreter
+(Owner decision, 2026-11-14, on the finding of the `spec-plugin` track;
+`features/plugin-api.md`, `docs/agents/spec-plugin.md`. **Replaces the
+embedding in ADR-014**; the rest of ADR-014 stands: plugins are Python
+through PyO3, with a flat scripting layer modelled on Ghidra's.)
+
+ADR-014 had `bk-plugin` embed CPython in the `basilisk` binary. Measured:
+a binary linked against libpython does not start where that library is
+missing, even when Python is never used, and is tied to one Python minor
+version and install path; linking CPython statically makes Python
+mandatory, fixes its version and stops third-party C extensions loading
+on Windows; PyO3 cannot load libpython at run time. That cannot coexist
+with "basilisk is a single binary" (`DIRECTION.md`) and ADR-022.
+
+* basilisk's Python bindings are a **Python extension module** (crate
+  `basilisk-py`, a `cdylib` built for the stable ABI), hosted by the
+  user's own CPython: `python -m basilisk` and `import basilisk`. This is
+  how Ghidra's PyGhidra works.
+* The `basilisk` binary contains no Python. When plugins or scripts are
+  wanted it hands over to a CPython it finds; without one, everything
+  except plugins works and the binary says what is missing.
+* **Supported Python: 3.10 and newer** (owner, 2026-11-14), one `abi3`
+  build for all of them (verified on 3.10 to 3.14 on macOS).
+* PyO3's macros put no `unsafe` into the binding crate (verified with
+  PyO3 0.30.1), so it keeps `forbid(unsafe_code)`; ADR-020's sentence
+  about `bk-plugin` is narrowed accordingly.
+* Not verified yet, and the first acceptance items of the host track
+  (P1): the hand-over from the binary to `python -m basilisk`, the
+  interface running inside a Python-hosted process, wheels on Linux and
+  Windows.
+
+## ADR-036 — Plugin API conventions; a failed script keeps its changes, as in Ghidra
+(Owner decisions, 2026-11-14, and the `spec-plugin` track's proposals.)
+
+* **A script that throws or is cancelled keeps the changes it has made**
+  (owner: "Keep changes, like Ghidra"). Ghidra commits a script's
+  transaction on every exit path, and scripts ported from Ghidra behave
+  identically. A script may **opt in** to rolling back on failure. This
+  reverses the default `features/plugin-api.md` proposed (roll back, opt
+  out); the spec is corrected by the first plugin track.
+* The flat scripting layer keeps Ghidra's method names
+  (`FlatProgramAPI`, `GhidraScript`: all 225 public methods are mapped in
+  the spec), and the object model keeps Ghidra's getter names beside
+  Python properties, so bundled scripts port with mechanical changes.
+* The plugin API has its own version, declared by each plugin package and
+  separate from basilisk's release version.
+* Plugin-defined views are declarative (described to the interface, not
+  drawn by Python); actions go through the interface's action registry,
+  which has to accept run-time entries first.
+* Proposers of names, comments and types (ADR-025 item 6) are off by
+  default; every applied proposal records its origin and the value it
+  replaced, so it can be removed.
+* A plugin that raises is isolated: it is reported and disabled, and the
+  tool keeps running.
+
+## ADR-037 — Specs state how they meet the plugin binding constraints
+(Coordinator, 2026-11-14, from the `spec-plugin` track.)
+
+`features/plugin-binding-constraints.md` lists 15 rules a Rust API must
+meet to be bound to Python without redesign (handles without lifetimes at
+the boundary, `Send + Sync` shared data, errors convertible to exceptions,
+paged iteration, identifiers stable across transactions, cancellation and
+progress through a monitor type that does not live in a UI crate, …).
+Every feature spec for the program model, storage, loaders, analysis, the
+decompiler's host trait and results, and the interface has a section
+saying which rules apply and how they are met, and reviews check it.
+Known work this causes: the monitor type moves out of `bk-ui` into a low
+crate; model edits record an origin and the replaced value; variables get
+a stable identity; decompiler results are `Arc` + `Sync` and outlive the
+call; `bk-ui`'s action registry and view kinds accept run-time entries.

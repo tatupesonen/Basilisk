@@ -44,7 +44,7 @@ Planned crates (those marked ● exist or are in the current wave):
 
 ```
  basilisk ● (bin: CLI now; GUI from M7)
-   ├── bk-ui (egui)                          bk-plugin (Python plugin API, PyO3; ADR-014)
+   ├── bk-ui (egui)                          bk-plugin, bk-plugin-ui, basilisk-py (Python plugins; extension module, ADR-035)
    ├── bk-headless (import → analyse → export pipeline)
    │
    ├── analysis        bk-analysis (auto-analysis manager, analyzer trait)
@@ -176,10 +176,15 @@ this list follows its waves.
 ### M8 — Projects and collaboration
 - [ ] Projects, versioned programs, multi-user server, merge
 
-### M9 — Plugin API (ADR-014)
-- [ ] `bk-plugin`: embedded CPython through PyO3; plugin discovery and registration (scripts, analyzers, loaders, exporters, UI actions)
-- [ ] Python package exposing the program model, analysis and decompiler; flat scripting layer modelled on `FlatProgramAPI`
-- [ ] Importable Python module for driving basilisk from Python (PyGhidra's role); ports of Ghidra's bundled scripts
+### M9 — Plugin API (ADR-014, ADR-035, ADR-036, ADR-037)
+Python hosts basilisk through an extension module (`basilisk-py`); the
+tracks and their acceptance are in `features/plugin-api.md`. The work is
+spread over the milestones its parts depend on rather than left to the end.
+- [ ] P0 reference fixtures · P1 host and packaging (`python -m basilisk`, wheels on three systems, the binary's hand-over) · P3 the flat scripting layer — can start now
+- [ ] P2 program-model bindings · P4a loaders — after M4
+- [ ] P4b analyzers and exporters — after M5/M6 · P5 decompiler bindings and proposers — after the decompiler is wired to a program
+- [ ] P6 interface hooks (`bk-plugin-ui`) — after `bk-ui`'s action registry and view kinds accept run-time entries
+- [ ] P7 ports of Ghidra's bundled scripts (28 % port once the program model is bound, 53 % with decompiler, data-type and analysis bindings); importable module in PyGhidra's role
 
 ### M10 — Remaining modules
 - [ ] Debugger and trace model, Version Tracking, BSim, file-system browser and container formats, remaining loaders and processors' Java extensions, everything left in `PARITY.md`

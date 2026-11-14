@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 15:28)
+## Now — RESUME HERE (2026-11-14 15:48)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -40,17 +40,16 @@ point, keep worktrees and branches until their content is on `master`.
 `sleigh-pcode` was asked at 15:07 to pause cleanly (commit, clean status,
 stop) and is **first to resume** when a slot frees.
 
-**The main checkout has a staged, uncommitted change by the owner**:
-`rust-toolchain.toml` 1.97.1 → 1.100.0 ("I updated Rust"). Do not commit
-it with docs (commit docs with `git commit --only -- docs`, never
-`git add -A` then a bare commit), do not revert it, and **do not run the
-gate in the main checkout** while it is there (it would use 1.100.0 while
-CI and every worktree use 1.97.1). Integration work happens in the
-worktree `../basilisk-wt/integration`. The bump lands through track
-`toolchain-1.100` (queue, first): branch from `master`, set 1.100.0, fix
-what the newer compiler and clippy report across the workspace, gate,
-Wine, CI on all three systems, merge. Check that 1.100.0 has been out for
-two weeks; if not, say so to the owner rather than deciding.
+**Rust 1.100.0 is on `master`** (`144859f`, committed directly at the
+owner's choice, 15:48). The gate was started on `master` in the main
+checkout right after, to see what the newer compiler and clippy report,
+and CI runs on the push. **If either is red**: start track
+`toolchain-1.100` (Opus) at once, ahead of everything else — fix the
+warnings across the workspace on a branch, gate, Wine, CI, merge. The two
+running agents were told to set their worktrees' `rust-toolchain.toml` to
+1.100.0 so their gates match `master`. The main checkout is clean again;
+docs can be committed normally, and integration work may use it or its
+own worktree.
 
 **On `master` since 15:27 (CI run 43598927755 green on every job on all
 three systems, including the new `site` job; gate 1,819 tests):
@@ -107,20 +106,18 @@ start a fresh agent briefed from the branch's files.
 ### Queue (start as slots free, in this order)
 
 0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
-0a. `spec-plugin` is merged (2026-11-14). From it, to do when the owner
-   has answered the Blocker: adopt its three ADRs; replace M9's items in
-   `PLAN.md` with its tracks P0–P7 (P0 reference fixtures, P1 host and
-   packaging and P3 flat layer can start at once; P2 and P4a wait for M4,
-   P4b for M5/M6, P5 for the decompiler wiring, P6 for a `bk-ui` change);
-   add `bk-plugin-ui` and `basilisk-py` to the crate map. Regardless of
-   the answer: (i) **move the monitor type (cancel and progress) out of
-   `bk-ui` into a low crate** before the M4/M5 specs — a small Opus
-   track; (ii) the next UI track lets the action registry and the view
-   kinds accept run-time entries (today a closed enum and a `const`
-   table); (iii) the program-model, storage, analysis and decompiler
+0a. **Plugin tracks** (`features/plugin-api.md`; ADR-035, ADR-036,
+   ADR-037; unblocked by the owner on 2026-11-14): P0 reference fixtures,
+   P1 host and packaging, P3 flat scripting layer can start; the first of
+   them also corrects the spec's script-failure default (keep changes,
+   roll back only on opt-in). They come after the SLEIGH compiler back
+   half in the order below. Also from the spec, independent of those:
+   (i) move the monitor type (cancel and progress) out of `bk-ui` into a
+   low crate before the M4/M5 specs — a small Opus track; (ii) the next
+   UI track lets the action registry and the view kinds accept run-time
+   entries; (iii) the program-model, storage, analysis and decompiler
    D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
-   9, 11 and 13 (origin and replaced value on model edits, stable
-   variable identity, decompiler results `Arc` + `Sync`).
+   9, 11 and 13.
 0a2. (running) `site-design`.
 0a3. **`docs-content`** (Opus; after `site-design` and `spec-plugin`) —
    the documentation itself: Getting started, the interface (one page per
@@ -198,10 +195,10 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `toolchain-1.100` (above),
-   `sleigh-compiler-back` (unblocked: front half, spec edits and the
-   unfused reference are all on `master`), `docs-content` (the site is
-   merged), `sleigh-snippet` (needs only the front half), D01
+1. As slots free, in this order (owner, 2026-11-14: finish SLEIGH
+   first): `toolchain-1.100` only if the gate or CI is red on 1.100.0;
+   `sleigh-compiler-back`; `sleigh-snippet`; then the decompiler's first
+   wave: D01
    `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
@@ -220,6 +217,18 @@ start a fresh agent briefed from the branch's files.
    (nothing Java was run); complete it before its wave.
 
 ### Working notes
+
+* **Idea recorded, not queued** (owner, 2026-11-14: "Not now"): improving
+  the SLEIGH specifications themselves — testing each instruction's
+  p-code against an emulator or a CPU to find specification bugs, and
+  basilisk-owned overlays for unimplemented instructions and for vector
+  operations that Ghidra models as opaque user ops. Needs an ADR
+  (ADR-002 says the specifications are used unchanged) if it is taken up.
+* **The site is built but not published** (owner, 2026-11-14: "Not until
+  there is more to show"). When the owner says so: Settings → Pages →
+  Source "GitHub Actions", then `gh workflow run Pages`.
+* `spec-pe` and `store-spike` (Fable, paused since 2026-11-13) are
+  resumed as they are when their turn comes (owner, 2026-11-14).
 
 * **`kassini`** (x86-64 Linux, Debian 13, 4 cores, 1.8 GB memory, Docker
   with `gcc:14`): reachable on the owner's tailnet since 2026-11-14.
@@ -264,25 +273,8 @@ start a fresh agent briefed from the branch's files.
 
 ## Blockers
 
-* **Owner decision: how Python hosts plugins (ADR-014 cannot work as
-  written).** The `spec-plugin` track measured that "`bk-plugin` embeds
-  CPython" and "basilisk is a single binary" cannot both hold: a binary
-  linked against libpython does not start where that libpython is missing
-  (macOS: dyld "Library not loaded", exit 134, even when Python is never
-  used) and is tied to one Python minor version and install path; linking
-  CPython statically makes Python mandatory, fixes its version, and on
-  Windows stops third-party C extensions from loading; PyO3 cannot load
-  libpython at run time. **Proposed instead**: basilisk is a Python
-  *extension module* hosted by the user's own CPython (`python -m
-  basilisk`, `import basilisk`; one abi3 build verified on CPython 3.10
-  to 3.14), and the `basilisk` binary stays free of Python and hands over
-  to a CPython it finds when plugins are wanted — the way Ghidra's own
-  PyGhidra works. The owner was asked on 2026-11-14. Until answered:
-  the plugin implementation tracks (P0–P7 in `features/plugin-api.md`)
-  do not start; the binding constraints
-  (`features/plugin-binding-constraints.md`) apply to other specs either
-  way. The track's proposed ADRs are in `docs/agents/spec-plugin.md`
-  (numbered 030–032 there; they become 032–034 here).
+None. The owner answered the open questions on 2026-11-14 (`DIRECTION.md`,
+"Owner's answers of 2026-11-14"; ADR-035, ADR-036).
 
 ## Log
 

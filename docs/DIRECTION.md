@@ -79,11 +79,6 @@ and a sane architecture in mind.
   assets in the repository. Effort: **high for Fable** research agents,
   **medium for Opus** implementation agents. The coordinator (Fable) writes
   the docs and specs itself.
-* **Rust toolchain 1.100.0** (owner, 2026-11-14: "I updated Rust"): the
-  owner changed `rust-toolchain.toml` from 1.97.1 to 1.100.0 in the main
-  checkout. It lands on `master` through its own branch and CI run, with
-  whatever the newer compiler and clippy require fixed in the same branch
-  (track `toolchain-1.100` in `PROGRESS.md`).
 * **At most two running workers, for now** (owner, 2026-11-14: "limit to
   two agents for now"; earlier the same day three, briefly five; four on
   2026-11-13; "about four" on 2026-11-12), counting helper subagents. The
@@ -133,6 +128,26 @@ and a sane architecture in mind.
   on this machine** (ADR-030). Its style is customised "for a basilisk
   twist": the site and the program look like one product. Track
   `docs-site` in `PROGRESS.md`.
+* **Owner's answers of 2026-11-14 (asked with the question tool)**:
+  - *Plugin host*: basilisk is a Python extension module run by the user's
+    own Python; the binary stays Python-free (ADR-035). Python 3.10 and
+    newer.
+  - *A plugin script that fails or is cancelled keeps its changes, like
+    Ghidra* (ADR-036); rolling back is opt-in.
+  - *The two paused Fable agents (`spec-pe`, `store-spike`) are resumed as
+    they are*; all new agents are Opus 5.5.
+  - *No track on improving the SLEIGH specifications for now* (testing
+    p-code against an emulator, overlays for unimplemented and vector
+    instructions): the idea is recorded in `PROGRESS.md`, not queued.
+  - *The site is not published until there is more to show*: no Pages
+    deployment until the documentation content exists and the owner says
+    so.
+  - *Priority with two slots: finish SLEIGH first* (the compiler back
+    half), then the decompiler's remaining first-wave tracks.
+  - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer
+    compiler or clippy reports is fixed afterwards. It was released on
+    2026-11-09, inside the two-week window that applies to crates: the
+    owner's choice.
 * **The plugin system is to be worked on now, not left to M9** (owner,
   2026-11-14: "remember to work on the plugin system"). What was decided
   is ADR-014: Python through PyO3. Its design spec is written now so the
