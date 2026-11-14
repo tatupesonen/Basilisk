@@ -14,8 +14,8 @@
 //!   `scripts/build-reference.sh` builds ([`reference_dir`]).
 //! * [`skip`] — [`require_ghidra`], [`require_reference`], [`require_tool`]:
 //!   run a test when its oracle is present, skip it visibly when not.
-//! * [`tools`] — typed wrappers that run `sleigh`, `decomp`, `decomp_test`
-//!   and `pcodedump` with a time limit.
+//! * [`tools`] — typed wrappers that run `sleigh`, `decomp`, `decomp_test`,
+//!   `pcodedump` and `snippetdump` with a time limit.
 //! * [`datatest`] — Ghidra's `<decompilertest>` files as plain data.
 //! * [`corpus`] — every language directory, `.slaspec` and data test.
 //!

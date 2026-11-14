@@ -18,7 +18,8 @@
 mod common;
 
 use bk_sleigh_snippet::{Options, Parameter, SnippetCompiler};
-use common::oracle::{Base, Record, escape, run_basilisk, run_oracle};
+use bk_testkit::tools::snippetdump::escape;
+use common::oracle::{Base, Record, run_basilisk, run_oracle};
 
 /// A small deterministic generator (`SplitMix64`).
 struct Rng(u64);
@@ -275,10 +276,7 @@ impl Gen {
 
 #[test]
 fn generated_snippets_match_ghidra() {
-    let Some(reference) = bk_testkit::skip::require_reference() else {
-        return;
-    };
-    let Some(tool) = common::snippetdump(&reference) else {
+    let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::Snippetdump) else {
         return;
     };
     let count: usize = std::env::var("SNIPPET_RANDOM_CASES")
@@ -311,7 +309,7 @@ fn generated_snippets_match_ghidra() {
     let root = common::fixture::write_root(
         &std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("snippet-fixture-random"),
     );
-    let expected = run_oracle(&tool, &root, common::fixture::LANGUAGE_ID, &records);
+    let expected = run_oracle(&reference, &root, common::fixture::LANGUAGE_ID, &records);
     let actual = run_basilisk(&compiler, 0x1_0000, &records);
     let mut accepted = 0;
     let mut differences = Vec::new();

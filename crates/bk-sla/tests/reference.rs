@@ -64,22 +64,6 @@ fn packed_round_trip_is_byte_exact() {
     );
 }
 
-/// The options the reference build compiled a module's specifications with
-/// (`scripts/build-reference.sh` keeps them in `.state/lang/<Module>.opts`).
-fn module_options(reference: &bk_testkit::ReferenceDir, module: &str) -> Vec<String> {
-    let path = reference
-        .root()
-        .join(".state")
-        .join("lang")
-        .join(format!("{module}.opts"));
-    std::fs::read_to_string(path)
-        .unwrap_or_default()
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(str::to_owned)
-        .collect()
-}
-
 /// Tests 2 and 3: for every `.slaspec`, `sleigh -y` writes the same text as
 /// `encode_xml` of the reference `.sla`, and `decode_xml` of that text gives
 /// the same model as the packed file.
@@ -130,7 +114,7 @@ fn check_xml(
     limits: &Limits,
 ) -> Result<(), String> {
     let mut sleigh = reference.sleigh().switch('y');
-    for option in module_options(reference, &spec.module) {
+    for option in reference.module_options(&spec.module) {
         if let Some((name, value)) = option.strip_prefix("-D").and_then(|d| d.split_once('=')) {
             sleigh = sleigh.define(name, value);
         } else if let Some(letter) = option.strip_prefix('-').and_then(|s| s.chars().next()) {
