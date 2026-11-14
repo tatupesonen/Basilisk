@@ -25,7 +25,9 @@ pub(crate) fn order_patterns(entries: &mut Vec<Entry>, props: &mut Properties) {
     let mut list: Vec<usize> = (0..n).collect();
     let mut conflicts: Vec<(usize, usize)> = Vec::new();
     for i in 0..n {
-        let Some(ipat) = original.get(i) else { continue };
+        let Some(ipat) = original.get(i) else {
+            continue;
+        };
         let mut j = 0;
         while j < i {
             let jid = list.get(j).copied().unwrap_or(0);
@@ -124,13 +126,19 @@ mod tests {
         assert_eq!(o, [2, 0, 1]);
         assert_eq!(p.conflicts, []);
         // Without the intersection it is a conflict.
-        let (_, p) = order(&[entry(0, 0x8000_0000, 0x8000_0000), entry(1, 0x4000_0000, 0x4000_0000)]);
+        let (_, p) = order(&[
+            entry(0, 0x8000_0000, 0x8000_0000),
+            entry(1, 0x4000_0000, 0x4000_0000),
+        ]);
         assert_eq!(p.conflicts, [(CtorId::new(1), CtorId::new(0))]);
     }
 
     #[test]
     fn disjuncts_of_one_constructor_do_not_conflict() {
-        let (_, p) = order(&[entry(0, 0x8000_0000, 0x8000_0000), entry(0, 0x4000_0000, 0x4000_0000)]);
+        let (_, p) = order(&[
+            entry(0, 0x8000_0000, 0x8000_0000),
+            entry(0, 0x4000_0000, 0x4000_0000),
+        ]);
         assert_eq!(p.conflicts, []);
     }
 }

@@ -180,7 +180,11 @@ impl SymbolTable {
 
     /// Whether a lookup by name has found the symbol.
     pub(crate) fn was_sought(&self, id: SymbolId) -> bool {
-        self.sought.borrow().get(id.slot()).copied().unwrap_or(false)
+        self.sought
+            .borrow()
+            .get(id.slot())
+            .copied()
+            .unwrap_or(false)
     }
 
     /// Looks a name up from the current scope outwards (`findSymbol`).

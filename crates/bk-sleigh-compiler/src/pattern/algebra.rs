@@ -76,7 +76,13 @@ fn and_disjoint(a: &Disjoint, b: &Disjoint, sa: i32) -> Disjoint {
         },
         (Instruction(x), Instruction(y)) => Instruction(instruction_and(x, y, sa)),
         (Context(x), Context(y)) => Context(x.intersect(y)),
-        (Combine { context, instr }, Combine { context: c2, instr: i2 }) => Combine {
+        (
+            Combine { context, instr },
+            Combine {
+                context: c2,
+                instr: i2,
+            },
+        ) => Combine {
             context: context.intersect(c2),
             instr: instruction_and(instr, i2, sa),
         },
@@ -101,7 +107,13 @@ fn common_disjoint(a: &Disjoint, b: &Disjoint, sa: i32) -> Disjoint {
         (Instruction(_), Context(_)) => Disjoint::TRUE,
         (Instruction(x), Instruction(y)) => Instruction(instruction_common(x, y, sa)),
         (Context(x), Context(y)) => Context(x.common(y)),
-        (Combine { context, instr }, Combine { context: c2, instr: i2 }) => Combine {
+        (
+            Combine { context, instr },
+            Combine {
+                context: c2,
+                instr: i2,
+            },
+        ) => Combine {
             context: context.common(c2),
             instr: instruction_common(instr, i2, sa),
         },
@@ -283,36 +295,63 @@ mod tests {
         let one = |d: &Disjoint| Pattern::One(d.clone());
         let or2 = Pattern::Or(vec![b_i.clone(), b_c.clone()]);
         let or_of = |a: &Disjoint, b: &Disjoint| one(a).or(&one(b), 0);
-        assert_eq!(or_of(&a_i, &b_i), Pattern::Or(vec![a_i.clone(), b_i.clone()]));
-        assert_eq!(or_of(&a_i, &b_c), Pattern::Or(vec![a_i.clone(), b_c.clone()]));
-        assert_eq!(or_of(&a_i, &b_m), Pattern::Or(vec![b_m.clone(), a_i.clone()]));
+        assert_eq!(
+            or_of(&a_i, &b_i),
+            Pattern::Or(vec![a_i.clone(), b_i.clone()])
+        );
+        assert_eq!(
+            or_of(&a_i, &b_c),
+            Pattern::Or(vec![a_i.clone(), b_c.clone()])
+        );
+        assert_eq!(
+            or_of(&a_i, &b_m),
+            Pattern::Or(vec![b_m.clone(), a_i.clone()])
+        );
         assert_eq!(
             one(&a_i).or(&or2, 0),
             Pattern::Or(vec![b_i.clone(), b_c.clone(), a_i.clone()])
         );
-        assert_eq!(or_of(&a_c, &b_c), Pattern::Or(vec![a_c.clone(), b_c.clone()]));
-        assert_eq!(or_of(&a_c, &b_i), Pattern::Or(vec![b_i.clone(), a_c.clone()]));
-        assert_eq!(or_of(&a_c, &b_m), Pattern::Or(vec![b_m.clone(), a_c.clone()]));
+        assert_eq!(
+            or_of(&a_c, &b_c),
+            Pattern::Or(vec![a_c.clone(), b_c.clone()])
+        );
+        assert_eq!(
+            or_of(&a_c, &b_i),
+            Pattern::Or(vec![b_i.clone(), a_c.clone()])
+        );
+        assert_eq!(
+            or_of(&a_c, &b_m),
+            Pattern::Or(vec![b_m.clone(), a_c.clone()])
+        );
         assert_eq!(
             one(&a_c).or(&or2, 0),
             Pattern::Or(vec![b_i.clone(), b_c.clone(), a_c.clone()])
         );
-        assert_eq!(or_of(&a_m, &b_i), Pattern::Or(vec![a_m.clone(), b_i.clone()]));
-        assert_eq!(or_of(&a_m, &b_c), Pattern::Or(vec![a_m.clone(), b_c.clone()]));
-        assert_eq!(or_of(&a_m, &b_m), Pattern::Or(vec![a_m.clone(), b_m.clone()]));
+        assert_eq!(
+            or_of(&a_m, &b_i),
+            Pattern::Or(vec![a_m.clone(), b_i.clone()])
+        );
+        assert_eq!(
+            or_of(&a_m, &b_c),
+            Pattern::Or(vec![a_m.clone(), b_c.clone()])
+        );
+        assert_eq!(
+            or_of(&a_m, &b_m),
+            Pattern::Or(vec![a_m.clone(), b_m.clone()])
+        );
         assert_eq!(
             one(&a_m).or(&or2, 0),
             Pattern::Or(vec![b_i.clone(), b_c.clone(), a_m.clone()])
         );
-        assert_eq!(
-            or2.or(&one(&a_m), 0),
-            Pattern::Or(vec![b_i, b_c, a_m])
-        );
+        assert_eq!(or2.or(&one(&a_m), 0), Pattern::Or(vec![b_i, b_c, a_m]));
     }
 
     #[test]
     fn or_with_positive_shift_shifts_every_disjunct() {
-        let a = Pattern::Or(vec![ins(0, 0xff00_0000, 1 << 24), ins(0, 0xff00_0000, 2 << 24)]);
+        let a = Pattern::Or(vec![
+            ins(0, 0xff00_0000, 1 << 24),
+            ins(0, 0xff00_0000, 2 << 24),
+        ]);
         let b = Pattern::One(ins(0, 0xff00_0000, 3 << 24));
         let r = a.or(&b, 2);
         for d in r.disjuncts() {
@@ -355,7 +394,10 @@ mod tests {
 
     #[test]
     fn common_of_alternatives() {
-        let p = Pattern::Or(vec![ins(0, 0xff00_0000, 0x1200_0000), ins(0, 0xff00_0000, 0x1300_0000)]);
+        let p = Pattern::Or(vec![
+            ins(0, 0xff00_0000, 0x1200_0000),
+            ins(0, 0xff00_0000, 0x1300_0000),
+        ]);
         let q = Pattern::One(ins(0, 0xff00_0000, 0x1000_0000));
         let r = p.common(&q, 0);
         assert_eq!(r, Pattern::One(ins(0, 0xfc00_0000, 0x1000_0000)));

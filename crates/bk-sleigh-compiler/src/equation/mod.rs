@@ -39,7 +39,6 @@ impl EqError {
         Self::Text(text.into())
     }
 
-    #[expect(clippy::needless_pass_by_value, reason = "used as a map_err function")]
     pub(crate) fn combine(error: CombineError) -> Self {
         Self::Combine(error)
     }

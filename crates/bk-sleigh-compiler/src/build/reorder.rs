@@ -20,11 +20,18 @@ pub(crate) fn unravel(offsets: &mut [Offsets], facts: &[OperandFacts]) {
         let fact = facts.get(i).copied().unwrap_or_default();
         if fact.irrelevant {
             if let Some(o) = offsets.get_mut(i) {
-                *o = Offsets { base: -1, offset: 0 };
+                *o = Offsets {
+                    base: -1,
+                    offset: 0,
+                };
             }
             continue;
         }
-        let Some(&Offsets { mut base, mut offset }) = offsets.get(i) else {
+        let Some(&Offsets {
+            mut base,
+            mut offset,
+        }) = offsets.get(i)
+        else {
             continue;
         };
         // A chain longer than the operand count is a cycle; stop there (the
@@ -88,9 +95,8 @@ pub(crate) fn order_operands(
                 continue;
             }
             let base = offsets.get(i).map_or(-1, |o| o.base);
-            let base_pending = usize::try_from(base)
-                .ok()
-                .is_some_and(|b| marked.get(b).copied().unwrap_or(false));
+            let base_pending =
+                usize::try_from(base).is_ok_and(|b| marked.get(b).copied().unwrap_or(false));
             if base == -1 || !base_pending {
                 newops.push(i);
                 if let Some(m) = marked.get_mut(i) {
@@ -148,9 +154,15 @@ mod tests {
         let offsets = vec![o(-1, 0), o(-1, 1), o(1, 0), o(-1, 0)];
         let mut facts = vec![fixed(1); 4];
         facts[3].irrelevant = true;
-        assert_eq!(order_operands(&[2, 0, 1], &offsets, &facts), Some(vec![0, 1, 2, 3]));
+        assert_eq!(
+            order_operands(&[2, 0, 1], &offsets, &facts),
+            Some(vec![0, 1, 2, 3])
+        );
         // A base placed earlier in the same pass counts at once.
-        assert_eq!(order_operands(&[1, 2, 0], &offsets, &facts), Some(vec![1, 2, 0, 3]));
+        assert_eq!(
+            order_operands(&[1, 2, 0], &offsets, &facts),
+            Some(vec![1, 2, 0, 3])
+        );
     }
 
     #[test]

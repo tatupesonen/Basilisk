@@ -242,7 +242,15 @@ mod tests {
     fn consistent_values_enumerate_dont_cares() {
         let p = Disjoint::Instruction(Block::word(0, 0x8000_0000, 0x8000_0000));
         let mut out = Vec::new();
-        consistent_values(&p, Field { start: 0, size: 2, context: false }, &mut out);
+        consistent_values(
+            &p,
+            Field {
+                start: 0,
+                size: 2,
+                context: false,
+            },
+            &mut out,
+        );
         assert_eq!(out, [2, 3]);
     }
 

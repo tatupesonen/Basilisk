@@ -69,7 +69,8 @@ fn options_file(path: &Path) -> Result<Vec<OsString>, Refused> {
     let text = std::fs::read_to_string(path).map_err(|e| {
         Refused(format!(
             "Reading options file failed ({}): {e}",
-            path.file_name().map_or_else(String::new, |n| n.to_string_lossy().into_owned())
+            path.file_name()
+                .map_or_else(String::new, |n| n.to_string_lossy().into_owned())
         ))
     })?;
     Ok(text
@@ -123,7 +124,7 @@ pub(crate) fn parse(args: &[OsString], root: Option<&Path>) -> Result<Args, Refu
                 };
                 let mut injected: std::collections::VecDeque<OsString> =
                     options_file(Path::new(&file))?.into();
-                injected.extend(rest.drain(..));
+                injected.append(&mut rest);
                 rest = injected;
             }
             Some('D') => {
@@ -159,11 +160,13 @@ pub(crate) fn parse(args: &[OsString], root: Option<&Path>) -> Result<Args, Refu
         }
     }
     let options = Options::from_switches(switches.iter().map(String::as_str));
-    let job = match all {
-        Some(dir) => {
+    let job = if let Some(dir) = all {
+        {
             let dir = match dir {
                 Some(d) => d,
-                None => rest.pop_front().map_or_else(|| PathBuf::from("."), PathBuf::from),
+                None => rest
+                    .pop_front()
+                    .map_or_else(|| PathBuf::from("."), PathBuf::from),
             };
             if !rest.is_empty() {
                 return refuse("Too many parameters");
@@ -173,7 +176,8 @@ pub(crate) fn parse(args: &[OsString], root: Option<&Path>) -> Result<Args, Refu
             }
             Job::All(dir)
         }
-        None => {
+    } else {
+        {
             let Some(input) = rest.pop_front() else {
                 return refuse("Missing input file name");
             };
@@ -226,7 +230,10 @@ mod tests {
         assert_eq!(one(&["in"]), (p("in.slaspec"), p("in.sla")));
         assert_eq!(one(&["IN.SLASPEC"]), (p("IN.SLASPEC"), p("IN.sla")));
         assert_eq!(one(&["in.slaspec", "out"]), (p("in.slaspec"), p("out.sla")));
-        assert_eq!(one(&["in.slaspec", "out.SLA"]), (p("in.slaspec"), p("out.SLA")));
+        assert_eq!(
+            one(&["in.slaspec", "out.SLA"]),
+            (p("in.slaspec"), p("out.SLA"))
+        );
         // The extension must be at the end (C++ looks anywhere in the name).
         assert_eq!(
             one(&["a.slaspec.bak"]),
@@ -275,7 +282,11 @@ mod tests {
                 "-x\n-u\n-l\n-n\n-t\n-e\n-c\n-f\n-s\n-DTESTNAME=TESTVALUE\n-dx86\n",
             );
             let defaults = Options::default();
-            let a = parse(&[OsString::from("-i"), file, OsString::from("in")], Some(&root)).unwrap();
+            let a = parse(
+                &[OsString::from("-i"), file, OsString::from("in")],
+                Some(&root),
+            )
+            .unwrap();
             let o = a.options;
             assert!(o.warn_unnecessary_pcode && !defaults.warn_unnecessary_pcode);
             assert!(!o.lenient_conflicts && defaults.lenient_conflicts);
@@ -311,19 +322,28 @@ mod tests {
         fn one_input() {
             let (a, _d) = with_file(&["inputfile.slaspec"]);
             assert_eq!(a.defines.get("TESTNAME"), Some("TESTVALUE"));
-            assert_eq!(names(&a.job), ("inputfile.slaspec".into(), "inputfile.sla".into()));
+            assert_eq!(
+                names(&a.job),
+                ("inputfile.slaspec".into(), "inputfile.sla".into())
+            );
         }
 
         #[test]
         fn one_input_default_extension() {
             let (a, _d) = with_file(&["inputfile"]);
-            assert_eq!(names(&a.job), ("inputfile.slaspec".into(), "inputfile.sla".into()));
+            assert_eq!(
+                names(&a.job),
+                ("inputfile.slaspec".into(), "inputfile.sla".into())
+            );
         }
 
         #[test]
         fn input_and_output() {
             let (a, _d) = with_file(&["inputfile.slaspec", "outputfile.sla"]);
-            assert_eq!(names(&a.job), ("inputfile.slaspec".into(), "outputfile.sla".into()));
+            assert_eq!(
+                names(&a.job),
+                ("inputfile.slaspec".into(), "outputfile.sla".into())
+            );
         }
 
         #[test]

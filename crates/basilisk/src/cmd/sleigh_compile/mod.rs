@@ -58,7 +58,9 @@ fn error_location(d: &Diagnostic, parsed: &Parsed) -> (String, u32) {
         .sources
         .files()
         .next()
-        .map_or((String::new(), 0), |f| (f.name().to_owned(), f.line_count()))
+        .map_or((String::new(), 0), |f| {
+            (f.name().to_owned(), f.line_count())
+        })
 }
 
 /// Writes `bytes` to `output` through a temporary file in the same
@@ -151,16 +153,28 @@ fn find_specs(dir: &Path, out: &mut Vec<PathBuf>) {
 fn compile_all(dir: &Path, a: &args::Args) -> u8 {
     let mut specs = Vec::new();
     find_specs(dir, &mut specs);
-    println!("Compiling {} slaspec files in {}", specs.len(), dir.display());
+    println!(
+        "Compiling {} slaspec files in {}",
+        specs.len(),
+        dir.display()
+    );
     let mut failures = Vec::new();
     for (i, spec) in specs.iter().enumerate() {
-        println!("Compiling ({} of {}) {}", i + 1, specs.len(), spec.display());
+        println!(
+            "Compiling ({} of {}) {}",
+            i + 1,
+            specs.len(),
+            spec.display()
+        );
         let output = spec.with_extension("sla");
         if compile_one(spec, &output, a) != 0 {
             failures.push(spec.clone());
         }
     }
-    println!("{} languages successfully compiled", specs.len() - failures.len());
+    println!(
+        "{} languages successfully compiled",
+        specs.len() - failures.len()
+    );
     if !failures.is_empty() {
         for f in &failures {
             println!("{} failed to compile", f.display());

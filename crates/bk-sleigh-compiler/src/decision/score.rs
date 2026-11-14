@@ -34,7 +34,7 @@ pub(crate) fn score(counts: &[u32], total: u32, list_len: usize) -> f64 {
 mod tests {
     use super::*;
 
-    /// The TI_MSP430 tie of `docs/research/sla-host-dependence.md`
+    /// The `TI_MSP430` tie of `docs/research/sla-host-dependence.md`
     /// section 2: bins (2,2,1) of a 3-bit field against (2,1,2) of a 2-bit
     /// field, 5 of 7 patterns. Unfused, both sums round to the same value,
     /// so the field scanned first (the 2-bit one) is kept; fused, the 2-bit
@@ -51,7 +51,10 @@ mod tests {
             (-p).mul_add(log(p), sc)
         }) / log(2.0);
         assert_eq!(fused.to_bits(), 0x3ff8_59d1_4626_7a15);
-        assert!(!(three_bit > two_bit));
+        assert_eq!(
+            three_bit.partial_cmp(&two_bit),
+            Some(std::cmp::Ordering::Equal)
+        );
     }
 
     #[test]

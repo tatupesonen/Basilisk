@@ -83,7 +83,9 @@ fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report 
                 .take(5)
                 .map(|d| d.message.as_str())
                 .collect();
-            report.differences.push(format!("compile failed: {errors:?}"));
+            report
+                .differences
+                .push(format!("compile failed: {errors:?}"));
             report.total += 1;
         }
         Some(mine) => {
@@ -259,28 +261,30 @@ fn every_shipped_spec_writes_the_reference_xml() {
                     let _ = std::fs::remove_file(&out);
                     let options = Options::from_switches(switches.iter().map(String::as_str));
                     let parsed = common::parse(&spec.slaspec);
-                    let ours = compile_parsed(&parsed, options).sla.unwrap().encode_xml().unwrap();
+                    let ours = compile_parsed(&parsed, options)
+                        .sla
+                        .unwrap()
+                        .encode_xml()
+                        .unwrap();
                     if ours != theirs {
                         let line = ours
                             .lines()
                             .zip(theirs.lines())
                             .position(|(a, b)| a != b)
                             .unwrap_or(0);
-                        failures
-                            .lock()
-                            .unwrap()
-                            .push(format!("{}/{} (first difference at line {})", spec.module, spec.name, line + 1));
+                        failures.lock().unwrap().push(format!(
+                            "{}/{} (first difference at line {})",
+                            spec.module,
+                            spec.name,
+                            line + 1
+                        ));
                     }
                 }
             });
         }
     });
     let failures = failures.into_inner().unwrap();
-    eprintln!(
-        "XML: {} compared, {} differ",
-        specs.len(),
-        failures.len()
-    );
+    eprintln!("XML: {} compared, {} differ", specs.len(), failures.len());
     for f in &failures {
         eprintln!("XML MISMATCH {f}");
     }

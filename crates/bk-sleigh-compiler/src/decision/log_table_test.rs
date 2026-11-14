@@ -35,5 +35,10 @@ fn log_equals_glibc_on_every_score_argument() {
         checked += 1;
     }
     assert_eq!(checked, 16_383);
-    assert_eq!(wrong, Vec::<u32>::new(), "{} values of n differ", wrong.len());
+    assert_eq!(
+        wrong,
+        Vec::<u32>::new(),
+        "{} values of n differ",
+        wrong.len()
+    );
 }

@@ -7,6 +7,8 @@ mod constructor;
 mod reorder;
 mod trees;
 
+use std::fmt::Write as _;
+
 use rustc_hash::FxHashMap;
 
 use crate::compiler::Compiler;
@@ -41,7 +43,6 @@ pub(crate) struct BackHalf {
 /// What a successfully built constructor yields.
 #[derive(Clone, Debug)]
 pub(crate) struct CtorResult {
-    pub(crate) pattern: TokenPattern,
     pub(crate) min_length: i32,
     /// Per operand, by parse index.
     pub(crate) layout: Vec<OperandLayout>,
@@ -77,7 +78,11 @@ impl Compiler<'_> {
         msg: &mut String,
         depth: u32,
     ) -> Result<TokenPattern, EqError> {
-        if let Some(p) = state.tables.get(table.slot()).and_then(|t| t.pattern.clone()) {
+        if let Some(p) = state
+            .tables
+            .get(table.slot())
+            .and_then(|t| t.pattern.clone())
+        {
             return Ok(p);
         }
         if depth > MAX_TABLE_DEPTH {
@@ -95,7 +100,7 @@ impl Compiler<'_> {
             };
         }
         if data.ctors.is_empty() {
-            msg.push_str(&format!("Error: There are no constructors in table: {name}\n"));
+            let _ = writeln!(msg, "Error: There are no constructors in table: {name}");
             if let Some(t) = state.tables.get_mut(table.slot()) {
                 t.error = true;
             }
@@ -149,9 +154,10 @@ impl Compiler<'_> {
                     .unwrap_or_else(|| format!("#{}", tok.index))
             }),
         };
-        msg.push_str(&format!(
-            "Error: {text}: for table \"{table}\" constructor starting at line {line}\n"
-        ));
+        let _ = writeln!(
+            msg,
+            "Error: {text}: for table \"{table}\" constructor starting at line {line}"
+        );
     }
 
     /// `buildPatterns`. Returns the state, or `None` if an error was

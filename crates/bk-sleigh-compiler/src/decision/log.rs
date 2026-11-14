@@ -35,7 +35,10 @@ const OFF: u64 = 0x3fe6_0000_0000_0000;
 const TABLE_BITS: u32 = 7;
 
 /// glibc's `log(x)`.
-#[expect(clippy::many_single_char_names, reason = "the names of the upstream source")]
+#[expect(
+    clippy::many_single_char_names,
+    reason = "the names of the upstream source"
+)]
 pub(crate) fn log(x: f64) -> f64 {
     let mut ix = x.to_bits();
     let top = (ix >> 48) as u32;
@@ -65,7 +68,7 @@ pub(crate) fn log(x: f64) -> f64 {
     let (invc, logc) = TAB.get(i).copied().unwrap_or((1.0, 0.0));
     let z = f64::from_bits(iz);
 
-    let r = libm::fma(z, invc, -1.0);
+    let r = fma(z, invc, -1.0);
     let kd = k as f64;
     let w = fma(kd, LN2HI, logc);
     let hi = w + r;
@@ -77,7 +80,6 @@ pub(crate) fn log(x: f64) -> f64 {
 }
 
 /// The branch for arguments within about 1/16 of 1.
-#[expect(clippy::many_single_char_names, reason = "the names of the upstream source")]
 fn near_one(x: f64, ix: u64) -> f64 {
     if ix == 1.0_f64.to_bits() {
         return 0.0;

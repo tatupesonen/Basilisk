@@ -124,6 +124,7 @@ impl Block {
     }
 
     /// The block matching what both match (`intersect`).
+    #[must_use]
     pub fn intersect(&self, other: &Self) -> Self {
         if self.always_false() || other.always_false() {
             return Self::constant(false);
@@ -141,6 +142,7 @@ impl Block {
     /// The bits both constrain to the same value (`commonSubPattern`). No
     /// special case for false blocks: false with anything gives true, false
     /// with false gives false (Ghidra's behaviour through `getLength`).
+    #[must_use]
     pub fn common(&self, other: &Self) -> Self {
         self.combine(other, |m1, v1, m2, v2| {
             let mask = m1 & m2 & !(v1 ^ v2);

@@ -214,10 +214,17 @@ impl Generator<'_, '_> {
         value: PExprId,
         expr: PExprId,
     ) -> Result<TokenPattern, EqError> {
-        let lhs = self.view.arena.get_expr(value).copied().unwrap_or(PExpr::Constant(0));
+        let lhs = self
+            .view
+            .arena
+            .get_expr(value)
+            .copied()
+            .unwrap_or(PExpr::Constant(0));
         let (lhs_min, lhs_max) = value_range(&lhs)?;
         let mut leaves = Vec::new();
-        self.view.arena.for_each_value(expr, |leaf| leaves.push(*leaf));
+        self.view
+            .arena
+            .for_each_value(expr, |leaf| leaves.push(*leaf));
         let ranges = leaves
             .iter()
             .map(value_range)

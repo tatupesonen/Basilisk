@@ -173,7 +173,11 @@ impl Lowering<'_> {
             },
             SymbolKind::Operand(op) => {
                 let data = spec.operands.get(op.slot());
-                let layout = spec.operand_layout.get(op.slot()).copied().unwrap_or_default();
+                let layout = spec
+                    .operand_layout
+                    .get(op.slot())
+                    .copied()
+                    .unwrap_or_default();
                 let local = match data {
                     Some(d) => self.expr(d.local_expr),
                     None => self.builder.expr(Expr::Constant(0)),
@@ -452,7 +456,9 @@ pub fn lower(spec: &Elaborated) -> Result<Sla, LowerError> {
     };
     for id in 0..spec.symbols.len() {
         let def = lowering.symbol_def(id)?;
-        let Some(s) = spec.symbols.get(id) else { continue };
+        let Some(s) = spec.symbols.get(id) else {
+            continue;
+        };
         let name = spec.names.resolve(s.name);
         lowering
             .builder

@@ -349,6 +349,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "short names for test patterns"
+    )]
     fn resolve_tokens_cases() {
         let a = TokenPattern::field(T1, true, 0, 3, 5);
         let b = TokenPattern::field(T1, true, 4, 7, 2);
@@ -356,10 +360,7 @@ mod tests {
         assert_eq!(ab.tokens, [T1]);
         // Different tokens.
         let c = TokenPattern::field(T2, true, 0, 3, 1);
-        assert_eq!(
-            a.and(&c),
-            Err(CombineError::MismatchedTokens(T1, T2))
-        );
+        assert_eq!(a.and(&c), Err(CombineError::MismatchedTokens(T1, T2)));
         // Different lengths without an ellipsis.
         let ac = a.cat(&TokenPattern::token(T2)).unwrap();
         assert_eq!(ac.tokens, [T1, T2]);
@@ -416,7 +417,11 @@ mod tests {
         assert!(c.right_ellipsis);
         assert_eq!(
             c.pattern,
-            Pattern::One(Disjoint::Instruction(Block::word(0, 0xfd00_0000, 0x0100_0000)))
+            Pattern::One(Disjoint::Instruction(Block::word(
+                0,
+                0xfd00_0000,
+                0x0100_0000
+            )))
         );
     }
 

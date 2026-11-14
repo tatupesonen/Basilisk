@@ -43,7 +43,10 @@ impl State<'_> {
                 };
                 if self.irrelevant.get(index).copied().unwrap_or(false) {
                     if let Some(slot) = self.offsets.get_mut(index) {
-                        *slot = Some(Offsets { base: -1, offset: 0 });
+                        *slot = Some(Offsets {
+                            base: -1,
+                            offset: 0,
+                        });
                     }
                     return true;
                 }

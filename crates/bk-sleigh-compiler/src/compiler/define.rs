@@ -115,7 +115,12 @@ impl Compiler<'_> {
     }
 
     /// `addTokenField`; false stops the statement (`YYERROR`).
-    fn token_field(&mut self, field: &FieldDef, tok: crate::pattern::Tok, big_endian: bool) -> bool {
+    fn token_field(
+        &mut self,
+        field: &FieldDef,
+        tok: crate::pattern::Tok,
+        big_endian: bool,
+    ) -> bool {
         let token_size = tok.size;
         if self.redefined(field.name, ": redefined as field") {
             return false;

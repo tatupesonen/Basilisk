@@ -135,7 +135,9 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
                 *m = constructors.len() as u32;
             }
             list.push(CtorId::new(constructors.len() as u32));
-            let built = back.and_then(|b| b.state.ctors.get(ctor.slot())).and_then(Option::as_ref);
+            let built = back
+                .and_then(|b| b.state.ctors.get(ctor.slot()))
+                .and_then(Option::as_ref);
             if let Some(built) = built {
                 for (op, layout) in data.operands.iter().zip(&built.layout) {
                     if let Some(slot) = operand_layout.get_mut(op.slot()) {

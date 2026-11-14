@@ -100,7 +100,12 @@ impl Compiler<'_> {
         // placed, so this default is never used by a valid specification.
         let mut offsets: Vec<Offsets> = resolved
             .into_iter()
-            .map(|o| o.unwrap_or(Offsets { base: -1, offset: 0 }))
+            .map(|o| {
+                o.unwrap_or(Offsets {
+                    base: -1,
+                    offset: 0,
+                })
+            })
             .collect();
         unravel(&mut offsets, &facts);
         for change in &data.context {
@@ -137,7 +142,6 @@ impl Compiler<'_> {
         let min_length = pattern.minimum_length();
         if let Some(slot) = state.ctors.get_mut(ctor.slot()) {
             *slot = Some(CtorResult {
-                pattern,
                 min_length,
                 layout,
                 handmap,

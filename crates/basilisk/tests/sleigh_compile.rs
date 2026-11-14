@@ -54,7 +54,13 @@ fn stderr(o: &Output) -> String {
 }
 
 fn write_spec(dir: &Path, name: &str, crlf: bool) {
-    let fix = |t: &str| if crlf { t.replace('\n', "\r\n") } else { t.to_owned() };
+    let fix = |t: &str| {
+        if crlf {
+            t.replace('\n', "\r\n")
+        } else {
+            t.to_owned()
+        }
+    };
     std::fs::write(dir.join(name), fix(SPEC)).unwrap();
     std::fs::write(dir.join("tok.sinc"), fix(SINC)).unwrap();
 }
@@ -70,15 +76,22 @@ fn compiles_with_default_and_explicit_output_names() {
     let o = basilisk(dir.path(), &["toy"]);
     assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
     let sla = Sla::read_file(&dir.path().join("toy.sla"), &Limits::default()).unwrap();
-    assert!(!sla.symbols().is_empty());
+    assert_ne!(sla.symbols().len(), 0);
     let o = basilisk(dir.path(), &["toy.slaspec", "out"]);
     assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
-    assert_eq!(inflated(&dir.path().join("out.sla")), inflated(&dir.path().join("toy.sla")));
+    assert_eq!(
+        inflated(&dir.path().join("out.sla")),
+        inflated(&dir.path().join("toy.sla"))
+    );
     // XML form.
     let o = basilisk(dir.path(), &["-y", "toy.slaspec", "x.sla"]);
     assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
     let xml = std::fs::read_to_string(dir.path().join("x.sla")).unwrap();
-    assert!(xml.contains("<sleigh "), "{}", &xml[..xml.len().min(80)]);
+    assert!(
+        xml.contains("<sleigh "),
+        "{}",
+        xml.chars().take(80).collect::<String>()
+    );
     // No temporary file is left behind.
     let leftovers: Vec<_> = std::fs::read_dir(dir.path())
         .unwrap()
@@ -95,18 +108,34 @@ fn bad_command_lines_and_failures() {
     assert_eq!(o.status.code(), Some(2));
     assert!(stderr(&o).starts_with("USAGE"));
     let o = basilisk(dir.path(), &["-q", "x"]);
-    assert_eq!((o.status.code(), stderr(&o)), (Some(1), "Unknown option: -q\n".to_owned()));
+    assert_eq!(
+        (o.status.code(), stderr(&o)),
+        (Some(1), "Unknown option: -q\n".to_owned())
+    );
     let o = basilisk(dir.path(), &["-l"]);
-    assert_eq!((o.status.code(), stderr(&o)), (Some(1), "Missing input file name\n".to_owned()));
+    assert_eq!(
+        (o.status.code(), stderr(&o)),
+        (Some(1), "Missing input file name\n".to_owned())
+    );
     let o = basilisk(dir.path(), &["a", "b", "c"]);
-    assert_eq!((o.status.code(), stderr(&o)), (Some(1), "Too many parameters\n".to_owned()));
+    assert_eq!(
+        (o.status.code(), stderr(&o)),
+        (Some(1), "Too many parameters\n".to_owned())
+    );
     let o = basilisk(dir.path(), &["-DX", "a"]);
-    assert_eq!((o.status.code(), stderr(&o)), (Some(1), "Bad sleigh option: -DX\n".to_owned()));
+    assert_eq!(
+        (o.status.code(), stderr(&o)),
+        (Some(1), "Bad sleigh option: -DX\n".to_owned())
+    );
     let o = basilisk(dir.path(), &["missing.slaspec"]);
     assert_eq!(o.status.code(), Some(2));
     assert_eq!(stderr(&o), "Unable to open specfile: missing.slaspec\n");
     // A compile error: Ghidra's line format, no output file.
-    std::fs::write(dir.path().join("bad.slaspec"), "define endian=little;\n:x is y { }\n").unwrap();
+    std::fs::write(
+        dir.path().join("bad.slaspec"),
+        "define endian=little;\n:x is y { }\n",
+    )
+    .unwrap();
     let o = basilisk(dir.path(), &["bad.slaspec"]);
     assert_eq!(o.status.code(), Some(2));
     let err = stderr(&o);
@@ -139,8 +168,11 @@ fn all_mode_continues_after_a_failure() {
     std::fs::create_dir(&sub).unwrap();
     write_spec(dir.path(), "a.slaspec", false);
     write_spec(&sub, "c.slaspec", false);
-    std::fs::write(dir.path().join("b").join("bad.slaspec"), "define endian=little;\n:x is y { }\n")
-        .unwrap();
+    std::fs::write(
+        dir.path().join("b").join("bad.slaspec"),
+        "define endian=little;\n:x is y { }\n",
+    )
+    .unwrap();
     // Java's form, `-a DIR`.
     let o = basilisk(dir.path(), &["-a", "."]);
     assert_eq!(o.status.code(), Some(255), "{}", stderr(&o));
@@ -165,7 +197,10 @@ fn crlf_sources_and_path_spellings_give_the_same_file() {
     assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
     let o = basilisk(crlf.path(), &["toy.slaspec"]);
     assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
-    assert_eq!(inflated(&lf.path().join("toy.sla")), inflated(&crlf.path().join("toy.sla")));
+    assert_eq!(
+        inflated(&lf.path().join("toy.sla")),
+        inflated(&crlf.path().join("toy.sla"))
+    );
     // An absolute input with a `..` detour, output in another directory.
     let sub = lf.path().join("sub");
     std::fs::create_dir(&sub).unwrap();
@@ -187,7 +222,11 @@ fn messages_and_statuses_match_ghidra() {
     let program = reference.tool(bk_testkit::Tool::Sleigh).unwrap();
     let dir = tempfile::tempdir().unwrap();
     write_spec(dir.path(), "toy.slaspec", false);
-    std::fs::write(dir.path().join("bad.slaspec"), "define endian=little;\n:x is y { }\n").unwrap();
+    std::fs::write(
+        dir.path().join("bad.slaspec"),
+        "define endian=little;\n:x is y { }\n",
+    )
+    .unwrap();
     for args in [
         &["-q", "x"][..],
         &["-l"],
@@ -240,5 +279,8 @@ fn messages_and_statuses_match_ghidra() {
     // Same compiled file.
     let o = basilisk(dir.path(), &["toy.slaspec", "b.sla"]);
     assert_eq!(o.status.code(), Some(0));
-    assert_eq!(inflated(&dir.path().join("b.sla")), inflated(&dir.path().join("g.sla")));
+    assert_eq!(
+        inflated(&dir.path().join("b.sla")),
+        inflated(&dir.path().join("g.sla"))
+    );
 }

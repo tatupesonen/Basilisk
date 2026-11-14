@@ -61,6 +61,7 @@ impl Disjoint {
 
     /// `simplifyClone`: a combination with a trivially true part becomes
     /// the other part; one with a false part becomes false.
+    #[must_use]
     pub fn simplified(&self) -> Self {
         match self {
             Self::Combine { context, instr } => {
@@ -106,26 +107,26 @@ impl Disjoint {
 
     /// Everything `other` requires is required here (`specializes`).
     pub fn specializes(&self, other: &Self) -> bool {
-        [false, true].into_iter().all(|context| {
-            match (self.block(context), other.block(context)) {
+        [false, true].into_iter().all(
+            |context| match (self.block(context), other.block(context)) {
                 (_, None) => true,
                 (_, Some(b)) if b.always_true() => true,
                 (None, Some(_)) => false,
                 (Some(a), Some(b)) => a.specializes(b),
-            }
-        })
+            },
+        )
     }
 
     /// The same constraints (`identical`).
     pub fn identical(&self, other: &Self) -> bool {
-        [false, true].into_iter().all(|context| {
-            match (self.block(context), other.block(context)) {
+        [false, true].into_iter().all(
+            |context| match (self.block(context), other.block(context)) {
                 (None, Some(b)) => b.always_true(),
                 (Some(a), Some(b)) => a.identical(b),
                 (None, None) => true,
                 (Some(a), None) => a.always_true(),
-            }
-        })
+            },
+        )
     }
 
     /// This pattern is exactly the intersection of `a` and `b`
@@ -159,7 +160,10 @@ mod tests {
             context: c.clone(),
             instr: i.clone(),
         };
-        assert_eq!(combine(&t, &x).simplified(), Disjoint::Instruction(x.clone()));
+        assert_eq!(
+            combine(&t, &x).simplified(),
+            Disjoint::Instruction(x.clone())
+        );
         assert_eq!(combine(&x, &t).simplified(), Disjoint::Context(x.clone()));
         assert_eq!(combine(&x, &f).simplified(), Disjoint::FALSE);
         assert_eq!(combine(&x, &x).simplified(), combine(&x, &x));
@@ -188,6 +192,8 @@ mod tests {
             instr: x.clone(),
         };
         assert!(both.resolves_intersect(&Disjoint::Instruction(x.clone()), &Disjoint::Context(c)));
-        assert!(!Disjoint::Instruction(x.clone()).resolves_intersect(&Disjoint::Instruction(x), &both));
+        assert!(
+            !Disjoint::Instruction(x.clone()).resolves_intersect(&Disjoint::Instruction(x), &both)
+        );
     }
 }
