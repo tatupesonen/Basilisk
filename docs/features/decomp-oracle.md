@@ -222,6 +222,11 @@ those varnodes.
 
 ### 4.4 The state dump (`bk dump state <file>`), format version 1
 
+Ghidra's own encodings are not enough for this: `Varnode::encode` writes
+six of the 32 flag bits (`addrtied`, `grp`, `input`, `persists`,
+`unaff`, `volatile`) and `PcodeOp::encode` the opcode, seqnum and operand
+references only (read: varnode.cc, op.cc), and `print tree varnode`
+prints ten flags and a host address. Hence a format of Basilisk's.
 Line-oriented UTF-8 text, fields separated by one tab, records in a
 fixed section order; every line is `<tag>\t<fields…>`. Numbers are
 lower-case hexadecimal with `0x` where Ghidra prints them that way

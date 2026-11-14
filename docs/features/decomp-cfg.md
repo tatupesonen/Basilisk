@@ -569,9 +569,13 @@ minus the op-level `finalizePrinting` that D15 runs between steps 1 and
    index 0 against itself, which is not a strict weak ordering). Under
    ADR-040 Basilisk sorts **stably** by the key (index ≠ 0, ends in
    `RETURN`, index if not `RETURN`), keeping list order among `RETURN`
-   blocks. Both libraries use insertion sort below 17 elements, so this
-   equals Ghidra on both hosts for top-level lists of up to 16 nodes; how
-   often larger lists with two `RETURN` blocks occur is open (section 10).
+   blocks. libstdc++'s `std::sort` is a plain insertion sort below 17
+   elements, so this equals the x86-64 reference (ADR-021) for top-level
+   lists of up to 16 nodes; libc++ sorts very short ranges with
+   compare-and-swap networks that can reorder equal elements (four or more
+   elements), so the Mac build may differ even on short lists. How often
+   such ties occur is open (section 10); any row where the two builds
+   differ for this reason is a counted cause (6.3.3).
 2. *(D15: `finalizePrinting`; for a switch it sorts the cases by label
    with `stable_sort`, block.cc:3679 — this crate provides that sort given
    each case's first label as input.)*
