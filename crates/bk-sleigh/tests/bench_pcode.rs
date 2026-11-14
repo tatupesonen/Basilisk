@@ -62,6 +62,7 @@ fn best<T>(runs: usize, mut f: impl FnMut() -> T) -> (f64, T) {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Decode,
+    Text,
     Lift,
     TextLift,
 }
@@ -83,6 +84,18 @@ fn sweep(decoder: &mut Decoder, initial: &ContextDb, code: &[u8], mode: Mode) ->
                 .decode(addr, &bytes, &db)
                 .map(bk_sleigh::Parse::length)
                 .ok(),
+            Mode::Text => {
+                let len = decoder
+                    .decode(addr, &bytes, &db)
+                    .map(bk_sleigh::Parse::length)
+                    .ok();
+                if len.is_some() {
+                    text.clear();
+                    let _ = decoder.mnemonic(&mut text);
+                    let _ = decoder.body(&mut text);
+                }
+                len
+            }
             Mode::Lift => match decoder.lift(addr, &bytes, &mut db, &mut counter) {
                 Ok(_) => Some(decoder.parse().length()),
                 Err(_) => decoder
@@ -149,11 +162,20 @@ fn time_command(program: &Path, args: &[&std::ffi::OsStr], stdin: &Path) -> f64 
 }
 
 fn load_average() -> String {
+    if let Ok(s) = std::fs::read_to_string("/proc/loadavg") {
+        return s.split_whitespace().take(3).collect::<Vec<_>>().join(" ");
+    }
     Command::new("sysctl")
         .args(["-n", "vm.loadavg"])
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
         .unwrap_or_default()
+}
+
+/// `BK_BENCH_SINGLE` set: only the single-thread sweeps, for
+/// `reference_bench/compare.sh`, which runs the reference itself.
+fn single_only() -> bool {
+    std::env::var_os("BK_BENCH_SINGLE").is_some()
 }
 
 #[test]
@@ -175,6 +197,7 @@ fn bench_pcode_x86_64() {
     let db = lang.initial_context();
     let mut decoder = Decoder::new(Arc::clone(&lang));
     let (decode, (count, _)) = best(RUNS, || sweep(&mut decoder, &db, &code, Mode::Decode));
+    let (text, _) = best(RUNS, || sweep(&mut decoder, &db, &code, Mode::Text));
     let (lift, (_, ops)) = best(RUNS, || sweep(&mut decoder, &db, &code, Mode::Lift));
     let (text_lift, _) = best(RUNS, || sweep(&mut decoder, &db, &code, Mode::TextLift));
     let m = |secs: f64| count as f64 / secs / 1e6;
@@ -183,6 +206,7 @@ fn bench_pcode_x86_64() {
         code.len()
     );
     eprintln!("decode only: {:.2} M instructions/s", m(decode));
+    eprintln!("decode + text: {:.2} M instructions/s", m(text));
     eprintln!(
         "decode + lift (counting emitter): {:.2} M instructions/s, {:.2} M ops/s ({:.0} ns)",
         m(lift),
@@ -190,6 +214,9 @@ fn bench_pcode_x86_64() {
         lift / count as f64 * 1e9
     );
     eprintln!("decode + text + lift: {:.2} M instructions/s", m(text_lift));
+    if single_only() {
+        return;
+    }
     eprintln!(
         "scaling, decode:{}",
         scaling(&lang, &db, &code, Mode::Decode, decode)
