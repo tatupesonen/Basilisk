@@ -14,9 +14,9 @@
 )]
 
 #[path = "../../bk-sleigh/tests/fixture/mod.rs"]
-#[allow(dead_code, reason = "shared fixture; this test uses part of it")]
 mod fixture;
 
+use std::io::Write as _;
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
@@ -236,7 +236,6 @@ fn reads_files_and_standard_input_in_binary() {
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    use std::io::Write as _;
     child
         .stdin
         .take()
