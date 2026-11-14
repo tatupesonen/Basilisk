@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 01:43)
+## Now — RESUME HERE (2026-11-15 01:49)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 01:43)
+### Running (state at 2026-11-15 01:49)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,32 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Finished, integration gate running on the build host (started 01:48
+on 2026-11-15):** `decomp-cfg-oracle` (`ae8492491a7ef480f`) on branch
+`integration` (worktree `../basilisk-wt/decomp-cfg-oracle`, `3e46ca8`)
+— D04's oracle acceptance, which completes D04. Its tests now use
+`bk-testkit`'s formats and `decomp_bk`. **Generated graphs**: 12,000
+graphs, 40,000 dumps (`bk cfg analyze`, `bk structure bare trace`,
+`bare finish`, `asgiven trace`), each build's table generated twice and
+identical; Basilisk equals libc++'s table in 39,999 rows and
+libstdc++'s in 39,985, the rest (1 and 15) being `orderBlocks` ties
+between `RETURN` blocks, which Basilisk sorts stably — recognised and
+pinned per library (ADR-040); the two builds differ in exactly those
+15 rows. **Corpus**: all 767 captured structuring runs (607
+decompilations of the 93 data tests and 74 research fragments) equal
+in hierarchy, flips, goto marks, change count and rule sequence (485
+flips, 147 goto marks, 2,477 rule applications); of the 607 final
+hierarchies 321 are equal byte for byte and 286 differ only by what
+D15's actions do between `blockstructure` and `finalstructure` (173 by
+the final-transform flag, 113 also by `preferComplement` swapping
+bodies), recognised on a canonical form, counts pinned, none
+unexplained. `Case block has become detached from switch` is Ghidra's
+result too (46 generated graphs); the rows where the reference never
+finishes are Basilisk's `TraceCycle`. Largest corpus function: 42
+nodes, 7 µs. Wine and arm64 105 passed each; its gates 2,421 tests.
+Checked-in tables: about 1.2 MB, all gzip. Gate green → push, CI,
+merge, delete, clean, publish; then `PLAN.md` D04 complete.
 
 **Merged: `spec-decomp-wave2`** (`a2f24c167e7e94cd7`; `4ed9ee1`, merged
 directly at 01:35 on 2026-11-15, docs only; worktree and branch
@@ -414,7 +440,7 @@ left as they are).
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `decomp-symbols` (worktree `../basilisk-wt/decomp-symbols`, cut from `master` `4d12e6e`) | Opus | `ada7bcd688de4b0b7` | started 01:35 on 2026-11-15. D06 from `features/decomp-symbols.md` (ADR-043, 044, 045): step 0 moves `bk-sleigh`'s context store into a new crate `bk-context` (re-exported; no behaviour change; speed checked); then `bk-decomp-symbols` (interval map with Ghidra's orders, symbols and scopes, queries, comments, strings, constant pool, `<binaryimage>`, context names and XML, overrides, the `ProgramHost` trait, overlays). It may add the `Spacebase` constructor to `bk-decomp-types` and `git merge master` at most twice (for D00). Its test that loads `@scope` from a dump waits for the dump's format version 2. |
-| `decomp-cfg-oracle` (worktree `../basilisk-wt/decomp-cfg-oracle`, cut from `integration` `4c18d68` = `master` + D00) | Opus | `ae8492491a7ef480f` (the D04 agent, resumed) | resumed 01:22 on 2026-11-15. D04's oracle acceptance: its format helpers replaced by `bk-testkit`'s, the `bk cfg`/`bk structure` table on both reference builds (do the libraries differ on `orderBlocks` ties?), the 767 captured structuring runs through `structure(…, AsGiven)`, the trace comparison, the corpus benchmark, both gates. If D00's integration needs a fix, tell it. |
+| `decomp-oracle-v2` (worktree `../basilisk-wt/decomp-oracle-v2`, cut from `master` `1d922c1`) | Opus | `a5bfa968bedb8543f` (the D00 agent, resumed) | resumed 01:48 on 2026-11-15. The state dump's format version 2: a `@scope` section from which D06 can rebuild a function scope exactly (scope and symbol ids, the entry map's record and fragment orders per space, the dynamic-entry order, and whatever else the D06 spec's queries need); extension, `bk-testkit` `oracle::state`, samples and fixtures on both builds. It rebuilds both shared reference directories once at the end (only the extension's own outputs may change; before/after hashes in its report). D05 starts after it. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -726,12 +752,14 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `decomp-oracle` is merged (above). `decomp-cfg-oracle` reports → merge; in its slot
-   resume the D00 agent for **`decomp-oracle-v2`** (the dump's `@scope`
-   section), then **D05 `decomp-ir`** (`features/decomp-ir.md`,
-   ADR-046). `decomp-symbols` reports → merge. The monitor type (queue
-   item 7) and the `bk-ui` flaky test go to the next free slot after
-   those. After each merge: `scripts/remote.sh publish`.
+   `decomp-oracle` is merged (above). `decomp-cfg-oracle`: integration
+   gate → CI → merge (state above). `decomp-oracle-v2` reports → check
+   its before/after hashes, merge through `integration`, tell
+   `decomp-symbols` that version 2 dumps exist, and start **D05
+   `decomp-ir`** (`features/decomp-ir.md`, ADR-046) in its slot.
+   `decomp-symbols` reports → merge; then the D16a printer spike or the
+   monitor type (queue item 7) and the `bk-ui` flaky test. After each
+   merge: `scripts/remote.sh publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
