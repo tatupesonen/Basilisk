@@ -113,10 +113,9 @@ and a sane architecture in mind.
   open beside the Console, twelve syntax colours).
 * **A documentation site for users** (owner, 2026-11-14): "great
   looking docs for the usage of the whole program and how each aspect of
-  the program works", with diagrams ("we also want graphs so mermaid
-  support is great"). Proposed technology: Starlight (Astro) with Mermaid
-  rendering, pending the owner's confirmation; queued as track
-  `docs-site` in `PROGRESS.md`.
+  the program works" — a **static** site made with **Starlight**, with
+  **Mermaid** diagrams, **built in a container: Node.js is not installed
+  on this machine** (ADR-030). Track `docs-site` in `PROGRESS.md`.
 * **The plugin system is to be worked on now, not left to M9** (owner,
   2026-11-14: "remember to work on the plugin system"). What was decided
   is ADR-014: Python through PyO3. Its design spec is written now so the
