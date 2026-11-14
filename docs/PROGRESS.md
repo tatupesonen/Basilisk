@@ -366,137 +366,97 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-5. D01 `bk-decomp-range`, then the rest of the order below.
+5. **D01 `decomp-range` (Opus, small)** — `bk-decomp-range` from
+   `features/decomp-range.md` (117 `testcirclerange` tests); spec
+   complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
+   027, 028) is the main line from here on: one slot stays on it.
+6. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — an
+   Opus agent writes `features/decomp-oracle.md` and
+   `features/decomp-cfg.md`; the plan's sections 4.2, 6 and 9.1 are the
+   briefs (the earlier spec agent `a0c25da932de14a37` was Fable; its
+   worktree `../basilisk-wt/spec-decompiler` is kept, at an old
+   `master`). D00 includes Ghidra itself built and run headless on the
+   build host (state dumps, recorded p-code) — what `testbed` leaves
+   for it is in its report. Then D00 and D04 are implemented, which
+   ends wave 1; wave 2 is D05 `bk-decomp-ir` (needs D00, D02, D04), D06
+   symbols and the host trait (needs D02, D03) and the D16a printer
+   spike. Briefs carry `decomp-types`' follow-ups: `PrototypeCodec`
+   and `TypeEnv::default_model` (D03, check what `decomp-cspec` did),
+   `SpacebaseScopes` and `TypeSource` (D06), the five `cast_*` tests
+   (D08); D18 gets the injection notes in
+   `docs/agents/sleigh-snippet.md`.
 
--2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
-   idea of 2026-11-14: kassini as the project's testbed, since it has
-   the cores and memory the Mac lacks. On top of `scripts/remote.sh`:
-   (a) the Windows build and tests under Wine and the Ubuntu 26.04 / GCC
-   15 container run natively there (on the Mac both run under x86-64
-   emulation), as `remote.sh` subcommands, with the scratch scripts kept
-   in `../basilisk-wt/windows-ci/target/windows*` and
-   `../basilisk-wt/gnu-disasm/target/{windows,linux,ubuntu2604}` turned
-   into committed ones (this replaces the old `win-local` item); (b)
-   the long runs that are too heavy for the Mac: the full differential
-   over every language, fuzz targets for minutes rather than seconds,
-   property tests at high case counts, on a schedule there with a
-   summary the coordinator reads; (c) Ghidra itself, built and run
-   headless there, as the oracle the decompiler and analysis tracks will
-   need (D00 oracle tooling: state dumps, recorded p-code) — to be
-   specified with the D00 spec. Nothing of it changes what CI runs.
--1. Second `name-case` pass (after `sleigh-pcode` and `decomp-cspec`
-   merge): the files the first pass skipped, and a second look at what
-   it left.
-0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
-0a. **Plugin tracks** (`features/plugin-api.md`; ADR-035, ADR-036,
-   ADR-037; unblocked by the owner on 2026-11-14): P0 reference fixtures,
-   P1 host and packaging, P3 flat scripting layer can start; the first of
-   them also corrects the spec's script-failure default (keep changes,
-   roll back only on opt-in). They come after the SLEIGH compiler back
-   half in the order below. Also from the spec, independent of those:
-   (i) move the monitor type (cancel and progress) out of `bk-ui` into a
-   low crate before the M4/M5 specs — a small Opus track; (ii) the next
-   UI track lets the action registry and the view kinds accept run-time
-   entries; (iii) the program-model, storage, analysis and decompiler
-   D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
-   9, 11 and 13.
-0a2. (running) `site-design`.
-0a3. **`docs-content`** (Opus; after `site-design` and `spec-plugin`) —
-   the documentation itself: Getting started, the interface (one page per
-   view, from `features/ui-shell.md`), the command line, analysis, the
-   decompiler, scripting and plugins (from `features/plugin-api.md`),
-   formats and processors, and "How it works" (SLEIGH, p-code, the
-   decompiler pipeline, the program database) with Mermaid diagrams of
-   the data flow, the pipelines and the crate map; each page says plainly
-   what exists today and what is planned; the key-binding table is
-   generated from the action registry, CLI help from the binary, the
-   Python API reference from the plugin package when it exists; adds the
-   rule to `RULES.md` that a track changing user-visible behaviour
-   updates its page.
-0b. **`x86-oracle`** (Opus, small): make the x86-64 table
-   (`../reference-x86_64/opbehavior_cpp.x86_64.txt.gz`) `bk-pcode`'s
-   checked-in oracle, fix the 106 rows where Basilisk does not follow
-   x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
-   provenance (ADR-029).
-0c. `ref-nofma` is merged (2026-11-14; ADR-034): `../reference` is the
-   unfused build and the oracle for all 150 specifications;
-   `features/sleigh-compiler-back.md` carries ADR-032's edits. Left over:
-   `tools/reference/README.md` still lists `ADDITIONAL_FLAGS` without the
-   flag (give it to the next tooling track); the five ARM v8-m
-   `pcodedump` crashes are not reproduced (probably a second bug:
-   `sleigh-pcode` is to record their bytes and context); Docker image
-   `e750467579a2` (arm64 `gcc:14`, untagged, 1.5 GB) can be removed when
-   nothing needs it.
-1. `sleigh-compiler-front` (Opus) — can start now (`sleigh-decode` is
-   running). Then `sleigh-pcode` (after `sleigh-decode`),
-   `sleigh-compiler-back` (after the front half and `ref-nofma`),
-   `sleigh-snippet`.
-2. Decompiler wave 1 (`features/decomp-plan.md`; ADR-026, 027, 028):
-   a. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — resume
-      the spec agent `a0c25da932de14a37` (Fable; its worktree
-      `../basilisk-wt/spec-decompiler` is kept, at master) to write
-      `features/decomp-oracle.md` and `features/decomp-cfg.md`; the plan's
-      sections 4.2, 6 and 9.1 are the briefs. Both tracks can start as
-      soon as their specs exist, and D05 (IR) needs both.
-   b. D03 `decomp-cspec` (Opus) — `bk-cspec` from
-      `features/decomp-cspec.md`; spec complete, can start now.
-   c. D01 `decomp-range` (Opus, small) — `bk-decomp-range` from
-      `features/decomp-range.md`; spec complete, can start now.
-   d. Then D00 and D04 implementation, then wave 2 (D05 needs D00, D02,
-      D04; D06 needs D02, D03; D16a printer spike).
-3. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
-   `features/program-model-plan.md` (M4); reads the store-spike notes and,
-   when it exists, `research/storage-engine.md`.
-4. `spec-pe` (Fable) — `features/pe.md`, crate decision by experiment as
-   for ELF (M4). Four helper fact sheets wait in
-   `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md` (debug directory,
-   load config/exception/security, resources/rich header, CLI metadata).
-5. `spec-macho` (Fable) — `features/macho.md` (M4).
-6. `win-local` (Opus, small): `scripts/windows-test.sh` (and the
-   sanitizer runner) from `gnu-disasm`'s scratch container scripts — run a
-   crate's or the workspace's tests for `x86_64-pc-windows-gnu` and
-   `-msvc` under Wine, bounded, documented in `LOOP.md` and `RULES.md`.
-   Also from `gnu-disasm`'s follow-ups: make `bk-binutils-sys` an
-   optional feature of the fuzz crate so other targets' fuzz builds do
-   not compile binutils; wire `bk-lang`'s external names (`gnu`,
-   `gdis.disassembler.options.file`) to `Architecture` and `gdis_config`;
-   mark Hexagon's `0x18:0x5` (binutils 2.41 has no Hexagon disassembler;
-   the number decodes as M9S12X).
-6b. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
-   `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in place
-   of local "find Ghidra" helpers; differential test of `bk-marshal`'s
-   encoders against Ghidra's binary; move `windows_spelling` (duplicated
-   in `bk-lang` and `bk-sleigh-syntax` by `windows-ci`) into a shared
-   foundation crate; evaluate `dunce` for showing plain `C:\…` paths.
-7. `ui` follow-ups (Opus), when the owner has looked at the merged UI:
-   the weak spots its report lists (empty Console on first open, no
+Side work for the other slot, in this order:
+
+7. **The monitor type** (cancel and progress) moves out of `bk-ui` into
+   a low crate (plugin spec, binding constraints) — small, Opus; the
+   SLEIGH compile then accepts it.
+8. **Second `name-case` pass**: the files the first pass skipped and a
+   second look at what it left.
+9. **M4 preparation**: resume `spec-pe` (`a53aca50251d9e64c`;
+   `features/pe.md`, crate decision by experiment as for ELF; four
+   helper fact sheets in
+   `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md`), then
+   `store-spike` (`a8012f27279847feb`; `research/storage-engine.md`,
+   decides ADR-003's engine) — both as they are (owner, 2026-11-14);
+   then `spec-program-model` (`inventory/03-program-model.md`,
+   `features/program-model-plan.md`; reads the spike's result) and
+   `spec-macho` (`features/macho.md`). The program-model, storage,
+   analysis and decompiler D07/D17 specs state compliance with
+   binding-constraint items 3, 6, 7, 9, 11 and 13.
+10. **Plugin tracks** (`features/plugin-api.md`; ADR-035, 036, 037): P0
+   reference fixtures, P1 host and packaging, P3 the flat scripting
+   layer can start; the first of them also corrects the spec's
+   script-failure default (keep changes, roll back only on opt-in).
+   The next UI track lets the action registry and the view kinds accept
+   run-time entries (P6 needs it).
+11. **`docs-content`** (Opus) — the documentation on the site: Getting
+   started, the interface (one page per view, from
+   `features/ui-shell.md`), the command line, analysis, the decompiler,
+   scripting and plugins, formats and processors, and "How it works"
+   (SLEIGH, p-code, the decompiler pipeline, the program database) with
+   Mermaid diagrams; each page says plainly what exists today and what
+   is planned; the key-binding table is generated from the action
+   registry, CLI help from the binary, the Python API reference from
+   the plugin package when it exists; adds the rule to `RULES.md` that
+   a track changing user-visible behaviour updates its page.
+12. **`followups`** (Opus): `bk-lang` and `bk-testkit` XML reading onto
+   `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in
+   place of local "find Ghidra" helpers; a differential test of
+   `bk-marshal`'s encoders against Ghidra's binary; `windows_spelling`
+   (duplicated in `bk-lang` and `bk-sleigh-syntax`) into a shared
+   foundation crate; evaluate `dunce`. From `gnu-disasm`:
+   `bk-binutils-sys` as an optional feature of the fuzz crate; wire
+   `bk-lang`'s external names (`gnu`, `gdis.disassembler.options.file`)
+   to `Architecture` and `gdis_config`; mark Hexagon's `0x18:0x5`.
+   From `ref-nofma`: `tools/reference/README.md` still lists
+   `ADDITIONAL_FLAGS` without the flag; Docker image `e750467579a2`
+   (arm64 `gcc:14`, 1.5 GB) can be removed.
+13. **`ui` follow-ups** (Opus), when the owner has looked at the merged
+   UI: the weak spots its report lists (empty Console on first open, no
    draggable horizontal scroll bar in a narrow Listing, key-binding page
    controls, snapshot tab hiding the live view), and whether the GUI
-   crates should leave the default workspace build (a clean build of the
-   GUI stack takes about 5 minutes and the gate about 20).
+   crates should leave the default workspace build.
+14. `features/sleigh-language.md` is a draft with open `[to verify]`
+   items (nothing Java was run); complete it before its wave (M1's last
+   open track).
+
+Done and no longer queued: every SLEIGH track of M1/M2 except
+`sleigh-language`, `x86-oracle` (ADR-033), `ref-nofma` (ADR-034),
+`site-design`, `remote-build`; `win-local` is part of `testbed`.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order (owner, 2026-11-14: finish SLEIGH
-   first): `toolchain-1.100` only if the gate or CI is red on 1.100.0;
-   `sleigh-compiler-back`; `sleigh-snippet`; then the decompiler's first
-   wave: D01
-   `decomp-range`, an Opus agent to write the D00 and D04 specs,
-   `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
-   the rest of the queue.
-2. `decomp-types`: in CI (above). Follow-ups it names for D03
-   (`PrototypeCodec`, `TypeEnv::default_model`), D06 (`SpacebaseScopes`,
-   `TypeSource`) and D08 (the five `cast_*` tests) go into those briefs.
-3. `sleigh-decode` reports → review against `features/sleigh-decode.md`,
-   integration branch, merge; start `sleigh-pcode`.
-4. `site-design` reports → look at its screenshots, integration branch
-   (it adds a CI job), merge; tell the owner what to enable for Pages;
-   start `docs-content`.
-5. Owner answers the plugin-host Blocker → adopt the ADRs, plan P0–P7.
-6. `store-spike` reports → decide ADR-003's engine; then
-   `spec-program-model`.
-7. `features/sleigh-language.md` is a draft with open `[to verify]` items
-   (nothing Java was run); complete it before its wave.
+1. `cspec-host` reports → review; its ADR text is recorded as ADR-040
+   (its report calls it ADR-038, which is taken); integration branch,
+   gate on the build host, CI, merge; `GHIDRA-BUGS.md` entry 15 gets
+   the causes. Start `sleigh-fixups` in the freed slot.
+2. `testbed` reports → review; install the packages it lists on the
+   build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
+   read the first nightly report. Start `sleigh-perf-linux` (the host is
+   quiet then), or D01 if `sleigh-fixups` is still running.
+3. After that the queue above, one slot on the decompiler line (5, 6),
+   the other on the side work (7 onwards).
 
 ### Working notes
 
