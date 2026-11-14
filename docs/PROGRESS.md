@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 00:39)
+## Now — RESUME HERE (2026-11-15 00:37)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 00:39)
+### Running (state at 2026-11-15 00:37)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
