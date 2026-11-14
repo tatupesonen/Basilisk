@@ -91,3 +91,35 @@ sub-groups with the unconsumed specifier, so the top-level
 `blockstructure` (and every other action whose name also occurs deeper)
 cannot be targeted by name at all. `break start earlyremoval` sets a rule
 breakpoint that the run never stops at here.
+
+## R8. `decomp_dbg` on the build host (scratch build, `build_dbg.sh`)
+
+`build_dbg.sh $BASILISK_REFERENCE_DIR target/dbg` copies the reference
+build's sources (keeping time stamps; the generated parsers are touched so
+`make` does not call bison) and runs `make decomp_dbg` with
+build-reference.sh's overrides: 7.7 s wall, 20 jobs, a 60 MB binary
+(`-g`, no `-O`). All 93 data-test scripts of R5 run (exit 0, 13.4 s
+against 5.8 s for `decomp` on the Mac); after the pointer filter of
+`dt_hash.sh` every output equals the optimised console's on the same
+host (0 files differ).
+
+## R9. The debug trace (`decomp_dbg`, elseif.xml)
+
+`execute test command 1-6`, `trace address` (no argument: the whole
+function, `IfcTraceAddress` with an invalid low address and `~0` unique
+bounds), `trace enable`, `decompile`: 1,347 records, identical in two
+runs. Shape (`Funcdata::debugModPrint`, funcdata.cc):
+
+    DEBUG 0: constbase
+    0x001006ca:287: **
+       0x001006ca:287: DF(0x001006ca:287) = #0x0:1
+    <empty line>
+
+— a running number, the action or rule name, then per modified op its
+"before" text (`<seqnum>: **` for an op that was dead or had no block,
+else `<seqnum>: <printRaw>`) and the "after" text indented by three
+spaces. Most frequent: `earlyremoval` 484, `propagatecopy` 308,
+`addmultcollapse` 85, `loadvarnode` 60, `sub2add` 47. The trace goes to
+the architecture's debug stream, which `load test file` points at the
+console's bulk output only in an `OPACTION_DEBUG` build
+(ifacedecomp.cc:3454).
