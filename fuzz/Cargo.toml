@@ -17,6 +17,7 @@ cargo-fuzz = true
 bk-bin = { path = "../crates/bk-bin" }
 bk-binutils-sys = { path = "../crates/bk-binutils-sys" }
 bk-core = { path = "../crates/bk-core" }
+bk-decomp-types = { path = "../crates/bk-decomp-types" }
 bk-elf = { path = "../crates/bk-elf" }
 bk-lang = { path = "../crates/bk-lang" }
 bk-marshal = { path = "../crates/bk-marshal" }
@@ -27,6 +28,20 @@ libfuzzer-sys = "0.4.13"
 [[bin]]
 name = "bk_binutils_sys_disassemble"
 path = "fuzz_targets/bk_binutils_sys_disassemble.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_types_cdecl"
+path = "fuzz_targets/bk_decomp_types_cdecl.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_types_xml"
+path = "fuzz_targets/bk_decomp_types_xml.rs"
 test = false
 doc = false
 bench = false

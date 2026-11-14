@@ -1,0 +1,24 @@
+[package]
+name = "bk-decomp-types"
+description = "basilisk: the decompiler's type system (Ghidra's type.cc, metatype.cc and the C declaration parser of grammar.y)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-core.workspace = true
+bk-marshal.workspace = true
+bitflags.workspace = true
+rustc-hash.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+bk-testkit.workspace = true
+flate2.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true
