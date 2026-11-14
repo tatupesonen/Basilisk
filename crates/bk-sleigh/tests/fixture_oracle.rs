@@ -23,7 +23,6 @@ use std::sync::Arc;
 
 use bk_lang::Mode;
 use bk_sleigh::Language;
-use wait_timeout::ChildExt as _;
 
 const DATA: &str = "tests/data/fixture-oracle.txt";
 
@@ -74,45 +73,6 @@ fn streams(lang: &Arc<Language>) -> Vec<(u64, common::directed::Config, Vec<u8>)
     out
 }
 
-/// Runs `pcodedump` on the fixture directory, killed after 60 s.
-fn run_pcodedump(
-    program: &std::path::Path,
-    root: &std::path::Path,
-    base: u64,
-    config: &[(String, u32)],
-    bytes: &[u8],
-) -> Option<String> {
-    use std::io::{Read, Write};
-    use std::process::{Command, Stdio};
-    let mut cmd = Command::new(program);
-    cmd.arg(root).arg(fixture::ID).arg(format!("{base:#x}"));
-    for (name, value) in config {
-        cmd.arg("--context").arg(format!("{name}={value}"));
-    }
-    let mut child = cmd
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    child.stdin.take().unwrap().write_all(bytes).unwrap();
-    let mut stdout = child.stdout.take().unwrap();
-    let reader = std::thread::spawn(move || {
-        let mut text = String::new();
-        stdout.read_to_string(&mut text).unwrap();
-        text
-    });
-    let Some(status) = child
-        .wait_timeout(std::time::Duration::from_mins(1))
-        .unwrap()
-    else {
-        let _ = child.kill();
-        panic!("pcodedump timed out");
-    };
-    let text = reader.join().unwrap();
-    // A crash of Ghidra's engine is `None` (see `common::recording::record`).
-    status.success().then_some(text)
-}
-
 /// Regenerates `tests/data/fixture-oracle.txt` with the reference
 /// `pcodedump` (run with `--ignored` after changing the fixture).
 #[test]
@@ -146,7 +106,7 @@ fn record_fixture_oracle() {
     );
     for (base, config, bytes) in streams(&lang) {
         let run = |base: u64, config: &[(String, u32)], bytes: &[u8]| {
-            run_pcodedump(&program, dir.path(), base, config, bytes)
+            common::recording::run_pcodedump(&program, dir.path(), fixture::ID, base, config, bytes)
         };
         common::recording::record(&mut out, &run, base, &config, &bytes);
     }

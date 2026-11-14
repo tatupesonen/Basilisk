@@ -29,12 +29,35 @@ pub(crate) struct TemplateCoverage {
 }
 
 impl TemplateCoverage {
-    /// What `lang` contains.
+    /// What `lang` contains. Loads, stores and truncations count as
+    /// present when an op template uses an operand whose subtable has a
+    /// constructor with a dynamic export (in that position: input, output,
+    /// truncated).
     pub(crate) fn of(lang: &Language) -> Self {
         let sla = lang.sla();
         let mut out = Self::default();
-        let mut dynamic_export = false;
-        let mut offset_plus = false;
+        let dynamic = |ctor: &bk_sla::Constructor| {
+            sla.main_template(ctor)
+                .and_then(|t| t.result().copied())
+                .is_some_and(|h| !matches!(h.ptr_space, ConstTpl::Real(_) | ConstTpl::Space(0)))
+        };
+        // Operand `index` of `ctor` is a subtable with a dynamic export.
+        let dynamic_operand = |ctor: &bk_sla::Constructor, index: u32| {
+            let Some(&symbol) = sla.operands(ctor).get(index as usize) else {
+                return false;
+            };
+            let Some(bk_sla::SymbolKind::Operand(operand)) = sla.symbol(symbol).map(|s| s.kind)
+            else {
+                return false;
+            };
+            let Some(table) = operand.defining_symbol.and_then(|d| sla.subtable(d)) else {
+                return false;
+            };
+            (0..table.num_constructors())
+                .filter_map(|i| table.constructor(i))
+                .filter_map(|id| sla.constructor(id))
+                .any(dynamic)
+        };
         for ctor in sla.constructors() {
             if sla.main_template(ctor).is_some() {
                 out.with_template += 1;
@@ -43,11 +66,6 @@ impl TemplateCoverage {
                 out.op_templates += t.ops().len();
                 if t.header().section.is_some() {
                     out.present[2] = true;
-                }
-                if let Some(h) = t.result()
-                    && !matches!(h.ptr_space, ConstTpl::Real(_) | ConstTpl::Space(0))
-                {
-                    dynamic_export = true;
                 }
                 for op in t.ops() {
                     match op.opcode {
@@ -61,23 +79,27 @@ impl TemplateCoverage {
                     ) {
                         out.present[3] = true;
                     }
-                    for vn in t.output(op).into_iter().chain(t.inputs(op)) {
-                        if let ConstTpl::Handle {
-                            select: HandleSelect::OffsetPlus,
+                    let output = t.output(op).into_iter().map(|v| (v, true));
+                    for (vn, is_output) in output.chain(t.inputs(op).iter().map(|v| (v, false))) {
+                        let ConstTpl::Handle {
+                            index,
+                            select,
                             plus,
-                            ..
                         } = vn.offset
-                            && plus & 0xffff != 0
-                        {
-                            offset_plus = true;
+                        else {
+                            continue;
+                        };
+                        if !dynamic_operand(ctor, index) {
+                            continue;
+                        }
+                        out.present[if is_output { 5 } else { 4 }] = true;
+                        if select == HandleSelect::OffsetPlus && plus & 0xffff != 0 {
+                            out.present[6] = true;
                         }
                     }
                 }
             }
         }
-        out.present[4] = dynamic_export;
-        out.present[5] = dynamic_export;
-        out.present[6] = dynamic_export && offset_plus;
         out
     }
 

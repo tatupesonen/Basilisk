@@ -8,6 +8,7 @@ use std::fmt::Write as _;
 use std::sync::Arc;
 
 use bk_sleigh::Language;
+use wait_timeout::ChildExt as _;
 
 use super::{Tolerated, compare, parse_oracle, sweep};
 
@@ -87,12 +88,17 @@ pub(crate) struct Replay {
     pub(crate) streams: usize,
     pub(crate) instructions: u64,
     pub(crate) tolerated: Tolerated,
+    /// Templates built and constructs met in confirmed records.
+    pub(crate) templates: super::templates::TemplateCoverage,
 }
 
 /// Replays a recording against basilisk; panics on a difference.
 pub(crate) fn replay(text: &str, lang: &Arc<Language>) -> Replay {
     let mut lines = text.lines().filter(|l| !l.starts_with('#'));
-    let mut seen = Replay::default();
+    let mut seen = Replay {
+        templates: super::templates::TemplateCoverage::of(lang),
+        ..Replay::default()
+    };
     while let Some(head) = lines.next() {
         let mut fields = head.split('\t');
         assert_eq!(fields.next(), Some("stream"), "{head}");
@@ -125,8 +131,54 @@ pub(crate) fn replay(text: &str, lang: &Arc<Language>) -> Replay {
         }
         assert!(cmp.failures.is_empty(), "records differ from the recording");
         seen.tolerated.add(&cmp.tolerated);
+        for (record, ok) in ours.records.iter().zip(&cmp.confirmed) {
+            if *ok {
+                seen.templates.add(&record.built);
+            }
+        }
         seen.instructions += theirs.instructions;
         seen.streams += 1;
     }
     seen
+}
+
+/// Runs `pcodedump` for language `id` under `root`, killed after 60 s;
+/// `None` when Ghidra's engine crashed.
+pub(crate) fn run_pcodedump(
+    program: &std::path::Path,
+    root: &std::path::Path,
+    id: &str,
+    base: u64,
+    config: &[(String, u32)],
+    bytes: &[u8],
+) -> Option<String> {
+    use std::io::{Read, Write};
+    use std::process::{Command, Stdio};
+    let mut cmd = Command::new(program);
+    cmd.arg(root).arg(id).arg(format!("{base:#x}"));
+    for (name, value) in config {
+        cmd.arg("--context").arg(format!("{name}={value}"));
+    }
+    let mut child = cmd
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(bytes).unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+    let reader = std::thread::spawn(move || {
+        let mut text = String::new();
+        stdout.read_to_string(&mut text).unwrap();
+        text
+    });
+    let Some(status) = child
+        .wait_timeout(std::time::Duration::from_mins(1))
+        .unwrap()
+    else {
+        let _ = child.kill();
+        panic!("pcodedump timed out");
+    };
+    let text = reader.join().unwrap();
+    // A crash of Ghidra's engine is `None` (see `common::recording::record`).
+    status.success().then_some(text)
 }
