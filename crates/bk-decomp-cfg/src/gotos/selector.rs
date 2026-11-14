@@ -443,8 +443,8 @@ pub struct LoopInfo {
 }
 
 /// Runs `orderLoopBodies` (blockaction.cc:1148) on a copy of `graph`, whose
-/// analyses are taken as given (run [`Cfg::structure_loops`] and
-/// [`Cfg::forward_dominators`] first for a bare graph), and returns the loop
+/// analyses are taken as given (run [`Cfg::structure_loops`](crate::Cfg::structure_loops) and
+/// [`Cfg::forward_dominators`](crate::Cfg::forward_dominators) first for a bare graph), and returns the loop
 /// bodies in Ghidra's final `loopbody` order (deepest first).
 pub fn loop_bodies(
     graph: &crate::Cfg,
