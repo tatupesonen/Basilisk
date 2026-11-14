@@ -5,7 +5,6 @@
 use bk_core::{Address, SpaceId, VarnodeData};
 use bk_sla::{ConstTpl, HandleSelect, VarnodeTpl};
 
-use super::buffer::calc_mask;
 use crate::decode::{FixedHandle, Parse};
 use crate::error::DecodeError;
 use crate::language::Language;
@@ -212,22 +211,15 @@ pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> 
 /// to the size in the constant space, `OR`ed with the unique bits in the
 /// unique space, wrapped elsewhere.
 fn place(lang: &Language, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
-    match lang.spaces().space_at(space) {
-        Some(s) => match s.kind() {
-            bk_core::SpaceKind::Constant => offset & calc_mask(size),
-            bk_core::SpaceKind::Unique => offset | unique,
-            _ => s.wrap_offset(offset),
-        },
-        None => offset,
-    }
+    lang.place_offset(space, offset, size, unique)
 }
 
-/// Ghidra `generateLocation`.
-pub(crate) fn location(
+/// Ghidra `generateLocation`, with [`is_dynamic`]'s answer.
+pub(crate) fn locate(
     lang: &Language,
     vn: &VarnodeTpl,
     w: &Walk<'_>,
-) -> Result<VarnodeData, DecodeError> {
+) -> Result<(VarnodeData, bool), DecodeError> {
     // The common case: an operand used whole (space, offset and size of
     // one handle), resolved with one handle lookup.
     if let (
@@ -251,24 +243,31 @@ pub(crate) fn location(
         && index == i3
     {
         let hand = w.handle(index);
-        let (space, offset) = if hand.is_dynamic() {
+        let dynamic = hand.is_dynamic();
+        let (space, offset) = if dynamic {
             (hand.temp_space, hand.temp_offset)
         } else {
             (hand.space, hand.offset_offset)
         };
-        return Ok(VarnodeData::new(
-            SpaceId::new(space),
-            place(lang, space, offset, hand.size, w.unique),
-            hand.size,
+        return Ok((
+            VarnodeData::new(
+                SpaceId::new(space),
+                place(lang, space, offset, hand.size, w.unique),
+                hand.size,
+            ),
+            dynamic,
         ));
     }
     let space = fix_space(&vn.space, w)?;
     let size = fix(lang, &vn.size, w)? as u32;
     let offset = fix(lang, &vn.offset, w)?;
-    Ok(VarnodeData::new(
-        SpaceId::new(space),
-        place(lang, space, offset, size, w.unique),
-        size,
+    Ok((
+        VarnodeData::new(
+            SpaceId::new(space),
+            place(lang, space, offset, size, w.unique),
+            size,
+        ),
+        is_dynamic(vn, w),
     ))
 }
 

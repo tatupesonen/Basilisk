@@ -17,6 +17,11 @@ use crate::language::tables::OpDef;
 const CONST: u32 = 0;
 
 /// Fills in every handle of a resolved parse.
+///
+/// A node's children come after it in [`Parse::nodes`], so visiting the
+/// nodes from last to first resolves every operand before the export that
+/// reads it. When that fails, the walk in Ghidra's order runs instead, so
+/// that the error reported is the one Ghidra meets first.
 pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
     if parse.state < ParseState::Resolved {
         return Err(DecodeError::Model {
@@ -24,6 +29,58 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
             what: "handles of an unresolved parse",
         });
     }
+    if resolve_backwards(lang, parse).is_ok() {
+        parse.state = ParseState::Handles;
+        return Ok(());
+    }
+    resolve_in_order(lang, parse)
+}
+
+/// The fast order: nodes from last to first.
+fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
+    let address = parse.addr;
+    let model = |what| DecodeError::Model { address, what };
+    let naddr = Some(parse.naddr);
+    for cur in (0..parse.nodes.len() as u32).rev() {
+        let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
+        let Some(ctor_id) = node.constructor() else {
+            continue;
+        };
+        let info = *lang
+            .tables
+            .ctor(ctor_id)
+            .ok_or_else(|| model("constructor"))?;
+        for oper in 0..info.num_ops {
+            let op = *lang
+                .tables
+                .op(&info, oper)
+                .ok_or_else(|| model("operand"))?;
+            if let OpDef::Subtable(_) = op.def {
+                continue;
+            }
+            let child = node.child(oper).ok_or_else(|| model("operand node"))?;
+            let handle = operand_handle(&env(lang, parse, naddr), op.def, child)?;
+            if let Some(slot) = parse.nodes.get_mut(child as usize) {
+                slot.handle = handle;
+            }
+        }
+        let export = lang
+            .tables
+            .main_template(lang.sla(), ctor_id)
+            .and_then(|template| template.result().copied());
+        if let Some(export) = export {
+            let handle = fix(&env(lang, parse, naddr), &export, cur)?;
+            if let Some(slot) = parse.nodes.get_mut(cur as usize) {
+                slot.handle = handle;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Ghidra's order (`Sleigh::resolveHandles`): depth first, operands in
+/// order, each constructor's export after its operands.
+fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
     let naddr = Some(parse.naddr);
@@ -288,11 +345,11 @@ pub(crate) fn operand_handle(
                 at: env.lang.raw_text(env.addr),
                 table: kind,
             };
-            match (kind, env.sla.symbol(symbol).map(|s| s.kind)) {
+            match (kind, env.sla.symbol(symbol).map(|s| &s.kind)) {
                 (TableKind::ValueTable, Some(SymbolKind::ValueMap { table, .. })) => {
                     let entry = env
                         .sla
-                        .value_table(table)
+                        .value_table(*table)
                         .get(value as u32 as usize)
                         .copied()
                         .ok_or_else(missing)?;
@@ -301,17 +358,15 @@ pub(crate) fn operand_handle(
                 (TableKind::VarnodeList, Some(SymbolKind::VarnodeList { table, .. })) => {
                     let register = env
                         .sla
-                        .varnode_table(table)
+                        .varnode_table(*table)
                         .get(value as u32 as usize)
                         .copied()
                         .flatten()
                         .ok_or_else(missing)?;
-                    match env.sla.symbol(register).map(|s| s.kind) {
-                        Some(SymbolKind::Varnode {
-                            space,
-                            offset,
-                            size,
-                        }) => FixedHandle::fixed(space, offset, size.max(0) as u32),
+                    match env.lang.tables.varnodes.get(register.index() as usize) {
+                        Some(Some((space, offset, size))) => {
+                            FixedHandle::fixed(*space, *offset, *size)
+                        }
                         _ => return Err(missing()),
                     }
                 }

@@ -8,7 +8,7 @@ use bk_sla::{ConstTpl, ConstructorId, HandleSelect, OpTpl, TemplateRef};
 
 use super::buffer::{OpBuffer, RawOp};
 use super::error::{LiftError, LiftLimit};
-use super::location::{CONST, Handles, Walk, is_dynamic, location, pointer};
+use super::location::{CONST, Handles, Walk, locate, pointer};
 use super::{BuildFeature, BuildObserver};
 use crate::context::ContextSource;
 use crate::decode::{ByteSource, Parse};
@@ -317,16 +317,29 @@ where
                 self.check_unset(vn, w);
             }
         }
-        let base = self.buf.alloc(inputs.len(), self.address)?;
-        for (i, vn) in inputs.iter().enumerate() {
-            let slot = base + i as u32;
-            let temp = location(self.lang, vn, w)?;
-            self.buf.set(slot, temp);
-            if is_dynamic(vn, w) {
+        if inputs.len() > super::buffer::MAX_VARNODES_PER_OP {
+            return Err(LiftError::TooManyVarnodes {
+                address: self.address,
+            });
+        }
+        // The inputs first, as one run; then the loads of dynamic ones, in
+        // input order, before the op.
+        let base = self.buf.vars.len() as u32;
+        let mut dynamic_inputs = false;
+        for vn in inputs {
+            let (temp, dynamic) = locate(self.lang, vn, w)?;
+            self.buf.vars.push(temp);
+            dynamic_inputs |= dynamic;
+        }
+        if dynamic_inputs {
+            for (i, vn) in inputs.iter().enumerate() {
+                if !super::location::is_dynamic(vn, w) {
+                    continue;
+                }
                 self.obs.feature(BuildFeature::DynamicLoad);
                 let load = self.buf.alloc(2, self.address)?;
                 self.pointer_into(vn, w, load)?;
-                self.push(OpCode::Load, Some(slot), load, 2)?;
+                self.push(OpCode::Load, Some(base + i as u32), load, 2)?;
             }
         }
         if let Some(first) = inputs.first()
@@ -339,21 +352,21 @@ where
             self.obs.feature(BuildFeature::RelativeBranch);
         }
         let num = inputs.len() as u32;
-        match tpl.output(op) {
-            Some(out) if is_dynamic(out, w) => {
-                self.obs.feature(BuildFeature::DynamicStore);
-                let store = self.buf.alloc(3, self.address)?;
-                self.buf.set(store + 2, location(self.lang, out, w)?);
-                self.push(op.opcode, Some(store + 2), base, num)?;
-                self.pointer_into(out, w, store)?;
-                self.push(OpCode::Store, None, store, 3)?;
-            }
-            Some(out) => {
-                let slot = self.buf.alloc(1, self.address)?;
-                self.buf.set(slot, location(self.lang, out, w)?);
-                self.push(op.opcode, Some(slot), base, num)?;
-            }
-            None => self.push(op.opcode, None, base, num)?,
+        let Some(out) = tpl.output(op) else {
+            return self.push(op.opcode, None, base, num);
+        };
+        let (temp, dynamic) = locate(self.lang, out, w)?;
+        if dynamic {
+            self.obs.feature(BuildFeature::DynamicStore);
+            let store = self.buf.alloc(3, self.address)?;
+            self.buf.set(store + 2, temp);
+            self.push(op.opcode, Some(store + 2), base, num)?;
+            self.pointer_into(out, w, store)?;
+            self.push(OpCode::Store, None, store, 3)?;
+        } else {
+            let slot = self.buf.vars.len() as u32;
+            self.buf.vars.push(temp);
+            self.push(op.opcode, Some(slot), base, num)?;
         }
         Ok(())
     }

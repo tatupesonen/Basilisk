@@ -95,11 +95,26 @@ pub(crate) struct Tables {
     /// Whether anything handle resolution or commits reach uses
     /// `inst_next2` (operands, exports, commit symbols).
     pub(crate) next2_anywhere: bool,
+    /// For each symbol, its varnode (space, offset, size) when it is a
+    /// varnode symbol: what a varnode-list operand resolves to.
+    pub(crate) varnodes: Vec<Option<(u32, u64, u32)>>,
 }
 
 impl Tables {
     pub(crate) fn build(sla: &Sla) -> Self {
         let mut tables = Self::default();
+        tables.varnodes = sla
+            .symbols()
+            .iter()
+            .map(|symbol| match symbol.kind {
+                SymbolKind::Varnode {
+                    space,
+                    offset,
+                    size,
+                } => Some((space, offset, size.max(0) as u32)),
+                _ => None,
+            })
+            .collect();
         for ctor in sla.constructors() {
             let start = tables.ops.len() as u32;
             for &symbol in sla.operands(ctor) {
