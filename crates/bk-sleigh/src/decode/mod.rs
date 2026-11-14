@@ -6,7 +6,7 @@ pub(crate) mod bytes;
 mod commit;
 mod decision;
 pub(crate) mod expr;
-mod handles;
+pub(crate) mod handles;
 pub(crate) mod resolve;
 pub(crate) mod tree;
 
@@ -22,7 +22,7 @@ use crate::error::DecodeError;
 use crate::language::Language;
 
 /// The most delay-slot instructions [`Decoder::prepare`] folds into one.
-const MAX_DELAY_INSTRUCTIONS: usize = 16;
+pub(crate) const MAX_DELAY_INSTRUCTIONS: usize = 16;
 
 /// What [`Decoder::prepare`] reports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -51,12 +51,19 @@ pub struct Disassembly {
 /// nothing.
 #[derive(Debug)]
 pub struct Decoder {
-    lang: Arc<Language>,
-    main: Parse,
-    delays: Vec<Parse>,
-    num_delays: usize,
+    pub(crate) lang: Arc<Language>,
+    pub(crate) main: Parse,
+    pub(crate) delays: Vec<Parse>,
+    pub(crate) num_delays: usize,
     lookahead: Parse,
-    operand_limit: u32,
+    pub(crate) operand_limit: u32,
+    /// The op buffer of p-code generation.
+    pub(crate) buf: crate::pcode::buffer::OpBuffer,
+    /// Scratch parses for crossbuild targets decoded on demand.
+    pub(crate) cross: Vec<Parse>,
+    /// Whether `main` holds what the last [`Decoder::decode`] produced and
+    /// nothing has prepared it since.
+    fresh: bool,
 }
 
 impl Decoder {
@@ -69,6 +76,9 @@ impl Decoder {
             num_delays: 0,
             lookahead: Parse::new(),
             operand_limit: u32::MAX,
+            buf: crate::pcode::buffer::OpBuffer::default(),
+            cross: Vec::new(),
+            fresh: false,
         }
     }
 
@@ -108,6 +118,7 @@ impl Decoder {
         C: ContextSource + ?Sized,
     {
         self.num_delays = 0;
+        self.fresh = false;
         resolve::resolve(
             &self.lang,
             &mut self.main,
@@ -117,7 +128,7 @@ impl Decoder {
             self.operand_limit,
         )?;
         if self.lang.tables.uses_next2 {
-            self.main.next2 = Self::next2(
+            let found = Self::next2(
                 &self.lang,
                 &mut self.lookahead,
                 &self.main,
@@ -125,7 +136,9 @@ impl Decoder {
                 context,
                 self.operand_limit,
             );
+            self.main.set_next2(found);
         }
+        self.fresh = true;
         Ok(&self.main)
     }
 
@@ -139,13 +152,13 @@ impl Decoder {
         bytes: &B,
         context: &C,
         operand_limit: u32,
-    ) -> Option<Address>
+    ) -> Result<Address, DecodeError>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
-        resolve::resolve(lang, scratch, parse.naddr, bytes, context, operand_limit).ok()?;
-        Some(resolve::add(lang, parse.naddr, u64::from(scratch.length())))
+        resolve::resolve(lang, scratch, parse.naddr, bytes, context, operand_limit)?;
+        Ok(resolve::add(lang, parse.naddr, u64::from(scratch.length())))
     }
 
     /// Resolves the handles of the last instruction decoded (Ghidra
@@ -155,8 +168,11 @@ impl Decoder {
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
-        if self.lang.tables.next2_anywhere && self.main.next2.is_none() {
-            self.main.next2 = Self::next2(
+        if self.lang.tables.next2_anywhere
+            && self.main.next2.is_none()
+            && self.main.next2_error.is_none()
+        {
+            let found = Self::next2(
                 &self.lang,
                 &mut self.lookahead,
                 &self.main,
@@ -164,6 +180,7 @@ impl Decoder {
                 context,
                 self.operand_limit,
             );
+            self.main.set_next2(found);
         }
         handles::resolve_handles(&self.lang, &mut self.main)?;
         Ok(&self.main)
@@ -227,20 +244,53 @@ impl Decoder {
         B: ByteSource + ?Sized,
         C: ContextSource + ContextSink + ?Sized,
     {
+        self.prepare_inner(addr, bytes, context, false)
+            .map_err(|(e, _)| e)
+    }
+
+    /// [`Decoder::prepare`], saying whether the error came from a
+    /// delay-slot instruction.
+    /// With `decoded`, the instruction at `addr` is the one the last
+    /// [`Decoder::decode`] decoded, from the same bytes and context, and is
+    /// not decoded again.
+    pub(crate) fn prepare_inner<B, C>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &mut C,
+        decoded: bool,
+    ) -> Result<Prepared, (DecodeError, bool)>
+    where
+        B: ByteSource + ?Sized,
+        C: ContextSource + ContextSink + ?Sized,
+    {
+        self.num_delays = 0;
         let align = u64::from(self.lang.alignment());
         if align != 1 && !addr.offset().is_multiple_of(align) {
-            return Err(DecodeError::Unaligned {
-                address: addr,
-                at: self.lang.raw_text(addr),
-            });
+            return Err((
+                DecodeError::Unaligned {
+                    address: addr,
+                    at: self.lang.raw_text(addr),
+                },
+                false,
+            ));
         }
-        self.decode(addr, bytes, &*context)?;
-        self.resolve_handles(bytes, &*context)?;
-        commit::apply_commits(&self.lang, &self.main, context)?;
+        let main = |e| (e, false);
+        let delay = |e| (e, true);
+        let reuse = decoded
+            && self.fresh
+            && self.main.addr == addr
+            && self.main.state >= ParseState::Resolved;
+        self.fresh = false;
+        if !reuse {
+            self.decode(addr, bytes, &*context).map_err(main)?;
+        }
+        self.resolve_handles(bytes, &*context).map_err(main)?;
+        commit::apply_commits(&self.lang, &self.main, context).map_err(main)?;
         let length = self.main.length();
         let mut fall = length;
-        let delay = self.main.delay_slot;
-        if delay > 0 {
+        let wanted = self.main.delay_slot;
+        if wanted > 0 {
             let mut covered = 0u32;
             while self.num_delays < MAX_DELAY_INSTRUCTIONS {
                 let at = resolve::add(&self.lang, addr, u64::from(fall));
@@ -250,9 +300,10 @@ impl Decoder {
                 let Some(slot) = self.delays.get_mut(self.num_delays) else {
                     break;
                 };
-                resolve::resolve(&self.lang, slot, at, bytes, &*context, self.operand_limit)?;
+                resolve::resolve(&self.lang, slot, at, bytes, &*context, self.operand_limit)
+                    .map_err(delay)?;
                 if self.lang.tables.next2_anywhere {
-                    slot.next2 = Self::next2(
+                    let found = Self::next2(
                         &self.lang,
                         &mut self.lookahead,
                         slot,
@@ -260,14 +311,15 @@ impl Decoder {
                         &*context,
                         self.operand_limit,
                     );
+                    slot.set_next2(found);
                 }
-                handles::resolve_handles(&self.lang, slot)?;
-                commit::apply_commits(&self.lang, slot, context)?;
+                handles::resolve_handles(&self.lang, slot).map_err(delay)?;
+                commit::apply_commits(&self.lang, slot, context).map_err(delay)?;
                 let len = slot.length();
                 self.num_delays += 1;
                 fall = fall.wrapping_add(len);
                 covered = covered.wrapping_add(len);
-                if covered >= delay || len == 0 {
+                if covered >= wanted || len == 0 {
                     break;
                 }
             }

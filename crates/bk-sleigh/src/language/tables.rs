@@ -81,6 +81,8 @@ pub(crate) struct CtorInfo {
     /// Whether the constructor has a main template (its body is not
     /// `unimpl`).
     pub(crate) has_main: bool,
+    /// The main template's id (meaningful when `has_main`).
+    pub(crate) main: bk_sla::TemplateId,
 }
 
 /// The precomputed tables of a language.
@@ -93,11 +95,28 @@ pub(crate) struct Tables {
     /// Whether anything handle resolution or commits reach uses
     /// `inst_next2` (operands, exports, commit symbols).
     pub(crate) next2_anywhere: bool,
+    /// For each symbol, its varnode (space, offset, size) when it is a
+    /// varnode symbol: what a varnode-list operand resolves to.
+    pub(crate) varnodes: Vec<Option<(u32, u64, u32)>>,
 }
 
 impl Tables {
     pub(crate) fn build(sla: &Sla) -> Self {
-        let mut tables = Self::default();
+        let mut tables = Self {
+            varnodes: sla
+                .symbols()
+                .iter()
+                .map(|symbol| match symbol.kind {
+                    SymbolKind::Varnode {
+                        space,
+                        offset,
+                        size,
+                    } => Some((space, offset, size.max(0) as u32)),
+                    _ => None,
+                })
+                .collect(),
+            ..Self::default()
+        };
         for ctor in sla.constructors() {
             let start = tables.ops.len() as u32;
             for &symbol in sla.operands(ctor) {
@@ -140,7 +159,18 @@ impl Tables {
                 matches!(c, bk_sla::ContextChange::Commit { symbol, .. }
                     if matches!(sla.symbol(*symbol).map(|s| s.kind), Some(SymbolKind::Next2)))
             });
-            tables.next2_anywhere |= export_next2 || commit_next2;
+            // `inst_next2` in a p-code template: the builder needs it.
+            let template_next2 = sla
+                .template_ids(ctor)
+                .filter_map(|id| sla.template(id))
+                .any(|t| {
+                    t.ops().iter().any(|op| {
+                        t.output(op).into_iter().chain(t.inputs(op)).any(|vn| {
+                            [vn.space, vn.offset, vn.size].contains(&bk_sla::ConstTpl::Next2)
+                        })
+                    })
+                });
+            tables.next2_anywhere |= export_next2 || commit_next2 || template_next2;
             tables.ctors.push(CtorInfo {
                 ops: start,
                 num_ops,
@@ -148,10 +178,31 @@ impl Tables {
                 delay: main.map_or(0, |t| t.header().delay),
                 flow_through,
                 has_main: main.is_some(),
+                main: sla
+                    .template_ids(ctor)
+                    .find(|id| {
+                        sla.template(*id)
+                            .is_some_and(|t| t.header().section.is_none())
+                    })
+                    .unwrap_or(bk_sla::TemplateId::new(0)),
             });
         }
         tables.next2_anywhere |= tables.uses_next2;
         tables
+    }
+
+    /// The main template of constructor `id` (`None` for `unimpl`).
+    pub(crate) fn main_template<'s>(
+        &self,
+        sla: &'s Sla,
+        id: ConstructorId,
+    ) -> Option<bk_sla::TemplateRef<'s>> {
+        let info = self.ctor(id)?;
+        if info.has_main {
+            sla.template(info.main)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn ctor(&self, id: ConstructorId) -> Option<&CtorInfo> {

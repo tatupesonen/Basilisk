@@ -26,6 +26,9 @@
 //! | 15 | `unimpl` body |
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
+pub(crate) mod pcode;
+mod pcode_parts;
+
 use bk_sla::{
     BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header, MaskWord,
     Operand, PairDef, PatternDef, PrintDef, ScopeId, Sla, SlaBuilder, SpaceDef, SpaceKind,
@@ -57,14 +60,14 @@ pub(crate) const PSPEC: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 /// The language id.
 pub(crate) const ID: &str = "BkFix:BE:32:default";
 
-struct Fx {
-    b: SlaBuilder,
-    global: ScopeId,
+pub(super) struct Fx {
+    pub(super) b: SlaBuilder,
+    pub(super) global: ScopeId,
 }
 
 /// A big-endian field of the two-byte token at the constructor's offset
 /// (`lo..=hi`, bit 0 least significant), or of a later byte with `byte`.
-fn token(lo: i32, hi: i32, signed: bool) -> Field {
+pub(super) fn token(lo: i32, hi: i32, signed: bool) -> Field {
     Field {
         big_endian: true,
         sign_bit: signed,
@@ -76,7 +79,7 @@ fn token(lo: i32, hi: i32, signed: bool) -> Field {
     }
 }
 
-fn context(lo: i32, hi: i32) -> Field {
+pub(super) fn context(lo: i32, hi: i32) -> Field {
     Field {
         big_endian: false,
         sign_bit: false,
@@ -88,7 +91,7 @@ fn context(lo: i32, hi: i32) -> Field {
     }
 }
 
-fn pattern(bytes: &[(u8, u8)]) -> BlockDef {
+pub(super) fn pattern(bytes: &[(u8, u8)]) -> BlockDef {
     let mut words = Vec::new();
     for chunk in bytes.chunks(4) {
         let mut mask = 0u32;
@@ -106,33 +109,33 @@ fn pattern(bytes: &[(u8, u8)]) -> BlockDef {
     }
 }
 
-fn text(s: &str) -> PrintDef {
+pub(super) fn text(s: &str) -> PrintDef {
     PrintDef::Text(s.to_owned())
 }
 
 /// What defines an operand.
-enum Def {
+pub(super) enum Def {
     Sym(SymbolId),
     Expr(ExprId),
 }
 
 impl Fx {
-    fn expr(&mut self, e: Expr) -> ExprId {
+    pub(super) fn expr(&mut self, e: Expr) -> ExprId {
         self.b.expr(e)
     }
 
-    fn field_expr(&mut self, f: Field) -> ExprId {
+    pub(super) fn field_expr(&mut self, f: Field) -> ExprId {
         let id = self.b.field(f);
         self.b.expr(Expr::TokenField(id))
     }
 
-    fn global(&mut self, name: &str, def: SymbolDef) -> SymbolId {
+    pub(super) fn global(&mut self, name: &str, def: SymbolDef) -> SymbolId {
         self.b.symbol(name, self.global, def)
     }
 
     /// Operand symbols of constructor `ct` of `table`: (name, def, offset,
     /// base, minlen).
-    fn operands(
+    pub(super) fn operands(
         &mut self,
         table: SymbolId,
         ct: u32,
@@ -169,7 +172,12 @@ impl Fx {
     }
 }
 
-fn ctor(length: i32, line: i32, operands: Vec<SymbolId>, print: Vec<PrintDef>) -> ConstructorDef {
+pub(super) fn ctor(
+    length: i32,
+    line: i32,
+    operands: Vec<SymbolId>,
+    print: Vec<PrintDef>,
+) -> ConstructorDef {
     let first = print
         .iter()
         .position(|p| *p == PrintDef::Text(" ".to_owned()))
@@ -186,7 +194,7 @@ fn ctor(length: i32, line: i32, operands: Vec<SymbolId>, print: Vec<PrintDef>) -
     }
 }
 
-fn leaf(pairs: Vec<(u32, PatternDef)>) -> DecisionDef {
+pub(super) fn leaf(pairs: Vec<(u32, PatternDef)>) -> DecisionDef {
     DecisionDef {
         number: pairs.len() as i32,
         context: false,
@@ -203,7 +211,7 @@ fn leaf(pairs: Vec<(u32, PatternDef)>) -> DecisionDef {
     }
 }
 
-fn space(kind: SpaceKind, name: &str, index: u32, delay: i32, size: i32) -> SpaceDef {
+pub(super) fn space(kind: SpaceKind, name: &str, index: u32, delay: i32, size: i32) -> SpaceDef {
     SpaceDef {
         kind,
         name: name.to_owned(),

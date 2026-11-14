@@ -42,6 +42,19 @@ fn decode_regressions() {
 }
 
 #[test]
+fn lift_regressions() {
+    for input in saved("bk_sleigh_lift") {
+        bk_sleigh_shared::lift(&input);
+    }
+    for selector in 0..8u8 {
+        let mut input = vec![selector, 0, 0, 0, 0, 0, 0, 0, 0];
+        input.extend((1..=0x14u8).flat_map(|op| [op, op.wrapping_mul(29)]));
+        bk_sleigh_shared::lift(&input);
+    }
+    bk_sleigh_shared::lift(&[]);
+}
+
+#[test]
 fn hostile_sla_regressions() {
     for input in saved("bk_sleigh_hostile_sla") {
         bk_sleigh_shared::hostile_sla(&input);

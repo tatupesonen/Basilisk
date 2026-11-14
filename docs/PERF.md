@@ -367,3 +367,37 @@ agents' builds and the differential test running).
 | decode + text (`decode` + `mnemonic` + `body` / `printAssembly`) | **2.41 M/s** (415 ns) | 1.50 M/s | ≥ reference — met |
 | allocations per instruction, steady state (`dhat`, 100,000 instructions) | **0** (x86-64 and the `bkfix` fixture; the only blocks counted are the context database's, built once) | — | 0 — met |
 | 8 threads sharing one `Language`, decode only | 2 threads 1.98×, 4 threads 3.60×, **8 threads 4.78×** | — | ≥ 6× on an idle 8-core machine — not met on this loaded machine (load average 14 with three agents' work); recorded, see the track report |
+
+### `bk-sleigh` (p-code generation, track `sleigh-pcode`)
+
+    crates/bk-sleigh/tests/reference_bench/build.sh ../reference
+    CARGO_BUILD_JOBS=2 cargo build --release -p basilisk
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 \
+      cargo test --release -p bk-sleigh --test bench_pcode -- --ignored --nocapture --test-threads=1
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 \
+      cargo test -p bk-sleigh --test bench_heap -- --nocapture
+
+Input as for decoding (538,553 bytes of x86-64, 147,953 instructions);
+the end-to-end rows use the 778,001-byte input of the reference-tools rows
+above (`build.sh` now writes it as `target/bench/x86-64-code-778k.bin`).
+Reference: `slabench` (now also `instructionLength` + `oneInstruction` into
+a counting emitter, and `printAssembly` + `oneInstruction`) and
+`pcodedump`, run by the benchmark in the same session. Best of 5.
+2026-11-14, M1 Pro, load average about 6–12, Rust 1.97.1 (before the
+master merge; the code measured is the final one).
+
+| Benchmark | basilisk | Ghidra C++ (same session) | Required |
+|---|---:|---:|---|
+| decode + lift, counting emitter (`decode` … `lift` / `instructionLength` + `oneInstruction`) | **1.61 M instructions/s, 6.60 M ops/s** (623 ns) | 1.60 M/s, 6.57 M ops/s | ≥ reference — met; both sides emit 608,674 ops |
+| decode + text + lift (`decode`, `mnemonic`, `body`, `lift_decoded`) | **1.38 M/s** | 1.01 M/s | ≥ reference — met |
+| `basilisk disasm --quiet` end to end, 778 kB (process start, load, sweep) | **0.190 s** | `pcodedump --quiet` 0.201 s | no slower — met |
+| `basilisk disasm`, full listing to a null device | **0.396 s** | `pcodedump` 0.714 s | no slower — met |
+| allocations per instruction lifting, steady state (`dhat`, 100,000 instructions) | **0** (`bkpc` fixture incl. delay slots and crossbuild; x86-64) | — | 0 — met |
+| 8 threads sharing one `Language` | decode 4.0–4.7×, decode + lift 4.7–5.7× (load average 6–20 at the time) | — | ≥ 6× on an idle machine — not shown; the machine was never idle |
+
+What made the difference (from 1.36 to 1.61 M/s): `lift_decoded` (Ghidra's
+parse cache gives `oneInstruction` the parse `printAssembly` made; basilisk
+reuses the last decode explicitly instead of decoding twice), handles
+resolved last node first instead of the depth-first walk with re-entry,
+precomputed main-template ids, varnode symbols and space classes, operand
+varnodes resolved with one handle look-up, and no `Arc` clone per lift.

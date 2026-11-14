@@ -441,7 +441,14 @@ dependencies = [
 name = "basilisk"
 version = "0.0.1"
 dependencies = [
+ "bk-core",
+ "bk-lang",
+ "bk-pcode",
+ "bk-sla",
+ "bk-sleigh",
+ "bk-testkit",
  "bk-ui",
+ "tempfile",
 ]
 
 [[package]]
@@ -644,6 +651,7 @@ dependencies = [
  "dhat",
  "insta",
  "proptest",
+ "rstest",
  "tempfile",
  "thiserror 2.0.21",
  "wait-timeout",

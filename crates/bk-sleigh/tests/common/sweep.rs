@@ -1,17 +1,55 @@
-//! basilisk's side of `pcodedump`'s linear sweep, written in the oracle's
-//! record format (`tools/reference/README.md`), without `P` and `U` records.
+//! basilisk's side of `pcodedump`'s linear sweep: the library's sweep
+//! (`bk_sleigh::dump`, every record including `P` and `U`), with what the
+//! harness needs to judge differences and coverage collected per record.
 
-use std::fmt::Write as _;
 use std::sync::Arc;
 
 use bk_core::Address;
-use bk_sleigh::{ContextDb, DecodeError, Decoder, ErrorClass, Language, SliceBytes};
+use bk_sla::ConstructorId;
+use bk_sleigh::dump::{self, SweepObserver};
+use bk_sleigh::{BuildFeature, BuildObserver, ContextDb, Decoder, Language};
 
-/// One instruction or error of a sweep, with what the harness needs to
-/// judge differences.
+/// The feature columns of the coverage table, in order.
+pub(crate) const FEATURES: [BuildFeature; 8] = [
+    BuildFeature::DelaySlot,
+    BuildFeature::CrossBuild,
+    BuildFeature::NamedSection,
+    BuildFeature::RelativeBranch,
+    BuildFeature::DynamicLoad,
+    BuildFeature::DynamicStore,
+    BuildFeature::TruncatedDynamic,
+    BuildFeature::UnsetHandle,
+];
+
+/// Column names of [`FEATURES`].
+pub(crate) const FEATURE_NAMES: [&str; 8] = [
+    "delay",
+    "crossbuild",
+    "section",
+    "relative",
+    "load",
+    "store",
+    "truncated",
+    "unset",
+];
+
+/// What one instruction's build touched.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Built {
+    /// Constructors whose main template was built.
+    pub(crate) templates: Vec<u32>,
+    /// (constructor, section or `u32::MAX`, op index) built.
+    pub(crate) ops: Vec<(u32, u32, u32)>,
+    pub(crate) features: [u64; 8],
+    pub(crate) cross_targets: Vec<u64>,
+}
+
+/// One record of a sweep (an `I` record with its `P`/`U` lines, or an `E`
+/// record), with what the harness needs to judge differences.
 #[derive(Clone, Debug)]
 pub(crate) struct Record {
     pub(crate) address: u64,
+    /// The record's lines without the final newline.
     pub(crate) line: String,
     /// Constructors of every node, for an `I` record.
     pub(crate) constructors: Vec<u32>,
@@ -19,15 +57,26 @@ pub(crate) struct Record {
     /// Ghidra's C++ cannot decode a constructor with more than 20 operands.
     pub(crate) too_many_operands: bool,
     /// A delay-slot instruction folded into this one has more than 20
-    /// operands (the oracle's flow length is then the plain length).
+    /// operands.
     pub(crate) delay_over_20: bool,
     pub(crate) reads_past_window: bool,
     pub(crate) committed: bool,
     pub(crate) uses_next2: bool,
+    pub(crate) built: Built,
+    /// Delay-slot instruction addresses lifted with this one, each with its
+    /// next address when it computed `inst_next2`.
+    pub(crate) delays: Vec<(u64, Option<u64>)>,
+    /// The next address, when `inst_next2` was computed (Ghidra looks the
+    /// next instruction up in its parse cache).
+    pub(crate) next: Option<u64>,
+    /// Ghidra's parse cache reused the parse of this instruction (or of
+    /// one of its delay slots) before its p-code was built (`cache.rs`).
+    pub(crate) cache_clobbered: bool,
+    /// A crossbuild target Ghidra's parse cache would not hold.
+    pub(crate) cross_uncached: bool,
 }
 
-/// The sweep's records and the closing `T` line (whose error count has no
-/// `U` records, which this part cannot predict).
+/// The sweep's records and its `T` record.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Sweep {
     pub(crate) records: Vec<Record>,
@@ -38,32 +87,6 @@ pub(crate) struct Sweep {
 impl Sweep {
     pub(crate) fn t_line(&self) -> String {
         format!("T\t{}\t{}", self.instructions, self.errors)
-    }
-}
-
-pub(crate) fn escape(text: &str, out: &mut String) {
-    for c in text.chars() {
-        match c {
-            '\\' => out.push_str("\\\\"),
-            '\t' => out.push_str("\\t"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            c => out.push(c),
-        }
-    }
-}
-
-fn hex_bytes(bytes: &[u8], out: &mut String) {
-    for b in bytes {
-        let _ = write!(out, "{b:02x}");
-    }
-}
-
-pub(crate) fn kind(error: &DecodeError) -> &'static str {
-    match error.class() {
-        ErrorClass::BadData => "bad-data",
-        ErrorClass::Unimplemented => "unimplemented",
-        ErrorClass::Lowlevel => "error",
     }
 }
 
@@ -80,6 +103,90 @@ pub(crate) fn start_context(lang: &Language, context: &[(String, u32)]) -> Conte
     db
 }
 
+#[derive(Default)]
+struct Collect {
+    records: Vec<Record>,
+    built: Built,
+}
+
+impl BuildObserver for Collect {
+    fn template(&mut self, ctor: Option<ConstructorId>, section: Option<u32>) {
+        if let (Some(c), None) = (ctor, section) {
+            self.built.templates.push(c.index());
+        }
+    }
+
+    fn op_template(&mut self, ctor: Option<ConstructorId>, section: Option<u32>, index: u32) {
+        if let Some(c) = ctor {
+            self.built
+                .ops
+                .push((c.index(), section.unwrap_or(u32::MAX), index));
+        }
+    }
+
+    fn feature(&mut self, feature: BuildFeature) {
+        if let Some(i) = FEATURES.iter().position(|f| *f == feature) {
+            self.built.features[i] += 1;
+        }
+    }
+
+    fn crossbuild_target(&mut self, target: Address) {
+        self.built.cross_targets.push(target.offset());
+    }
+}
+
+impl SweepObserver for Collect {
+    fn record(&mut self, address: u64, text: &str, decoder: Option<&Decoder>) {
+        let built = std::mem::take(&mut self.built);
+        let line = text.strip_suffix('\n').unwrap_or(text).to_owned();
+        let mut record = Record {
+            address,
+            line,
+            constructors: Vec::new(),
+            root_constructor: None,
+            too_many_operands: false,
+            delay_over_20: false,
+            reads_past_window: false,
+            committed: false,
+            uses_next2: false,
+            built,
+            delays: Vec::new(),
+            next: None,
+            cache_clobbered: false,
+            cross_uncached: false,
+        };
+        if let Some(decoder) = decoder {
+            let parse = decoder.parse();
+            record.constructors = parse.constructors().map(ConstructorId::index).collect();
+            record.root_constructor = record.constructors.first().copied();
+            record.too_many_operands = parse.max_operands() > 20;
+            record.reads_past_window = parse.reads_past_window()
+                || decoder
+                    .delay_slots()
+                    .iter()
+                    .any(bk_sleigh::Parse::reads_past_window);
+            record.committed = !parse.commits().is_empty();
+            record.uses_next2 = parse.next2().is_some();
+            record.delay_over_20 = decoder.delay_slots().iter().any(|d| d.max_operands() > 20);
+            record.delays = decoder
+                .delay_slots()
+                .iter()
+                .map(|d| {
+                    let at = d.address().offset();
+                    (
+                        at,
+                        d.next2().map(|_| at.wrapping_add(u64::from(d.length()))),
+                    )
+                })
+                .collect();
+            record.next = parse
+                .next2()
+                .map(|_| address.wrapping_add(u64::from(parse.length())));
+        }
+        self.records.push(record);
+    }
+}
+
 /// Runs the sweep over `data` placed at `base`.
 pub(crate) fn sweep(
     lang: &Arc<Language>,
@@ -92,145 +199,21 @@ pub(crate) fn sweep(
     // Fail as Ghidra's C++ does on more than 20 operands, so both sweeps stay
     // in step; basilisk's own decoding of those is checked separately.
     decoder.set_operand_limit(Some(20));
-    let bytes = SliceBytes::new(base, data);
-    let space = lang.default_space();
-    let mut out = Sweep::default();
-    let mut mnemonic = String::new();
-    let mut body = String::new();
-    let mut pos = 0usize;
-    while pos < data.len() {
-        let offset = base.wrapping_add(pos as u64);
-        let addr = Address::new(space, offset);
-        let remaining = data.len() - pos;
-        mnemonic.clear();
-        body.clear();
-        let decoded = decoder
-            .decode(addr, &bytes, &db)
-            .map(bk_sleigh::Parse::length)
-            .and_then(|length| {
-                decoder.mnemonic(&mut mnemonic)?;
-                decoder.body(&mut body)?;
-                Ok(length)
-            });
-        let error_line = |len: usize, kind: &str, message: &str| {
-            let mut line = format!("E\t{offset:#x}\t{len}\t");
-            hex_bytes(data.get(pos..pos + len).unwrap_or_default(), &mut line);
-            line.push('\t');
-            line.push_str(kind);
-            line.push('\t');
-            escape(message, &mut line);
-            line
-        };
-        let plain = |line: String| Record {
-            address: offset,
-            line,
-            constructors: Vec::new(),
-            root_constructor: None,
-            too_many_operands: false,
-            delay_over_20: false,
-            reads_past_window: false,
-            committed: false,
-            uses_next2: false,
-        };
-        let length = match decoded {
-            Ok(length) => length as usize,
-            Err(error) => {
-                let mut record = plain(error_line(1, kind(&error), &error.to_string()));
-                record.reads_past_window = decoder.parse().reads_past_window();
-                record.too_many_operands = decoder.parse().max_operands() > 20;
-                out.records.push(record);
-                out.errors += 1;
-                pos += 1;
-                continue;
-            }
-        };
-        if length == 0 {
-            out.records
-                .push(plain(error_line(1, "error", "instruction has no length")));
-            out.errors += 1;
-            pos += 1;
-            continue;
-        }
-        if length > remaining {
-            out.records.push(plain(error_line(
-                remaining,
-                "truncated",
-                "instruction extends past the end of the input",
-            )));
-            out.errors += 1;
-            break;
-        }
-        let parse = decoder.parse();
-        let constructors: Vec<u32> = parse
-            .constructors()
-            .map(bk_sla::ConstructorId::index)
-            .collect();
-        let root_constructor = constructors.first().copied();
-        let too_many_operands = parse.max_operands() > 20;
-        let mut reads_past_window = parse.reads_past_window();
-        let committed = !parse.commits().is_empty();
-        let uses_next2 = parse.next2().is_some();
-        let flow = match decoder.prepare(addr, &bytes, &mut db) {
-            Ok(_) if nested_delay_missing(&decoder) => length,
-            Ok(prepared) => prepared.flow_length as usize,
-            Err(_) => length,
-        };
-        reads_past_window |= decoder
-            .delay_slots()
-            .iter()
-            .any(bk_sleigh::Parse::reads_past_window);
-        let delay_over_20 = decoder.delay_slots().iter().any(|d| d.max_operands() > 20);
-        let mut line = format!("I\t{offset:#x}\t{length}\t{flow}\t");
-        hex_bytes(data.get(pos..pos + length).unwrap_or_default(), &mut line);
-        line.push('\t');
-        escape(&mnemonic, &mut line);
-        line.push('\t');
-        escape(&body, &mut line);
-        out.records.push(Record {
-            address: offset,
-            line,
-            constructors,
-            root_constructor,
-            too_many_operands,
-            delay_over_20,
-            reads_past_window,
-            committed,
-            uses_next2,
-        });
-        out.instructions += 1;
-        pos += length;
+    let mut collect = Collect::default();
+    let mut out = String::new();
+    let counts = dump::sweep(
+        &mut decoder,
+        &mut db,
+        base,
+        data,
+        false,
+        &mut out,
+        &mut collect,
+    );
+    super::cache::mark(lang, &mut collect.records);
+    Sweep {
+        records: collect.records,
+        instructions: counts.instructions,
+        errors: counts.errors,
     }
-    out
-}
-
-/// Whether p-code generation will fail because a delay-slot instruction has
-/// a delay slot of its own whose instructions were not decoded by `prepare`:
-/// Ghidra's builder then finds no cached parse ("Could not obtain cached
-/// delay slot instruction"), `pcodedump` prints a `U` record and the flow
-/// length is the instruction's own length.
-pub(crate) fn nested_delay_missing(decoder: &Decoder) -> bool {
-    let delays = decoder.delay_slots();
-    let decoded: Vec<u64> = std::iter::once(decoder.parse())
-        .chain(delays)
-        .map(|p| p.address().offset())
-        .collect();
-    delays.iter().enumerate().any(|(i, d)| {
-        if d.delay_slot() == 0 {
-            return false;
-        }
-        // The instructions after `d`, as decoded, must cover its delay bytes.
-        let mut at = d.address().offset().wrapping_add(u64::from(d.length()));
-        let mut covered = 0u32;
-        for later in delays.iter().skip(i + 1) {
-            if covered >= d.delay_slot() {
-                break;
-            }
-            if later.address().offset() != at || !decoded.contains(&at) {
-                return true;
-            }
-            covered += later.length();
-            at = at.wrapping_add(u64::from(later.length()));
-        }
-        covered < d.delay_slot()
-    })
 }

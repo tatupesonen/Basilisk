@@ -106,6 +106,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "bk_sleigh_lift"
+path = "fuzz_targets/bk_sleigh_lift.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "bk_sleigh_hostile_sla"
 path = "fuzz_targets/bk_sleigh_hostile_sla.rs"
 test = false

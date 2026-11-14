@@ -5,6 +5,9 @@
 #                                 (ruleaction, coreaction, fspec, type) built
 #                                 -O2 -arch x86_64, concatenated (the input of
 #                                 inventory 8a and docs/agents/spec-sleigh.md)
+#   target/bench/x86-64-code-778k.bin  the same plus printc, funcdata_varnode,
+#                                 block and database (the 778 kB input of the
+#                                 end-to-end pcodedump comparison, PERF.md)
 #   target/bench/slabench         slabench.cc linked against the reference
 #                                 build's libsla.a
 # Usage: crates/bk-sleigh/tests/reference_bench/build.sh [REFERENCE_DIR]
@@ -15,7 +18,8 @@ REF=${1:-${BASILISK_REFERENCE_DIR:-$root/../reference}}
 out=$root/target/bench
 mkdir -p "$out"
 : > "$out/x86-64-code.bin"
-for name in ruleaction coreaction fspec type; do
+: > "$out/x86-64-code-778k.bin"
+for name in ruleaction coreaction fspec type printc funcdata_varnode block database; do
   c++ -std=c++11 -O2 -w -arch x86_64 -c "$REF/src/cpp/$name.cc" -o "$out/code.o"
   # shellcheck disable=SC2046
   set -- $(otool -l "$out/code.o" | awk '
@@ -23,7 +27,11 @@ for name in ruleaction coreaction fspec type; do
     $1 == "size" && name == "__text" && !size { size = $2 }
     $1 == "offset" && name == "__text" && !offset { offset = $2 }
     END { print offset, size }')
-  { tail -c +"$(($1 + 1))" "$out/code.o" | head -c "$(($2))" >> "$out/x86-64-code.bin"; } || true
+  case $name in
+    ruleaction|coreaction|fspec|type)
+      { tail -c +"$(($1 + 1))" "$out/code.o" | head -c "$(($2))" >> "$out/x86-64-code.bin"; } || true ;;
+  esac
+  { tail -c +"$(($1 + 1))" "$out/code.o" | head -c "$(($2))" >> "$out/x86-64-code-778k.bin"; } || true
 done
 rm -f "$out/code.o"
 c++ -std=c++11 -O2 -w -DLOCAL_ZLIB -fsigned-char -I"$REF/src/cpp" \

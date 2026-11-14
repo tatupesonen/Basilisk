@@ -26,6 +26,18 @@ use tables::Tables;
 pub(crate) struct SpaceText {
     shortcut: char,
     form: RawForm,
+    /// How p-code generation places an offset in the space.
+    class: SpaceClass,
+    /// The space's highest offset.
+    highest: u64,
+}
+
+/// How a varnode offset is placed in a space (Ghidra `generateLocation`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SpaceClass {
+    Constant,
+    Unique,
+    Other,
 }
 
 /// A compiled language ready for decoding: its model, address spaces,
@@ -194,10 +206,34 @@ impl Language {
         }
     }
 
+    /// The offset of a varnode in space `space` as p-code generation
+    /// places it: masked to `size` bytes in the constant space, `OR`ed with
+    /// `unique` in the unique space, wrapped to the space elsewhere.
+    pub(crate) fn place_offset(&self, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
+        let Some(text) = self.space_text.get(space as usize) else {
+            return offset;
+        };
+        match text.class {
+            SpaceClass::Constant => offset & crate::pcode::buffer::calc_mask(size),
+            SpaceClass::Unique => offset | unique,
+            SpaceClass::Other if offset <= text.highest => offset,
+            SpaceClass::Other => self
+                .spaces
+                .space_at(space)
+                .map_or(offset, |s| s.wrap_offset(offset)),
+        }
+    }
+
     fn compute_space_text(spaces: &SpaceManager) -> Vec<SpaceText> {
         (0..spaces.num_spaces())
             .map(|index| match spaces.space_at(index) {
                 Some(space) => SpaceText {
+                    class: match space.kind() {
+                        SpaceKind::Constant => SpaceClass::Constant,
+                        SpaceKind::Unique => SpaceClass::Unique,
+                        _ => SpaceClass::Other,
+                    },
+                    highest: space.highest(),
                     shortcut: space.shortcut().unwrap_or(' '),
                     form: match space.kind() {
                         SpaceKind::Constant | SpaceKind::Other | SpaceKind::Join => RawForm::Plain,
@@ -208,6 +244,8 @@ impl Language {
                     },
                 },
                 None => SpaceText {
+                    class: SpaceClass::Other,
+                    highest: u64::MAX,
                     shortcut: ' ',
                     form: RawForm::Plain,
                 },

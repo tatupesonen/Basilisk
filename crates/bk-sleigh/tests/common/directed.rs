@@ -240,7 +240,7 @@ const EXTENDED_ATTEMPTS: usize = 2048;
 /// Random bytes with a target's instruction pattern imposed and, when
 /// `nested`, a random leaf pattern of each sub-table operand at that
 /// operand's offset (when compatible).
-fn fill_sample(
+pub(crate) fn fill_sample(
     sla: &Sla,
     target: &Target,
     nested: bool,

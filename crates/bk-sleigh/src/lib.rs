@@ -1,5 +1,5 @@
-//! The SLEIGH runtime, part 1: loading a compiled language, the decoding
-//! context, decoding instructions and their disassembly text.
+//! The SLEIGH runtime: loading a compiled language, the decoding context,
+//! decoding instructions, their disassembly text and their p-code.
 //!
 //! This crate corresponds to Ghidra's C++ SLEIGH engine (`sleigh.cc`,
 //! `sleighbase.cc`, `context.cc`, `globalcontext.cc`, `slghsymbol.cc`,
@@ -17,13 +17,18 @@
 //!   [`Decoder::apply_commits`], [`Decoder::prepare`]) and prints it
 //!   ([`Language::mnemonic`], [`Language::body`]).
 //! - [`DecodeError`], [`LoadError`]: errors carrying Ghidra's messages.
-//! - [`Translate`]: the translator interface, completed by p-code
-//!   generation in a later part.
+//! - [`Decoder::lift`], [`Decoder::build_template`]: p-code generation into
+//!   a [`PcodeEmit`] (`features/sleigh-pcode.md`).
+//! - [`dump`]: `pcodedump`'s sweep and record format (`basilisk disasm`).
+//! - [`Translate`]: the translator interface; [`Translator`] implements it.
 
 pub mod context;
 pub mod decode;
+pub mod dump;
+pub mod emit;
 pub mod error;
 pub mod language;
+pub mod pcode;
 mod print;
 pub mod translate;
 
@@ -32,6 +37,8 @@ pub use decode::{
     ByteSource, Commit, Decoder, Disassembly, FixedHandle, Node, Parse, ParseState, Prepared,
     SliceBytes, WINDOW,
 };
+pub use emit::{CollectedOp, PcodeCollector, PcodeCounter, PcodeEmit, PcodeRecords};
 pub use error::{DecodeError, ErrorClass, Limit, LoadError, RawText, TableKind};
 pub use language::{Language, RegisterTable};
-pub use translate::{Translate, Translator};
+pub use pcode::{BuildFeature, BuildObserver, InjectContext, LiftError, LiftLimit};
+pub use translate::{Translate, Translator, UniqueLayout};
