@@ -44,7 +44,14 @@ for mode in "$@"; do
   sed "s/^/$mode report: /" "$TB_OUT/$mode-sites.txt" >> "$TB_OUT/fails.tmp"
   tb_failed "$log" | sed "s/^/$mode /" >> "$TB_OUT/fails.tmp"
   [ "$code" -eq 0 ] || { rc=1; grep -q "^$mode -p" "$TB_OUT/fails.tmp" || echo "$mode: cargo test exit $code" >> "$TB_OUT/fails.tmp"; }
-  parts+=("$mode $(tb_counts "$log"), $(wc -l < "$TB_OUT/$mode-sites.txt") report sites")
+  # The C must really be instrumented (the cc crate takes CFLAGS): count the
+  # binutils objects that call the sanitizer runtime.
+  hook=__asan_report_load; [ "$mode" = asan ] || hook=__ubsan_handle_
+  lib=$(find "target/testbed/$mode" -name 'libbk_binutils*.a' -newer "$TB_OUT/fails.tmp" 2>/dev/null | head -1)
+  [ -n "$lib" ] || lib=$(find "target/testbed/$mode" -name 'libbk_binutils*.a' 2>/dev/null | head -1)
+  inst=$( { [ -n "$lib" ] && nm -A "$lib" 2>/dev/null | grep "U $hook" | cut -d: -f2 | sort -u | wc -l; } || echo 0)
+  [ "$inst" -gt 0 ] || { rc=1; echo "$mode: the C was not instrumented (no $hook in ${lib:-libbk_binutils*.a})" >> "$TB_OUT/fails.tmp"; }
+  parts+=("$mode $(tb_counts "$log"), $inst C objects instrumented, $(wc -l < "$TB_OUT/$mode-sites.txt") report sites")
   say "$mode: exit $code, ${parts[-1]}"
 done
 tb_result "sanitizers: $(IFS=';'; echo "${parts[*]}") ($(tb_dur $(($(date +%s) - start))))" < "$TB_OUT/fails.tmp"
