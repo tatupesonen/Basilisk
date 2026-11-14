@@ -6,84 +6,209 @@ find why row by row, define Basilisk's result, test against both tables.
 
 ## State
 
-In progress.
-
 - [x] 1. Generator deterministic and robust (commit dc1e325).
-- [x] 2. Both tables generated and diffed (in scratch, not yet checked in).
-- [x] 3. Every differing row traced (below); valgrind run pending.
-- [ ] 4. ADR text.
-- [ ] 5. Two-table replay harness; `bk-cspec` already follows the rules.
-- [ ] 6. Tests on both machines.
+- [x] 2. Both tables generated, diffed, checked in (73a7505).
+- [x] 3. Every differing row traced (below).
+- [x] 4. ADR text (below, for the coordinator to record as ADR-038).
+- [x] 5. Two-table strict replay; stable, non-panicking trial sort.
+- [x] 6. `cargo test -p bk-cspec` on the Mac (both env vars set): all pass.
+- [ ] 6b. Same on the build host; valgrind of the old generator pending.
 - [ ] 7. Gates.
 
 ## 1. Generator fixes (`tests/oracle/cspec_oracle.cc`, `regen.sh`)
 
-- Pairs in byte order of id (Ghidra lists them in `readdir` order of the
-  `.ldefs` files, `FileManage::matchListDir`, filemanage.cc:177–203).
-- Heavy pair = first pair of a `.cspec` in that order that Ghidra builds.
-- Merged models: `defineMergedFields` sets `numgroup`, `maxdelay`,
+- **Pair order:** byte order of pair id. Ghidra lists pairs in `readdir`
+  order of the `.ldefs` files (`FileManage::matchListDir`,
+  filemanage.cc:177–203), i.e. the filesystem's (APFS gave `Toy` first,
+  ext4 `tricore`).
+- **Heavy pair rule:** the first pair of a `.cspec` in that order that
+  Ghidra builds gets the signature, trial, query and effect tables. (This
+  moves most heavy pairs relative to the old table; Basilisk's replay was
+  as clean on the new choice as on the old.)
+- **Merged models:** `defineMergedFields` sets `numgroup`, `maxdelay`,
   `thisbeforeret`, `autoKilledByCall` of a `ParamListMerged` to 0/false
-  before use (Ghidra defect: fspec.hh:630/732 leave them uninitialised;
-  fspec.cc:2416 → 790 `status.resize(numgroup,0)` reads the garbage before
-  `ParamListMerged::assignMap`, fspec.hh:737, throws as intended).
-- `regen.sh` names the table by library (`cspec_oracle.libcxx.txt.gz`,
-  `cspec_oracle.libstdcxx.txt.gz`), takes an output directory, and with
-  `REGEN_RUNS=N` runs N times and requires byte-identical output.
-- Mac: `REGEN_RUNS=20`: 20/20 complete and identical, 152,046 lines, sha256
-  `5b7fe23acdc8cef0…` (Apple clang 17, libc++). Build host: 20/20, identical,
-  152,046 lines, sha256 `48c44f43da7d5185…` (g++ 14.2, libstdc++). Run again
-  after the host's CPU gained FMA/AVX2: 20/20, byte-identical to the
-  earlier Linux table — no row depends on floating point.
-- With the new heavy rule the libc++ table replays with the same result as
-  before (127,088 rows, the one known trial row).
+  before any use. Ghidra defect: `ParamListMerged(void) :
+  ParamListStandard()` (fspec.hh:732) and `ParamListStandard(void) {}`
+  (fspec.hh:630) leave them uninitialised; only `ParamListStandard::decode`
+  (fspec.cc:1447) sets them, and merged lists are built by
+  `ProtoModelMerged::foldIn` (fspec.cc:2829). `assignParameterStorage`
+  (fspec.cc:2416) calls `allocateStatus` = `status.resize(numgroup,0)`
+  (fspec.cc:790) before `ParamListMerged::assignMap` (fspec.hh:737) throws
+  the intended "Cannot assign prototype before model has been resolved";
+  garbage that is negative or huge throws `std::length_error` instead.
+  With the fields defined, Ghidra's own code runs and gives its intended
+  error (the 1,116 `ASSIGN … ERR` rows are unchanged).
+- **`regen.sh`:** names the table by library (`cspec_oracle.libcxx.txt.gz`,
+  `cspec_oracle.libstdcxx.txt.gz`, detected from `_LIBCPP_VERSION` /
+  `__GLIBCXX__`), optional output directory, `REGEN_RUNS=N` runs N times
+  and requires byte-identical output.
+- **Runs:** Mac `REGEN_RUNS=20`: 20/20 complete, identical, 152,046 lines,
+  sha256 `5b7fe23acdc8cef0…` (Apple clang 17, libc++). Build host
+  `REGEN_RUNS=20`: 20/20, identical, 152,046 lines, sha256
+  `48c44f43da7d5185…` (g++ 14.2, libstdc++). After the owner switched the
+  host's CPU model (FMA, AVX2, AVX-512 now visible): 20/20 again,
+  **byte-identical to the table from before** — no row depends on floating
+  point or the CPU's math variants.
+- **valgrind memcheck** (build host, generator built with `-g`): the fixed
+  generator completes (exit 0); result line: see "valgrind" below.
 
-## 2./3. Differences libc++ vs libstdc++ (row by row, same line count)
+## 2./3. libc++ vs libstdc++, row by row
 
-119 rows differ, nothing else (no SPACE/REG/ORG/MODEL/LIST/ENTRY/ASSIGN/Q/
-JOIN/SPLITQ/TSET row):
+Same pairs, same records, same line count; **119 rows differ**, nothing
+else (no SPACE, REG, ORG, MODEL, LIST, ENTRY, RULE, ASSIGN, TSET, Q, JOIN,
+SPLITQ row):
 
-| Cause | Rows | Where |
+| Cause | Rows | Pairs/lists |
 |---|---|---|
-| A. effect tie order | 56 EFFECT (28 lists × 2) | NDS32 BE/LE, 12 RISC-V gcc pairs; `__stdcall`, `__thiscall` |
-| B. lookup in a tie group | 24 EFF | NDS32:BE 4, RV32 AndeStar 4, RV32I 4, RV64G 6, RV64I 6 |
-| C. identical trials | 38 TRES | tricore `__stdcall in` 24, Loongarch lp64f `__stdcall in` 14 |
-| D. entry-less trials | 1 TRES | x86:LE:64 golang `abi-internal out` set 107 |
+| A. effect tie order | 56 `EFFECT` | 28 lists: NDS32 BE/LE, RISC-V gcc ×12 (RV32 default/AndeStar_v5/G/GC/I/IC/IMC, RV64 default/G/GC/I/IC); `__stdcall`, `__thiscall`; one swap each |
+| B. lookup in a tie group | 24 `EFF` | NDS32:BE 4, RV32 AndeStar_v5 4, RV32I 4, RV64G 6, RV64I 6 (the heavy pairs of those files) |
+| C. identical trials | 38 `TRES` | tricore `__stdcall in` 24, Loongarch lp64f `__stdcall in` 14 |
+| D. entry-less trials | 1 `TRES` | x86:LE:64 golang `abi-internal out` set 107 |
 
-A. `ProtoModel::decode`, fspec.cc:2680 `sort(effectlist…, compareByAddress)`
-(fspec.hh:1786: space index, offset only). Ties: RISC-V names `ra` in
-`<killedbycall>` and as the compiler-level `<returnaddress>`; the model has
-none, so fspec.cc:2676–2678 appends the default return address last. NDS32
-names `lp` in `<unaffected>`, same default appended. 85 of 778 effect lists
-have ties (89 tie groups = the 89 known ties); 45 have ≤ 16 records, where
-both libraries use insertion sort (stable); of the 40 longer lists libstdc++'s
-introsort (> 16, `_S_threshold`) reorders 28; libc++ (partition above 30
-records for trivially copyable types) keeps document order in all 85 by
-outcome of its algorithm on these inputs, not by any guarantee.
+**A.** `ProtoModel::decode`, fspec.cc:2680, `sort(effectlist…,
+EffectRecord::compareByAddress)`; the comparator (fspec.hh:1786) looks at
+space index and offset only, so records at one address are equal. RISC-V
+names `ra` in `<killedbycall>` and as the compiler-level `<returnaddress>`;
+its models name none, so fspec.cc:2676–2678 append the default return
+address (kind 3) after decoding. NDS32: `lp` in `<unaffected>`, same
+default appended. Corpus-wide 85 of 778 effect lists have ties (89 tie
+groups — the "89 ties" known before). Lists of ≤ 16 records (45) come out in
+document order from both libraries (libstdc++'s `std::sort` is insertion
+sort below `_S_threshold` = 16; libc++ also uses insertion sort for short
+ranges). Of the 40 longer lists libstdc++'s introsort partitioning reorders
+28 and leaves 12 (tricore ×8, Loongarch lp64f ×2, Hexagon ×2) in document
+order by chance; libc++ leaves all 85 in document order, an outcome of its
+algorithm on these inputs, not a guarantee.
 
-B. `ProtoModel::lookupEffect`, fspec.cc:2463: `upper_bound` then `--iter`
-picks the last record of a tie group, so the answer is that record's kind:
-libc++ 3 (return address, appended last), libstdc++ 2/1 (killedbycall /
-unaffected). Every differing EFF row probes a tied address (4:2008/4:2004
-`ra`, 4:78 `lp`).
+**B.** `ProtoModel::lookupEffect`, fspec.cc:2463: `upper_bound` with the
+same comparator, then `--iter`: the answer is the kind of the *last* record
+of the tie group, i.e. whichever the sort put last. libc++ 3 (the appended
+return address), libstdc++ 2 (`ra` killedbycall) or 1 (`lp` unaffected).
+Every differing EFF probe lies in a tied register (4:2008/4:2004 `ra`, 4:78
+`lp`), within the last record's range.
 
-C. `ParamActive::sortTrials`, fspec.hh:322 (`std::sort`, operator<
-fspec.cc:1881) from `buildTrialMap`, fspec.cc:921. Two trials with equal
-address, size and entry compare equal; the generator's candidate list holds
-such duplicates (two entries over 4:ff90:4 on tricore, 5:10e0:4 on
-Loongarch). The later passes keep the first one used, mark the second
-not-used; which registered trial (slot) is first is the library's choice.
-Only trial lists > 16 differ (17 on tricore, 17/23 on Loongarch).
+**C.** `ParamActive::sortTrials`, fspec.hh:322 (`std::sort` with
+`ParamTrial::operator<`, fspec.cc:1881), from
+`ParamListStandard::buildTrialMap`, fspec.cc:921. Two trials with equal
+address, size and entry compare equal (the generator's candidate list
+contains such duplicates: two entries over 4:ff90:4 on tricore, 5:10e0:4 on
+Loongarch). `forceExclusionGroup` (fspec.cc:1017) keeps the first active
+trial of the exclusion group and `markGroupNoUse` (fspec.cc:961) marks the
+second not used (flags 43 vs 37), so which registered trial (slot) is kept
+is the library's choice. Only lists > 16 trials differ (17 on tricore, 17
+and 23 on Loongarch); libc++ keeps registration order.
 
-D. Same sort: operator< returns false both ways for two trials without an
-entry (fspec.cc:1883–1884), so those trials (sorted last) come in library
-order. Both libraries scramble the 48-trial tail differently; neither is
-registration order.
+**D.** Same sort: operator< returns false both ways for two trials without
+an entry (fspec.cc:1883–1884), so they (sorted last) are all equal. In the
+fallback output fill-in, `ParamListStandardOut::fillinMapFallback` sorts
+again for each candidate entry with entries set and cleared
+(fspec.cc:1659, 1708), so the final order of entry-less trials is whatever
+the chain of sorts left. Both libraries scramble the 48-trial tail, each
+differently; neither is registration order.
 
-## Notes
+**Other order-dependent code, no row in the table:** merged models'
+`ProtoModelMerged::intersectEffects` (fspec.cc:2767) pairs records at one
+address positionally (the 6 tie groups in merged models agree in both
+tables: their component lists have ≤ 16 records); `lookupRecord`
+(fspec.cc:2501, same rule as B); `FuncProto::decode`'s effect sort
+(fspec.cc:3673, same as A); `ScoreProtoModel::doScore` (fspec.cc:2728,
+`PEntry` by slot only: equal slots with different sizes change the score
+with the order). Basilisk sorts all of these stably.
 
-- Other order-dependent spots in Ghidra, no row in the table: merged effect
-  intersection `ProtoModelMerged::intersectEffects` fspec.cc:2767 (pairs
-  equal-address records positionally); `lookupRecord` fspec.cc:2501;
-  `FuncProto::decode` effect sort fspec.cc:3673; `ScoreProtoModel::doScore`
-  fspec.cc:2728 (PEntry by slot; equal slots with different sizes change the
-  score). Basilisk uses stable sorts in all of them.
+**Comparator defect:** `ParamTrial::operator<` is not a strict weak
+ordering in two corner cases: the reverse-stack test uses only the left
+trial's entry (two entries of one group, one reverse-stack, compare
+inconsistently), and the offset test applies only within one exclusive
+entry (trials of one entry with offsets and another entry of the same group
+compared by address can form a cycle). `std::sort` with such a comparator is
+undefined behaviour (libstdc++'s unguarded insertion can run past the
+range). Not reached by any shipped file in the table; Rust's `sort_by` may
+panic on it, which was a latent ADR-009 violation in `bk-cspec`.
+
+## 4. Proposed ADR (record as ADR-038)
+
+> ### ADR-038: Ghidra answers that depend on the C++ library's sort
+>
+> **Context.** Ghidra's decompiler sorts effect lists and parameter trials
+> with `std::sort`, which leaves elements that compare equal in an order the
+> C++ library chooses, and then answers lookups from that order. The
+> `bk-cspec` oracle, generated from the same Ghidra commit on macOS
+> (libc++) and x86-64 Linux (libstdc++), differs in 119 of 152,046 rows,
+> all from four causes: (A) effect records at one address (`ProtoModel::decode`,
+> fspec.cc:2680), (B) `hasEffect` at such an address, which takes the last
+> record of the tie (`lookupEffect`, fspec.cc:2463), (C) two trials of one
+> entry at one address and size, of which the first after the sort is kept
+> (`sortTrials` fspec.hh:322 from `buildTrialMap` fspec.cc:921), (D) trials
+> without an entry, which the comparator calls equal (fspec.cc:1881).
+> Ghidra's official releases ship decompilers built against libstdc++
+> (Linux), libc++ (macOS) and the MSVC library (Windows), so the same Ghidra
+> release already gives different answers per platform; none of the three
+> results follows from the source.
+>
+> **Decision.** Basilisk gives one result, defined by the specification
+> file alone: every such sort is stable. (A) Effect records at one address
+> keep document order, the default return address that `ProtoModel::decode`
+> appends last; (B) a lookup that Ghidra answers with the last tied record
+> answers with the last in document order (so the model's own or the
+> implicit return-address record decides for `ra`/`lp`); (C, D) trials that
+> compare equal keep their order from before the sort — registration
+> (slot) order on input, the order the previous sorts left in the output
+> fallback. Trials are sorted with a stable insertion sort, which gives a
+> defined order and never panics even where Ghidra's comparator is not a
+> strict weak ordering.
+>
+> **Consequences.** Basilisk equals Ghidra built with libc++ on every row
+> of A–C in today's corpus, and Ghidra built with libstdc++ (and, by its
+> insertion-sort threshold of 32, MSVC) on every list short enough for that
+> library's insertion sort; D equals neither. The oracle is kept for both
+> libraries (`tests/data/cspec_oracle.{libcxx,libstdcxx}.txt.gz`); the
+> replay requires rows where they agree to match and recognises and counts
+> each row where they disagree (A 56, B 24, C 38, D 1), so a new cause or a
+> regenerated table that moves a count fails the test. The rule extends to
+> the other order-dependent spots of the same kind (merged-effect
+> intersection, `lookupRecord`, `FuncProto` effect decode, prototype
+> scoring).
+
+## 5. What changed in `bk-cspec`
+
+- `src/trial.rs`: `sort_trials` and `sort_fixed_position` use a private
+  stable insertion sort (`insertion_sort_by`) instead of `sort_by`: same
+  result for a strict weak ordering, no panic possible for any comparator,
+  libstdc++'s algorithm up to 16 elements. Two unit tests (stability; a
+  comparator that is no order: no panic, deterministic, a permutation).
+- `src/effect.rs`: doc comments state the rule (behaviour was already
+  document order, last-of-group lookup).
+- No other behaviour change was needed: Basilisk already sorted stably,
+  which is why the libc++ table matched; nothing in `bk-cspec` matched
+  libc++ by accident where Ghidra's source defines another answer.
+- Tests: `tests/oracle_replay.rs` reads both tables, requires identical
+  pair lists and record shapes, compares every row with both; rows where
+  they agree must equal Basilisk's, rows where they disagree must be
+  recognised by `tests/oracle_common/host.rs` (A: same address in both, the
+  lists permutations, Basilisk's tie group in the `.cspec`'s document order
+  read by a small independent reader; B: the probe hits a tie group, both
+  answers are kinds in it, Basilisk's is the last; C: rows differ only in
+  slots of identical trials, Basilisk's row equals the rule; D: rows differ
+  only in the entry-less tail, Basilisk has the same head and the same tail
+  set) and the counts must be exactly A 56, B 24, C 38, D 1; and every one of
+  the 83 tie groups in non-merged models across all pairs must be in
+  document order in Basilisk's lists. `tests/oracle_regen.rs` (new):
+  with `BASILISK_REFERENCE_DIR`, runs `regen.sh` and requires the fresh
+  table to equal the checked-in table of the host's library (5.5 s on the
+  Mac); skipped with a reason without it, without bash/c++, or without
+  the reference objects.
+- Tables: `cspec_oracle.txt.gz` replaced by `cspec_oracle.libcxx.txt.gz`
+  (857 kB) and `cspec_oracle.libstdcxx.txt.gz` (859 kB); README rewritten.
+
+## valgrind
+
+(pending)
+
+## Test runs
+
+- Mac (macOS AArch64), `BASILISK_GHIDRA_DIR` and `BASILISK_REFERENCE_DIR`
+  set, `cargo test -p bk-cspec`: all pass (units 11, derived 50, funcproto
+  21, java 12, paramstore 5, properties 4, replay 1, regen 1, corpus 1,
+  funcproto_real 1, fuzz replay 1, bench 2 ignored).
+- Mac: `cargo clippy -p bk-cspec --all-targets --all-features --target
+  x86_64-pc-windows-msvc -- -D warnings` clean.
