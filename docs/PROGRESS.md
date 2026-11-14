@@ -130,8 +130,10 @@ text. The two findings of its report are queue items 1 and 3 below.
 Small things left: `cargo deny --offline` needs `cargo fetch --locked`
 first on a fresh machine (the script does it; the gate could);
 `remote.sh clean` has no "build output only" option; `miri.sh` and the
-fuzz smoke were not run on the host; optional `apt-get install gdb`
-there (the coordinator can, with sudo).
+fuzz smoke were not run on the host. The coordinator installed `gdb`,
+`perf` and `valgrind` there on 2026-11-14 and set
+`kernel.perf_event_paranoid=1` (`/etc/sysctl.d/90-bk-perf.conf`), for
+the `cspec-host` and `sleigh-perf-linux` tracks.
 
 **Merged:** `sleigh-compiler-back` (`8762851`, CI run 43616696840 green
 on every job, integration gate 2,030 tests, 0 new packages, advisories
@@ -294,8 +296,7 @@ start a fresh agent briefed from the branch's files.
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
-   not met there. Profile on the build host (`perf` needs installing:
-   coordinator, with sudo), find where the time goes (allocator, bounds
+   not met there. Profile on the build host (`perf` is installed), find where the time goes (allocator, bounds
    checks, code layout, the x86-64 code generator against AArch64's),
    fix it without `unsafe`, and report numbers on both machines.
 4. D01 `bk-decomp-range`, then the rest of the order below.
