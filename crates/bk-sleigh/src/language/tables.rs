@@ -258,7 +258,11 @@ fn fills(sla: &Sla, expr: ExprId, size: u32) -> bool {
 /// count is taken modulo 64 as on x86-64 (ADR-021).
 pub(crate) fn zero_extend(value: i64, bit: i32) -> i64 {
     let shift = (63i32.wrapping_sub(bit)) as u32;
-    (value.cast_unsigned().wrapping_shl(shift).wrapping_shr(shift)).cast_signed()
+    (value
+        .cast_unsigned()
+        .wrapping_shl(shift)
+        .wrapping_shr(shift))
+    .cast_signed()
 }
 
 /// Ghidra `sign_extend(val, bit)`: copies bit `bit` into the bits above it.

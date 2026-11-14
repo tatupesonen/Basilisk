@@ -12,7 +12,18 @@ use bk_sleigh::{ContextVar, Decoder, Language, SliceBytes};
 
 use super::sweep::start_context;
 
-/// A deterministic generator (SplitMix64).
+/// A `--context` configuration: variable names and values, in order.
+pub(crate) type Config = Vec<(String, u32)>;
+
+/// A prefix: its target index, configuration and the operand offset of the
+/// re-entered root table.
+type Prefix = (usize, Config, i32);
+
+/// A sample: its target (none for one added for constructor coverage) and
+/// bytes.
+pub(crate) type Sample = (Option<usize>, [u8; 16]);
+
+/// A deterministic generator (`SplitMix64`).
 #[derive(Clone, Debug)]
 pub(crate) struct Rng(u64);
 
@@ -43,7 +54,9 @@ impl Rng {
 
 /// A seed derived from a name.
 pub(crate) fn seed(name: &str) -> u64 {
-    name.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100_0000_01b3))
+    name.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x100_0000_01b3)
+    })
 }
 
 /// A block as (offset, mask/value words).
@@ -69,7 +82,11 @@ fn block(sla: &Sla, id: bk_sla::BlockId) -> Option<Block> {
     }
     Some(Block {
         offset: b.offset,
-        words: sla.block_words(b).iter().map(|w| (w.mask, w.value)).collect(),
+        words: sla
+            .block_words(b)
+            .iter()
+            .map(|w| (w.mask, w.value))
+            .collect(),
     })
 }
 
@@ -82,13 +99,18 @@ pub(crate) fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
     let mut out = Vec::new();
     let mut stack: Vec<DecisionId> = vec![subtable.decision];
     while let Some(id) = stack.pop() {
-        let Some(node) = sla.decision(id) else { continue };
+        let Some(node) = sla.decision(id) else {
+            continue;
+        };
         if node.is_leaf() {
             for pair in sla.pairs(node) {
                 let (context, instruction) = match pair.pattern {
                     DisjointPattern::Instruction(b) => (None, block(sla, b)),
                     DisjointPattern::Context(b) => (block(sla, b), None),
-                    DisjointPattern::Combine { context, instruction } => (block(sla, context), block(sla, instruction)),
+                    DisjointPattern::Combine {
+                        context,
+                        instruction,
+                    } => (block(sla, context), block(sla, instruction)),
                 };
                 out.push(Target {
                     leaf: id.index(),
@@ -98,8 +120,7 @@ pub(crate) fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
                 });
             }
         } else {
-            let children: Vec<_> = sla.children(node).collect();
-            stack.extend(children.into_iter().rev());
+            stack.extend(sla.children(node).collect::<Vec<_>>().into_iter().rev());
         }
     }
     out
@@ -108,13 +129,13 @@ pub(crate) fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
 /// The context variables that express a context block, with their values
 /// (unconstrained bits 0); `None` when some constrained bit is in no
 /// variable.
-pub(crate) fn configuration(lang: &Language, block: &Block) -> Option<Vec<(String, u32)>> {
+pub(crate) fn configuration(lang: &Language, block: &Block) -> Option<Config> {
     // Masked bits as (global bit index, value).
     let mut bits = Vec::new();
     for (k, &(mask, value)) in block.words.iter().enumerate() {
         for bit in 0..32u32 {
             if mask & (0x8000_0000 >> bit) != 0 {
-                let global = block.offset as i64 * 8 + k as i64 * 32 + i64::from(bit);
+                let global = i64::from(block.offset) * 8 + k as i64 * 32 + i64::from(bit);
                 bits.push((global, value & (0x8000_0000 >> bit) != 0));
             }
         }
@@ -129,7 +150,7 @@ pub(crate) fn configuration(lang: &Language, block: &Block) -> Option<Vec<(Strin
         let var = vars.iter().find(|v| covers(v, bit))?;
         chosen.push(var);
     }
-    let mut out: Vec<(String, u32)> = chosen
+    let mut out: Config = chosen
         .iter()
         .map(|var| {
             let mut value = 0u32;
@@ -151,7 +172,13 @@ fn covers(var: &ContextVar, bit: i64) -> bool {
 
 /// Imposes a block at `offset` of a 16-byte sample; `false` (and nothing
 /// changed) when it conflicts with bits fixed before or leaves the window.
-pub(crate) fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block, offset: i32, check: bool) -> bool {
+pub(crate) fn impose(
+    sample: &mut [u8; 16],
+    fixed: &mut [u8; 16],
+    block: &Block,
+    offset: i32,
+    check: bool,
+) -> bool {
     let mut edits = Vec::new();
     for (k, &(mask, value)) in block.words.iter().enumerate() {
         for i in 0..4 {
@@ -160,12 +187,17 @@ pub(crate) fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block,
                 continue;
             }
             let v = (value >> (24 - 8 * i)) as u8;
-            let pos = offset as i64 + i64::from(block.offset) + 4 * k as i64 + i as i64;
-            let Ok(pos) = usize::try_from(pos) else { return false };
+            let pos = i64::from(offset) + i64::from(block.offset) + 4 * k as i64 + i64::from(i);
+            let Ok(pos) = usize::try_from(pos) else {
+                return false;
+            };
             if pos >= 16 {
                 return false;
             }
-            if check && (fixed[pos] & m) != 0 && (sample[pos] & fixed[pos] & m) != (v & fixed[pos] & m) {
+            if check
+                && (fixed[pos] & m) != 0
+                && (sample[pos] & fixed[pos] & m) != (v & fixed[pos] & m)
+            {
                 return false;
             }
             edits.push((pos, m, v));
@@ -184,7 +216,7 @@ pub(crate) struct Plan {
     pub(crate) targets: Vec<Target>,
     /// Configuration → samples as (target index, bytes); samples added for
     /// constructor coverage have no target.
-    pub(crate) groups: BTreeMap<Vec<(String, u32)>, Vec<(Option<usize>, [u8; 16])>>,
+    pub(crate) groups: BTreeMap<Config, Vec<Sample>>,
     /// Targets whose context block no named variable expresses.
     pub(crate) inexpressible: Vec<usize>,
     /// Targets whose constructor has more than 20 operands (kept out of the
@@ -228,12 +260,18 @@ fn fill_sample(
         return;
     };
     for &operand in sla.operands(ctor) {
-        let Some(SymbolKind::Operand(op)) = sla.symbol(operand).map(|s| s.kind) else { continue };
-        let Some(table) = op.defining_symbol.filter(|&t| sla.subtable(t).is_some()) else { continue };
+        let Some(SymbolKind::Operand(op)) = sla.symbol(operand).map(|s| s.kind) else {
+            continue;
+        };
+        let Some(table) = op.defining_symbol.filter(|&t| sla.subtable(t).is_some()) else {
+            continue;
+        };
         if op.base >= 0 {
             continue;
         }
-        let pairs = subtable_pairs.entry(table.index()).or_insert_with(|| leaf_pairs(sla, table));
+        let pairs = subtable_pairs
+            .entry(table.index())
+            .or_insert_with(|| leaf_pairs(sla, table));
         if pairs.is_empty() {
             continue;
         }
@@ -247,7 +285,7 @@ fn fill_sample(
 /// Root pairs (with their configuration and operand offset) whose
 /// constructor has the root table itself as an operand placed from the
 /// constructor's start: prefixes such as x86's.
-fn prefixes(lang: &Language, targets: &[Target]) -> Vec<(usize, Vec<(String, u32)>, i32)> {
+fn prefixes(lang: &Language, targets: &[Target]) -> Vec<Prefix> {
     let sla = lang.sla();
     let mut out = Vec::new();
     for (index, target) in targets.iter().enumerate() {
@@ -258,7 +296,9 @@ fn prefixes(lang: &Language, targets: &[Target]) -> Vec<(usize, Vec<(String, u32
             },
             _ => Vec::new(),
         };
-        let Some(ctor) = sla.constructor(bk_sla::ConstructorId::new(target.constructor)) else { continue };
+        let Some(ctor) = sla.constructor(bk_sla::ConstructorId::new(target.constructor)) else {
+            continue;
+        };
         for &operand in sla.operands(ctor) {
             if let Some(SymbolKind::Operand(op)) = sla.symbol(operand).map(|s| s.kind)
                 && op.defining_symbol == Some(sla.root())
@@ -271,7 +311,9 @@ fn prefixes(lang: &Language, targets: &[Target]) -> Vec<(usize, Vec<(String, u32
     // One entry per distinct prefix constructor, so that a constructor
     // reached by many leaves is not tried more often than the others.
     let mut seen = BTreeSet::new();
-    out.retain(|(index, config, offset)| seen.insert((targets[*index].constructor, config.clone(), *offset)));
+    out.retain(|(index, config, offset)| {
+        seen.insert((targets[*index].constructor, config.clone(), *offset))
+    });
     out
 }
 
@@ -285,11 +327,11 @@ fn nested_sample(
     lang: &Arc<Language>,
     decoder: &mut Decoder,
     targets: &[Target],
-    prefixes: &[(usize, Vec<(String, u32)>, i32)],
+    prefixes: &[Prefix],
     target: &Target,
     rng: &mut Rng,
-    contexts: &mut BTreeMap<Vec<(String, u32)>, bk_sleigh::ContextDb>,
-) -> Option<(Vec<(String, u32)>, [u8; 16])> {
+    contexts: &mut BTreeMap<Config, bk_sleigh::ContextDb>,
+) -> Option<(Config, [u8; 16])> {
     let addr = Address::new(lang.default_space(), 0);
     let mut sample = [0u8; 16];
     for _ in 0..NESTED_ATTEMPTS {
@@ -304,7 +346,9 @@ fn nested_sample(
         {
             continue;
         }
-        let db = contexts.entry(config.clone()).or_insert_with(|| start_context(lang, config));
+        let db = contexts
+            .entry(config.clone())
+            .or_insert_with(|| start_context(lang, config));
         let hit = decoder
             .decode(addr, &SliceBytes::new(0, &sample), &*db)
             .is_ok_and(|p| p.constructors().any(|c| c.index() == target.constructor));
@@ -318,18 +362,25 @@ fn nested_sample(
 /// Adds samples, found by decoding random fillings with basilisk, whose
 /// parses reach constructors no planned sample reaches (`attempts`
 /// fillings in all).
-pub(crate) fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng, attempts: usize) {
+pub(crate) fn extend_for_coverage(
+    lang: &Arc<Language>,
+    plan: &mut Plan,
+    rng: &mut Rng,
+    attempts: usize,
+) {
     let sla = lang.sla();
     let mut decoder = Decoder::new(Arc::clone(lang));
     let addr = Address::new(lang.default_space(), 0);
-    let mut contexts: BTreeMap<Vec<(String, u32)>, bk_sleigh::ContextDb> = BTreeMap::new();
+    let mut contexts: BTreeMap<Config, bk_sleigh::ContextDb> = BTreeMap::new();
     let mut covered = BTreeSet::new();
     let mut usable = Vec::new();
     for (config, samples) in &plan.groups {
-        let db = contexts.entry(config.clone()).or_insert_with(|| start_context(lang, config));
+        let db = contexts
+            .entry(config.clone())
+            .or_insert_with(|| start_context(lang, config));
         for (target, sample) in samples {
             if let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, sample), &*db) {
-                covered.extend(parse.constructors().map(|c| c.index()));
+                covered.extend(parse.constructors().map(bk_sla::ConstructorId::index));
             }
             if let Some(target) = target {
                 usable.push((config.clone(), *target));
@@ -345,13 +396,27 @@ pub(crate) fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &m
     let prefixes = prefixes(lang, &plan.targets);
     for n in 0..attempts {
         let (mut config, target) = usable[rng.below(usable.len())].clone();
-        fill_sample(sla, &plan.targets[target], true, &mut subtable_pairs, rng, &mut sample);
+        fill_sample(
+            sla,
+            &plan.targets[target],
+            true,
+            &mut subtable_pairs,
+            rng,
+            &mut sample,
+        );
         if n % 2 == 1 && !prefixes.is_empty() {
             // Behind a prefix that re-enters the root table, so that its
             // context operations set what the target needs.
             let (prefix, prefix_config, offset) = &prefixes[rng.below(prefixes.len())];
             let mut inner = [0u8; 16];
-            fill_sample(sla, &plan.targets[target], true, &mut subtable_pairs, rng, &mut inner);
+            fill_sample(
+                sla,
+                &plan.targets[target],
+                true,
+                &mut subtable_pairs,
+                rng,
+                &mut inner,
+            );
             let mut fixed = [0u8; 16];
             rng.fill(&mut sample);
             if let Some(block) = &plan.targets[*prefix].instruction {
@@ -365,14 +430,21 @@ pub(crate) fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &m
                     *slot = *byte;
                 }
             }
-            config = prefix_config.clone();
-            contexts.entry(config.clone()).or_insert_with(|| start_context(lang, &config));
+            config.clone_from(prefix_config);
+            contexts
+                .entry(config.clone())
+                .or_insert_with(|| start_context(lang, &config));
         }
         let db = &contexts[&config];
-        let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, &sample), db) else { continue };
+        let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, &sample), db) else {
+            continue;
+        };
         if parse.constructors().any(|c| !covered.contains(&c.index())) {
-            covered.extend(parse.constructors().map(|c| c.index()));
-            plan.groups.entry(config.clone()).or_default().push((None, sample));
+            covered.extend(parse.constructors().map(bk_sla::ConstructorId::index));
+            plan.groups
+                .entry(config.clone())
+                .or_default()
+                .push((None, sample));
         }
     }
 }
@@ -382,20 +454,21 @@ pub(crate) fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan
     let sla = lang.sla();
     let targets = leaf_pairs(sla, sla.root());
     let mut subtable_pairs: BTreeMap<u32, Vec<Target>> = BTreeMap::new();
-    let mut contexts: BTreeMap<Vec<(String, u32)>, bk_sleigh::ContextDb> = BTreeMap::new();
+    let mut contexts: BTreeMap<Config, bk_sleigh::ContextDb> = BTreeMap::new();
     let mut decoder = Decoder::new(Arc::clone(lang));
     let addr = Address::new(lang.default_space(), 0);
     let mut out = Plan::default();
     let prefixes = prefixes(lang, &targets);
     for (index, target) in targets.iter().enumerate() {
         let config = match &target.context {
-            Some(block) if !block.words.is_empty() => match configuration(lang, block) {
-                Some(config) => config,
-                None => {
+            Some(block) if !block.words.is_empty() => {
+                if let Some(config) = configuration(lang, block) {
+                    config
+                } else {
                     out.inexpressible.push(index);
                     continue;
                 }
-            },
+            }
             _ => Vec::new(),
         };
         let ctor = sla.constructor(bk_sla::ConstructorId::new(target.constructor));
@@ -410,11 +483,18 @@ pub(crate) fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan
             let mut sample = [0u8; 16];
             let budget = if n == 0 { EXTENDED_ATTEMPTS } else { ATTEMPTS };
             for _ in 0..budget {
-                fill_sample(sla, target, n % 2 == 1, &mut subtable_pairs, rng, &mut sample);
+                fill_sample(
+                    sla,
+                    target,
+                    n % 2 == 1,
+                    &mut subtable_pairs,
+                    rng,
+                    &mut sample,
+                );
                 let hit = decoder
                     .decode(addr, &SliceBytes::new(0, &sample), &*db)
                     .ok()
-                    .and_then(|p| p.root().and_then(|r| r.constructor()))
+                    .and_then(|p| p.root().and_then(bk_sleigh::Node::constructor))
                     .is_some_and(|c| c.index() == target.constructor);
                 if hit {
                     out.hit.insert(index);
@@ -424,13 +504,27 @@ pub(crate) fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan
             if !out.hit.contains(&index) && n == 0 && !prefixes.is_empty() {
                 // Reach the pair through a constructor that re-enters the root
                 // table, so its context operations set what the pair needs.
-                if let Some((config, found)) = nested_sample(lang, &mut decoder, &targets, &prefixes, target, rng, &mut contexts) {
+                if let Some((config, found)) = nested_sample(
+                    lang,
+                    &mut decoder,
+                    &targets,
+                    &prefixes,
+                    target,
+                    rng,
+                    &mut contexts,
+                ) {
                     out.hit.insert(index);
-                    out.groups.entry(config).or_default().push((Some(index), found));
+                    out.groups
+                        .entry(config)
+                        .or_default()
+                        .push((Some(index), found));
                     continue;
                 }
             }
-            out.groups.entry(config.clone()).or_default().push((Some(index), sample));
+            out.groups
+                .entry(config.clone())
+                .or_default()
+                .push((Some(index), sample));
         }
     }
     out.shadowed = shadowed(&targets, sla);
@@ -440,8 +534,8 @@ pub(crate) fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan
 
 /// Whether every input matching `b` also matches `a` (a's constrained bits
 /// are a subset of b's, with equal values).
-fn subsumes(a: &Option<Block>, b: &Option<Block>) -> bool {
-    let bits = |block: &Option<Block>| -> BTreeMap<i64, (u8, u8)> {
+fn subsumes(a: Option<&Block>, b: Option<&Block>) -> bool {
+    let bits = |block: Option<&Block>| -> BTreeMap<i64, (u8, u8)> {
         let mut map = BTreeMap::new();
         if let Some(block) = block {
             for (k, &(mask, value)) in block.words.iter().enumerate() {
@@ -449,7 +543,10 @@ fn subsumes(a: &Option<Block>, b: &Option<Block>) -> bool {
                     let m = (mask >> (24 - 8 * i)) as u8;
                     if m != 0 {
                         let v = (value >> (24 - 8 * i)) as u8;
-                        map.insert(i64::from(block.offset) + 4 * k as i64 + i as i64, (m, v & m));
+                        map.insert(
+                            i64::from(block.offset) + 4 * k as i64 + i64::from(i),
+                            (m, v & m),
+                        );
                     }
                 }
             }
@@ -457,7 +554,10 @@ fn subsumes(a: &Option<Block>, b: &Option<Block>) -> bool {
         map
     };
     let (a, b) = (bits(a), bits(b));
-    a.iter().all(|(pos, &(m, v))| b.get(pos).is_some_and(|&(bm, bv)| bm & m == m && bv & m == v))
+    a.iter().all(|(pos, &(m, v))| {
+        b.get(pos)
+            .is_some_and(|&(bm, bv)| bm & m == m && bv & m == v)
+    })
 }
 
 /// The pairs shadowed by an earlier pair of their leaf. Leaves are runs of
@@ -473,7 +573,9 @@ fn shadowed(targets: &[Target], sla: &Sla) -> BTreeSet<usize> {
             if earlier.leaf != leaf {
                 break;
             }
-            if subsumes(&earlier.instruction, &t.instruction) && subsumes(&earlier.context, &t.context) {
+            if subsumes(earlier.instruction.as_ref(), t.instruction.as_ref())
+                && subsumes(earlier.context.as_ref(), t.context.as_ref())
+            {
                 out.insert(i);
                 break;
             }
@@ -486,7 +588,7 @@ fn shadowed(targets: &[Target], sla: &Sla) -> BTreeSet<usize> {
 /// starts.
 #[derive(Clone, Debug)]
 pub(crate) struct Stream {
-    pub(crate) config: Vec<(String, u32)>,
+    pub(crate) config: Config,
     pub(crate) bytes: Vec<u8>,
     /// (offset in the stream, target index).
     pub(crate) starts: Vec<(u64, usize)>,
@@ -497,12 +599,18 @@ pub(crate) struct Stream {
 /// reached (after earlier samples' commits) starts a new stream while fewer
 /// than `max_streams` exist; a sample that does not decode to its target
 /// even then is dropped, so that it cannot shift the samples after it.
-pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: usize, max_bytes: usize) -> Vec<Stream> {
+pub(crate) fn pack(
+    lang: &Arc<Language>,
+    plan: &Plan,
+    base: u64,
+    max_streams: usize,
+    max_bytes: usize,
+) -> Vec<Stream> {
     let mut streams = Vec::new();
     let space = lang.default_space();
     let mut decoder = Decoder::new(Arc::clone(lang));
     decoder.set_operand_limit(Some(20));
-    let fresh = |config: &Vec<(String, u32)>| Stream {
+    let fresh = |config: &Config| Stream {
         config: config.clone(),
         bytes: Vec::new(),
         starts: Vec::new(),
@@ -526,8 +634,13 @@ pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: us
                 let addr = Address::new(space, base + pos as u64);
                 let bytes = SliceBytes::new(base + pos as u64, sample);
                 decoder.decode(addr, &bytes, db).ok().map(|parse| {
-                    let hit = want.is_none_or(|want| parse.constructors().any(|c| c.index() == want));
-                    (hit, (parse.length() as usize).clamp(1, 16), !parse.commits().is_empty())
+                    let hit =
+                        want.is_none_or(|want| parse.constructors().any(|c| c.index() == want));
+                    (
+                        hit,
+                        (parse.length() as usize).clamp(1, 16),
+                        !parse.commits().is_empty(),
+                    )
                 })
             };
             let mut outcome = attempt(&mut decoder, &db, current.bytes.len());
@@ -538,8 +651,10 @@ pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: us
                 previous = None;
                 outcome = attempt(&mut decoder, &db, 0);
             }
-            let Some((true, len, committed)) = outcome else { continue };
-            let pos = current.bytes.len();
+            let Some((true, len, committed)) = outcome else {
+                continue;
+            };
+            let _pos = current.bytes.len();
             // The previous instruction may read bytes past its length (a
             // little-endian token longer than the constructor): it must
             // still decode as it did with this sample's bytes after it.
@@ -549,7 +664,10 @@ pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: us
                 let addr = Address::new(space, base + prev_pos as u64);
                 let same = decoder
                     .decode(addr, &SliceBytes::new(base + prev_pos as u64, &window), &db)
-                    .is_ok_and(|p| p.length() as usize == prev_len && p.root().and_then(|r| r.constructor()) == prev_root);
+                    .is_ok_and(|p| {
+                        p.length() as usize == prev_len
+                            && p.root().and_then(bk_sleigh::Node::constructor) == prev_root
+                    });
                 if !same {
                     // End the stream with the previous instruction.
                     if streams.len() + 1 >= max_streams {
@@ -567,7 +685,10 @@ pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: us
             let pos = current.bytes.len();
             let addr = Address::new(space, base + pos as u64);
             let source = SliceBytes::new(base + pos as u64, sample);
-            let root = decoder.decode(addr, &source, &db).ok().and_then(|p| p.root().and_then(|r| r.constructor()));
+            let root = decoder
+                .decode(addr, &source, &db)
+                .ok()
+                .and_then(|p| p.root().and_then(bk_sleigh::Node::constructor));
             let _ = decoder.prepare(addr, &source, &mut db);
             if let Some(target) = target {
                 current.starts.push((pos as u64, *target));

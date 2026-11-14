@@ -10,13 +10,23 @@ use crate::error::DecodeError;
 impl Env<'_> {
     /// The constructor of subtable `table` that the bytes at `node_offset`
     /// and the local context select.
-    pub(crate) fn choose(&self, table: SymbolId, node_offset: u32) -> Result<ConstructorId, DecodeError> {
-        let subtable = self.sla.subtable(table).ok_or_else(|| self.model("subtable"))?;
+    pub(crate) fn choose(
+        &self,
+        table: SymbolId,
+        node_offset: u32,
+    ) -> Result<ConstructorId, DecodeError> {
+        let subtable = self
+            .sla
+            .subtable(table)
+            .ok_or_else(|| self.model("subtable"))?;
         let mut id = subtable.decision;
         // A validated tree is at most 64 levels deep; the bound only keeps a
         // malformed one from looping.
         for _ in 0..=256 {
-            let node = self.sla.decision(id).ok_or_else(|| self.model("decision node"))?;
+            let node = self
+                .sla
+                .decision(id)
+                .ok_or_else(|| self.model("decision node"))?;
             if node.is_leaf() {
                 for pair in self.sla.pairs(node) {
                     if self.matches(&pair.pattern, node_offset)? {
@@ -53,12 +63,17 @@ impl Env<'_> {
             DisjointPattern::Combine {
                 context,
                 instruction,
-            } => self.instruction_match(instruction, node_offset)? && self.context_match(context)?,
+            } => {
+                self.instruction_match(instruction, node_offset)? && self.context_match(context)?
+            }
         })
     }
 
     fn instruction_match(&self, id: BlockId, node_offset: u32) -> Result<bool, DecodeError> {
-        let block = self.sla.block(id).ok_or_else(|| self.model("pattern block"))?;
+        let block = self
+            .sla
+            .block(id)
+            .ok_or_else(|| self.model("pattern block"))?;
         if block.nonzero <= 0 {
             return Ok(block.nonzero == 0);
         }
@@ -74,7 +89,10 @@ impl Env<'_> {
     }
 
     fn context_match(&self, id: BlockId) -> Result<bool, DecodeError> {
-        let block = self.sla.block(id).ok_or_else(|| self.model("pattern block"))?;
+        let block = self
+            .sla
+            .block(id)
+            .ok_or_else(|| self.model("pattern block"))?;
         if block.nonzero <= 0 {
             return Ok(block.nonzero == 0);
         }

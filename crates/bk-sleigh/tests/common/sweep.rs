@@ -63,7 +63,7 @@ pub(crate) fn kind(error: &DecodeError) -> &'static str {
     match error.class() {
         ErrorClass::BadData => "bad-data",
         ErrorClass::Unimplemented => "unimplemented",
-        _ => "error",
+        ErrorClass::Lowlevel => "error",
     }
 }
 
@@ -81,7 +81,12 @@ pub(crate) fn start_context(lang: &Language, context: &[(String, u32)]) -> Conte
 }
 
 /// Runs the sweep over `data` placed at `base`.
-pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u32)]) -> Sweep {
+pub(crate) fn sweep(
+    lang: &Arc<Language>,
+    base: u64,
+    data: &[u8],
+    context: &[(String, u32)],
+) -> Sweep {
     let mut db = start_context(lang, context);
     let mut decoder = Decoder::new(Arc::clone(lang));
     // Fail as Ghidra's C++ does on more than 20 operands, so both sweeps stay
@@ -101,7 +106,7 @@ pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(St
         body.clear();
         let decoded = decoder
             .decode(addr, &bytes, &db)
-            .map(|p| p.length())
+            .map(bk_sleigh::Parse::length)
             .and_then(|length| {
                 decoder.mnemonic(&mut mnemonic)?;
                 decoder.body(&mut body)?;
@@ -140,7 +145,8 @@ pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(St
             }
         };
         if length == 0 {
-            out.records.push(plain(error_line(1, "error", "instruction has no length")));
+            out.records
+                .push(plain(error_line(1, "error", "instruction has no length")));
             out.errors += 1;
             pos += 1;
             continue;
@@ -155,7 +161,10 @@ pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(St
             break;
         }
         let parse = decoder.parse();
-        let constructors: Vec<u32> = parse.constructors().map(|c| c.index()).collect();
+        let constructors: Vec<u32> = parse
+            .constructors()
+            .map(bk_sla::ConstructorId::index)
+            .collect();
         let root_constructor = constructors.first().copied();
         let too_many_operands = parse.max_operands() > 20;
         let mut reads_past_window = parse.reads_past_window();
@@ -166,7 +175,10 @@ pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(St
             Ok(prepared) => prepared.flow_length as usize,
             Err(_) => length,
         };
-        reads_past_window |= decoder.delay_slots().iter().any(|d| d.reads_past_window());
+        reads_past_window |= decoder
+            .delay_slots()
+            .iter()
+            .any(bk_sleigh::Parse::reads_past_window);
         let delay_over_20 = decoder.delay_slots().iter().any(|d| d.max_operands() > 20);
         let mut line = format!("I\t{offset:#x}\t{length}\t{flow}\t");
         hex_bytes(data.get(pos..pos + length).unwrap_or_default(), &mut line);

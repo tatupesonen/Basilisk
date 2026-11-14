@@ -64,7 +64,12 @@ impl Env<'_> {
     /// `size` (1..=4) instruction bytes at `start` from `node_offset`, big
     /// endian (Ghidra `getInstructionBytes`).
     #[inline]
-    pub(crate) fn instruction_bytes(&self, start: i32, size: u32, node_offset: u32) -> Result<u32, DecodeError> {
+    pub(crate) fn instruction_bytes(
+        &self,
+        start: i32,
+        size: u32,
+        node_offset: u32,
+    ) -> Result<u32, DecodeError> {
         let pos = node_offset.wrapping_add(start as u32);
         if pos as usize >= WINDOW {
             return Err(self.too_long());
@@ -78,7 +83,12 @@ impl Env<'_> {
     /// A 4-byte pattern word at `start` from `node_offset`; bytes past the
     /// window only count as used when the mask covers them.
     #[inline]
-    pub(crate) fn pattern_word(&self, start: i32, node_offset: u32, mask: u32) -> Result<u32, DecodeError> {
+    pub(crate) fn pattern_word(
+        &self,
+        start: i32,
+        node_offset: u32,
+        mask: u32,
+    ) -> Result<u32, DecodeError> {
         let pos = node_offset.wrapping_add(start as u32);
         if pos as usize >= WINDOW {
             return Err(self.too_long());
@@ -93,7 +103,12 @@ impl Env<'_> {
     /// `size` bits at `start_bit` from `node_offset`, most significant first
     /// (Ghidra `getInstructionBits`).
     #[inline]
-    pub(crate) fn instruction_bits(&self, start_bit: i32, size: u32, node_offset: u32) -> Result<u32, DecodeError> {
+    pub(crate) fn instruction_bits(
+        &self,
+        start_bit: i32,
+        size: u32,
+        node_offset: u32,
+    ) -> Result<u32, DecodeError> {
         let pos = node_offset.wrapping_add((start_bit / 8) as u32);
         if pos as usize >= WINDOW {
             return Err(self.too_long());
@@ -114,7 +129,12 @@ impl Env<'_> {
     pub(crate) fn context_bytes(&self, start: i32, size: u32) -> u32 {
         let word_index = start.div_euclid(4);
         let byte_offset = start.rem_euclid(4) as u32;
-        let word = |i: i32| usize::try_from(i).ok().and_then(|i| self.context.get(i)).copied();
+        let word = |i: i32| {
+            usize::try_from(i)
+                .ok()
+                .and_then(|i| self.context.get(i))
+                .copied()
+        };
         let mut res = word(word_index).unwrap_or(0);
         res = res.wrapping_shl(byte_offset * 8);
         res = res.wrapping_shr((4u32.wrapping_sub(size)) * 8);
@@ -132,7 +152,12 @@ impl Env<'_> {
     pub(crate) fn context_bits(&self, start_bit: i32, size: u32) -> u32 {
         let word_index = start_bit.div_euclid(32);
         let bit_offset = start_bit.rem_euclid(32) as u32;
-        let word = |i: i32| usize::try_from(i).ok().and_then(|i| self.context.get(i)).copied();
+        let word = |i: i32| {
+            usize::try_from(i)
+                .ok()
+                .and_then(|i| self.context.get(i))
+                .copied()
+        };
         let mut res = word(word_index).unwrap_or(0);
         res = res.wrapping_shl(bit_offset);
         res = res.wrapping_shr(32u32.wrapping_sub(size));
@@ -146,7 +171,10 @@ impl Env<'_> {
     }
 
     fn token_field(&self, field: &Field, node_offset: u32) -> Result<i64, DecodeError> {
-        let size = field.end_byte.wrapping_sub(field.start_byte).wrapping_add(1);
+        let size = field
+            .end_byte
+            .wrapping_sub(field.start_byte)
+            .wrapping_add(1);
         let mut start = field.start_byte;
         let mut left = size;
         let mut res: i64 = 0;
@@ -176,7 +204,8 @@ impl Env<'_> {
             size = field.end_byte.wrapping_sub(start).wrapping_add(1);
         }
         if size > 0 {
-            res = res.wrapping_shl(8 * size as u32) | i64::from(self.context_bytes(start, size as u32));
+            res = res.wrapping_shl(8 * size as u32)
+                | i64::from(self.context_bytes(start, size as u32));
         }
         extend(res.wrapping_shr(field.shift as u32), field)
     }
@@ -211,7 +240,9 @@ impl Env<'_> {
             Expr::Start => self.unit_offset(self.addr),
             Expr::End => self.unit_offset(self.naddr.unwrap_or(self.addr)),
             Expr::Next2 => {
-                let next2 = self.next2.ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
+                let next2 = self
+                    .next2
+                    .ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
                 self.unit_offset(next2)
             }
             Expr::Binary { op, left, right } => {
@@ -241,8 +272,18 @@ impl Env<'_> {
 
     /// The value of operand `index` of constructor `ctor`, evaluated where
     /// that constructor sits above `point` (Ghidra `OperandValue::getValue`).
-    fn operand_value(&self, ctor: ConstructorId, index: i32, point: Point, depth: u32) -> Result<i64, DecodeError> {
-        let info = self.lang.tables.ctor(ctor).ok_or_else(|| self.model("constructor"))?;
+    fn operand_value(
+        &self,
+        ctor: ConstructorId,
+        index: i32,
+        point: Point,
+        depth: u32,
+    ) -> Result<i64, DecodeError> {
+        let info = self
+            .lang
+            .tables
+            .ctor(ctor)
+            .ok_or_else(|| self.model("constructor"))?;
         let op = self
             .lang
             .tables
@@ -254,7 +295,9 @@ impl Env<'_> {
             OpDef::Start => return Ok(self.unit_offset(self.addr)),
             OpDef::End => return Ok(self.unit_offset(self.naddr.unwrap_or(self.addr))),
             OpDef::Next2 => {
-                let next2 = self.next2.ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
+                let next2 = self
+                    .next2
+                    .ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
                 return Ok(self.unit_offset(next2));
             }
             OpDef::Varnode { .. } | OpDef::Zero => return Ok(0),

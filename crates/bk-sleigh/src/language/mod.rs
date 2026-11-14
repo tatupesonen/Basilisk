@@ -162,7 +162,11 @@ impl Language {
         let mut db = ContextDb::new(self.context_words);
         db.set_space_limits(
             (0..self.spaces.num_spaces())
-                .map(|index| self.spaces.space_at(index).map_or(u64::MAX, bk_core::Space::highest))
+                .map(|index| {
+                    self.spaces
+                        .space_at(index)
+                        .map_or(u64::MAX, bk_core::Space::highest)
+                })
                 .collect(),
         );
         db

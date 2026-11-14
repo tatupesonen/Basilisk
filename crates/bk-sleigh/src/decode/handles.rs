@@ -32,12 +32,20 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
     let mut cur = 0u32;
     loop {
         let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
-        let ctor_id = node.constructor().ok_or_else(|| model("node constructor"))?;
-        let info = *lang.tables.ctor(ctor_id).ok_or_else(|| model("constructor"))?;
+        let ctor_id = node
+            .constructor()
+            .ok_or_else(|| model("node constructor"))?;
+        let info = *lang
+            .tables
+            .ctor(ctor_id)
+            .ok_or_else(|| model("constructor"))?;
         let mut oper = crumbs.get(depth).copied().unwrap_or(0);
         let mut descended = false;
         while oper < info.num_ops {
-            let op = *lang.tables.op(&info, oper).ok_or_else(|| model("operand"))?;
+            let op = *lang
+                .tables
+                .op(&info, oper)
+                .ok_or_else(|| model("operand"))?;
             if depth > MAX_DEPTH - 2 {
                 return Err(DecodeError::Limit {
                     address,
@@ -103,16 +111,27 @@ impl Env<'_> {
     fn address_handle(&self, addr: Option<Address>) -> Result<FixedHandle, DecodeError> {
         let addr = addr.ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
         let space = self.cur_space();
-        Ok(FixedHandle::fixed(space, addr.offset(), self.space_size(space)))
+        Ok(FixedHandle::fixed(
+            space,
+            addr.offset(),
+            self.space_size(space),
+        ))
     }
 
     fn handle_of(&self, n: u32) -> FixedHandle {
-        self.nodes.get(n as usize).map_or(FixedHandle::UNSET, |node| node.handle)
+        self.nodes
+            .get(n as usize)
+            .map_or(FixedHandle::UNSET, |node| node.handle)
     }
 
     fn child_handle(&self, n: u32, index: u32) -> Result<FixedHandle, DecodeError> {
-        let node = self.nodes.get(n as usize).ok_or_else(|| self.model("node"))?;
-        let child = node.child(index).ok_or_else(|| self.model("const_handle operand"))?;
+        let node = self
+            .nodes
+            .get(n as usize)
+            .ok_or_else(|| self.model("node"))?;
+        let child = node
+            .child(index)
+            .ok_or_else(|| self.model("const_handle operand"))?;
         Ok(self.handle_of(child))
     }
 
@@ -122,19 +141,24 @@ impl Env<'_> {
             ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
             ConstTpl::Start => self.addr.offset(),
             ConstTpl::Next => self.naddr.unwrap_or(self.addr).offset(),
-            ConstTpl::Next2 => {
-                self.next2
-                    .ok_or(DecodeError::Next2Unavailable { address: self.addr })?
-                    .offset()
-            }
+            ConstTpl::Next2 => self
+                .next2
+                .ok_or(DecodeError::Next2Unavailable { address: self.addr })?
+                .offset(),
             ConstTpl::CurSpace => u64::from(self.cur_space()),
             ConstTpl::CurSpaceSize => u64::from(self.space_size(self.cur_space())),
             ConstTpl::Space(space) => u64::from(space),
-            ConstTpl::Handle { index, select, plus } => {
+            ConstTpl::Handle {
+                index,
+                select,
+                plus,
+            } => {
                 let hand = self.child_handle(n, index)?;
                 let dynamic = hand.is_dynamic();
                 match select {
-                    HandleSelect::Space => u64::from(if dynamic { hand.temp_space } else { hand.space }),
+                    HandleSelect::Space => {
+                        u64::from(if dynamic { hand.temp_space } else { hand.space })
+                    }
                     HandleSelect::Offset => {
                         if dynamic {
                             hand.temp_offset
@@ -157,7 +181,10 @@ impl Env<'_> {
                     }
                 }
             }
-            ConstTpl::FlowRef | ConstTpl::FlowRefSize | ConstTpl::FlowDest | ConstTpl::FlowDestSize => 0,
+            ConstTpl::FlowRef
+            | ConstTpl::FlowRefSize
+            | ConstTpl::FlowDest
+            | ConstTpl::FlowDestSize => 0,
         })
     }
 
@@ -172,7 +199,11 @@ impl Env<'_> {
                 ..
             } => {
                 let hand = self.child_handle(n, index)?;
-                Ok(if hand.is_dynamic() { hand.temp_space } else { hand.space })
+                Ok(if hand.is_dynamic() {
+                    hand.temp_space
+                } else {
+                    hand.space
+                })
             }
             _ => Err(DecodeError::NotASpace { address: self.addr }),
         }
@@ -239,10 +270,16 @@ fn wrap(env: &Env<'_>, space: u32, offset: u64) -> u64 {
 /// The handle of a non-subtable operand at node `n` (Ghidra
 /// `getFixedHandle` of its defining symbol, or the value of its defining
 /// expression).
-pub(crate) fn operand_handle(env: &Env<'_>, def: OpDef, n: u32) -> Result<FixedHandle, DecodeError> {
+pub(crate) fn operand_handle(
+    env: &Env<'_>,
+    def: OpDef,
+    n: u32,
+) -> Result<FixedHandle, DecodeError> {
     let point = Point::Node(n);
     Ok(match def {
-        OpDef::Expr(expr) | OpDef::Value(expr) => FixedHandle::fixed(CONST, env.eval(expr, point, 0)? as u64, 0),
+        OpDef::Expr(expr) | OpDef::Value(expr) => {
+            FixedHandle::fixed(CONST, env.eval(expr, point, 0)? as u64, 0)
+        }
         OpDef::Table {
             symbol, expr, kind, ..
         } => {

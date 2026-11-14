@@ -83,6 +83,10 @@ impl LanguageResult {
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "test helper threading the run's state"
+)]
 fn run_stream(
     reference: &ReferenceDir,
     lang: &Arc<Language>,
@@ -102,10 +106,31 @@ fn run_stream(
             // Ghidra's engine crashes on one instruction: split the stream
             // around it (both sweeps restart their context there).
             let (start, end) = locate_crash(reference, id, base, bytes, config);
-            let hex: String = bytes[start..end].iter().map(|b| format!("{b:02x}")).collect();
-            result.oracle_crashes.push(format!("{label} {config:?} at {:#x}: {hex}", base + start as u64));
-            let mut seen = run_stream(reference, lang, id, base, &bytes[..start], config, result, label);
-            seen.extend(run_stream(reference, lang, id, base + end as u64, &bytes[end..], config, result, label));
+            let hex = super::recording::hex(&bytes[start..end]);
+            result.oracle_crashes.push(format!(
+                "{label} {config:?} at {:#x}: {hex}",
+                base + start as u64
+            ));
+            let mut seen = run_stream(
+                reference,
+                lang,
+                id,
+                base,
+                &bytes[..start],
+                config,
+                result,
+                label,
+            );
+            seen.extend(run_stream(
+                reference,
+                lang,
+                id,
+                base + end as u64,
+                &bytes[end..],
+                config,
+                result,
+                label,
+            ));
             return seen;
         }
         Err(error) => panic!("pcodedump {id}: {error}"),
@@ -115,7 +140,9 @@ fn run_stream(
     result.invocations += 1;
     result.tolerated.add(&cmp.tolerated);
     for failure in cmp.failures.iter().filter(|f| !f.is_empty()).take(5) {
-        result.failures.push(format!("{label} {config:?}: {failure}"));
+        result
+            .failures
+            .push(format!("{label} {config:?}: {failure}"));
     }
     let mut seen = Vec::with_capacity(ours.records.len());
     for (record, ok) in ours.records.iter().zip(&cmp.confirmed) {
@@ -129,7 +156,13 @@ fn run_stream(
 
 /// Runs directed samples, a random sweep and the extra streams for one
 /// language.
-pub(crate) fn run_language(reference: &ReferenceDir, lang: &Arc<Language>, id: &str, budget: Budget, extras: &[Extra]) -> LanguageResult {
+pub(crate) fn run_language(
+    reference: &ReferenceDir,
+    lang: &Arc<Language>,
+    id: &str,
+    budget: Budget,
+    extras: &[Extra],
+) -> LanguageResult {
     let mut result = LanguageResult {
         id: id.to_owned(),
         constructors: lang.sla().constructors().len(),
@@ -161,13 +194,26 @@ pub(crate) fn run_language(reference: &ReferenceDir, lang: &Arc<Language>, id: &
         }
         let addr = bk_core::Address::new(lang.default_space(), 0);
         if let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, &sample), &db)
-            && parse.root().and_then(|r| r.constructor()).map(|c| c.index()) == Some(plan.targets[target].constructor)
+            && parse
+                .root()
+                .and_then(bk_sleigh::Node::constructor)
+                .map(bk_sla::ConstructorId::index)
+                == Some(plan.targets[target].constructor)
         {
             result.over_20_decoded += 1;
         }
     }
     for stream in pack(lang, &plan, BASE, budget.max_streams, max_bytes) {
-        let seen = run_stream(reference, lang, id, BASE, &stream.bytes, &stream.config, &mut result, "directed");
+        let seen = run_stream(
+            reference,
+            lang,
+            id,
+            BASE,
+            &stream.bytes,
+            &stream.config,
+            &mut result,
+            "directed",
+        );
         let mut records = seen.iter().peekable();
         for &(start, target) in &stream.starts {
             let addr = BASE + start;
@@ -186,10 +232,28 @@ pub(crate) fn run_language(reference: &ReferenceDir, lang: &Arc<Language>, id: &
     if budget.random_bytes > 0 {
         let mut bytes = vec![0u8; budget.random_bytes.min(max_bytes)];
         rng.fill(&mut bytes);
-        run_stream(reference, lang, id, BASE, &bytes, &[], &mut result, "random");
+        run_stream(
+            reference,
+            lang,
+            id,
+            BASE,
+            &bytes,
+            &[],
+            &mut result,
+            "random",
+        );
     }
     for extra in extras {
-        run_stream(reference, lang, id, extra.base, &extra.bytes, &extra.config, &mut result, &extra.name);
+        run_stream(
+            reference,
+            lang,
+            id,
+            extra.base,
+            &extra.bytes,
+            &extra.config,
+            &mut result,
+            &extra.name,
+        );
     }
     result
 }

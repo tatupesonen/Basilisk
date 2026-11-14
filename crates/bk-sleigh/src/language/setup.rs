@@ -95,11 +95,12 @@ pub(crate) fn resolve(
     let resolver = Spaces(spaces);
     let mut out = Vec::new();
     for block in &pspec.context_data {
-        let (first, end) = resolver
-            .resolve_range(&block.range)
-            .ok_or_else(|| LoadError::BadRange {
-                space: block.range.space.clone(),
-            })?;
+        let (first, end) =
+            resolver
+                .resolve_range(&block.range)
+                .ok_or_else(|| LoadError::BadRange {
+                    space: block.range.space.clone(),
+                })?;
         match block.kind {
             ContextKind::Context => {
                 for set in &block.values {
@@ -121,12 +122,16 @@ pub(crate) fn resolve(
                     let register = registers
                         .register(&set.name)
                         .ok_or_else(|| LoadError::UnknownRegister(set.name.clone()))?;
-                    let space = register.space().ok_or_else(|| LoadError::UnknownRegister(set.name.clone()))?;
+                    let space = register
+                        .space()
+                        .ok_or_else(|| LoadError::UnknownRegister(set.name.clone()))?;
                     values.push(TrackedValue {
                         space,
                         offset: register.offset,
                         size: register.size,
-                        big_endian: spaces.space(space).is_some_and(bk_core::Space::is_big_endian),
+                        big_endian: spaces
+                            .space(space)
+                            .is_some_and(bk_core::Space::is_big_endian),
                         value: set.value() as u64,
                     });
                 }

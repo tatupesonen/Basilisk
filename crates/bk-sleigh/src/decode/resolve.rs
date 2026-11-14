@@ -21,11 +21,7 @@ pub(crate) const MAX_DEPTH: usize = 32;
 pub(crate) const MAX_NODES: usize = 4096;
 
 /// Builds an [`Env`] over a parse's fields.
-pub(crate) fn env<'a>(
-    lang: &'a Language,
-    parse: &'a Parse,
-    naddr: Option<Address>,
-) -> Env<'a> {
+pub(crate) fn env<'a>(lang: &'a Language, parse: &'a Parse, naddr: Option<Address>) -> Env<'a> {
     Env {
         lang,
         sla: lang.sla(),
@@ -43,7 +39,10 @@ pub(crate) fn env<'a>(
 /// `Address::operator+`).
 pub(crate) fn add(lang: &Language, addr: Address, delta: u64) -> Address {
     match addr.space().and_then(|space| lang.spaces().space(space)) {
-        Some(space) => Address::new(space.id(), space.wrap_offset(addr.offset().wrapping_add(delta))),
+        Some(space) => Address::new(
+            space.id(),
+            space.wrap_offset(addr.offset().wrapping_add(delta)),
+        ),
         None => addr,
     }
 }
@@ -93,12 +92,20 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), De
     let mut cur = 0u32;
     loop {
         let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
-        let ctor_id = node.constructor().ok_or_else(|| model("node constructor"))?;
-        let info = *lang.tables.ctor(ctor_id).ok_or_else(|| model("constructor"))?;
+        let ctor_id = node
+            .constructor()
+            .ok_or_else(|| model("node constructor"))?;
+        let info = *lang
+            .tables
+            .ctor(ctor_id)
+            .ok_or_else(|| model("constructor"))?;
         let mut oper = crumbs.get(depth).copied().unwrap_or(0);
         let mut descended = false;
         while oper < info.num_ops {
-            let op = *lang.tables.op(&info, oper).ok_or_else(|| model("operand"))?;
+            let op = *lang
+                .tables
+                .op(&info, oper)
+                .ok_or_else(|| model("operand"))?;
             let base = if op.base < 0 {
                 node.offset
             } else {
@@ -131,7 +138,10 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), De
             }
             let child = node.child(oper).ok_or_else(|| model("operand node"))?;
             {
-                let slot = parse.nodes.get_mut(child as usize).ok_or_else(|| model("operand node"))?;
+                let slot = parse
+                    .nodes
+                    .get_mut(child as usize)
+                    .ok_or_else(|| model("operand node"))?;
                 slot.offset = offset;
                 slot.visited = true;
             }
@@ -209,7 +219,10 @@ fn set_constructor(
             } => {
                 let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)? as u32;
                 let value = value.wrapping_shl(shift as u32);
-                if let Some(slot) = usize::try_from(word).ok().and_then(|w| parse.context.get_mut(w)) {
+                if let Some(slot) = usize::try_from(word)
+                    .ok()
+                    .and_then(|w| parse.context.get_mut(w))
+                {
                     *slot = (*slot & !mask) | (value & mask);
                 }
             }

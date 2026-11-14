@@ -3,15 +3,24 @@
 //! zero, the depth limit, context fields across words, operand expressions
 //! evaluated before their operand is parsed, and commits to computed
 //! addresses in a word-addressed space and at the top of a space.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 use std::sync::Arc;
 
 use bk_core::{Address, SpaceId};
 use bk_sla::{
-    BinaryOp, BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header, MaskWord,
-    Operand, PairDef, PatternDef, PrintDef, ScopeId, SlaBuilder, SpaceDef, SpaceKind, SymbolDef, SymbolId,
-    TableDef, Template,
+    BinaryOp, BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header,
+    MaskWord, Operand, PairDef, PatternDef, PrintDef, ScopeId, SlaBuilder, SpaceDef, SpaceKind,
+    SymbolDef, SymbolId, TableDef, Template,
 };
 use bk_sleigh::{ContextDb, DecodeError, Decoder, Language, Limit, SliceBytes};
 
@@ -106,7 +115,15 @@ impl Mini {
 
     /// An operand of constructor `ct` of `table` defined by a symbol or an
     /// expression.
-    fn operand(&mut self, table: SymbolId, ct: u32, index: i32, offset: i32, base: i32, def: (Option<SymbolId>, Option<ExprId>)) -> SymbolId {
+    fn operand(
+        &mut self,
+        table: SymbolId,
+        ct: u32,
+        index: i32,
+        offset: i32,
+        base: i32,
+        def: (Option<SymbolId>, Option<ExprId>),
+    ) -> SymbolId {
         let scope = self.b.scope(Some(self.global));
         let local = self.expr(Expr::Operand { index, table, ct });
         self.b.symbol(
@@ -126,19 +143,37 @@ impl Mini {
     }
 
     fn value(&mut self, name: &str, e: ExprId) -> SymbolId {
-        self.b.symbol(name, self.global, SymbolDef::Value { expr: e })
+        self.b
+            .symbol(name, self.global, SymbolDef::Value { expr: e })
     }
 
-    fn table(&mut self, id: SymbolId, constructors: Vec<ConstructorDef>, pairs: Vec<(u32, PatternDef)>) {
+    fn table(
+        &mut self,
+        id: SymbolId,
+        constructors: Vec<ConstructorDef>,
+        pairs: Vec<(u32, PatternDef)>,
+    ) {
         let decision = DecisionDef {
             number: pairs.len() as i32,
             context: false,
             start_bit: 0,
             size: 0,
-            pairs: pairs.into_iter().map(|(constructor, pattern)| PairDef { constructor, pattern }).collect(),
+            pairs: pairs
+                .into_iter()
+                .map(|(constructor, pattern)| PairDef {
+                    constructor,
+                    pattern,
+                })
+                .collect(),
             children: Vec::new(),
         };
-        self.b.set_symbol(id, SymbolDef::Subtable(TableDef { constructors, decision }));
+        self.b.set_symbol(
+            id,
+            SymbolDef::Subtable(TableDef {
+                constructors,
+                decision,
+            }),
+        );
     }
 
     fn finish(self) -> Arc<Language> {
@@ -148,7 +183,10 @@ impl Mini {
 
 fn ctor(length: i32, operands: Vec<SymbolId>, print: Vec<PrintDef>) -> ConstructorDef {
     ConstructorDef {
-        first: print.iter().position(|p| *p == PrintDef::Text(" ".into())).map_or(-1, |p| p as i32),
+        first: print
+            .iter()
+            .position(|p| *p == PrintDef::Text(" ".into()))
+            .map_or(-1, |p| p as i32),
         length,
         source: 0,
         line: 1,
@@ -193,7 +231,11 @@ fn the_window_is_sixteen_bytes_and_reads_zero_past_it() {
     let mut pairs = Vec::new();
     for (i, offset) in [14, 15, 16].into_iter().enumerate() {
         let op = m.operand(root, i as u32, 0, offset, -1, (Some(word), None));
-        ctors.push(ctor(1, vec![op], vec![text("w"), text(" "), PrintDef::Operand(0)]));
+        ctors.push(ctor(
+            1,
+            vec![op],
+            vec![text("w"), text(" "), PrintDef::Operand(0)],
+        ));
         pairs.push((i as u32, first_byte(i as u8 + 1)));
     }
     m.table(root, ctors, pairs);
@@ -207,7 +249,9 @@ fn the_window_is_sixteen_bytes_and_reads_zero_past_it() {
     bytes[0] = 2;
     assert_eq!(disassemble(&lang, &bytes, &db).unwrap(), "w 0x3400");
     let mut decoder = Decoder::new(Arc::clone(&lang));
-    decoder.decode(ram(&lang, 0), &SliceBytes::new(0, &bytes), &db).unwrap();
+    decoder
+        .decode(ram(&lang, 0), &SliceBytes::new(0, &bytes), &db)
+        .unwrap();
     let mut s = String::new();
     decoder.body(&mut s).unwrap();
     assert!(decoder.parse().reads_past_window());
@@ -229,7 +273,15 @@ fn division_by_zero_is_a_decode_error() {
         right: divisor,
     });
     let op = m.operand(root, 0, 0, 0, -1, (None, Some(quotient)));
-    m.table(root, vec![ctor(2, vec![op], vec![text("div"), text(" "), PrintDef::Operand(0)])], vec![(0, first_byte(7))]);
+    m.table(
+        root,
+        vec![ctor(
+            2,
+            vec![op],
+            vec![text("div"), text(" "), PrintDef::Operand(0)],
+        )],
+        vec![(0, first_byte(7))],
+    );
     let lang = m.finish();
     let db = lang.initial_context();
     assert_eq!(disassemble(&lang, &[7, 3], &db).unwrap(), "div 0x21");
@@ -243,10 +295,18 @@ fn nesting_deeper_than_ghidras_limit_is_an_error() {
     let root = m.instruction;
     let sub = m.b.symbol("sub", m.global, SymbolDef::Start);
     let op = m.operand(root, 0, 0, 0, -1, (Some(sub), None));
-    m.table(root, vec![ctor(1, vec![op], vec![PrintDef::Operand(0)])], vec![(0, first_byte(1))]);
+    m.table(
+        root,
+        vec![ctor(1, vec![op], vec![PrintDef::Operand(0)])],
+        vec![(0, first_byte(1))],
+    );
     // `sub` contains itself at offset 0: the walk only stops at the limit.
     let inner = m.operand(sub, 0, 0, 0, -1, (Some(sub), None));
-    m.table(sub, vec![ctor(1, vec![inner], vec![PrintDef::Operand(0)])], vec![(0, first_byte(1))]);
+    m.table(
+        sub,
+        vec![ctor(1, vec![inner], vec![PrintDef::Operand(0)])],
+        vec![(0, first_byte(1))],
+    );
     let lang = m.finish();
     let err = disassemble(&lang, &[1], &lang.initial_context()).unwrap_err();
     assert_eq!(
@@ -274,14 +334,19 @@ fn context_fields_read_across_a_word_boundary() {
     });
     let e = m.expr(Expr::ContextField(field));
     let reg = m.contextreg;
-    let ctx = m.b.symbol(
-        "straddle",
-        m.global,
-        SymbolDef::Value { expr: e },
-    );
+    let ctx =
+        m.b.symbol("straddle", m.global, SymbolDef::Value { expr: e });
     let _ = reg;
     let op = m.operand(root, 0, 0, 0, -1, (Some(ctx), None));
-    m.table(root, vec![ctor(1, vec![op], vec![text("c"), text(" "), PrintDef::Operand(0)])], vec![(0, first_byte(1))]);
+    m.table(
+        root,
+        vec![ctor(
+            1,
+            vec![op],
+            vec![text("c"), text(" "), PrintDef::Operand(0)],
+        )],
+        vec![(0, first_byte(1))],
+    );
     let lang = m.finish();
     assert_eq!(lang.context_words(), 2);
     let mut db = lang.empty_context();
@@ -306,7 +371,11 @@ fn operand_values_are_available_to_context_operations() {
         table: root,
         ct: 0,
     });
-    let mut c = ctor(1, vec![op0, op1], vec![text("x"), text(" "), PrintDef::Operand(1)]);
+    let mut c = ctor(
+        1,
+        vec![op0, op1],
+        vec![text("x"), text(" "), PrintDef::Operand(1)],
+    );
     c.context = vec![ContextChange::Op {
         word: 0,
         shift: 24,
@@ -325,7 +394,10 @@ fn operand_values_are_available_to_context_operations() {
     let always = PatternDef::Instruction(BlockDef::default());
     m.table(
         sub,
-        vec![ctor(0, vec![], vec![text("yes")]), ctor(0, vec![], vec![text("no")])],
+        vec![
+            ctor(0, vec![], vec![text("yes")]),
+            ctor(0, vec![], vec![text("no")]),
+        ],
         vec![(0, ctx_pattern), (1, always)],
     );
     // The context field must exist for the context to have a word.
@@ -394,34 +466,76 @@ fn commits_to_computed_addresses() {
         let attop = m.operand(root, 1, 0, 0, -1, (None, Some(top)));
         let mut flowing = ctor(1, vec![at10], vec![text("f")]);
         flowing.context = vec![
-            ContextChange::Op { word: 0, shift: 24, mask: 0xff00_0000, expr: seven },
-            ContextChange::Commit { symbol: at10, word: 0, mask: 0xff00_0000, flow: true },
+            ContextChange::Op {
+                word: 0,
+                shift: 24,
+                mask: 0xff00_0000,
+                expr: seven,
+            },
+            ContextChange::Commit {
+                symbol: at10,
+                word: 0,
+                mask: 0xff00_0000,
+                flow: true,
+            },
         ];
         let mut at_top = ctor(1, vec![attop], vec![text("t")]);
         at_top.context = vec![
-            ContextChange::Op { word: 0, shift: 24, mask: 0xff00_0000, expr: seven },
-            ContextChange::Commit { symbol: attop, word: 0, mask: 0xff00_0000, flow: false },
+            ContextChange::Op {
+                word: 0,
+                shift: 24,
+                mask: 0xff00_0000,
+                expr: seven,
+            },
+            ContextChange::Commit {
+                symbol: attop,
+                word: 0,
+                mask: 0xff00_0000,
+                flow: false,
+            },
         ];
         let next = m.inst_next;
         let mut to_next = ctor(1, vec![], vec![text("n")]);
         to_next.context = vec![
-            ContextChange::Op { word: 0, shift: 24, mask: 0xff00_0000, expr: seven },
-            ContextChange::Commit { symbol: next, word: 0, mask: 0xff00_0000, flow: false },
+            ContextChange::Op {
+                word: 0,
+                shift: 24,
+                mask: 0xff00_0000,
+                expr: seven,
+            },
+            ContextChange::Commit {
+                symbol: next,
+                word: 0,
+                mask: 0xff00_0000,
+                flow: false,
+            },
         ];
-        m.table(root, vec![flowing, at_top, to_next], vec![(0, first_byte(1)), (1, first_byte(2)), (2, first_byte(3))]);
+        m.table(
+            root,
+            vec![flowing, at_top, to_next],
+            vec![(0, first_byte(1)), (1, first_byte(2)), (2, first_byte(3))],
+        );
         let lang = m.finish();
         let mut decoder = Decoder::new(Arc::clone(&lang));
         let var = lang.context_variable("cbyte").unwrap().clone();
 
         let mut db = lang.initial_context();
-        decoder.prepare(ram(&lang, 0), &SliceBytes::new(0, &[1]), &mut db).unwrap();
+        decoder
+            .prepare(ram(&lang, 0), &SliceBytes::new(0, &[1]), &mut db)
+            .unwrap();
         let scaled = 0x10 * word_size as u64;
         assert_eq!(db.variable(&var, ram(&lang, scaled - 1)), 0);
-        assert_eq!(db.variable(&var, ram(&lang, scaled)), 7, "word size {word_size}");
+        assert_eq!(
+            db.variable(&var, ram(&lang, scaled)),
+            7,
+            "word size {word_size}"
+        );
         assert_eq!(db.variable(&var, ram(&lang, 0x1000)), 7, "flows");
 
         let mut db = lang.initial_context();
-        decoder.prepare(ram(&lang, 0), &SliceBytes::new(0, &[2]), &mut db).unwrap();
+        decoder
+            .prepare(ram(&lang, 0), &SliceBytes::new(0, &[2]), &mut db)
+            .unwrap();
         // The constant is scaled to bytes without wrapping, as in Ghidra.
         let highest = 0xffff_ffffu64 * word_size as u64;
         let points: Vec<u64> = db.split_points().map(|(a, _, _)| a.offset()).collect();
@@ -432,7 +546,9 @@ fn commits_to_computed_addresses() {
         assert_eq!(db.variable(&var, ram(&lang, highest)), 7);
 
         let mut db = lang.initial_context();
-        decoder.prepare(ram(&lang, 0x40), &SliceBytes::new(0x40, &[3]), &mut db).unwrap();
+        decoder
+            .prepare(ram(&lang, 0x40), &SliceBytes::new(0x40, &[3]), &mut db)
+            .unwrap();
         assert_eq!(db.variable(&var, ram(&lang, 0x41)), 7);
         assert_eq!(db.variable(&var, ram(&lang, 0x42)), 0, "no flow");
     }

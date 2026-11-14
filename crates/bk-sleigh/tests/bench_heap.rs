@@ -2,7 +2,16 @@
 //! 6.6), measured with `dhat` over 100,000 instructions: the `bkfix` fixture
 //! everywhere, x86-64 code when the reference directory and the benchmark
 //! input are present.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 mod fixture;
@@ -17,7 +26,13 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 
 /// Decodes and prints `count` instructions from `code` (wrapping around),
 /// returning the number decoded.
-fn run(decoder: &mut Decoder, lang: &Language, code: &[u8], count: usize, out: &mut String) -> usize {
+fn run(
+    decoder: &mut Decoder,
+    lang: &Language,
+    code: &[u8],
+    count: usize,
+    out: &mut String,
+) -> usize {
     let db = lang.initial_context();
     let bytes = SliceBytes::new(0, code);
     let mut pos = 0usize;
@@ -55,15 +70,33 @@ fn steady_state_decoding_allocates_nothing() {
     // Valid instructions only, so that errors (which carry text) are not
     // what is measured.
     let fixture_code: Vec<u8> = (0..4096u32)
-        .flat_map(|i| [0x10 | (i % 4) as u8, (i * 7) as u8, 0x20, (i * 13) as u8, 0x50, i as u8, 0x92, 0x10])
+        .flat_map(|i| {
+            [
+                0x10 | (i % 4) as u8,
+                (i * 7) as u8,
+                0x20,
+                (i * 13) as u8,
+                0x50,
+                i as u8,
+                0x92,
+                0x10,
+            ]
+        })
         .collect();
     cases.push(("bkfix".into(), fixture_lang, fixture_code));
     if let Some(reference) = common::reference() {
         let path = bk_testkit::workspace_root().join("target/bench/x86-64-code.bin");
         if let Ok(code) = std::fs::read(&path) {
-            cases.push(("x86-64".into(), common::load(&reference, "x86:LE:64:default"), code));
+            cases.push((
+                "x86-64".into(),
+                common::load(&reference, "x86:LE:64:default"),
+                code,
+            ));
         } else {
-            eprintln!("SKIPPED x86-64 part: {} missing (reference_bench/build.sh)", path.display());
+            eprintln!(
+                "SKIPPED x86-64 part: {} missing (reference_bench/build.sh)",
+                path.display()
+            );
         }
     }
     for (name, lang, code) in cases {
@@ -75,7 +108,12 @@ fn steady_state_decoding_allocates_nothing() {
         let blocks = allocations_during(|| {
             assert_eq!(run(&mut decoder, &lang, &code, 100_000, &mut out), 100_000);
         });
-        eprintln!("{name}: {blocks} allocations over 100,000 instructions ({setup} for the context database)");
-        assert!(blocks <= setup, "{name}: {blocks} allocations in steady state");
+        eprintln!(
+            "{name}: {blocks} allocations over 100,000 instructions ({setup} for the context database)"
+        );
+        assert!(
+            blocks <= setup,
+            "{name}: {blocks} allocations in steady state"
+        );
     }
 }

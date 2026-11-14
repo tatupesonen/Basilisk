@@ -59,10 +59,23 @@ impl<'a> Printer<'a, '_> {
     /// The constructor at node `n`, its print pieces and its `first`.
     fn pieces(&self, n: u32) -> Result<(&'a [PrintPiece], i32, Option<u32>), DecodeError> {
         let sla: &'a bk_sla::Sla = self.env.sla;
-        let node = self.env.nodes.get(n as usize).ok_or_else(|| self.model("node"))?;
-        let id = node.constructor().ok_or_else(|| self.model("node constructor"))?;
-        let ctor = sla.constructor(id).ok_or_else(|| self.model("constructor"))?;
-        let flow = self.env.lang.tables.ctor(id).and_then(|info| info.flow_through);
+        let node = self
+            .env
+            .nodes
+            .get(n as usize)
+            .ok_or_else(|| self.model("node"))?;
+        let id = node
+            .constructor()
+            .ok_or_else(|| self.model("node constructor"))?;
+        let ctor = sla
+            .constructor(id)
+            .ok_or_else(|| self.model("constructor"))?;
+        let flow = self
+            .env
+            .lang
+            .tables
+            .ctor(id)
+            .and_then(|info| info.flow_through);
         Ok((sla.print_pieces(ctor), ctor.first, flow))
     }
 
@@ -112,10 +125,26 @@ impl<'a> Printer<'a, '_> {
 
     /// Ghidra `OperandSymbol::print`.
     fn operand(&mut self, n: u32, index: u32) -> Result<(), DecodeError> {
-        let node = self.env.nodes.get(n as usize).ok_or_else(|| self.model("node"))?;
-        let id = node.constructor().ok_or_else(|| self.model("node constructor"))?;
-        let info = self.env.lang.tables.ctor(id).ok_or_else(|| self.model("constructor"))?;
-        let op = *self.env.lang.tables.op(info, index).ok_or_else(|| self.model("operand"))?;
+        let node = self
+            .env
+            .nodes
+            .get(n as usize)
+            .ok_or_else(|| self.model("node"))?;
+        let id = node
+            .constructor()
+            .ok_or_else(|| self.model("node constructor"))?;
+        let info = self
+            .env
+            .lang
+            .tables
+            .ctor(id)
+            .ok_or_else(|| self.model("constructor"))?;
+        let op = *self
+            .env
+            .lang
+            .tables
+            .op(info, index)
+            .ok_or_else(|| self.model("operand"))?;
         let child = self.child(n, index)?;
         let point = Point::Node(child);
         let sla = self.env.sla;
@@ -134,11 +163,19 @@ impl<'a> Printer<'a, '_> {
                 };
                 match sla.symbol(symbol).map(|s| s.kind) {
                     Some(SymbolKind::ValueMap { table, .. }) => {
-                        let entry = sla.value_table(table).get(slot).copied().ok_or_else(missing)?;
+                        let entry = sla
+                            .value_table(table)
+                            .get(slot)
+                            .copied()
+                            .ok_or_else(missing)?;
                         hex(self.out, entry);
                     }
                     Some(SymbolKind::Name { table, .. }) => {
-                        let name = sla.name_table(table).get(slot).copied().ok_or_else(missing)?;
+                        let name = sla
+                            .name_table(table)
+                            .get(slot)
+                            .copied()
+                            .ok_or_else(missing)?;
                         // An unusable entry prints as Ghidra's mark for it.
                         self.out.push_str(name.map_or("\t", |name| sla.text(name)));
                     }
@@ -158,7 +195,11 @@ impl<'a> Printer<'a, '_> {
                 let _ = write!(self.out, "{:#x}", self.env.addr.offset());
             }
             OpDef::End => {
-                let _ = write!(self.out, "{:#x}", self.env.naddr.unwrap_or(self.env.addr).offset());
+                let _ = write!(
+                    self.out,
+                    "{:#x}",
+                    self.env.naddr.unwrap_or(self.env.addr).offset()
+                );
             }
             OpDef::Next2 => {
                 let next2 = self.env.next2.ok_or(DecodeError::Next2Unavailable {
@@ -183,6 +224,9 @@ mod tests {
             hex(&mut s, value);
             s.push(' ');
         }
-        assert_eq!(s, "0x0 0x1f -0x1 -0x80 -0x8000000000000000 0x7fffffffffffffff ");
+        assert_eq!(
+            s,
+            "0x0 0x1f -0x1 -0x80 -0x8000000000000000 0x7fffffffffffffff "
+        );
     }
 }

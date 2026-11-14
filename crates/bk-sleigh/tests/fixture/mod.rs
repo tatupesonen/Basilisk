@@ -27,9 +27,9 @@
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
 use bk_sla::{
-    BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header, MaskWord, Operand,
-    PairDef, PatternDef, PrintDef, ScopeId, Sla, SlaBuilder, SpaceDef, SpaceKind, SymbolDef, SymbolId,
-    TableDef, Template,
+    BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header, MaskWord,
+    Operand, PairDef, PatternDef, PrintDef, ScopeId, Sla, SlaBuilder, SpaceDef, SpaceKind,
+    SymbolDef, SymbolId, TableDef, Template,
 };
 
 /// The `.ldefs` and `.pspec` that go with the fixture's `.sla`.
@@ -132,7 +132,12 @@ impl Fx {
 
     /// Operand symbols of constructor `ct` of `table`: (name, def, offset,
     /// base, minlen).
-    fn operands(&mut self, table: SymbolId, ct: u32, ops: Vec<(&str, Def, i32, i32, i32)>) -> Vec<SymbolId> {
+    fn operands(
+        &mut self,
+        table: SymbolId,
+        ct: u32,
+        ops: Vec<(&str, Def, i32, i32, i32)>,
+    ) -> Vec<SymbolId> {
         let scope = self.b.scope(Some(self.global));
         let mut out = Vec::new();
         for (index, (name, def, offset, base, min_length)) in ops.into_iter().enumerate() {
@@ -189,7 +194,10 @@ fn leaf(pairs: Vec<(u32, PatternDef)>) -> DecisionDef {
         size: 0,
         pairs: pairs
             .into_iter()
-            .map(|(constructor, pattern)| PairDef { constructor, pattern })
+            .map(|(constructor, pattern)| PairDef {
+                constructor,
+                pattern,
+            })
             .collect(),
         children: Vec::new(),
     }
@@ -305,7 +313,9 @@ pub(crate) fn build() -> Sla {
         "map",
         SymbolDef::ValueMap {
             expr: e,
-            values: vec![0, 1, -1, 0x7fff, -0x8000, 0xBAD_BEEF, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            values: vec![
+                0, 1, -1, 0x7fff, -0x8000, 0xBAD_BEEF, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+            ],
         },
     );
     let e = fx.field_expr(token(8, 11, false));
@@ -337,17 +347,35 @@ pub(crate) fn build() -> Sla {
     };
 
     // 0 nop
-    add(&mut root, ctor(2, 1, vec![], vec![text("nop")]), PatternDef::Instruction(pattern(&[(0xff, 0x00)])));
+    add(
+        &mut root,
+        ctor(2, 1, vec![], vec![text("nop")]),
+        PatternDef::Instruction(pattern(&[(0xff, 0x00)])),
+    );
     // 1 mov ra, rb
     let n = root.len() as u32;
     let ops = fx.operands(
         instruction,
         n,
-        vec![("ra", Def::Sym(ra_list), 0, -1, 0), ("rb", Def::Sym(rb_list), 0, -1, 0)],
+        vec![
+            ("ra", Def::Sym(ra_list), 0, -1, 0),
+            ("rb", Def::Sym(rb_list), 0, -1, 0),
+        ],
     );
     add(
         &mut root,
-        ctor(2, 2, ops, vec![text("mov"), text(" "), PrintDef::Operand(0), text(","), PrintDef::Operand(1)]),
+        ctor(
+            2,
+            2,
+            ops,
+            vec![
+                text("mov"),
+                text(" "),
+                PrintDef::Operand(0),
+                text(","),
+                PrintDef::Operand(1),
+            ],
+        ),
         PatternDef::Instruction(pattern(&[(0xf0, 0x10)])),
     );
     // 2 li ra, simm8
@@ -355,11 +383,25 @@ pub(crate) fn build() -> Sla {
     let ops = fx.operands(
         instruction,
         n,
-        vec![("ra", Def::Sym(rb_list), 0, -1, 0), ("imm", Def::Sym(simm8), 0, -1, 0)],
+        vec![
+            ("ra", Def::Sym(rb_list), 0, -1, 0),
+            ("imm", Def::Sym(simm8), 0, -1, 0),
+        ],
     );
     add(
         &mut root,
-        ctor(2, 3, ops, vec![text("li"), text(" "), PrintDef::Operand(0), text(", #"), PrintDef::Operand(1)]),
+        ctor(
+            2,
+            3,
+            ops,
+            vec![
+                text("li"),
+                text(" "),
+                PrintDef::Operand(0),
+                text(", #"),
+                PrintDef::Operand(1),
+            ],
+        ),
         PatternDef::Instruction(pattern(&[(0xf0, 0x20)])),
     );
     // 3 ldm map
@@ -367,7 +409,12 @@ pub(crate) fn build() -> Sla {
     let ops = fx.operands(instruction, n, vec![("m", Def::Sym(map), 0, -1, 0)]);
     add(
         &mut root,
-        ctor(2, 4, ops, vec![text("ldm"), text(" "), PrintDef::Operand(0)]),
+        ctor(
+            2,
+            4,
+            ops,
+            vec![text("ldm"), text(" "), PrintDef::Operand(0)],
+        ),
         PatternDef::Instruction(pattern(&[(0xf0, 0x30)])),
     );
     // 4 cc cond
@@ -393,7 +440,11 @@ pub(crate) fn build() -> Sla {
         right: scaled,
     });
     let n = root.len() as u32;
-    let ops = fx.operands(instruction, n, vec![("target", Def::Expr(target), 0, -1, 0)]);
+    let ops = fx.operands(
+        instruction,
+        n,
+        vec![("target", Def::Expr(target), 0, -1, 0)],
+    );
     add(
         &mut root,
         ctor(2, 6, ops, vec![text("br"), text(" "), PrintDef::Operand(0)]),
@@ -416,7 +467,11 @@ pub(crate) fn build() -> Sla {
             flow: true,
         },
     ];
-    add(&mut root, c, PatternDef::Instruction(pattern(&[(0xf0, 0x60)])));
+    add(
+        &mut root,
+        c,
+        PatternDef::Instruction(pattern(&[(0xf0, 0x60)])),
+    );
     // 7 with mode = 1: m1op low4
     let n = root.len() as u32;
     let ops = fx.operands(instruction, n, vec![("x", Def::Sym(low4), 0, -1, 0)]);
@@ -430,7 +485,12 @@ pub(crate) fn build() -> Sla {
     };
     add(
         &mut root,
-        ctor(2, 8, ops, vec![text("m1op"), text(" "), PrintDef::Operand(0)]),
+        ctor(
+            2,
+            8,
+            ops,
+            vec![text("m1op"), text(" "), PrintDef::Operand(0)],
+        ),
         PatternDef::Combine(ctx_one, pattern(&[(0xf0, 0x70)])),
     );
     // 7 with mode = 0: clrmode (mode = 0, flowing commit)
@@ -450,17 +510,35 @@ pub(crate) fn build() -> Sla {
             flow: true,
         },
     ];
-    add(&mut root, c, PatternDef::Instruction(pattern(&[(0xf0, 0x70)])));
+    add(
+        &mut root,
+        c,
+        PatternDef::Instruction(pattern(&[(0xf0, 0x70)])),
+    );
     // 8 ext sub, byte after it
     let n = root.len() as u32;
     let ops = fx.operands(
         instruction,
         n,
-        vec![("s", Def::Sym(sub), 1, -1, 1), ("after", Def::Sym(byte0), 0, 0, 1)],
+        vec![
+            ("s", Def::Sym(sub), 1, -1, 1),
+            ("after", Def::Sym(byte0), 0, 0, 1),
+        ],
     );
     add(
         &mut root,
-        ctor(1, 10, ops, vec![text("ext"), text(" "), PrintDef::Operand(0), text(" ; "), PrintDef::Operand(1)]),
+        ctor(
+            1,
+            10,
+            ops,
+            vec![
+                text("ext"),
+                text(" "),
+                PrintDef::Operand(0),
+                text(" ; "),
+                PrintDef::Operand(1),
+            ],
+        ),
         PatternDef::Instruction(pattern(&[(0xf0, 0x80)])),
     );
     // 9 flow-through into sub2
@@ -473,8 +551,17 @@ pub(crate) fn build() -> Sla {
     );
     // 10 bd target with a 2-byte delay slot
     let n = root.len() as u32;
-    let ops = fx.operands(instruction, n, vec![("target", Def::Expr(target), 0, -1, 0)]);
-    let mut c = ctor(2, 12, ops, vec![text("bd"), text(" "), PrintDef::Operand(0)]);
+    let ops = fx.operands(
+        instruction,
+        n,
+        vec![("target", Def::Expr(target), 0, -1, 0)],
+    );
+    let mut c = ctor(
+        2,
+        12,
+        ops,
+        vec![text("bd"), text(" "), PrintDef::Operand(0)],
+    );
     let mut delayed = Template::new();
     delayed.set_header(None, 2, 0);
     // DELAY_SLOT 2 (the directive in INDIRECT's slot), as the compiler
@@ -486,10 +573,15 @@ pub(crate) fn build() -> Sla {
     };
     delayed.push_op(bk_pcode::OpCode::Indirect, None, &[two_bytes]);
     c.templates = vec![delayed];
-    add(&mut root, c, PatternDef::Instruction(pattern(&[(0xf0, 0xa0)])));
+    add(
+        &mut root,
+        c,
+        PatternDef::Instruction(pattern(&[(0xf0, 0xa0)])),
+    );
     // 11 twenty-one operands
     let n = root.len() as u32;
-    let many: Vec<(&str, Def, i32, i32, i32)> = (0..21).map(|_| ("v", Def::Sym(low4), 0, -1, 0)).collect();
+    let many: Vec<(&str, Def, i32, i32, i32)> =
+        (0..21).map(|_| ("v", Def::Sym(low4), 0, -1, 0)).collect();
     let ops = fx.operands(instruction, n, many);
     let mut print = vec![text("many"), text(" ")];
     for i in 0..21 {
@@ -498,13 +590,22 @@ pub(crate) fn build() -> Sla {
         }
         print.push(PrintDef::Operand(i));
     }
-    add(&mut root, ctor(2, 13, ops, print), PatternDef::Instruction(pattern(&[(0xf0, 0xb0)])));
+    add(
+        &mut root,
+        ctor(2, 13, ops, print),
+        PatternDef::Instruction(pattern(&[(0xf0, 0xb0)])),
+    );
     // 12 le16 over bytes 2..3
     let n = root.len() as u32;
     let ops = fx.operands(instruction, n, vec![("v", Def::Sym(le16), 0, -1, 0)]);
     add(
         &mut root,
-        ctor(4, 14, ops, vec![text("le16"), text(" "), PrintDef::Operand(0)]),
+        ctor(
+            4,
+            14,
+            ops,
+            vec![text("le16"), text(" "), PrintDef::Operand(0)],
+        ),
         PatternDef::Instruction(pattern(&[(0xf0, 0xc0)])),
     );
     // 13 setnf: nf = low4 (noflow commit)
@@ -524,13 +625,21 @@ pub(crate) fn build() -> Sla {
             flow: false,
         },
     ];
-    add(&mut root, c, PatternDef::Instruction(pattern(&[(0xf0, 0xd0)])));
+    add(
+        &mut root,
+        c,
+        PatternDef::Instruction(pattern(&[(0xf0, 0xd0)])),
+    );
     // 14 shownf nf, inst_next
     let n = root.len() as u32;
     let ops = fx.operands(
         instruction,
         n,
-        vec![("n", Def::Sym(nf), 0, -1, 0), ("nx", Def::Sym(inst_next), 0, -1, 0), ("st", Def::Sym(inst_start), 0, -1, 0)],
+        vec![
+            ("n", Def::Sym(nf), 0, -1, 0),
+            ("nx", Def::Sym(inst_next), 0, -1, 0),
+            ("st", Def::Sym(inst_start), 0, -1, 0),
+        ],
     );
     add(
         &mut root,
@@ -538,14 +647,26 @@ pub(crate) fn build() -> Sla {
             2,
             16,
             ops,
-            vec![text("shownf"), text(" "), PrintDef::Operand(0), text(","), PrintDef::Operand(1), text(","), PrintDef::Operand(2)],
+            vec![
+                text("shownf"),
+                text(" "),
+                PrintDef::Operand(0),
+                text(","),
+                PrintDef::Operand(1),
+                text(","),
+                PrintDef::Operand(2),
+            ],
         ),
         PatternDef::Instruction(pattern(&[(0xf0, 0xe0)])),
     );
     // 15 unimpl
     let mut c = ctor(2, 17, vec![], vec![text("halt")]);
     c.templates = Vec::new();
-    add(&mut root, c, PatternDef::Instruction(pattern(&[(0xf0, 0xf0)])));
+    add(
+        &mut root,
+        c,
+        PatternDef::Instruction(pattern(&[(0xf0, 0xf0)])),
+    );
 
     // sub: at byte 1; "a" (high nibble 0), "b rb" (high nibble 1), "c" with its
     // own sub-table... kept small.
@@ -561,7 +682,12 @@ pub(crate) fn build() -> Sla {
     let mut sub2_ctors = Vec::new();
     sub2_ctors.push(ctor(2, 30, vec![], vec![text("fa")]));
     let ops = fx.operands(sub2, 1, vec![("r", Def::Sym(rb_list), 0, -1, 0)]);
-    sub2_ctors.push(ctor(2, 31, ops, vec![text("fb"), text(" "), PrintDef::Operand(0)]));
+    sub2_ctors.push(ctor(
+        2,
+        31,
+        ops,
+        vec![text("fb"), text(" "), PrintDef::Operand(0)],
+    ));
     let sub2_pairs = vec![
         (0, PatternDef::Instruction(pattern(&[(0xff, 0x90)]))),
         (1, PatternDef::Instruction(pattern(&[(0xf0, 0x90)]))),
@@ -595,7 +721,8 @@ pub(crate) fn build() -> Sla {
 /// Writes the fixture as a language directory `pcodedump` can load.
 pub(crate) fn write_language_dir(dir: &std::path::Path) {
     let sla = build();
-    sla.write_file(&dir.join("bkfix.sla")).expect("write bkfix.sla");
+    sla.write_file(&dir.join("bkfix.sla"))
+        .expect("write bkfix.sla");
     std::fs::write(dir.join("bkfix.ldefs"), LDEFS).unwrap();
     std::fs::write(dir.join("bkfix.pspec"), PSPEC).unwrap();
 }

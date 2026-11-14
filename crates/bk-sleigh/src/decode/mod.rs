@@ -97,15 +97,34 @@ impl Decoder {
 
     /// Decodes the instruction at `addr`: constructors, offsets, lengths and
     /// pending commits (Ghidra `resolve`). The context store is only read.
-    pub fn decode<B, C>(&mut self, addr: Address, bytes: &B, context: &C) -> Result<&Parse, DecodeError>
+    pub fn decode<B, C>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &C,
+    ) -> Result<&Parse, DecodeError>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
         self.num_delays = 0;
-        resolve::resolve(&self.lang, &mut self.main, addr, bytes, context, self.operand_limit)?;
+        resolve::resolve(
+            &self.lang,
+            &mut self.main,
+            addr,
+            bytes,
+            context,
+            self.operand_limit,
+        )?;
         if self.lang.tables.uses_next2 {
-            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context, self.operand_limit);
+            self.main.next2 = Self::next2(
+                &self.lang,
+                &mut self.lookahead,
+                &self.main,
+                bytes,
+                context,
+                self.operand_limit,
+            );
         }
         Ok(&self.main)
     }
@@ -137,7 +156,14 @@ impl Decoder {
         C: ContextSource + ?Sized,
     {
         if self.lang.tables.next2_anywhere && self.main.next2.is_none() {
-            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context, self.operand_limit);
+            self.main.next2 = Self::next2(
+                &self.lang,
+                &mut self.lookahead,
+                &self.main,
+                bytes,
+                context,
+                self.operand_limit,
+            );
         }
         handles::resolve_handles(&self.lang, &mut self.main)?;
         Ok(&self.main)
@@ -162,7 +188,12 @@ impl Decoder {
 
     /// Decodes the instruction at `addr` and returns its text as owned
     /// strings (Ghidra `printAssembly`).
-    pub fn disassemble<B, C>(&mut self, addr: Address, bytes: &B, context: &C) -> Result<Disassembly, DecodeError>
+    pub fn disassemble<B, C>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &C,
+    ) -> Result<Disassembly, DecodeError>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
@@ -186,7 +217,12 @@ impl Decoder {
     /// remain, decode the next instruction with the context as it now is,
     /// resolve its handles and apply its commits. The main and delay-slot
     /// parses stay available ([`Decoder::parse`], [`Decoder::delay_slots`]).
-    pub fn prepare<B, C>(&mut self, addr: Address, bytes: &B, context: &mut C) -> Result<Prepared, DecodeError>
+    pub fn prepare<B, C>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &mut C,
+    ) -> Result<Prepared, DecodeError>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ContextSink + ?Sized,
@@ -216,7 +252,14 @@ impl Decoder {
                 };
                 resolve::resolve(&self.lang, slot, at, bytes, &*context, self.operand_limit)?;
                 if self.lang.tables.next2_anywhere {
-                    slot.next2 = Self::next2(&self.lang, &mut self.lookahead, slot, bytes, &*context, self.operand_limit);
+                    slot.next2 = Self::next2(
+                        &self.lang,
+                        &mut self.lookahead,
+                        slot,
+                        bytes,
+                        &*context,
+                        self.operand_limit,
+                    );
                 }
                 handles::resolve_handles(&self.lang, slot)?;
                 commit::apply_commits(&self.lang, slot, context)?;

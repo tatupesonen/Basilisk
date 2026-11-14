@@ -284,7 +284,11 @@ mod tests {
     #[test]
     fn hot_structs_are_small() {
         assert!(size_of::<Node>() <= 64, "{}", size_of::<Node>());
-        assert!(size_of::<FixedHandle>() <= 40, "{}", size_of::<FixedHandle>());
+        assert!(
+            size_of::<FixedHandle>() <= 40,
+            "{}",
+            size_of::<FixedHandle>()
+        );
         let node = Node::new(NONE);
         assert_eq!(node.parent(), None);
         assert_eq!(node.constructor(), None);

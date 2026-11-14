@@ -17,7 +17,7 @@ use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
 use bk_testkit::{ReferenceDir, Tool};
 
-pub(crate) use sweep::{Record, Sweep, sweep};
+pub(crate) use sweep::{Sweep, sweep};
 
 /// The reference directory with `pcodedump`, or `None` after printing why
 /// the test is skipped.
@@ -27,7 +27,8 @@ pub(crate) fn reference() -> Option<ReferenceDir> {
 
 /// The language registry over a directory with Ghidra's layout.
 pub(crate) fn registry(root: &Path) -> Arc<LanguageRegistry> {
-    static CACHE: OnceLock<Mutex<HashMap<std::path::PathBuf, Arc<LanguageRegistry>>>> = OnceLock::new();
+    static CACHE: OnceLock<Mutex<HashMap<std::path::PathBuf, Arc<LanguageRegistry>>>> =
+        OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut cache = cache.lock().unwrap();
     Arc::clone(cache.entry(root.to_path_buf()).or_insert_with(|| {
@@ -42,7 +43,11 @@ pub(crate) fn registry(root: &Path) -> Arc<LanguageRegistry> {
         for dir in dirs {
             builder = builder.module(dir);
         }
-        Arc::new(builder.build().expect("registry over the reference directory"))
+        Arc::new(
+            builder
+                .build()
+                .expect("registry over the reference directory"),
+        )
     }))
 }
 
@@ -63,7 +68,13 @@ pub(crate) struct OracleDump {
 }
 
 /// Runs `pcodedump` and keeps the records this part compares.
-pub(crate) fn oracle(reference: &ReferenceDir, id: &str, base: u64, data: &[u8], context: &[(String, u32)]) -> OracleDump {
+pub(crate) fn oracle(
+    reference: &ReferenceDir,
+    id: &str,
+    base: u64,
+    data: &[u8],
+    context: &[(String, u32)],
+) -> OracleDump {
     try_oracle(reference, id, base, data, context).unwrap_or_else(|e| panic!("pcodedump {id}: {e}"))
 }
 
@@ -76,7 +87,9 @@ pub(crate) fn try_oracle(
     data: &[u8],
     context: &[(String, u32)],
 ) -> Result<OracleDump, String> {
-    let mut tool = reference.pcodedump().timeout(std::time::Duration::from_secs(600));
+    let mut tool = reference
+        .pcodedump()
+        .timeout(std::time::Duration::from_mins(10));
     for (name, value) in context {
         tool = tool.context(name, *value);
     }
@@ -99,7 +112,9 @@ pub(crate) fn locate_crash(
     data: &[u8],
     context: &[(String, u32)],
 ) -> (usize, usize) {
-    let crashes = |len: usize| try_oracle(reference, id, base, &data[..len], context).is_err_and(|e| is_crash(&e));
+    let crashes = |len: usize| {
+        try_oracle(reference, id, base, &data[..len], context).is_err_and(|e| is_crash(&e))
+    };
     let (mut ok, mut bad) = (0usize, data.len());
     while bad - ok > 1 {
         let mid = ok + (bad - ok) / 2;
@@ -217,14 +232,18 @@ pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
         } else if previous.is_some_and(|p| p.uses_next2 && p.committed) {
             out.tolerated.next2_and_commit += 1;
         } else if out.failures.len() < 20 {
-            out.failures.push(format!("expected {line}\n     got {}", record.line));
+            out.failures
+                .push(format!("expected {line}\n     got {}", record.line));
         } else {
             out.failures.push(String::new());
         }
         // Resynchronise.
         let here = record.address.max(line_address(line));
-        let theirs: std::collections::BTreeSet<u64> =
-            oracle.lines[oi..].iter().map(|l| line_address(l)).filter(|&a| a > here).collect();
+        let theirs: std::collections::BTreeSet<u64> = oracle.lines[oi..]
+            .iter()
+            .map(|l| line_address(l))
+            .filter(|&a| a > here)
+            .collect();
         let common = ours.records[bi..]
             .iter()
             .map(|r| r.address)

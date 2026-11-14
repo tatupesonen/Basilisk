@@ -41,7 +41,14 @@ pub trait ContextSink {
     /// Sets `word`'s bits `mask` to `value` over `[first, end)`, or from
     /// `first` to the end of everything when `end` is `None` (Ghidra
     /// `setContextRegion`).
-    fn set_region(&mut self, first: Address, end: Option<Address>, word: usize, mask: u32, value: u32);
+    fn set_region(
+        &mut self,
+        first: Address,
+        end: Option<Address>,
+        word: usize,
+        mask: u32,
+        value: u32,
+    );
 }
 
 /// A named context variable: a bit range within one context word (Ghidra
@@ -129,9 +136,15 @@ mod tests {
     #[test]
     fn variables_pack_most_significant_bit_first() {
         let var = ContextVar::new("TMode", 0, 0).unwrap();
-        assert_eq!((var.word(), var.shift(), var.word_mask()), (0, 31, 0x8000_0000));
+        assert_eq!(
+            (var.word(), var.shift(), var.word_mask()),
+            (0, 31, 0x8000_0000)
+        );
         let var = ContextVar::new("x", 36, 39).unwrap();
-        assert_eq!((var.word(), var.shift(), var.word_mask()), (1, 24, 0x0f00_0000));
+        assert_eq!(
+            (var.word(), var.shift(), var.word_mask()),
+            (1, 24, 0x0f00_0000)
+        );
         let mut words = [0u32; 2];
         var.set(&mut words, 0x1f);
         assert_eq!(words, [0, 0x0f00_0000]);

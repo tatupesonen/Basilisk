@@ -2,14 +2,23 @@
 //! 6.4): the directed samples of Toy, 200 instructions each of x86-64,
 //! ARM/Thumb with a mode switch and MIPS with delay slots, in
 //! `tests/data/recorded-oracle.txt`; and basilisk-only snapshots of the
-//! PowerPC AltiVec instructions Ghidra's C++ cannot decode.
+//! PowerPC `AltiVec` instructions Ghidra's C++ cannot decode.
 //!
 //! The replay needs nothing but the languages' `.sla`, `.ldefs` and `.pspec`,
 //! which it takes from the reference directory: those files are Ghidra's and
 //! are not copied into this repository (ADR-002), so without the reference
 //! directory the replay is skipped (it is in CI). The self-contained
 //! counterpart is `fixture_oracle.rs`.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
@@ -23,7 +32,9 @@ use bk_sleigh::{Decoder, SliceBytes};
 const DATA: &str = "tests/data/recorded-oracle.txt";
 
 /// (language, base, configuration, bytes) of every recorded stream.
-fn streams(reference: &bk_testkit::ReferenceDir) -> Vec<(String, u64, Vec<(String, u32)>, Vec<u8>)> {
+fn streams(
+    reference: &bk_testkit::ReferenceDir,
+) -> Vec<(String, u64, common::directed::Config, Vec<u8>)> {
     let mut out = Vec::new();
     // Toy: the directed samples.
     let toy = common::load(reference, "Toy:BE:32:default");
@@ -41,7 +52,12 @@ fn streams(reference: &bk_testkit::ReferenceDir) -> Vec<(String, u64, Vec<(Strin
     };
     let x86 = common::load(reference, "x86:LE:64:default");
     let n = bytes_for(&x86, base, &text, &[], 200);
-    out.push(("x86:LE:64:default".to_owned(), base, Vec::new(), text[..n].to_vec()));
+    out.push((
+        "x86:LE:64:default".to_owned(),
+        base,
+        Vec::new(),
+        text[..n].to_vec(),
+    ));
     // ARM: blx to Thumb code (a flowing TMode commit at the target), then
     // Thumb instructions, then real Thumb code.
     let mut arm = Vec::new();
@@ -54,9 +70,20 @@ fn streams(reference: &bk_testkit::ReferenceDir) -> Vec<(String, u64, Vec<(Strin
     common::directed::Rng::new(78).fill(&mut thumb_random);
     arm_text.extend_from_slice(&thumb_random);
     let armlang = common::load(reference, "ARM:LE:32:v8");
-    let n = bytes_for(&armlang, arm_base, &arm_text, &[("TMode".to_owned(), 1)], 190);
+    let n = bytes_for(
+        &armlang,
+        arm_base,
+        &arm_text,
+        &[("TMode".to_owned(), 1)],
+        190,
+    );
     out.push(("ARM:LE:32:v8".to_owned(), 0x1000, Vec::new(), arm));
-    out.push(("ARM:LE:32:v8".to_owned(), arm_base, vec![("TMode".to_owned(), 1)], arm_text[..n].to_vec()));
+    out.push((
+        "ARM:LE:32:v8".to_owned(),
+        arm_base,
+        vec![("TMode".to_owned(), 1)],
+        arm_text[..n].to_vec(),
+    ));
     // MIPS: branches with delay slots, a branch in a delay slot, then random
     // words.
     let mut mips: Vec<u8> = [
@@ -69,7 +96,7 @@ fn streams(reference: &bk_testkit::ReferenceDir) -> Vec<(String, u64, Vec<(Strin
         0x1000_0001,    // b +1
         0x1000_0001,    // b +1 in the delay slot
         0x0000_0000,
-        0x5440_0002,    // bnezl v0,+2 (likely: delay slot annulled)
+        0x5440_0002, // bnezl v0,+2 (likely: delay slot annulled)
         0x2404_0003,
     ]
     .iter()
@@ -84,7 +111,13 @@ fn streams(reference: &bk_testkit::ReferenceDir) -> Vec<(String, u64, Vec<(Strin
 }
 
 /// The number of bytes holding the first `count` instructions.
-fn bytes_for(lang: &Arc<bk_sleigh::Language>, base: u64, code: &[u8], config: &[(String, u32)], count: usize) -> usize {
+fn bytes_for(
+    lang: &Arc<bk_sleigh::Language>,
+    base: u64,
+    code: &[u8],
+    config: &[(String, u32)],
+    count: usize,
+) -> usize {
     let sweep = common::sweep(lang, base, code, config);
     sweep
         .records
@@ -98,13 +131,23 @@ fn bytes_for(lang: &Arc<bk_sleigh::Language>, base: u64, code: &[u8], config: &[
 #[test]
 #[ignore = "regenerates checked-in data with the reference tools"]
 fn record_real_languages() {
-    let Some(reference) = common::reference() else { return };
+    let Some(reference) = common::reference() else {
+        return;
+    };
     let mut out = String::new();
     out.push_str("# pcodedump output for real languages (tests/recorded.rs).\n");
     out.push_str("# Recorded by `cargo test -p bk-sleigh --test recorded -- --ignored record_real_languages`\n");
     let stamp = std::fs::read_to_string(reference.stamp_file()).unwrap_or_default();
-    let commit = stamp.lines().find(|l| l.contains("commit")).unwrap_or("ghidra commit unknown");
-    let _ = writeln!(out, "# tool: reference pcodedump ({commit}); host: {} {}; compiler: Apple clang 17", std::env::consts::OS, std::env::consts::ARCH);
+    let commit = stamp
+        .lines()
+        .find(|l| l.contains("commit"))
+        .unwrap_or("ghidra commit unknown");
+    let _ = writeln!(
+        out,
+        "# tool: reference pcodedump ({commit}); host: {} {}; compiler: Apple clang 17",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
     for (id, base, config, bytes) in streams(&reference) {
         let _ = writeln!(out, "language\t{id}");
         let run = |base: u64, config: &[(String, u32)], bytes: &[u8]| {
@@ -123,7 +166,9 @@ fn record_real_languages() {
 /// directory.
 #[test]
 fn real_languages_match_recorded_oracle() {
-    let Some(reference) = common::reference() else { return };
+    let Some(reference) = common::reference() else {
+        return;
+    };
     let text = std::fs::read_to_string(DATA).unwrap();
     let mut by_language: BTreeMap<String, String> = BTreeMap::new();
     let mut current = String::new();
@@ -145,10 +190,12 @@ fn real_languages_match_recorded_oracle() {
     }
 }
 
-/// basilisk decodes the AltiVec constructors with more than 20 operands.
+/// basilisk decodes the `AltiVec` constructors with more than 20 operands.
 #[test]
 fn altivec_beyond_ghidras_operand_limit() {
-    let Some(reference) = common::reference() else { return };
+    let Some(reference) = common::reference() else {
+        return;
+    };
     let lang = common::load(&reference, "PowerPC:BE:32:default");
     let db = lang.initial_context();
     let mut decoder = Decoder::new(Arc::clone(&lang));

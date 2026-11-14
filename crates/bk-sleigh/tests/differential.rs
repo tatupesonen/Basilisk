@@ -1,11 +1,21 @@
 //! The differential test against `pcodedump` (`features/sleigh-decode.md`
 //! 6.2): `I`, `E` and `T` records over directed samples per root leaf pair,
 //! random bytes and real code, with coverage thresholds.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 use std::sync::Mutex;
 
 use common::coverage::{Budget, Extra, LanguageResult, run_language};
@@ -22,10 +32,20 @@ fn all_languages(reference: &bk_testkit::ReferenceDir) -> Vec<String> {
         .iter()
         .filter(|d| {
             let files = d.files();
-            let beside = files.ldefs.parent().zip(files.sla.file_name()).map(|(dir, name)| dir.join(name));
+            let beside = files
+                .ldefs
+                .parent()
+                .zip(files.sla.file_name())
+                .map(|(dir, name)| dir.join(name));
             beside.is_some_and(|p| p.is_file())
         })
-        .map(|d| (d.id().to_string(), d.files().sla.clone(), d.files().pspec.clone()))
+        .map(|d| {
+            (
+                d.id().to_string(),
+                d.files().sla.clone(),
+                d.files().pspec.clone(),
+            )
+        })
         .collect();
     ids.sort();
     ids.into_iter()
@@ -48,18 +68,33 @@ fn exceptions() -> BTreeMap<(String, String), String> {
         .collect()
 }
 
-fn run_all(ids: &[String], budget: Budget, extras: &BTreeMap<String, Vec<Extra>>, threads: usize) -> Vec<LanguageResult> {
-    let Some(reference) = common::reference() else { return Vec::new() };
+fn run_all(
+    ids: &[String],
+    budget: Budget,
+    extras: &BTreeMap<String, Vec<Extra>>,
+    threads: usize,
+) -> Vec<LanguageResult> {
+    let Some(reference) = common::reference() else {
+        return Vec::new();
+    };
     let queue = Mutex::new(ids.to_vec());
     let results = Mutex::new(Vec::new());
     std::thread::scope(|scope| {
         for _ in 0..threads {
             scope.spawn(|| {
                 loop {
-                    let Some(id) = queue.lock().unwrap().pop() else { break };
+                    let Some(id) = queue.lock().unwrap().pop() else {
+                        break;
+                    };
                     let lang = common::load(&reference, &id);
                     let none = Vec::new();
-                    let result = run_language(&reference, &lang, &id, budget, extras.get(&id).unwrap_or(&none));
+                    let result = run_language(
+                        &reference,
+                        &lang,
+                        &id,
+                        budget,
+                        extras.get(&id).unwrap_or(&none),
+                    );
                     eprintln!("{}", result.row());
                     for f in result.failures.iter().take(6) {
                         eprintln!("FAIL {}: {f}", result.id);
@@ -105,7 +140,7 @@ fn twelve_languages_one_sample_per_pair() {
         "sparc:BE:32:default",
         "68000:BE:32:default",
         "avr8:LE:16:default",
-        "RISCV:LE:64:RV64GC",
+        "RISCV:LE:64:default",
         "Hexagon:LE:32:default",
         "Toy:BE:32:default",
     ]
@@ -119,7 +154,11 @@ fn twelve_languages_one_sample_per_pair() {
     };
     let results = run_all(&ids, budget, &BTreeMap::new(), 3);
     assert_eq!(results.len(), ids.len());
-    assert_eq!(report_failures(&results), 0, "records differ from pcodedump");
+    assert_eq!(
+        report_failures(&results),
+        0,
+        "records differ from pcodedump"
+    );
 }
 
 /// The full run: every language, eight directed samples per root leaf pair
@@ -128,7 +167,9 @@ fn twelve_languages_one_sample_per_pair() {
 #[test]
 #[ignore = "long: every language against pcodedump"]
 fn every_language() {
-    let Some(reference) = common::reference() else { return };
+    let Some(reference) = common::reference() else {
+        return;
+    };
     let ids = all_languages(&reference);
     let budget = Budget {
         samples_per_pair: 8,
@@ -137,7 +178,10 @@ fn every_language() {
         coverage_attempts: 300_000,
     };
     let extras = common::real_code::extras(&reference);
-    let threads = std::env::var("BK_THREADS").ok().and_then(|t| t.parse().ok()).unwrap_or(3);
+    let threads = std::env::var("BK_THREADS")
+        .ok()
+        .and_then(|t| t.parse().ok())
+        .unwrap_or(3);
     let results = run_all(&ids, budget, &extras, threads);
     let failures = report_failures(&results);
     for r in &results {
@@ -158,17 +202,32 @@ fn every_language() {
         if pairs < 0.95 && !exceptions.contains_key(&(r.id.clone(), "pairs".to_owned())) {
             below.push(format!("{} pairs {:.2}%", r.id, 100.0 * pairs));
         }
-        if r.ctor_rate() < 0.90 && !exceptions.contains_key(&(r.id.clone(), "constructors".to_owned())) {
-            below.push(format!("{} constructors {:.2}%", r.id, 100.0 * r.ctor_rate()));
+        if r.ctor_rate() < 0.90
+            && !exceptions.contains_key(&(r.id.clone(), "constructors".to_owned()))
+        {
+            below.push(format!(
+                "{} constructors {:.2}%",
+                r.id,
+                100.0 * r.ctor_rate()
+            ));
         }
     }
     let overall = confirmed as f64 / targeted.max(1) as f64;
-    table.push_str(&format!("all\tpairs {targeted}\tconfirmed {confirmed}\n"));
-    let out = bk_testkit::workspace_root().join("target").join("sleigh-coverage.txt");
+    let _ = writeln!(table, "all\tpairs {targeted}\tconfirmed {confirmed}");
+    let out = bk_testkit::workspace_root()
+        .join("target")
+        .join("sleigh-coverage.txt");
     std::fs::write(&out, &table).unwrap();
     eprintln!("coverage table written to {}", out.display());
     insta::assert_snapshot!("coverage_table", table);
     assert_eq!(failures, 0, "records differ from pcodedump");
-    assert!(overall >= 0.99, "root pairs confirmed overall {:.3}%", 100.0 * overall);
-    assert!(below.is_empty(), "below threshold without an exception: {below:#?}");
+    assert!(
+        overall >= 0.99,
+        "root pairs confirmed overall {:.3}%",
+        100.0 * overall
+    );
+    assert!(
+        below.is_empty(),
+        "below threshold without an exception: {below:#?}"
+    );
 }

@@ -12,21 +12,28 @@ use bk_sleigh::Language;
 use super::{Tolerated, compare, parse_oracle, sweep};
 
 pub(crate) fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
+    bytes.iter().fold(String::new(), |mut s, b| {
+        let _ = write!(s, "{b:02x}");
+        s
+    })
 }
 
 fn unhex(text: &str) -> Vec<u8> {
-    (0..text.len() / 2)
-        .map(|i| u8::from_str_radix(&text[2 * i..2 * i + 2], 16).unwrap())
+    text.as_bytes()
+        .chunks(2)
+        .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
         .collect()
 }
+
+/// Runs the oracle on (base, configuration, bytes); `None` when it crashed.
+pub(crate) type Runner<'a> = dyn Fn(u64, &[(String, u32)], &[u8]) -> Option<String> + 'a;
 
 /// Records one stream with `run` (which returns `None` when the oracle
 /// crashed); where Ghidra's engine crashes on an instruction, the stream is
 /// split around it.
 pub(crate) fn record(
     out: &mut String,
-    run: &dyn Fn(u64, &[(String, u32)], &[u8]) -> Option<String>,
+    run: &Runner<'_>,
     base: u64,
     config: &[(String, u32)],
     bytes: &[u8],
@@ -50,9 +57,16 @@ pub(crate) fn record(
             .last()
             .filter(|l| l.contains("\ttruncated\t"))
             .map_or(bad - 1, |l| {
-                (u64::from_str_radix(l.split('\t').nth(1).unwrap().trim_start_matches("0x"), 16).unwrap() - base) as usize
+                (u64::from_str_radix(l.split('\t').nth(1).unwrap().trim_start_matches("0x"), 16)
+                    .unwrap()
+                    - base) as usize
             });
-        let _ = writeln!(out, "# oracle crash at {:#x}: {}", base + start as u64, hex(&bytes[start..bad]));
+        let _ = writeln!(
+            out,
+            "# oracle crash at {:#x}: {}",
+            base + start as u64,
+            hex(&bytes[start..bad])
+        );
         record(out, run, base, config, &bytes[..start]);
         record(out, run, base + bad as u64, config, &bytes[bad..]);
         return;
@@ -82,7 +96,8 @@ pub(crate) fn replay(text: &str, lang: &Arc<Language>) -> Replay {
     while let Some(head) = lines.next() {
         let mut fields = head.split('\t');
         assert_eq!(fields.next(), Some("stream"), "{head}");
-        let base = u64::from_str_radix(fields.next().unwrap().trim_start_matches("0x"), 16).unwrap();
+        let base =
+            u64::from_str_radix(fields.next().unwrap().trim_start_matches("0x"), 16).unwrap();
         let config: Vec<(String, u32)> = fields
             .next()
             .unwrap_or("")

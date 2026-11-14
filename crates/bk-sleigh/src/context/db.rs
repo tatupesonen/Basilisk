@@ -244,7 +244,10 @@ impl ContextDb {
 impl ContextSource for ContextDb {
     fn context_at(&self, addr: Address, out: &mut [u32]) -> OffsetRange {
         let (words, range) = self.get_with_range(addr);
-        for (slot, word) in out.iter_mut().zip(words.iter().chain(std::iter::repeat(&0))) {
+        for (slot, word) in out
+            .iter_mut()
+            .zip(words.iter().chain(std::iter::repeat(&0)))
+        {
             *slot = *word;
         }
         range
@@ -256,7 +259,14 @@ impl ContextSink for ContextDb {
         self.change_point(addr, word, mask, value);
     }
 
-    fn set_region(&mut self, first: Address, end: Option<Address>, word: usize, mask: u32, value: u32) {
+    fn set_region(
+        &mut self,
+        first: Address,
+        end: Option<Address>,
+        word: usize,
+        mask: u32,
+        value: u32,
+    ) {
         self.region(first, end, word, mask, value);
     }
 }
@@ -281,7 +291,13 @@ mod tests {
         assert_eq!(db.variable(&var(), at(0x1234)), 0xa);
         let (words, range) = db.get_with_range(at(5));
         assert_eq!(words, [0x0a00_0000, 0]);
-        assert_eq!(range, OffsetRange { first: 0, last: u64::MAX });
+        assert_eq!(
+            range,
+            OffsetRange {
+                first: 0,
+                last: u64::MAX
+            }
+        );
         assert!(db.is_empty());
     }
 
@@ -305,7 +321,13 @@ mod tests {
         assert_eq!(db.variable(&other, at(0x7f)), 0);
         // Ranges reflect the split points around an address.
         let (_, range) = db.get_with_range(at(0x250));
-        assert_eq!(range, OffsetRange { first: 0x200, last: 0x2ff });
+        assert_eq!(
+            range,
+            OffsetRange {
+                first: 0x200,
+                last: 0x2ff
+            }
+        );
         let points: Vec<u64> = db.split_points().map(|(a, _, _)| a.offset()).collect();
         assert_eq!(points, [0x80, 0x100, 0x200, 0x300]);
         let masks: Vec<u32> = db.split_points().map(|(_, _, m)| m[0]).collect();
@@ -323,7 +345,13 @@ mod tests {
         assert_eq!(db.get(at(0x18)), [0x3412]);
         assert_eq!(db.get(at(0x20)), [0x3400]);
         let (_, range) = db.get_with_range(at(0x30));
-        assert_eq!(range, OffsetRange { first: 0x20, last: 0xffff });
+        assert_eq!(
+            range,
+            OffsetRange {
+                first: 0x20,
+                last: 0xffff
+            }
+        );
         // Another space starts from the default.
         assert_eq!(db.get(Address::new(SpaceId::new(4), 0)), [0x3400]);
         let (_, range) = db.get_with_range(Address::new(SpaceId::new(4), 7));
@@ -349,12 +377,21 @@ mod tests {
             value,
         };
         db.set_tracked(at(0x100), at(0x200), vec![reg(0x1122_3344)]);
-        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x150)), 0x1122_3344);
-        assert_eq!(db.tracked_value(SpaceId::new(4), 0x12, 2, at(0x150)), 0x3344);
+        assert_eq!(
+            db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x150)),
+            0x1122_3344
+        );
+        assert_eq!(
+            db.tracked_value(SpaceId::new(4), 0x12, 2, at(0x150)),
+            0x3344
+        );
         assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x200)), 0);
         db.set_tracked(at(0x180), at(0x190), vec![reg(7)]);
         assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x185)), 7);
-        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x190)), 0x1122_3344);
+        assert_eq!(
+            db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x190)),
+            0x1122_3344
+        );
         assert_eq!(db.tracked_set(at(0x50)).len(), 0);
     }
 }

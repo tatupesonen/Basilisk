@@ -10,7 +10,10 @@ use bk_elf::ElfFile;
 use super::coverage::Extra;
 
 /// (file, language, configurations to run it under).
-const FILES: &[(&str, &str, &[&[(&str, u32)]])] = &[
+/// Context settings of one run.
+type Settings = &'static [(&'static str, u32)];
+
+const FILES: &[(&str, &str, &[Settings])] = &[
     ("plain-x86_64.so", "x86:LE:64:default", &[&[]]),
     ("rela-x86_64.o", "x86:LE:64:default", &[&[]]),
     ("zdebug-x86_64.o", "x86:LE:64:default", &[&[]]),
