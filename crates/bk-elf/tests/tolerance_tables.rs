@@ -757,6 +757,6 @@ fn android_tables_that_are_not_aps2() {
             ]
         );
         assert!(elf.relocation_table_for_section(bad).is_none());
-        assert!(elf.relocation_tables().is_empty());
+        assert_eq!(elf.relocation_tables(), []);
     }
 }

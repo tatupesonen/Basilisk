@@ -1,9 +1,11 @@
 //! Property tests of the floating-point operations.
 //!
 //! - Host level (the `u64` path, C++ `float.cc`) at 4 and 8 bytes against
-//!   native `f32`/`f64`. NaN rule: a NaN result is the quiet NaN with the
-//!   sign of the first NaN input, or negative (x86-64's default NaN) when
-//!   the operation creates it; payloads are not kept. `FLOAT_NEG` and
+//!   native `f32`/`f64`. NaN rule (x86-64's, `src/float/host.rs`): a NaN
+//!   result is the quiet NaN with the sign of the NaN input; with two NaN
+//!   inputs, that of `b` for add and multiply and of `a` for subtract and
+//!   divide; negative (x86-64's default NaN) when the operation creates it;
+//!   payloads are not kept. `FLOAT_NEG` and
 //!   `FLOAT_ABS` act on the sign bit of a NaN.
 //! - Exact level (Java `BigFloat`) at 4 and 8 bytes against native: every NaN
 //!   result is the positive quiet NaN; comparisons are IEEE.
@@ -58,8 +60,9 @@ fn f64_bits() -> impl Strategy<Value = u64> {
     ]
 }
 
-/// The sign a host-level NaN result has: that of the first NaN input, or
-/// negative when no input is a NaN.
+/// The sign a host-level NaN result has: that of the first NaN among
+/// `inputs` (listed in x86-64's priority order), or negative when no input
+/// is a NaN.
 fn nan_sign(inputs: &[(bool, bool)]) -> bool {
     inputs
         .iter()
@@ -100,9 +103,9 @@ macro_rules! host_vs_native {
                 fn binary_host(a in $bits(), b in $bits()) {
                     let (x, y) = (<$f>::from_bits(a), <$f>::from_bits(b));
                     let (ea, eb) = (u64::from(a), u64::from(b));
-                    prop_assert_eq!(FMT.op_add(ea, eb), expect(x + y, &[x, y]));
+                    prop_assert_eq!(FMT.op_add(ea, eb), expect(x + y, &[y, x]));
                     prop_assert_eq!(FMT.op_sub(ea, eb), expect(x - y, &[x, y]));
-                    prop_assert_eq!(FMT.op_mult(ea, eb), expect(x * y, &[x, y]));
+                    prop_assert_eq!(FMT.op_mult(ea, eb), expect(x * y, &[y, x]));
                     prop_assert_eq!(FMT.op_div(ea, eb), expect(x / y, &[x, y]));
                     prop_assert_eq!(FMT.op_equal(ea, eb), u64::from(x == y));
                     prop_assert_eq!(FMT.op_not_equal(ea, eb), u64::from(x != y));

@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Size restriction error in table 'instruction'
+  Problem in Addition(+) operator
+  The output and all input sizes must match
+=> no output

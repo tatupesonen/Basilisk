@@ -1,0 +1,47 @@
+---
+// One bar per section of docs/PARITY.md: a segment per Ghidra module,
+// coloured by its status. Generated at build time (lib/parity.ts).
+import { loadParity, countByStatus, STATUSES, STATUS_INFO } from '../lib/parity';
+
+const parity = loadParity();
+const order = ['Done', 'Partial', 'In progress', 'Reused', 'Replaced', 'Out of scope', 'Missing'] as const;
+const rows = parity.sections.map((s) => {
+  const sorted = [...s.rows].sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status));
+  const started = s.rows.filter((r) => r.status !== 'Missing').length;
+  return { title: s.title.replace(/\s*\(ADR-\d+\)$/, ''), slug: s.slug, sorted, started, total: s.rows.length };
+});
+const all = parity.sections.flatMap((s) => s.rows);
+const counts = countByStatus(all);
+const base = import.meta.env.BASE_URL;
+---
+
+<div class="bk-bars" role="list" aria-label="Status of Ghidra's modules by area">
+  {
+    rows.map((r) => (
+      <div class="bk-bar-row" role="listitem">
+        <a class="bk-bar-label bk-link" href={`${base}status/#${r.slug}`}>{r.title}</a>
+        <div class="bk-bar" aria-hidden="true">
+          {r.sorted.map((row) => (
+            <span class={`st-${STATUS_INFO[row.status].key}`} style="flex: 1" title={`${row.module}: ${row.status}`} />
+          ))}
+        </div>
+        <span class="bk-bar-count">
+          {r.started}/{r.total}<span class="bk-sr"> modules started</span>
+        </span>
+      </div>
+    ))
+  }
+</div>
+<p class="bk-bars-note">
+  One segment per Ghidra module or part in <code>docs/PARITY.md</code>; the count is how many have been started.
+</p>
+<div class="bk-key">
+  {
+    STATUSES.filter((s) => counts[s] > 0).map((s) => (
+      <span>
+        <i class={`bk-status-dot st-${STATUS_INFO[s].key}`} />
+        {s} <span class="bk-muted">{counts[s]}</span>
+      </span>
+    ))
+  }
+</div>

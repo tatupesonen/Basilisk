@@ -96,14 +96,18 @@ fn nan_signs_follow_x86_64() {
     assert_eq!(F4.op_mult(f4(0.0), inf), neg_nan);
     assert_eq!(F4.op_sqrt(f4(-1.0)), neg_nan);
     assert_eq!(F8.op_div(0, 0), F8.nan_encoding(true));
-    // Propagated NaNs keep the sign of the first NaN input.
+    // A propagated NaN keeps the sign of the NaN input; with two NaN inputs,
+    // x86-64 (GCC, SSE2) passes on `b`'s for add and multiply and `a`'s for
+    // subtract and divide.
     assert_eq!(F4.op_add(neg_nan, f4(1.0)), neg_nan);
     assert_eq!(F4.op_add(f4(1.0), neg_nan), neg_nan);
     assert_eq!(F4.op_add(pos_nan, f4(1.0)), pos_nan);
     assert_eq!(F4.op_add(f4(1.0), pos_nan), pos_nan);
     assert_eq!(F4.op_sqrt(pos_nan), pos_nan);
-    assert_eq!(F4.op_mult(pos_nan, neg_nan), pos_nan);
+    assert_eq!(F4.op_mult(pos_nan, neg_nan), neg_nan);
+    assert_eq!(F4.op_add(neg_nan, pos_nan), pos_nan);
     assert_eq!(F4.op_div(neg_nan, pos_nan), neg_nan);
+    assert_eq!(F4.op_sub(pos_nan, neg_nan), pos_nan);
     assert_eq!(F4.op_sqrt(neg_nan), neg_nan);
     assert_eq!(F4.op_ceil(neg_nan), neg_nan);
     assert_eq!(F4.op_floor(neg_nan), neg_nan);

@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+attach values [ low4 ] [ 1 2 3 ];
+attach names [ reg ] [ a b c ];
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

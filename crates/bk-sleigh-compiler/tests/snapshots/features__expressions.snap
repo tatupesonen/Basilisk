@@ -1,0 +1,1363 @@
+---
+source: crates/bk-sleigh-compiler/tests/features.rs
+expression: "render(stringify! (expressions), &\nspec(LITTLE,\n\":a r0 is op=1 & r0 {\n  r0 = r1 + 1 - r3 * 2 / r1 % 3 s/ r3 s% 5;\n  r0 = (r1 & 3) | (r3 ^ 4) << 1 >> 2 s>> 3;\n  c0 = r1 == 1 || r1 != 2 && r1 < 3 ^^ r1 > 4;\n  c0 = r1 <= 5 || r1 >= 6 || r1 s< 7 || r1 s> 8 || r1 s<= 9 || r1 s>= 10;\n  c0 = r1 f< r3 || r1 f> r3 || r1 f<= r3 || r1 f>= r3 || r1 f== r3 || r1 f!= r3;\n  r0 = r1 f+ r3 f- r1 f* r3 f/ r1;\n  r0 = -r1; r0 = ~r1; c0 = !c1; r0 = f- r1;\n  r0 = zext(h0); r0 = sext(c0); c0 = carry(r0, r1); c0 = scarry(r0, r1); c0 = sborrow(r0, r1);\n  c0 = nan(r0); r0 = abs(r1); r0 = sqrt(r1); r0 = ceil(r1); r0 = floor(r1); r0 = round(r1);\n  r0 = int2float(r1); q0 = float2float(r1); r0 = trunc(q0);\n  r0 = popcount(r1); r0 = lzcount(r1); r0 = newobject(r1); r0 = newobject(r1, r3);\n  r0 = cpool(r1, 2, 3); r0 = sync(r1, 4:4); h0 = r0(2); r0 = &r1; h0 = &:2 r1; r0 = 0x10:4;\n  r0 = *r1; r0 = *[register]:4 r1; r0 = *:4 r1;\n}\n\"),\nOptions :: default())"
+---
+ctor.instruction.00000.first = 1
+ctor.instruction.00000.loc = test.slaspec:11 source=0
+ctor.instruction.00000.operands = [19]
+ctor.instruction.00000.print = "a" " " op19
+ctor.instruction.00000.tpl.main.head = delay=0 labels=0
+ctor.instruction.00000.tpl.main.numops = 77
+ctor.instruction.00000.tpl.main.op.0000 = INT_ADD (space(unique),#0x0,#0x4) <- (space(register),#0x4,#0x4), (space(const),#0x1,#0x4)
+ctor.instruction.00000.tpl.main.op.0001 = INT_MULT (space(unique),#0x100,#0x4) <- (space(register),#0xc,#0x4), (space(const),#0x2,#0x4)
+ctor.instruction.00000.tpl.main.op.0002 = INT_DIV (space(unique),#0x200,#0x4) <- (space(unique),#0x100,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0003 = INT_REM (space(unique),#0x300,#0x4) <- (space(unique),#0x200,#0x4), (space(const),#0x3,#0x4)
+ctor.instruction.00000.tpl.main.op.0004 = INT_SDIV (space(unique),#0x400,#0x4) <- (space(unique),#0x300,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0005 = INT_SREM (space(unique),#0x500,#0x4) <- (space(unique),#0x400,#0x4), (space(const),#0x5,#0x4)
+ctor.instruction.00000.tpl.main.op.0006 = INT_SUB (space(register),#0x0,#0x4) <- (space(unique),#0x0,#0x4), (space(unique),#0x500,#0x4)
+ctor.instruction.00000.tpl.main.op.0007 = INT_AND (space(unique),#0x700,#0x4) <- (space(register),#0x4,#0x4), (space(const),#0x3,#0x4)
+ctor.instruction.00000.tpl.main.op.0008 = INT_XOR (space(unique),#0x800,#0x4) <- (space(register),#0xc,#0x4), (space(const),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0009 = INT_LEFT (space(unique),#0x900,#0x4) <- (space(unique),#0x800,#0x4), (space(const),#0x1,#0x4)
+ctor.instruction.00000.tpl.main.op.0010 = INT_RIGHT (space(unique),#0xa00,#0x4) <- (space(unique),#0x900,#0x4), (space(const),#0x2,#0x4)
+ctor.instruction.00000.tpl.main.op.0011 = INT_SRIGHT (space(unique),#0xb00,#0x4) <- (space(unique),#0xa00,#0x4), (space(const),#0x3,#0x4)
+ctor.instruction.00000.tpl.main.op.0012 = INT_OR (space(register),#0x0,#0x4) <- (space(unique),#0x700,#0x4), (space(unique),#0xb00,#0x4)
+ctor.instruction.00000.tpl.main.op.0013 = INT_EQUAL (space(unique),#0xd00,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x1,#0x4)
+ctor.instruction.00000.tpl.main.op.0014 = INT_NOTEQUAL (space(unique),#0xe00,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x2,#0x4)
+ctor.instruction.00000.tpl.main.op.0015 = INT_LESS (space(unique),#0xf00,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x3,#0x4)
+ctor.instruction.00000.tpl.main.op.0016 = BOOL_AND (space(unique),#0x1000,#0x1) <- (space(unique),#0xe00,#0x1), (space(unique),#0xf00,#0x1)
+ctor.instruction.00000.tpl.main.op.0017 = INT_LESS (space(unique),#0x1100,#0x1) <- (space(const),#0x4,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0018 = BOOL_XOR (space(unique),#0x1200,#0x1) <- (space(unique),#0x1000,#0x1), (space(unique),#0x1100,#0x1)
+ctor.instruction.00000.tpl.main.op.0019 = BOOL_OR (space(register),#0x80,#0x1) <- (space(unique),#0xd00,#0x1), (space(unique),#0x1200,#0x1)
+ctor.instruction.00000.tpl.main.op.0020 = INT_LESSEQUAL (space(unique),#0x1400,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x5,#0x4)
+ctor.instruction.00000.tpl.main.op.0021 = INT_LESSEQUAL (space(unique),#0x1500,#0x1) <- (space(const),#0x6,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0022 = BOOL_OR (space(unique),#0x1600,#0x1) <- (space(unique),#0x1400,#0x1), (space(unique),#0x1500,#0x1)
+ctor.instruction.00000.tpl.main.op.0023 = INT_SLESS (space(unique),#0x1700,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x7,#0x4)
+ctor.instruction.00000.tpl.main.op.0024 = BOOL_OR (space(unique),#0x1800,#0x1) <- (space(unique),#0x1600,#0x1), (space(unique),#0x1700,#0x1)
+ctor.instruction.00000.tpl.main.op.0025 = INT_SLESS (space(unique),#0x1900,#0x1) <- (space(const),#0x8,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0026 = BOOL_OR (space(unique),#0x1a00,#0x1) <- (space(unique),#0x1800,#0x1), (space(unique),#0x1900,#0x1)
+ctor.instruction.00000.tpl.main.op.0027 = INT_SLESSEQUAL (space(unique),#0x1b00,#0x1) <- (space(register),#0x4,#0x4), (space(const),#0x9,#0x4)
+ctor.instruction.00000.tpl.main.op.0028 = BOOL_OR (space(unique),#0x1c00,#0x1) <- (space(unique),#0x1a00,#0x1), (space(unique),#0x1b00,#0x1)
+ctor.instruction.00000.tpl.main.op.0029 = INT_SLESSEQUAL (space(unique),#0x1d00,#0x1) <- (space(const),#0xa,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0030 = BOOL_OR (space(register),#0x80,#0x1) <- (space(unique),#0x1c00,#0x1), (space(unique),#0x1d00,#0x1)
+ctor.instruction.00000.tpl.main.op.0031 = FLOAT_LESS (space(unique),#0x1f00,#0x1) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0032 = FLOAT_LESS (space(unique),#0x2000,#0x1) <- (space(register),#0xc,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0033 = BOOL_OR (space(unique),#0x2100,#0x1) <- (space(unique),#0x1f00,#0x1), (space(unique),#0x2000,#0x1)
+ctor.instruction.00000.tpl.main.op.0034 = FLOAT_LESSEQUAL (space(unique),#0x2200,#0x1) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0035 = BOOL_OR (space(unique),#0x2300,#0x1) <- (space(unique),#0x2100,#0x1), (space(unique),#0x2200,#0x1)
+ctor.instruction.00000.tpl.main.op.0036 = FLOAT_LESSEQUAL (space(unique),#0x2400,#0x1) <- (space(register),#0xc,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0037 = BOOL_OR (space(unique),#0x2500,#0x1) <- (space(unique),#0x2300,#0x1), (space(unique),#0x2400,#0x1)
+ctor.instruction.00000.tpl.main.op.0038 = FLOAT_EQUAL (space(unique),#0x2600,#0x1) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0039 = BOOL_OR (space(unique),#0x2700,#0x1) <- (space(unique),#0x2500,#0x1), (space(unique),#0x2600,#0x1)
+ctor.instruction.00000.tpl.main.op.0040 = FLOAT_NOTEQUAL (space(unique),#0x2800,#0x1) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0041 = BOOL_OR (space(register),#0x80,#0x1) <- (space(unique),#0x2700,#0x1), (space(unique),#0x2800,#0x1)
+ctor.instruction.00000.tpl.main.op.0042 = FLOAT_ADD (space(unique),#0x2a00,#0x4) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0043 = FLOAT_MULT (space(unique),#0x2b00,#0x4) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0044 = FLOAT_DIV (space(unique),#0x2c00,#0x4) <- (space(unique),#0x2b00,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0045 = FLOAT_SUB (space(register),#0x0,#0x4) <- (space(unique),#0x2a00,#0x4), (space(unique),#0x2c00,#0x4)
+ctor.instruction.00000.tpl.main.op.0046 = INT_2COMP (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0047 = INT_NEGATE (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0048 = BOOL_NEGATE (space(register),#0x80,#0x1) <- (space(register),#0x81,#0x1)
+ctor.instruction.00000.tpl.main.op.0049 = FLOAT_NEG (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0050 = INT_ZEXT (space(register),#0x0,#0x4) <- (space(register),#0x40,#0x2)
+ctor.instruction.00000.tpl.main.op.0051 = INT_SEXT (space(register),#0x0,#0x4) <- (space(register),#0x80,#0x1)
+ctor.instruction.00000.tpl.main.op.0052 = INT_CARRY (space(register),#0x80,#0x1) <- (space(register),#0x0,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0053 = INT_SCARRY (space(register),#0x80,#0x1) <- (space(register),#0x0,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0054 = INT_SBORROW (space(register),#0x80,#0x1) <- (space(register),#0x0,#0x4), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0055 = FLOAT_NAN (space(register),#0x80,#0x1) <- (space(register),#0x0,#0x4)
+ctor.instruction.00000.tpl.main.op.0056 = FLOAT_ABS (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0057 = FLOAT_SQRT (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0058 = CEIL (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0059 = FLOOR (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0060 = ROUND (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0061 = INT2FLOAT (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0062 = FLOAT2FLOAT (space(register),#0x100,#0x8) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0063 = TRUNC (space(register),#0x0,#0x4) <- (space(register),#0x100,#0x8)
+ctor.instruction.00000.tpl.main.op.0064 = POPCOUNT (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0065 = LZCOUNT (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0066 = NEW (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0067 = NEW (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4), (space(register),#0xc,#0x4)
+ctor.instruction.00000.tpl.main.op.0068 = CPOOLREF (space(register),#0x0,#0x4) <- (space(register),#0x4,#0x4), (space(const),#0x2,#0x8), (space(const),#0x3,#0x8)
+ctor.instruction.00000.tpl.main.op.0069 = CALLOTHER (space(register),#0x0,#0x4) <- (space(const),#0x0,#0x4), (space(register),#0x4,#0x4), (space(const),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0070 = SUBPIECE (space(register),#0x40,#0x2) <- (space(register),#0x0,#0x4), (space(const),#0x2,#0x4)
+ctor.instruction.00000.tpl.main.op.0071 = COPY (space(register),#0x0,#0x4) <- (space(const),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0072 = COPY (space(register),#0x40,#0x2) <- (space(const),#0x4,#0x2)
+ctor.instruction.00000.tpl.main.op.0073 = COPY (space(register),#0x0,#0x4) <- (space(const),#0x10,#0x4)
+ctor.instruction.00000.tpl.main.op.0074 = LOAD (space(register),#0x0,#0x4) <- (space(const),space(ram),#0x8), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0075 = LOAD (space(register),#0x0,#0x4) <- (space(const),space(register),#0x8), (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0076 = LOAD (space(register),#0x0,#0x4) <- (space(const),space(ram),#0x8), (space(register),#0x4,#0x4)
+defaultspace = ram
+header.align = 2
+header.bigendian = 0
+header.maxdelay = 0
+header.numsections = 0
+header.uniqbase = 0x4a00
+header.uniqmask = 0x0
+scope.000000 = -
+scope.000001 = 0
+scopes = 2
+sourcefile.000 = test.slaspec
+space.01 = space_other OTHER be=0 delay=0 size=8 wordsize=1 physical=0
+space.02 = space_unique unique be=0 delay=0 size=4 wordsize=1 physical=1
+space.03 = space ram be=0 delay=1 size=4 wordsize=1 physical=1
+space.04 = space register be=0 delay=0 size=4 wordsize=1 physical=1
+symbol.0000000.body = numct=1
+symbol.0000000.id = instruction scope=0 subtable_sym
+symbol.0000001.body = 
+symbol.0000001.id = inst_start scope=0 start_sym
+symbol.0000002.body = 
+symbol.0000002.id = inst_next scope=0 end_sym
+symbol.0000003.body = 
+symbol.0000003.id = inst_next2 scope=0 next2_sym
+symbol.0000004.body = space=register off=0x0 size=4
+symbol.0000004.id = r0 scope=0 varnode_sym
+symbol.0000005.body = space=register off=0x4 size=4
+symbol.0000005.id = r1 scope=0 varnode_sym
+symbol.0000006.body = space=register off=0xc size=4
+symbol.0000006.id = r3 scope=0 varnode_sym
+symbol.0000007.body = space=register off=0x40 size=2
+symbol.0000007.id = h0 scope=0 varnode_sym
+symbol.0000008.body = space=register off=0x42 size=2
+symbol.0000008.id = h1 scope=0 varnode_sym
+symbol.0000009.body = space=register off=0x80 size=1
+symbol.0000009.id = c0 scope=0 varnode_sym
+symbol.0000010.body = space=register off=0x81 size=1
+symbol.0000010.id = c1 scope=0 varnode_sym
+symbol.0000011.body = space=register off=0x100 size=8
+symbol.0000011.id = q0 scope=0 varnode_sym
+symbol.0000012.body = tok(be=0,sign=0,sb=8,eb=15,sby=1,eby=1,sh=0)
+symbol.0000012.id = op scope=0 value_sym
+symbol.0000013.body = tok(be=0,sign=0,sb=0,eb=1,sby=0,eby=0,sh=0)
+symbol.0000013.id = reg scope=0 value_sym
+symbol.0000014.body = tok(be=0,sign=0,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000014.id = imm scope=0 value_sym
+symbol.0000015.body = tok(be=0,sign=1,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000015.id = simm scope=0 value_sym
+symbol.0000016.body = tok(be=0,sign=0,sb=0,eb=3,sby=0,eby=0,sh=0)
+symbol.0000016.id = low4 scope=0 value_sym
+symbol.0000017.body = tok(be=0,sign=0,sb=4,eb=7,sby=0,eby=0,sh=4)
+symbol.0000017.id = hi4 scope=0 value_sym
+symbol.0000018.body = index=0
+symbol.0000018.id = sync scope=0 userop
+symbol.0000019.body = def=4 code=0
+symbol.0000019.id = r0 scope=1 operand_sym
+symbols = 20
+equation instruction[0] = ([PExprId(2) = PExprId(1)] & operand(r0))
+xml instruction[0] main:
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_MULT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x100"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_DIV">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x200"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x100"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_REM">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x300"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x200"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x3"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SDIV">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x400"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x300"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SREM">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x500"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x400"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x5"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SUB">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x500"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_AND">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x700"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x3"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_XOR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x800"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_LEFT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x900"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x800"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_RIGHT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xa00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x900"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SRIGHT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xb00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xa00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x3"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_OR">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x700"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xb00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_EQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xd00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_NOTEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xe00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_LESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xf00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x3"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_AND">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1000"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xe00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xf00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_LESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1100"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_XOR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1200"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1000"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1100"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0xd00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1200"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_LESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1400"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x5"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_LESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x6"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1600"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1400"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SLESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x7"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1800"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1600"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SLESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1900"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x8"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1a00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1800"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1900"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SLESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1b00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x9"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1c00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1a00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1b00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SLESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1d00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0xa"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1c00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1d00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_LESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1f00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_LESS">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2000"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2100"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1f00"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2000"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_LESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2200"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2300"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2100"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2200"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_LESSEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2400"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2300"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2400"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_EQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2600"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2600"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_NOTEQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2800"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_OR">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2800"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2a00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_MULT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2b00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_DIV">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2c00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2b00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_SUB">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2a00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x2c00"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_2COMP">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_NEGATE">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BOOL_NEGATE">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x81"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_NEG">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_ZEXT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x40"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SEXT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_CARRY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SCARRY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_SBORROW">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_NAN">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x80"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_ABS">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT_SQRT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CEIL">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOOR">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="ROUND">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT2FLOAT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="FLOAT2FLOAT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x100"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="TRUNC">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x100"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="POPCOUNT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LZCOUNT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="NEW">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="NEW">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0xc"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CPOOLREF">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x3"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CALLOTHER">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="SUBPIECE">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x40"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x40"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x4"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x10"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LOAD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="ram"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LOAD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="register"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LOAD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="ram"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>

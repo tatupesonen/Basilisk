@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Field 'f2' starts at 5 and ends at 3
+error (line 2, located): Field 'f3' high must be less than token size
+=> no output

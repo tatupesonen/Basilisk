@@ -1,0 +1,3 @@
+@include "prelude.sinc"
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }
+define context contextreg late=(3,3);

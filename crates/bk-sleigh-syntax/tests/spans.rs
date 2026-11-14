@@ -113,7 +113,7 @@ fn spans_in_included_files_name_the_file_and_its_include_chain() {
         [("b.sinc".to_owned(), 5), ("a.slaspec".to_owned(), 3)]
     );
     let root = parsed.sources.locate(spans[2].start).unwrap();
-    assert!(parsed.sources.include_chain(root.include).is_empty());
+    assert_eq!(parsed.sources.include_chain(root.include), []);
 }
 
 #[test]
@@ -126,7 +126,7 @@ fn a_file_included_twice_has_one_file_and_two_inclusions() {
         ("t.sinc", ":T is epsilon unimpl\n"),
     ]);
     // The duplicate constructor is not a syntax error.
-    assert!(parsed.diagnostics.is_empty());
+    assert_eq!(parsed.diagnostics, []);
     let first = parsed
         .sources
         .locate(parsed.spec.items[0].span().start)

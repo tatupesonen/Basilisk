@@ -1,0 +1,38 @@
+---
+// Starlight's theme <select>, replaced by the same sun/moon switch as the
+// site and the program (components/ThemeToggle.astro). Same storage key.
+import ThemeToggle from '../ThemeToggle.astro';
+---
+
+<ThemeToggle />
+
+<style>
+  :global(.bk-theme-toggle) {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--bk-line);
+    border-radius: var(--bk-radius-2);
+    background: transparent;
+    color: var(--bk-text-2);
+    cursor: pointer;
+  }
+  :global(.bk-theme-toggle[hidden]) {
+    display: none;
+  }
+  :global(.bk-theme-toggle:hover) {
+    color: var(--bk-text);
+    border-color: var(--bk-line-strong);
+  }
+  :global(.bk-theme-toggle .bk-theme-moon) {
+    display: none;
+  }
+  :global(:root[data-theme='light'] .bk-theme-toggle .bk-theme-sun) {
+    display: none;
+  }
+  :global(:root[data-theme='light'] .bk-theme-toggle .bk-theme-moon) {
+    display: block;
+  }
+</style>

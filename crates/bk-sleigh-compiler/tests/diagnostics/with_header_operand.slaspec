@@ -1,0 +1,7 @@
+@include "prelude.sinc"
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }
+# A table or field atom in a with header (spec 4.1): the operand goes to the
+# global scope, where the name is already taken.
+with : imm {
+:x is op=5 { r1 = 0; }
+}

@@ -1,51 +1,78 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 12:51; earlier stamp 11:31)
+## Now — RESUME HERE (2026-11-14 16:35)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-the GNU disassembler crates, `bk-sla` and `bk-decomp-types`
-(gate green, 1,747 tests). M0:
+the GNU disassembler crates, `bk-sla`, `bk-decomp-types`, `bk-sleigh`
+part 1, `bk-sleigh-compiler` part 1 and the website (gate green, 1,819
+tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
 
-Workers count helpers; agents are told to start none. Fable 5.2 (high effort) for research and
-specs, Opus 5.5 (medium) for implementation.
+**Working rules in force** (all in `DIRECTION.md`): two running workers
+for now, counting helpers (agents start none); new agents are Opus 5.5 at
+medium effort; the coordinator does no hands-on work; existing work is
+never thrown away — agents are paused at a safe point and resumed by id,
+worktrees and branches are removed only when their content is on
+`master`.
 
-**Hard cap: three running workers** (owner, 2026-11-14; replaces the four
-above).
+**How merges are done**: finished branches are merged into a branch
+`integration` cut from `master` (in its own worktree if the main checkout
+is busy); the gate, `scripts/check-dep-age.py master` and
+`cargo deny check advisories` run on it; it is pushed and CI started with
+`gh workflow run CI --ref integration`; it is merged to `master`
+(`--no-ff`) only when every job is green on all three systems, then
+deleted. A red job goes back to the agent whose crate it is. Conflicts in
+manifests are resolved by reading them, never by a script that keeps both
+sides (that broke `fuzz/Cargo.toml` once; neither the gate nor CI builds
+the fuzz crate — check it with `cargo metadata --manifest-path
+fuzz/Cargo.toml`). Branches that touch only docs and development scripts
+may be merged directly.
 
-**`master` is green in CI on Linux, macOS and Windows** since the merge
-of branch `integration` on 2026-11-14 11:30 (CI run 43578142514 on the
-branch: every job green; local gate 1,708 tests). It holds `bk-sla`, the
-GCC 15 build fix for `bk-binutils-sys` and the Windows path fixes.
+**`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 16:34; CI
+run 43605009924 on `integration`, every job green on Linux, macOS and
+Windows). The pin was committed directly at the owner's choice
+(`144859f`) and track `toolchain-1.100` made the workspace pass: rustfmt
+in `bk-elf`; 52 clippy findings from four new lints (`assert_is_empty`
+44, `float_cmp_const` 5, `chunks_exact_to_as_chunks` 2,
+`manual_bit_width` 1); no lint weakened, no `#[expect]` added, lock files
+unchanged; report `docs/agents/toolchain-1.100.md`. Both running agents
+were told at 16:34 to commit, run `git merge master` in their worktrees
+(a one-time exception to the no-merge rule), `cargo fmt --all`, clippy on
+their own crates, and to run their final gates only after that. Agents
+resumed later (the paused Fable ones write no Rust) and new agents start
+from `master` and need nothing special.
 
-**How merges are done now** (owner allows pushing tested feature
-branches, 2026-11-14): finished branches are merged into a branch
-`integration` cut from `master`; the gate, `scripts/check-dep-age.py
-master` and `cargo deny check advisories` run on it; it is pushed and CI
-started with `gh workflow run CI --ref integration`; it is merged to
-`master` (`--no-ff`) only when every job is green on all three systems,
-and then deleted. A red job goes back to the agent whose crate it is.
-A report that says "not run" for a platform is not a reason to skip this.
+Left over from that track, not urgent: 8 new cargo manifest warnings
+(seven unused `[workspace.dependencies]` entries — `anyhow`,
+`bk-decomp-types`, `bk-gnu-disasm`, `bk-sleigh`, `bk-sleigh-compiler`,
+`memmap2`, `rayon` — and an unused `authors` field), to clean up once the
+running tracks have merged, since they may use some; `rust-version`
+stays 1.97 (raising it turns on 17 `map_unwrap_or` sites); the Wine image
+`bk-gnu-disasm-win` ships Rust 1.97.1 and installs 1.100.0 on every run
+until rebuilt (goes with the `win-local` tooling track).
 
-### Running (state at 2026-11-14 13:03)
+**On `master`** besides M0: `bk-ui`, the GNU disassembler crates,
+`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1, `bk-sleigh-compiler`
+part 1, `bk-pcode` on the x86-64 oracle, the website and documentation
+shell (`site/`), the unfused reference build. Last green CI: run 43605009924 (all jobs, all three
+systems; gate 1,819 tests).
+
+**The site is built but not published** (owner: "Not until there is more
+to show"). When the owner says so: GitHub → Settings → Pages → Source
+"GitHub Actions", then `gh workflow run Pages`
+(`https://tatupesonen.github.io/basilisk/`).
+
+### Running (state at 2026-11-14 16:30)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `site-design` (fix round) | Opus | `ad3bb266abb408203` | resumed 13:00 with the CI failure (Docker `--cpus 3` on a 2-CPU runner); also checking everything else that assumes this Mac. |
-| `sleigh-compiler-front` | Opus | `a657ab279c091c7b8` | started 12:05; `bk-sleigh-compiler` part 1; waiting on its own final run. |
-| `decomp-cspec` | Opus | `aaa90a7df42087601` | started 13:03; D03, `bk-cspec` from `features/decomp-cspec.md`, briefed with D02's hooks (`PrototypeCodec`, `TypeEnv::default_model`). |
-
-Finished, in or waiting for the integration branch:
-
-| Branch | Agent id | Result |
-|---|---|---|
-| `sleigh-decode` (13 commits) | `a07f201f2114ec7f5` | **In CI** on branch `integration` (run 43587818592; gate on the branch green, 1,781 tests). `bk-sleigh` part 1: no `I`/`E`/`T` record differs from `pcodedump` over 175 language configurations (99.33 % of root pairs confirmed, 97.2 % of constructors); decode 3.25 M instructions/s against 3.17 M for Ghidra, decode + text 2.41 M against 1.50 M, no allocation per instruction. Missed: 8-thread scaling 4.78× against a 6× target, measured on a loaded machine — re-measure idle. Found: `pcodedump` crashes on a delay-slot instruction with an `unimpl` body (36 cases). CI replays only a fixture language built in Rust; the full run needs the local reference build. Green → merge, tick `sleigh-decode` in `PLAN.md`, start `sleigh-pcode`. |
-| `x86-oracle` (6 commits, worktree kept) | `a6eeb040907dff5c6` | **Next into the integration branch.** `bk-pcode` now follows x86-64 for two NaN inputs (ADD/MULT take `b`'s sign, SUB/DIV `a`'s), computed from the bits; `ceil`/`floor` through `libm`; the x86-64 table is the checked-in oracle with 0 unexplained rows and three explained classes (`TruncSaturates` 58 — Java's tests pin saturation, x86-64 C++ gives `i64::MIN`; two C++ faults). 188 directed rows with literal expected bits run on all three CI systems. The generator is now deterministic. Own gate green. **After the merge the coordinator runs the regeneration on `kassini`** (`regen.sh` against the box's reference, then compare the decompressed text with the checked-in table: expected identical). Correction to ADR-029's last bullet: 50 of the 161 differing rows are `FLOAT_TRUNC`, not NaN signs. |
+| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
+| `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -80,20 +107,18 @@ start a fresh agent briefed from the branch's files.
 ### Queue (start as slots free, in this order)
 
 0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
-0a. `spec-plugin` is merged (2026-11-14). From it, to do when the owner
-   has answered the Blocker: adopt its three ADRs; replace M9's items in
-   `PLAN.md` with its tracks P0–P7 (P0 reference fixtures, P1 host and
-   packaging and P3 flat layer can start at once; P2 and P4a wait for M4,
-   P4b for M5/M6, P5 for the decompiler wiring, P6 for a `bk-ui` change);
-   add `bk-plugin-ui` and `basilisk-py` to the crate map. Regardless of
-   the answer: (i) **move the monitor type (cancel and progress) out of
-   `bk-ui` into a low crate** before the M4/M5 specs — a small Opus
-   track; (ii) the next UI track lets the action registry and the view
-   kinds accept run-time entries (today a closed enum and a `const`
-   table); (iii) the program-model, storage, analysis and decompiler
+0a. **Plugin tracks** (`features/plugin-api.md`; ADR-035, ADR-036,
+   ADR-037; unblocked by the owner on 2026-11-14): P0 reference fixtures,
+   P1 host and packaging, P3 flat scripting layer can start; the first of
+   them also corrects the spec's script-failure default (keep changes,
+   roll back only on opt-in). They come after the SLEIGH compiler back
+   half in the order below. Also from the spec, independent of those:
+   (i) move the monitor type (cancel and progress) out of `bk-ui` into a
+   low crate before the M4/M5 specs — a small Opus track; (ii) the next
+   UI track lets the action registry and the view kinds accept run-time
+   entries; (iii) the program-model, storage, analysis and decompiler
    D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
-   9, 11 and 13 (origin and replaced value on model edits, stable
-   variable identity, decompiler results `Arc` + `Sync`).
+   9, 11 and 13.
 0a2. (running) `site-design`.
 0a3. **`docs-content`** (Opus; after `site-design` and `spec-plugin`) —
    the documentation itself: Getting started, the interface (one page per
@@ -112,21 +137,15 @@ start a fresh agent briefed from the branch's files.
    checked-in oracle, fix the 106 rows where basilisk does not follow
    x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
    provenance (ADR-029).
-0c. **`ref-nofma`** (Opus, small; from `sla-host-diff`, ADR-032) — (i) add
-   `-ffp-contract=off` to `scripts/build-reference.sh`, rebuild into a
-   staging directory, check that all 150 `.sla` equal
-   `../reference-x86_64/x86_64-linux/`, rerun the unit and data tests,
-   then replace `../reference/` file by file with atomic renames (other
-   agents are reading it) and update `features/reference-tools.md`; (ii)
-   apply the edits of `research/sla-host-dependence.md` section 6.3 to
-   `features/sleigh-compiler-back.md` (unfused `f64` score, a `log`
-   bit-equal to glibc's checked against
-   `research/sla-host-dependence/logtable-glibc.txt.gz`, byte equality
-   with x86-64 for all 150, no admitted ties); (iii) report the reference
-   `pcodedump` segfault on random `mips32le` bytes with a reproducer.
-   Before `sleigh-compiler-back`; `sleigh-compiler-front` does not need
-   it. Docker leftovers of the investigation to remove then: tag
-   `bk-sla-host-diff/gcc14:arm64`, `alpine:3.22`, untagged `812e99317af7`.
+0c. `ref-nofma` is merged (2026-11-14; ADR-034): `../reference` is the
+   unfused build and the oracle for all 150 specifications;
+   `features/sleigh-compiler-back.md` carries ADR-032's edits. Left over:
+   `tools/reference/README.md` still lists `ADDITIONAL_FLAGS` without the
+   flag (give it to the next tooling track); the five ARM v8-m
+   `pcodedump` crashes are not reproduced (probably a second bug:
+   `sleigh-pcode` is to record their bytes and context); Docker image
+   `e750467579a2` (arm64 `gcc:14`, untagged, 1.5 GB) can be removed when
+   nothing needs it.
 1. `sleigh-compiler-front` (Opus) — can start now (`sleigh-decode` is
    running). Then `sleigh-pcode` (after `sleigh-decode`),
    `sleigh-compiler-back` (after the front half and `ref-nofma`),
@@ -177,8 +196,10 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `sleigh-pcode` (when `sleigh-decode`
-   is on `master`), `docs-content` (when the site is merged), D01
+1. As slots free, in this order (owner, 2026-11-14: finish SLEIGH
+   first): `toolchain-1.100` only if the gate or CI is red on 1.100.0;
+   `sleigh-compiler-back`; `sleigh-snippet`; then the decompiler's first
+   wave: D01
    `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
@@ -197,6 +218,18 @@ start a fresh agent briefed from the branch's files.
    (nothing Java was run); complete it before its wave.
 
 ### Working notes
+
+* **Idea recorded, not queued** (owner, 2026-11-14: "Not now"): improving
+  the SLEIGH specifications themselves — testing each instruction's
+  p-code against an emulator or a CPU to find specification bugs, and
+  basilisk-owned overlays for unimplemented instructions and for vector
+  operations that Ghidra models as opaque user ops. Needs an ADR
+  (ADR-002 says the specifications are used unchanged) if it is taken up.
+* **The site is built but not published** (owner, 2026-11-14: "Not until
+  there is more to show"). When the owner says so: Settings → Pages →
+  Source "GitHub Actions", then `gh workflow run Pages`.
+* `spec-pe` and `store-spike` (Fable, paused since 2026-11-13) are
+  resumed as they are when their turn comes (owner, 2026-11-14).
 
 * **`kassini`** (x86-64 Linux, Debian 13, 4 cores, 1.8 GB memory, Docker
   with `gcc:14`): reachable on the owner's tailnet since 2026-11-14.
@@ -241,25 +274,8 @@ start a fresh agent briefed from the branch's files.
 
 ## Blockers
 
-* **Owner decision: how Python hosts plugins (ADR-014 cannot work as
-  written).** The `spec-plugin` track measured that "`bk-plugin` embeds
-  CPython" and "basilisk is a single binary" cannot both hold: a binary
-  linked against libpython does not start where that libpython is missing
-  (macOS: dyld "Library not loaded", exit 134, even when Python is never
-  used) and is tied to one Python minor version and install path; linking
-  CPython statically makes Python mandatory, fixes its version, and on
-  Windows stops third-party C extensions from loading; PyO3 cannot load
-  libpython at run time. **Proposed instead**: basilisk is a Python
-  *extension module* hosted by the user's own CPython (`python -m
-  basilisk`, `import basilisk`; one abi3 build verified on CPython 3.10
-  to 3.14), and the `basilisk` binary stays free of Python and hands over
-  to a CPython it finds when plugins are wanted — the way Ghidra's own
-  PyGhidra works. The owner was asked on 2026-11-14. Until answered:
-  the plugin implementation tracks (P0–P7 in `features/plugin-api.md`)
-  do not start; the binding constraints
-  (`features/plugin-binding-constraints.md`) apply to other specs either
-  way. The track's proposed ADRs are in `docs/agents/spec-plugin.md`
-  (numbered 030–032 there; they become 032–034 here).
+None. The owner answered the open questions on 2026-11-14 (`DIRECTION.md`,
+"Owner's answers of 2026-11-14"; ADR-035, ADR-036).
 
 ## Log
 
@@ -291,6 +307,37 @@ start a fresh agent briefed from the branch's files.
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`ref-nofma` merged** (ADR-034): the reference tools are built with
+  `-ffp-contract=off`; on this Mac all 150 `.sla` now equal x86-64
+  Linux's, with Ghidra's tests, `pcodedump` and the `decomp` console
+  unchanged. The `pcodedump` crash on SPARC and MIPS is one Ghidra bug (a
+  dangling walker after `UnimplError` in a delay slot), with two 8-byte
+  reproducers.
+* **`bk-sleigh` part 1 merged** (`sleigh-decode`): no `I`/`E`/`T` record
+  differs from `pcodedump` over 175 language configurations (99.33 % of
+  root pairs, 97.2 % of constructors); decode 3.25 M instructions/s
+  against 3.17 M for Ghidra, decode + text 2.41 M against 1.50 M; no
+  allocation per instruction. Missed target: 8-thread scaling 4.78×
+  against 6×, measured on a loaded machine. `pcodedump` crashes on a
+  delay-slot instruction with an `unimpl` body (36 cases).
+* **`bk-sleigh-compiler` part 1 merged** (`sleigh-compiler-front`): for
+  all 150 specifications the symbols, constructors, print pieces, context
+  changes and templates equal Ghidra's compiled files; three mutations
+  made the comparison fail on 133, 82 and 18 specifications; 92
+  diagnostic cases equal to Ghidra's compiler (which crashes on two
+  inputs); parse + elaborate of all 150 in 1.03 s against about 11.5 s
+  for Ghidra's whole compile.
+* **`bk-pcode` on the x86-64 oracle** (`x86-oracle`, ADR-033) and **the
+  website** (`site-design`; its CI job first failed on the runner's two
+  CPUs, fixed by sizing the container from `docker info`) merged.
+* Coordinator's mistake, 13:25: a "keep both sides" script produced
+  invalid TOML in `fuzz/Cargo.toml` on the integration branch, and
+  neither the gate nor CI builds the fuzz crate. Found by comparing bin
+  entries with target files; the branch was rebuilt and resolved by hand.
+  A gate step that parses the fuzz manifest is queued (`win-local`).
+* Owner, 2026-11-14 afternoon: Rust toolchain 1.100.0 (staged in the main
+  checkout, lands through track `toolchain-1.100`); two running workers
+  for now; existing work is never thrown away.
 * **`bk-decomp-types` merged** (D02, first decompiler crate; CI green on
   all three systems, gate on `master` 1,747 tests): every type kind, the
   factory, both orderings, XML, the C declaration parser, provenance and

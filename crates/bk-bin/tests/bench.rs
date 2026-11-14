@@ -73,8 +73,10 @@ impl ByteProvider for Opaque {
 fn bench_reader_integer_throughput() {
     let bytes = data();
     let expected: u64 = bytes
-        .chunks_exact(4)
-        .map(|c| u64::from(u32::from_le_bytes(c.try_into().unwrap())))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|&c| u64::from(u32::from_le_bytes(c)))
         .fold(0, u64::wrapping_add);
 
     let memory = MemoryProvider::new(bytes.clone());

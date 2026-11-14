@@ -1,0 +1,75 @@
+---
+// The full parity matrix from docs/PARITY.md. The status filter works
+// without scripts: radio inputs and :has() in status.css hide other rows.
+import { loadParity, countByStatus, STATUSES, STATUS_INFO, slugify } from '../lib/parity';
+import { inlineMarkdown } from '../lib/repo';
+import { repo } from '../lib/site-config.mjs';
+
+const parity = loadParity();
+const all = parity.sections.flatMap((s) => s.rows);
+const counts = countByStatus(all);
+const present = STATUSES.filter((s) => counts[s] > 0);
+const linkCode = (code: string) => {
+  if (/^(features|research|inventory)\/[\w./-]+\.md$/.test(code)) return `${repo}/blob/master/docs/${code}`;
+  if (/^docs\/[\w./-]+\.md$/.test(code)) return `${repo}/blob/master/${code}`;
+  return undefined;
+};
+---
+
+<div class="bk-matrix">
+  <fieldset class="bk-filter">
+    <legend class="bk-sr">Show modules by status</legend>
+    <label><input type="radio" name="bk-status" value="all" checked /><span>All <b>{all.length}</b></span></label>
+    {
+      present.map((s) => (
+        <label>
+          <input type="radio" name="bk-status" value={STATUS_INFO[s].key} />
+          <span>
+            <i class={`bk-status-dot st-${STATUS_INFO[s].key}`} />
+            {s} <b>{counts[s]}</b>
+          </span>
+        </label>
+      ))
+    }
+  </fieldset>
+
+  {
+    parity.sections.map((section) => (
+      <section class="bk-matrix-section" id={section.slug} aria-labelledby={`${section.slug}-h`}>
+        <h2 id={`${section.slug}-h`}>
+          {section.title}
+          <span class="bk-muted">{section.rows.length}</span>
+        </h2>
+        <div class="bk-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Ghidra</th>
+                <th scope="col">basilisk</th>
+                <th scope="col">Milestone</th>
+                <th scope="col">Status</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {section.rows.map((r) => (
+                <tr data-status={STATUS_INFO[r.status].key} id={`${section.slug}-${slugify(r.module).slice(0, 48)}`}>
+                  <th scope="row" set:html={inlineMarkdown(r.module)} />
+                  <td class="bk-crates" set:html={inlineMarkdown(r.crates)} />
+                  <td class="bk-ms">{r.milestone}</td>
+                  <td>
+                    <span class={`bk-chip st-${STATUS_INFO[r.status].key}`} title={STATUS_INFO[r.status].meaning}>
+                      <i class="bk-status-dot" />
+                      {r.status}
+                    </span>
+                  </td>
+                  <td class="bk-notes" set:html={inlineMarkdown(r.notes, linkCode) || '<span class="bk-muted">—</span>'} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+</div>

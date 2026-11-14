@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+macro bad(a) { <x> a = 1; }
+macro outer(a) { bad(a); }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

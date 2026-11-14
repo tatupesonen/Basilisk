@@ -1,0 +1,4 @@
+#! -t
+@include "prelude.sinc"
+:td r0 is op=2 & r0 { local t:4 = r0; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

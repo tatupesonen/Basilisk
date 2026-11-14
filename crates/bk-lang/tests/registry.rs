@@ -467,7 +467,7 @@ fn a_user_module_can_be_added_beside_a_ghidra_root() {
 
     // Alone, the module's language lacks its .pspec.
     let alone = LanguageRegistry::builder().module(&module).build().unwrap();
-    assert!(alone.languages().is_empty());
+    assert_eq!(alone.languages(), []);
     assert!(matches!(
         alone.failures(),
         [LoadFailure::MissingFile {
@@ -492,13 +492,7 @@ fn building_fails_only_for_unusable_roots() {
         "{error}"
     );
 
-    assert!(
-        LanguageRegistry::builder()
-            .build()
-            .unwrap()
-            .languages()
-            .is_empty()
-    );
+    assert_eq!(LanguageRegistry::builder().build().unwrap().languages(), []);
 }
 
 #[test]

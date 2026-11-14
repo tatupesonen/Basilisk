@@ -197,8 +197,8 @@ HOST=$(uname -sm)
 # What the Makefile gets instead of its own settings:
 #   ARCH_TYPE=            it forces -arch x86_64 on macOS and -m32 on non-x86 Linux; build native
 #   ADDITIONAL_FLAGS      -w (Ghidra's warnings are not ours), LOCAL_ZLIB (use the bundled zlib,
-#                         as Ghidra's Gradle build does), -fsigned-char (see below); drops
-#                         -mmacosx-version-min=10.6
+#                         as Ghidra's Gradle build does), -fsigned-char and -ffp-contract=off
+#                         (see below); drops -mmacosx-version-min=10.6
 #   BFDLIB=               no GNU BFD
 #   LNK                   the bundled zlib instead of -lz
 #   EXTRA                 as in the Makefile, minus the BFD-dependent sources
@@ -208,7 +208,17 @@ HOST=$(uname -sm)
 # without the flag spins at full CPU on every data test (measured with
 # g++ 14 in a container; the unit tests pass). The flag changes nothing
 # where `char` is already signed.
-CXX_EXTRA_FLAGS="-w -DLOCAL_ZLIB -fsigned-char"
+#
+# -ffp-contract=off (ADR-032, docs/research/sla-host-dependence.md): no
+# fusing of a multiply and an add into one instruction. Compilers targeting
+# AArch64 contract by default, and Ghidra's SLEIGH compiler then breaks
+# score ties in its decision trees differently from x86-64 (14 of 150 .sla
+# files differ). With the flag every host builds x86-64 Linux's bytes. It is
+# passed to every compile (tools, pcodedump, zlib) so that no reference
+# tool's floating point depends on contraction.
+FP_FLAGS="-ffp-contract=off"
+CXX_EXTRA_FLAGS="-w -DLOCAL_ZLIB -fsigned-char $FP_FLAGS"
+ZLIB_CFLAGS="-O2 -w -DNO_GZIP $FP_FLAGS"
 MAKE_FLAGS_DESC="CXX=$CXX_CMD -std=c++11; ARCH_TYPE=; ADDITIONAL_FLAGS=$CXX_EXTRA_FLAGS; BFDLIB=; LNK=../zlib/libz.a; EXTRA without: $BFD_NAMES"
 
 tools_fingerprint() {
@@ -217,6 +227,7 @@ tools_fingerprint() {
     echo "cxx: $CXX_VERSION"
     echo "cc: $CC_CMD"
     echo "make: $MAKE_FLAGS_DESC"
+    echo "zlib: $ZLIB_CFLAGS"
     for d in cpp zlib unittests; do
       echo "tree $d: $(hash_tree "$DEC/$d")"
     done
@@ -283,7 +294,8 @@ sync_sources() {
 build_zlib() {
   local dir=$REF/src/zlib newer
   newer=$(find "$dir" -type f \( -name '*.c' -o -name '*.h' \) -newer "$dir/libz.a" 2>/dev/null | head -1 || true)
-  if [ -f "$dir/libz.a" ] && [ -z "$newer" ]; then
+  if [ -f "$dir/libz.a" ] && [ -z "$newer" ] \
+      && [ "$(cat "$STATE/zlib-flags" 2>/dev/null || true)" = "$ZLIB_CFLAGS" ]; then
     return 0
   fi
   say "  compiling the bundled zlib"
@@ -291,10 +303,12 @@ build_zlib() {
   local c
   for c in "$dir"/*.c; do
     # NO_GZIP as in Ghidra's Gradle build (buildNatives.gradle).
-    $CC_CMD -O2 -w -DNO_GZIP -c "$c" -o "${c%.c}.o" || die "zlib: $c failed to compile"
+    # shellcheck disable=SC2086
+    $CC_CMD $ZLIB_CFLAGS -c "$c" -o "${c%.c}.o" || die "zlib: $c failed to compile"
   done
   ar qc "$dir/libz.a" "$dir"/*.o
   ranlib "$dir/libz.a"
+  printf '%s\n' "$ZLIB_CFLAGS" > "$STATE/zlib-flags"
 }
 
 build_tools() {
@@ -589,6 +603,8 @@ write_stamp() {
     echo "bison: $(bison --version 2>/dev/null | head -1 || echo absent) (not used: checked-in parsers are kept)"
     echo "flex: $(flex --version 2>/dev/null | head -1 || echo absent) (not used: checked-in parsers are kept)"
     echo "make_overrides: $MAKE_FLAGS_DESC"
+    echo "zlib_cflags: $ZLIB_CFLAGS"
+    echo "fp_flags: $FP_FLAGS (every C and C++ compile; ADR-032)"
     if [ ${#PATCHES[@]} -eq 0 ]; then
       echo "patches: none"
     else

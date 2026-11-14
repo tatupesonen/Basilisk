@@ -159,15 +159,18 @@ fn test_get_host_float() {
     assert_eq!(f, decode_host_f32(&ff, encoding));
 
     // smallest subnormal value
-    assert_eq!(FLOAT_MIN_VALUE, decode_host_f32(&ff, 1));
+    assert_eq!(FLOAT_MIN_VALUE.to_bits(), decode_host_f32(&ff, 1).to_bits());
 
     // smallest subnormal value, negative. Java: `intbits = 0x80000001`, an
     // `int`, which `decodeHostFloat(long)` receives sign-extended.
     assert_eq!(
-        -FLOAT_MIN_VALUE,
-        decode_host_f32(&ff, int_bits_as_long(0x8000_0001))
+        (-FLOAT_MIN_VALUE).to_bits(),
+        decode_host_f32(&ff, int_bits_as_long(0x8000_0001)).to_bits()
     );
-    assert_eq!(-FLOAT_MIN_VALUE, decode_host_f32(&ff, 0x8000_0001));
+    assert_eq!(
+        (-FLOAT_MIN_VALUE).to_bits(),
+        decode_host_f32(&ff, 0x8000_0001).to_bits()
+    );
 
     // A subnormal, 3.75, -4.5 and the infinities.
     for f in [

@@ -1,0 +1,10 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+error (line 3, located): Size restriction error in table 'instruction'
+  Problem with operand 1 'sub' in Copy(=) operator
+  Using subtable with exports in expression
+=> no output

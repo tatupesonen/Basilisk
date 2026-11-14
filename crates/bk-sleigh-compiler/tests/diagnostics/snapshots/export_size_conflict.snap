@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+error (line 3, located): Table 'sub' has inconsistent export size; Constructor starting at line 3 is first conflict
+=> no output

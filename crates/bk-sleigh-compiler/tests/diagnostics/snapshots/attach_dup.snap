@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning (line 2, located): 'attach variables' list contains duplicate entries: reg
+=> elaborated

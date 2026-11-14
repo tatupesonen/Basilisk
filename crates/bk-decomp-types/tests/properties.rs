@@ -474,6 +474,6 @@ fn fork_finds_a_parent_type_whose_provenance_it_raised() {
     assert_eq!(parent.get(p).unwrap().provenance(), Provenance::Default);
     assert_eq!(child.pointer(8, uint1, 1).unwrap(), p);
     assert_eq!(child.len(), parent.len());
-    assert!(child.overlay_ids().is_empty());
+    assert_eq!(child.overlay_ids(), []);
     assert_eq!(child.shadowed_ids(), vec![p]);
 }

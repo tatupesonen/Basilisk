@@ -1,0 +1,31 @@
+---
+title: basilisk documentation
+description: How to use basilisk, a reimplementation of Ghidra in Rust, and how each part of it works — what exists today and what is planned.
+tableOfContents: false
+---
+
+import Callout from '../../../components/Callout.astro';
+
+basilisk is a reimplementation of [Ghidra](https://github.com/NationalSecurityAgency/ghidra) in Rust:
+loaders, SLEIGH, p-code, analysis, the decompiler and a desktop interface. These pages explain how to use it
+and how it works inside.
+
+<Callout kind="caution" title="Early development">
+basilisk cannot open a real program yet. The desktop interface runs on a built-in demo program, and the
+foundations — Ghidra's language files, SLEIGH, p-code — are being built first. Every page says what exists
+today and what is planned. The [status matrix](/status/) and the [roadmap](/roadmap/) are generated from the
+project's own records.
+</Callout>
+
+## Sections
+
+| Section | What it covers | Today |
+|---|---|---|
+| [Getting started](/docs/getting-started/) | What basilisk is, building and running it | Builds and runs |
+| [The interface](/docs/interface/) | The CodeBrowser window, one page per view | On demo data |
+| [The command line](/docs/cli/) | `basilisk` and its subcommands | `gui`, `--version` |
+| [Analysis](/docs/analysis/) | Disassembly and auto-analysis | Planned (M5) |
+| [The decompiler](/docs/decompiler/) | Decompiling functions to C | Planned (M3) |
+| [Scripting and plugins](/docs/scripting/) | Python scripts, analyzers, loaders, exporters | Designed; planned (M9) |
+| [Formats and processors](/docs/formats/) | Binary formats and processor languages | ELF parser, Ghidra's language files |
+| [How it works](/docs/internals/) | SLEIGH, p-code, the decompiler pipeline, the program database | Architecture |

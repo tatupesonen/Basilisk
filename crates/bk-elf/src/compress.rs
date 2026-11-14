@@ -172,7 +172,7 @@ mod tests {
         assert!(out.error.is_some());
         // Not zlib at all.
         let out = inflate(b"definitely not zlib data", 100);
-        assert!(out.data.is_empty());
+        assert_eq!(out.data, []);
         assert!(out.error.is_some());
         // Empty input.
         let out = inflate(&[], 100);

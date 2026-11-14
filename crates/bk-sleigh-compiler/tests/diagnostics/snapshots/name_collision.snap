@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 6, located): Name collision: r0 --- Duplicate symbol R0 defined at name_collision.slaspec:2
+=> no output

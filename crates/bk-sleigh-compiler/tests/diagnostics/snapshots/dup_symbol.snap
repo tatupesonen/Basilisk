@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3): Duplicate symbol name: dupf
+=> no output
