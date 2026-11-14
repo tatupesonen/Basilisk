@@ -324,6 +324,7 @@ log)
   echo "remote: $log" >&2
   set +e
   mode=$(basename "$log" .log); mode=${mode#*-*-}
+  case "$mode" in long-*) TMO=${BK_TESTBED_TIMEOUT:-14400} ;; wine*|ubuntu) TMO=${BK_TESTBED_TIMEOUT:-5400} ;; esac
   case "$mode" in
     run|reference) follow "$log"; code=$? ;;
     *) follow "$log" > "$mode-remote.log"; code=$?; tail -n 25 "$mode-remote.log" ;;
