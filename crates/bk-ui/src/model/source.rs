@@ -79,6 +79,10 @@ pub enum SourceError {
     /// The backing store failed.
     #[error("program data unavailable: {0}")]
     Unavailable(String),
+    /// The background task computing the value panicked (a bug; the
+    /// message is the panic's).
+    #[error("internal error in a background task: {0}")]
+    TaskPanicked(String),
 }
 
 /// Result type of the data interface.

@@ -7,6 +7,21 @@
 //! source (ADR-012). When a result lands the client calls the waker the
 //! shell installed, which asks egui for a repaint.
 //!
+//! The wake-up contract, which the shell relies on:
+//!
+//! - The result is stored, and [`DataClient::busy`] no longer counts the
+//!   request, *before* the waker is called. Whatever frame the waker causes
+//!   sees the value, so a result can never sit unseen until the next input
+//!   event. The converse is not promised: the UI may poll the value before
+//!   the waker has run (the wake-up then costs one spare frame).
+//! - [`DataClient::set_waker`] calls the new waker once, so a result stored
+//!   before a waker was installed (or while an old one was being replaced)
+//!   is still noticed.
+//! - A task that panics is a bug, but it must not cost a worker thread or
+//!   leave a placeholder up for ever (ADR-009): the panic is caught, logged,
+//!   and the handle receives [`TaskOutput::task_panicked`] (for the data
+//!   interface's results, [`SourceError::TaskPanicked`]).
+//!
 //! Dropping a [`Pending`] cancels the request if it has not started: a
 //! listing page scrolled past before a worker reached it costs nothing.
 //! Newer requests are served first, because the newest request is what the
@@ -16,17 +31,34 @@
 //! [`Job`]: it has a name and progress and is listed in the status bar.
 
 use std::collections::VecDeque;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
 
 use parking_lot::{Condvar, Mutex};
 
-use crate::model::{Command, ProgramSource, SourceResult};
+use crate::model::{Command, ProgramSource, SourceError, SourceResult};
 
 /// Called when a result is ready (the shell repaints).
 pub type Waker = Arc<dyn Fn() + Send + Sync>;
 
 type Work = Box<dyn FnOnce(&dyn ProgramSource) + Send>;
+
+/// A value a background task can produce, including when it panicked.
+///
+/// Every request's result type implements this so that a panicking task
+/// still delivers something the view can show (an error) instead of
+/// leaving its placeholder up for ever.
+pub trait TaskOutput: Send + 'static {
+    /// The value delivered when the task panicked with `message`.
+    fn task_panicked(message: String) -> Self;
+}
+
+impl<T: Send + 'static> TaskOutput for SourceResult<T> {
+    fn task_panicked(message: String) -> Self {
+        Err(SourceError::TaskPanicked(message))
+    }
+}
 
 /// Number of worker threads.
 const WORKERS: usize = 3;
@@ -166,9 +198,18 @@ impl DataClient {
         client
     }
 
-    /// Installs the function called whenever a result arrives.
+    /// Installs the function called whenever a result arrives, and calls it
+    /// once.
+    ///
+    /// The extra call closes the gap between a request finishing and a
+    /// waker being installed: a worker that read the waker before this
+    /// call stored its result before it, so the frame this call schedules
+    /// sees that result; a worker that reads it afterwards calls the new
+    /// waker itself.
     pub fn set_waker(&self, waker: Waker) {
+        let installed = Arc::clone(&waker);
         *self.waker.lock() = Some(waker);
+        installed();
     }
 
     /// Program facts (cheap: implementations keep them in memory).
@@ -177,8 +218,10 @@ impl DataClient {
     }
 
     /// Number of requests queued or running (for the status bar and tests).
+    ///
+    /// When it reads 0, every request made before has stored its result.
     pub fn busy(&self) -> usize {
-        self.running.load(Ordering::Relaxed)
+        self.running.load(Ordering::Acquire)
     }
 
     /// Edit counter: bumped after every applied [`Command`]. Views compare
@@ -188,26 +231,46 @@ impl DataClient {
     }
 
     /// Runs `f` against the source on a worker thread.
-    pub fn request<T: Send + 'static>(
+    ///
+    /// If `f` panics, the handle receives [`TaskOutput::task_panicked`].
+    pub fn request<T: TaskOutput>(
         &self,
         f: impl FnOnce(&dyn ProgramSource) -> T + Send + 'static,
     ) -> Pending<T> {
         let slot = Arc::new(Mutex::new(None));
         let weak: Weak<Mutex<Option<T>>> = Arc::downgrade(&slot);
-        let waker = Arc::clone(&self.waker);
-        let running = Arc::clone(&self.running);
-        running.fetch_add(1, Ordering::Relaxed);
+        self.running.fetch_add(1, Ordering::Relaxed);
+        // Created now, so that the count is given back even if the work is
+        // dropped unrun (shutdown) or panics.
+        let done = Done {
+            running: Arc::clone(&self.running),
+            waker: Arc::clone(&self.waker),
+            wake: false,
+        };
         self.push(Box::new(move |src| {
+            // Moves the whole guard into the closure; a bare `done.wake`
+            // below would capture only that field and drop the guard (and
+            // the count) as soon as `request` returns.
+            let mut done = done;
             // Nobody is waiting any more: skip the work.
-            if let Some(slot) = weak.upgrade() {
-                let v = f(src);
-                *slot.lock() = Some(v);
-                drop(slot);
-                if let Some(w) = waker.lock().as_ref() {
-                    w();
+            let Some(slot) = weak.upgrade() else {
+                return;
+            };
+            // The closure is dropped, not used again, after a panic, and
+            // the source's own state is behind locks that do not poison:
+            // nothing observes a half-updated value.
+            let v = match catch_unwind(AssertUnwindSafe(|| f(src))) {
+                Ok(v) => v,
+                Err(payload) => {
+                    let message = panic_message(payload.as_ref());
+                    tracing::error!("background task panicked: {message}");
+                    T::task_panicked(message)
                 }
-            }
-            running.fetch_sub(1, Ordering::Relaxed);
+            };
+            *slot.lock() = Some(v);
+            drop(slot);
+            done.wake = true;
+            // `done` drops here: count, then wake (see the module docs).
         }));
         Pending { slot, value: None }
     }
@@ -225,7 +288,7 @@ impl DataClient {
     }
 
     /// Starts long, cancellable work, listed in the status bar until done.
-    pub fn job<T: Send + 'static>(
+    pub fn job<T: TaskOutput>(
         &self,
         name: impl Into<Arc<str>>,
         f: impl FnOnce(&dyn ProgramSource, &Progress) -> T + Send + 'static,
@@ -235,13 +298,16 @@ impl DataClient {
             progress: Arc::new(Progress::default()),
         };
         self.jobs.lock().push(job.clone());
-        let progress = Arc::clone(&job.progress);
-        let jobs = Arc::clone(&self.jobs);
+        // Ends the job however the work ends: finished, panicked, or
+        // dropped unrun because its handle was dropped.
+        let ended = JobEnded {
+            progress: Arc::clone(&job.progress),
+            jobs: Arc::clone(&self.jobs),
+        };
         let pending = self.request(move |src| {
-            let v = f(src, &progress);
-            progress.finished.store(true, Ordering::Relaxed);
-            jobs.lock().retain(|j| !Arc::ptr_eq(&j.progress, &progress));
-            v
+            // The whole guard, not just the field used below (see `Done`).
+            let ended = ended;
+            f(src, &ended.progress)
         });
         (job, pending)
     }
@@ -256,6 +322,56 @@ impl DataClient {
         q.0.push_back(work);
         drop(q);
         self.queue.ready.notify_one();
+    }
+}
+
+/// Gives a request's count back and, if it delivered a result, wakes the
+/// UI, in that order; on drop, so a panic or an unrun request cannot leak
+/// the count (which would leave the busy spinner up).
+struct Done {
+    running: Arc<AtomicUsize>,
+    waker: Arc<Mutex<Option<Waker>>>,
+    wake: bool,
+}
+
+impl Drop for Done {
+    fn drop(&mut self) {
+        // Release: a `busy()` that reads the new count also sees the result.
+        self.running.fetch_sub(1, Ordering::Release);
+        if self.wake {
+            // Called outside the lock, so a waker can never deadlock
+            // against `set_waker`.
+            let waker = self.waker.lock().clone();
+            if let Some(w) = waker {
+                w();
+            }
+        }
+    }
+}
+
+/// Marks a [`Job`] finished and removes it from the status bar on drop.
+struct JobEnded {
+    progress: Arc<Progress>,
+    jobs: Arc<Mutex<Vec<Job>>>,
+}
+
+impl Drop for JobEnded {
+    fn drop(&mut self) {
+        self.progress.finished.store(true, Ordering::Relaxed);
+        self.jobs
+            .lock()
+            .retain(|j| !Arc::ptr_eq(&j.progress, &self.progress));
+    }
+}
+
+/// The text of a panic payload (`panic!` gives a `&str` or a `String`).
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_owned()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "unknown panic".to_owned()
     }
 }
 
@@ -294,35 +410,132 @@ mod tests {
     use crate::demo::DemoProgram;
     use std::time::{Duration, Instant};
 
-    fn wait<T>(p: &mut Pending<T>) -> &T {
-        let deadline = Instant::now() + Duration::from_secs(10);
-        while p.poll().is_none() {
-            assert!(Instant::now() < deadline, "request did not finish");
+    const DEADLINE: Duration = Duration::from_secs(10);
+
+    fn client() -> DataClient {
+        DataClient::new(Arc::new(DemoProgram::licd().unwrap()))
+    }
+
+    /// Spins until `done()` holds; fails after [`DEADLINE`].
+    fn wait_until(what: &str, mut done: impl FnMut() -> bool) {
+        let deadline = Instant::now() + DEADLINE;
+        while !done() {
+            assert!(Instant::now() < deadline, "timed out waiting: {what}");
             std::thread::yield_now();
         }
+    }
+
+    fn wait<T>(p: &mut Pending<T>) -> &T {
+        wait_until("request did not finish", || p.poll().is_some());
         p.poll().unwrap()
+    }
+
+    /// A waker that counts the calls made from threads other than the
+    /// test's, and records `busy()` as each call saw it.
+    fn counting_waker(client: &DataClient) -> (Waker, Arc<AtomicUsize>, Arc<AtomicUsize>) {
+        let main = std::thread::current().id();
+        let woken = Arc::new(AtomicUsize::new(0));
+        let busy_seen = Arc::new(AtomicUsize::new(usize::MAX));
+        let running = Arc::clone(&client.running);
+        let (w, b) = (Arc::clone(&woken), Arc::clone(&busy_seen));
+        let waker: Waker = Arc::new(move || {
+            if std::thread::current().id() != main {
+                b.store(running.load(Ordering::Acquire), Ordering::Relaxed);
+                // Release: pairs with the test's Acquire load below.
+                w.fetch_add(1, Ordering::Release);
+            }
+        });
+        (waker, woken, busy_seen)
     }
 
     #[test]
     fn requests_complete_off_thread_and_wake() {
-        let client = DataClient::new(Arc::new(DemoProgram::licd().unwrap()));
-        let woken = Arc::new(AtomicUsize::new(0));
-        let w = Arc::clone(&woken);
-        client.set_waker(Arc::new(move || {
-            w.fetch_add(1, Ordering::Relaxed);
-        }));
+        let client = client();
+        let (waker, woken, busy_seen) = counting_waker(&client);
+        client.set_waker(waker);
         let main = std::thread::current().id();
         let mut p = client.request(move |s| {
             assert_ne!(std::thread::current().id(), main);
             s.listing_len()
         });
         assert!(*wait(&mut p).as_ref().unwrap() > 1000);
-        assert!(woken.load(Ordering::Relaxed) >= 1);
+        // The contract is "store, then wake": seeing the value does not
+        // mean the waker has run yet, only that it will. Wait for it (this
+        // still fails if a worker never calls the waker).
+        wait_until("the waker was not called", || {
+            woken.load(Ordering::Acquire) >= 1
+        });
+        // By the time the waker ran, the request no longer counted as busy.
+        assert_eq!(busy_seen.load(Ordering::Relaxed), 0);
+        assert_eq!(client.busy(), 0);
+    }
+
+    #[test]
+    fn a_result_stored_before_the_waker_is_installed_still_wakes() {
+        let client = client();
+        let mut p = client.request(|s| s.listing_len());
+        assert!(wait(&mut p).is_ok());
+        // The worker found no waker. Installing one must signal the result
+        // that is already there, or the UI would not repaint for it.
+        let calls = Arc::new(AtomicUsize::new(0));
+        let c = Arc::clone(&calls);
+        client.set_waker(Arc::new(move || {
+            c.fetch_add(1, Ordering::Relaxed);
+        }));
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn a_panicking_request_delivers_an_error_and_frees_its_worker() {
+        let client = client();
+        let (waker, woken, _) = counting_waker(&client);
+        client.set_waker(waker);
+        // One panic per worker: if a panic still killed its thread, the
+        // last request below would never run.
+        let mut panics: Vec<Pending<SourceResult<u64>>> = (0..WORKERS)
+            .map(|_| client.request(|_| -> SourceResult<u64> { panic!("deliberate test panic") }))
+            .collect();
+        for p in &mut panics {
+            match wait(p) {
+                Err(SourceError::TaskPanicked(m)) => assert!(m.contains("deliberate"), "{m}"),
+                other => panic!("expected TaskPanicked, got {other:?}"),
+            }
+        }
+        let mut after = client.request(|s| s.listing_len());
+        assert!(wait(&mut after).is_ok());
+        wait_until("busy count not given back", || client.busy() == 0);
+        wait_until("panicked requests did not wake", || {
+            woken.load(Ordering::Acquire) > WORKERS
+        });
+    }
+
+    #[test]
+    fn a_dropped_request_gives_its_count_back() {
+        let client = client();
+        let gate = Arc::new(AtomicBool::new(false));
+        // Occupy every worker so the next request stays queued.
+        let blockers: Vec<_> = (0..WORKERS)
+            .map(|_| {
+                let g = Arc::clone(&gate);
+                client.request(move |_| -> SourceResult<()> {
+                    let deadline = Instant::now() + DEADLINE;
+                    while !g.load(Ordering::Acquire) && Instant::now() < deadline {
+                        std::thread::yield_now();
+                    }
+                    Ok(())
+                })
+            })
+            .collect();
+        drop(client.request(|s| s.listing_len()));
+        assert_eq!(client.busy(), WORKERS + 1);
+        gate.store(true, Ordering::Release);
+        drop(blockers);
+        wait_until("busy count not given back", || client.busy() == 0);
     }
 
     #[test]
     fn apply_bumps_the_revision() {
-        let client = DataClient::new(Arc::new(DemoProgram::licd().unwrap()));
+        let client = client();
         let entry = client.info().entry;
         let mut p = client.apply(Command::RenameSymbol {
             address: entry,
@@ -334,18 +547,29 @@ mod tests {
 
     #[test]
     fn jobs_report_progress_and_cancel() {
-        let client = DataClient::new(Arc::new(DemoProgram::licd().unwrap()));
+        let client = client();
         let (job, mut p) = client.job("spin", |_, progress| {
-            let deadline = Instant::now() + Duration::from_secs(10);
+            let deadline = Instant::now() + DEADLINE;
             while !progress.is_cancelled() && Instant::now() < deadline {
                 progress.set(0.5);
                 std::thread::yield_now();
             }
-            progress.is_cancelled()
+            Ok(progress.is_cancelled())
         });
         assert_eq!(client.jobs().len(), 1);
         job.progress.cancel();
-        assert!(*wait(&mut p));
+        assert_eq!(wait(&mut p), &Ok(true));
+        assert!(job.progress.is_finished());
+        assert!(client.jobs().is_empty());
+    }
+
+    #[test]
+    fn a_panicking_job_leaves_the_status_bar() {
+        let client = client();
+        let (job, mut p) = client.job("doomed", |_, _| -> SourceResult<()> {
+            panic!("deliberate test panic")
+        });
+        assert!(matches!(wait(&mut p), Err(SourceError::TaskPanicked(_))));
         assert!(job.progress.is_finished());
         assert!(client.jobs().is_empty());
     }
