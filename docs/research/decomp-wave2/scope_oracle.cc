@@ -167,7 +167,7 @@ static void build(void)
     int4 nr = r(3);
     for(int4 k=0;k<nr;++k) {
       uintb f = 0x1000 + r(0x80);
-      if (r(3)==0) db->addRange(ns,stk,0xffffffffffffffc0ULL + r(0x10),0xffffffffffffffcfULL + r(0x10));
+      if (r(3)==0) { uintb s1 = 0xffffffffffffffc0ULL + r(0x10); uintb s2 = 0xffffffffffffffcfULL + r(0x10); db->addRange(ns,stk,s1,s2); }
       else db->addRange(ns,ram,f,f + r(0x30));
     }
     ostringstream s; s << ns->getFullName() << " id=0x" << hex << ns->getId() << ' ';
@@ -193,7 +193,8 @@ static void populate(void)
       switch(r(9)) {
       case 0: case 1: case 2: {
 	Address a = randData(); Address u = randUse();
-	MapEntry *e = sc->addSymbol(randName(),randType(),a,u);
+	string nm = randName(); Datatype *ct = randType();
+	MapEntry *e = sc->addSymbol(nm,ct,a,u);
 	syms.push_back(e->getSymbol());
 	row("+sym",entryStr(e) + " use=" + addrStr(u));
 	break;
@@ -221,7 +222,8 @@ static void populate(void)
 	break;
       }
       case 6: {
-	Symbol *q = sc->addEquateSymbol(randName(),r(6),rnd() & 0xff,randUse(),rnd());
+	string nm = randName(); uint4 fmt = r(6); uintb val = rnd() & 0xff; Address u = randUse(); uint8 h = rnd();
+	Symbol *q = sc->addEquateSymbol(nm,fmt,val,u,h);
 	syms.push_back(q);
 	row("+equate",symStr(q));
 	break;
@@ -232,7 +234,8 @@ static void populate(void)
 	Symbol *s = syms[r(syms.size())];
 	if (s == (Symbol *)0) break;
 	if (dynamic_cast<FunctionSymbol *>(s) != 0) break;
-	MapEntry *e = s->getScope()->addMapPoint(s,randData(),randUse());
+	Address a = randData(); Address u = randUse();
+	MapEntry *e = s->getScope()->addMapPoint(s,a,u);
 	row("+map",entryStr(e) + (s->isMultiEntry() ? " multi" : ""));
 	break;
       }
