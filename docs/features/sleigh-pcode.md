@@ -327,6 +327,19 @@ Appended by the `sleigh-pcode` track:
   once.
 * **`BUILD` in a free-standing template** is a no-op (no operand is a
   subtable); Ghidra dereferences a null constructor.
+* **Label numbers are 32 bits, as in Ghidra's C++ engine** (track
+  `sleigh-perf-linux`, 2026-11-14): `setLabel` hands the sum of the
+  `LABEL` constant and the label base to `PcodeCacher::addLabel(uint4)`,
+  and `resolveRelatives` reads `uint4 id = ptr->offset`, so a label number
+  2³² + n means label n; Basilisk now does the same
+  (`pcode::build::label_number`). The Java engine (`PcodeEmit.setLabel`,
+  `PcodeEmitObjects/Packed.resolveRelatives`) casts to a signed `int`: it
+  agrees below 2³¹ and throws for numbers in [2³¹, 2³²) after the
+  truncation, where the C++ grows its label vector towards 16 GiB. Both
+  fail there; Basilisk keeps its bound and returns `MissingLabel`
+  ("Reference to non-existant sleigh label") for any truncated number at
+  or above `MAX_OPS` (65,536), with no allocation. Tests:
+  `pcode_units::label_numbers_are_32_bits`.
 
 ## 9. Status
 
@@ -354,3 +367,16 @@ Built by track `sleigh-pcode` (2026-11-14; report `docs/agents/sleigh-pcode.md`)
   `allow_context_set`); `UniqueLayout` and `Language::unique_start`.
   `print_assembly` keeps part 1's two-string form instead of an emitter.
 * **Not met**: 8-thread scaling below 6× (report, Gaps).
+
+**Performance on x86-64 Linux** (track `sleigh-perf-linux`, 2026-11-14;
+report `docs/agents/sleigh-perf-linux.md`, numbers in `docs/PERF.md`): on
+an AMD Zen 4 virtual machine decode + lift is level with the g++-built
+reference (median ratio 0.99–1.00 over 11 back-to-back rounds), decode is
+11 % ahead and decode + text + lift 18 % ahead; on the M1 Pro decode +
+lift is 38 % ahead. The output is unchanged (every differential test
+byte-equal to `pcodedump`). The decoder now keeps its own layout of the
+decision trees, context changes, exports and leaf expressions
+(`language/decide.rs`, `language/tables.rs`), the inner decode functions
+fail with a two-byte `decode::fault::Fault`, handles live beside the nodes
+(`Parse::handle`; `Node::handle` is gone), and build walks share one
+`Consts` per instruction.
