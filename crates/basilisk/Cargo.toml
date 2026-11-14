@@ -13,5 +13,11 @@ bk-lang.workspace = true
 bk-sleigh.workspace = true
 bk-ui.workspace = true
 
+[dev-dependencies]
+bk-pcode.workspace = true
+bk-sla.workspace = true
+bk-testkit.workspace = true
+tempfile.workspace = true
+
 [lints]
 workspace = true

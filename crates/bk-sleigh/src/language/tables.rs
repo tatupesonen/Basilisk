@@ -102,19 +102,21 @@ pub(crate) struct Tables {
 
 impl Tables {
     pub(crate) fn build(sla: &Sla) -> Self {
-        let mut tables = Self::default();
-        tables.varnodes = sla
-            .symbols()
-            .iter()
-            .map(|symbol| match symbol.kind {
-                SymbolKind::Varnode {
-                    space,
-                    offset,
-                    size,
-                } => Some((space, offset, size.max(0) as u32)),
-                _ => None,
-            })
-            .collect();
+        let mut tables = Self {
+            varnodes: sla
+                .symbols()
+                .iter()
+                .map(|symbol| match symbol.kind {
+                    SymbolKind::Varnode {
+                        space,
+                        offset,
+                        size,
+                    } => Some((space, offset, size.max(0) as u32)),
+                    _ => None,
+                })
+                .collect(),
+            ..Self::default()
+        };
         for ctor in sla.constructors() {
             let start = tables.ops.len() as u32;
             for &symbol in sla.operands(ctor) {
