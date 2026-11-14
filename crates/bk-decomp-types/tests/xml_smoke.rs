@@ -67,3 +67,48 @@ fn overlapping_field_warning() {
         .unwrap_err();
     assert!(err.to_string().contains("nothere") || !err.to_string().is_empty());
 }
+
+/// Types a host supplies on demand through the `TypeSource` hook carry the
+/// host's provenance; a later request with lower trust keeps it.
+#[test]
+fn type_source_hook_and_provenance() {
+    use std::sync::Arc;
+
+    use bk_core::Provenance;
+    use bk_decomp_types::xml::{Hooks, TypeSource};
+
+    struct Host;
+    impl TypeSource for Host {
+        fn definition(&self, name: &str, _id: u64, _size: i32) -> Option<(String, Provenance)> {
+            (name == "hosted").then(|| {
+                (
+                    r#"<type name="hosted" size="4" metatype="struct"><field name="v" offset="0"><typeref name="int4"/></field></type>"#.to_owned(),
+                    Provenance::DebugInfo,
+                )
+            })
+        }
+    }
+    let mut f = x86_64_factory();
+    f.set_hooks(Hooks {
+        source: Some(Arc::new(Host)),
+        ..Hooks::default()
+    });
+    f.decode_text(r#"<typegrp><type name="" size="8" metatype="ptr"><typeref name="hosted"/></type></typegrp>"#).unwrap();
+    let hosted = f.find_by_name("hosted").unwrap();
+    assert_eq!(f.get(hosted).unwrap().provenance(), Provenance::DebugInfo);
+    let err = f
+        .decode_text(r#"<typegrp><type name="" size="8" metatype="ptr"><typeref name="absent"/></type></typegrp>"#)
+        .unwrap_err();
+    assert_eq!(err.to_string(), "Unable to resolve type: absent");
+    // Interned again with lower trust: the id is the same and the more
+    // trusted provenance stays; with higher trust, it is raised.
+    f.set_provenance(Provenance::Analysis);
+    assert_eq!(
+        f.typedef(hosted, "alias", 0, 0).unwrap(),
+        f.typedef(hosted, "alias", 0, 0).unwrap()
+    );
+    let p = f.pointer(8, hosted, 1).unwrap();
+    f.set_provenance(Provenance::User);
+    assert_eq!(f.pointer(8, hosted, 1).unwrap(), p);
+    assert_eq!(f.get(p).unwrap().provenance(), Provenance::User);
+}

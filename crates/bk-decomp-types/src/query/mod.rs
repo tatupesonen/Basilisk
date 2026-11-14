@@ -76,6 +76,12 @@ impl TypeFactory {
                     }
                 }
             }
+            TypeKind::Spacebase { space, scope } => self
+                .hooks
+                .scopes
+                .as_ref()
+                .and_then(|s| s.sub_type(*space, *scope, off))
+                .map_or((None, off), |(t, o)| (Some(t), o)),
             TypeKind::Code(Some(_)) => match self.cache.table.get(1).and_then(|r| r[1]) {
                 Some(code) => (Some(code), 0),
                 None => (None, off),
@@ -207,6 +213,11 @@ impl TypeFactory {
             TypeKind::Union { fields } => fields
                 .iter()
                 .find_map(|f| self.nearest_dir(f.ty, off, forward, depth + 1)),
+            TypeKind::Spacebase { space, scope } => self
+                .hooks
+                .scopes
+                .as_ref()
+                .and_then(|s| s.nearest(*space, *scope, off, forward)),
             _ => None,
         }
     }

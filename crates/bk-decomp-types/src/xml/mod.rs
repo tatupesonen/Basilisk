@@ -31,6 +31,25 @@ pub trait SpacebaseScopes: Send + Sync {
     /// The id of the local scope of the function at `frame`, or of the
     /// global scope when `frame` is `None` or no function is there.
     fn scope_of_frame(&self, frame: Option<(SpaceId, u64)>) -> u64;
+    /// Ghidra `TypeSpacebase::getSubType`: the type of the symbol at byte
+    /// offset `off` of the space viewed through `scope`, and the offset into
+    /// it. The default knows no symbols.
+    fn sub_type(&self, space: SpaceId, scope: u64, off: i64) -> Option<(crate::TypeId, i64)> {
+        let _ = (space, scope, off);
+        None
+    }
+    /// Ghidra `TypeSpacebase::nearestArrayedComponentForward`/`Backward`.
+    /// The default knows no symbols.
+    fn nearest(
+        &self,
+        space: SpaceId,
+        scope: u64,
+        off: i64,
+        forward: bool,
+    ) -> Option<crate::Nearest> {
+        let _ = (space, scope, off, forward);
+        None
+    }
 }
 
 /// The hooks a factory can be given.
