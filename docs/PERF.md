@@ -441,7 +441,7 @@ from the Mac's in an important way: here the C++ reference is faster.
 
 | | basilisk | Ghidra C++ (`slabench`, g++ 14.2 -O2, same session) |
 |---|---:|---:|
-| `Language::load` x86-64 | 25.7 ms | 28.7–31.3 ms |
+| `Language::load` x86-64 | 25.7–28.7 ms | 28.7–31.3 ms |
 | decode only | 2.98–3.30 M instructions/s | 4.01–4.19 M/s |
 | decode + text | 2.28–2.40 M/s | 1.93–2.01 M/s |
 | decode + lift, counting emitter | 1.46–1.50 M/s, 6.01–6.15 M ops/s | 2.08–2.12 M/s, 8.61–8.71 M ops/s |
