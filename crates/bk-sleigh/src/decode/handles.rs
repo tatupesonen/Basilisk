@@ -155,6 +155,7 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
 }
 
 impl Env<'_> {
+    #[inline]
     fn cur_space(&self) -> u32 {
         self.parse
             .addr
@@ -162,6 +163,7 @@ impl Env<'_> {
             .map_or(CONST, bk_core::SpaceId::index)
     }
 
+    #[inline]
     fn space_size(&self, space: u32) -> u32 {
         self.lang
             .spaces()
@@ -169,6 +171,7 @@ impl Env<'_> {
             .map_or(0, bk_core::Space::addr_size)
     }
 
+    #[inline]
     fn address_handle(&self, addr: Option<Address>) -> Result<FixedHandle, DecodeError> {
         let addr = addr.ok_or(DecodeError::Next2Unavailable {
             address: self.parse.addr,
@@ -181,10 +184,12 @@ impl Env<'_> {
         ))
     }
 
+    #[inline]
     fn handle_of(&self, n: u32) -> FixedHandle {
         self.parse.handle(n)
     }
 
+    #[inline]
     fn child_handle(&self, n: u32, index: u32) -> Result<FixedHandle, DecodeError> {
         let node = self
             .parse
@@ -198,6 +203,7 @@ impl Env<'_> {
     }
 
     /// Ghidra `ConstTpl::fix`: the value of a template constant at node `n`.
+    #[inline]
     fn fix_const(&self, c: &ConstTpl, n: u32) -> Result<u64, DecodeError> {
         Ok(match *c {
             ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
@@ -254,6 +260,7 @@ impl Env<'_> {
     }
 
     /// Ghidra `ConstTpl::fixSpace`.
+    #[inline]
     fn fix_space(&self, c: &ConstTpl, n: u32) -> Result<u32, DecodeError> {
         match *c {
             ConstTpl::CurSpace => Ok(self.cur_space()),
@@ -278,6 +285,7 @@ impl Env<'_> {
 }
 
 /// Ghidra `HandleTpl::fix` at node `n`.
+#[inline]
 fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeError> {
     let mut hand = FixedHandle::UNSET;
     if matches!(tpl.ptr_space, ConstTpl::Real(_)) {
@@ -331,6 +339,7 @@ fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeErro
     Ok(hand)
 }
 
+#[inline]
 fn wrap(env: &Env<'_>, space: u32, offset: u64) -> u64 {
     env.lang
         .spaces()
@@ -341,6 +350,7 @@ fn wrap(env: &Env<'_>, space: u32, offset: u64) -> u64 {
 /// The handle of a non-subtable operand at node `n` (Ghidra
 /// `getFixedHandle` of its defining symbol, or the value of its defining
 /// expression).
+#[inline]
 pub(crate) fn operand_handle(
     env: &Env<'_>,
     def: OpDef,

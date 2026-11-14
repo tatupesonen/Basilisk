@@ -81,6 +81,7 @@ impl<'p> Walk<'p> {
     }
 
     /// The handle of operand `index`.
+    #[inline]
     pub(crate) fn handle(&self, index: u32) -> FixedHandle {
         match self.handles {
             Handles::Node {
@@ -124,6 +125,7 @@ fn node_handles(parse: &Parse, node: u32) -> Handles<'_> {
 }
 
 /// The address size of space `space` (0 when there is none).
+#[inline]
 fn space_size(lang: &Language, space: u32) -> u64 {
     lang.spaces()
         .space_at(space)
@@ -131,6 +133,7 @@ fn space_size(lang: &Language, space: u32) -> u64 {
 }
 
 /// Ghidra `ConstTpl::fix`.
+#[inline]
 pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, DecodeError> {
     Ok(match *c {
         ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
@@ -184,6 +187,7 @@ pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, De
 }
 
 /// Ghidra `ConstTpl::fixSpace`.
+#[inline]
 pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> {
     match *c {
         ConstTpl::CurSpace => Ok(w.cur_space),
@@ -207,11 +211,13 @@ pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> 
 /// The offset of a varnode in `space` after the three space rules: masked
 /// to the size in the constant space, `OR`ed with the unique bits in the
 /// unique space, wrapped elsewhere.
+#[inline]
 fn place(lang: &Language, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
     lang.place_offset(space, offset, size, unique)
 }
 
 /// Ghidra `generateLocation`, with [`is_dynamic`]'s answer.
+#[inline]
 pub(crate) fn locate(
     lang: &Language,
     vn: &VarnodeTpl,
@@ -270,6 +276,7 @@ pub(crate) fn locate(
 
 /// Ghidra `generatePointer`: the pointer of a dynamic handle and the space
 /// it points into.
+#[inline]
 pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (VarnodeData, u32) {
     let index = match vn.offset {
         ConstTpl::Handle { index, .. } => index,
@@ -290,6 +297,7 @@ pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (Varnod
 }
 
 /// Ghidra `VarnodeTpl::isDynamic`.
+#[inline]
 pub(crate) fn is_dynamic(vn: &VarnodeTpl, w: &Walk<'_>) -> bool {
     match vn.offset {
         ConstTpl::Handle { index, .. } => w.handle(index).is_dynamic(),
