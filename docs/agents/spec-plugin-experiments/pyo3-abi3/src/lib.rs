@@ -18,7 +18,7 @@ use pyo3::create_exception;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 
-create_exception!(bkdemo, BasiliskError, PyException, "Base of basilisk's exceptions.");
+create_exception!(bkdemo, BasiliskError, PyException, "Base of Basilisk's exceptions.");
 create_exception!(bkdemo, NoSuchAddress, BasiliskError, "The address is not in memory.");
 
 /// Spins for about `ms` milliseconds of CPU time.

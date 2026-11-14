@@ -9,7 +9,7 @@ edition = "2024"
 rust-version = "1.97"
 license = "GPL-3.0-or-later"
 publish = false
-authors = ["basilisk contributors"]
+authors = ["Basilisk contributors"]
 
 [workspace.dependencies]
 # Internal crates (see docs/PLAN.md, crate map). Add a line when a crate is created.
@@ -55,7 +55,7 @@ rustc-hash = "2.1.3"
 # num-bigint is listed under Foundations (shared with bk-pcode).
 
 # User interface (ADR-008; evaluation in docs/features/ui-design.md). Only
-# bk-ui and the basilisk binary depend on these.
+# bk-ui and the Basilisk binary depend on these.
 egui = { version = "0.36.2", default-features = false }
 eframe = { version = "0.36.2", default-features = false, features = ["wgpu", "accesskit", "persistence", "wayland", "x11"] }
 egui_extras = { version = "0.36.2", default-features = false }

@@ -6,7 +6,7 @@ decision, add a record that supersedes it and mark the old one
 otherwise.
 
 ## ADR-001 — Port Ghidra's behaviour, write idiomatic Rust
-basilisk reproduces what Ghidra *does* — algorithms, heuristics, defaults,
+Basilisk reproduces what Ghidra *does* — algorithms, heuristics, defaults,
 names, messages, output — with Ghidra's source (`../ghidra`, pinned at commit
 `42db038f3c`) as the specification. It does not reproduce how Ghidra is
 *structured*: no class hierarchies transliterated from Java or C++, no
@@ -14,7 +14,7 @@ plugin/service-locator framework, no global singletons. Where reading the
 source shows a better design that gives the same observable behaviour, use
 it.
 
-basilisk is **not a one-to-one port, and improving on Ghidra is allowed**
+Basilisk is **not a one-to-one port, and improving on Ghidra is allowed**
 (owner decision, 2026-11-12). Ghidra's behaviour is the baseline: match it
 by default, because users, spec files and ported tests all assume it. Depart
 from it when the result is better — a Ghidra bug fixed, a faster or simpler
@@ -26,7 +26,7 @@ difference is a bug. Consequence: every feature doc names the Ghidra sources
 it derives from, so behaviour can be re-checked.
 
 ## ADR-002 — Ghidra's processor specifications are consumed unchanged
-basilisk reads Ghidra's language data as-is: SLEIGH sources (`.slaspec`,
+Basilisk reads Ghidra's language data as-is: SLEIGH sources (`.slaspec`,
 `.sinc`), compiled SLEIGH (`.sla`, format version 4), `.ldefs`, `.pspec`,
 `.cspec`, `.opinion`, function-start pattern XML and the per-processor
 `data/` files. This gives all 150 SLEIGH languages and 110 compiler specs
@@ -39,7 +39,7 @@ lines under `Ghidra/Processors`: relocation handlers, analyzers, loaders'
 extensions) is not data and is ported like any other code.
 
 ## ADR-003 — Own program database, not Ghidra-compatible
-basilisk stores programs in its own format, designed around the queries
+Basilisk stores programs in its own format, designed around the queries
 analysis and the UI actually run. It does not read or write Ghidra's
 project, `.gzf` or packed-database formats (owner decision). The **storage
 engine is not chosen yet**: it is decided at the start of milestone M4 by a
@@ -93,14 +93,14 @@ applicable** (`- [-]`, with the reason). Rules:
 
 * Port what the test *checks* — inputs, expected outputs, edge cases — not
   its literal code. Many small Java test classes may become one
-  table-driven Rust test. If basilisk's design differs from Ghidra's
-  (ADR-001), the ported test asserts the same behaviour through basilisk's
+  table-driven Rust test. If Basilisk's design differs from Ghidra's
+  (ADR-001), the ported test asserts the same behaviour through Basilisk's
   API.
 * **GUI tests** (801 classes drive Swing) become `egui_kittest` tests of
-  the equivalent basilisk feature, asserting the same user-visible
+  the equivalent Basilisk feature, asserting the same user-visible
   behaviour. Where a GUI test is really checking a command or model
   underneath, that part is also ported as a headless test.
-* **Not applicable** is allowed only for tests of machinery basilisk does
+* **Not applicable** is allowed only for tests of machinery Basilisk does
   not have by decision: Swing/docking-framework internals, look-and-feel,
   Java-specific utilities replaced by the Rust standard library, Ghidra's
   on-disk database node layout (ADR-003). Each mark carries its reason.
@@ -110,7 +110,7 @@ applicable** (`- [-]`, with the reason). Rules:
   derived from its source.
 
 ## ADR-007 — Differential testing against reference Ghidra
-Where behaviour is defined by Ghidra's output, tests compare basilisk with
+Where behaviour is defined by Ghidra's output, tests compare Basilisk with
 Ghidra itself:
 
 * **Reference tools** — Ghidra's C++ `sleigh` compiler and `decomp`
@@ -123,7 +123,7 @@ Ghidra itself:
 Tests that need an oracle or the spec root skip themselves with a clear
 message when it is absent, so the default `cargo test` runs anywhere;
 expected outputs that are small and stable are checked in as goldens so CI
-does not need the oracle. Where basilisk is deliberately better, the test
+does not need the oracle. Where Basilisk is deliberately better, the test
 accepts Ghidra's form as an alternative and documents the improvement.
 `bk-testkit` owns the oracle wrappers.
 
@@ -144,11 +144,11 @@ arithmetic, with explicit size and depth limits. Where an index is provably
 in range and the checked form hurts clarity or a measured hot path, use
 `#[expect(clippy::indexing_slicing, reason = "...")]`. Every binary-format
 parser has a `proptest` "never panics" test and a `cargo-fuzz` target.
-Ghidra throws exceptions in these places; basilisk returns typed errors
+Ghidra throws exceptions in these places; Basilisk returns typed errors
 (`thiserror`) and recovers what is readable.
 
 ## ADR-010 — Licence: Apache-2.0
-basilisk is Apache-2.0, the same as Ghidra, of which it is a derivative
+Basilisk is Apache-2.0, the same as Ghidra, of which it is a derivative
 work. Ghidra's notice is reproduced in `NOTICE`. Dependencies must be
 Apache-2.0-compatible (MIT, BSD, ISC, Zlib, Unicode; MPL-2.0 unmodified);
 no GPL or proprietary code. Ghidra's GPL modules (`GPL/`: the GNU demangler
@@ -295,7 +295,7 @@ Rust file.
 still be able to build their own plugins.")
 
 Ghidra's extension surface is its Java API: scripts, analyzers, loaders and
-plugins, written in Java or Python. basilisk cannot run those, but users
+plugins, written in Java or Python. Basilisk cannot run those, but users
 must still be able to build their own plugins. The plugin API is **Python,
 bound with PyO3**:
 
@@ -305,14 +305,14 @@ bound with PyO3**:
   provides: scripts, analyzers, loaders, exporters, and later UI actions
   and views — the kinds Ghidra's extension points cover.
 * The same bindings are published as an importable Python module, so
-  basilisk can also be driven from an ordinary Python process (the role
+  Basilisk can also be driven from an ordinary Python process (the role
   PyGhidra plays for Ghidra).
 * The Python API is designed for Python, with a flat scripting layer
   modelled on Ghidra's `FlatProgramAPI`/`GhidraScript` so existing Ghidra
   scripts port with small changes. It is versioned; breaking it bumps the
   version plugins declare.
 * The Rust API of the `bk-*` crates remains available to anyone who builds
-  against basilisk as a library, but it is not the stable plugin contract.
+  against Basilisk as a library, but it is not the stable plugin contract.
 
 Consequences. CPython is a C dependency and PyO3 uses `unsafe` internally:
 both are confined to `bk-plugin` (and the Python-module build), which is an
@@ -347,13 +347,13 @@ Supersedes the GPL clause of ADR-010.)
 Ghidra keeps three GPL-licensed modules under `GPL/`, apart from its
 Apache-2.0 code, and runs them as separate programs:
 
-| Ghidra module | What it is | basilisk |
+| Ghidra module | What it is | Basilisk |
 |---|---|---|
 | `GPL/DemanglerGnu` | The GNU demangler from binutils' libiberty (two versions, 2.24 and 2.41; 34,000 lines of C), built as `demangler_gnu_v2_24`/`v2_41` executables that Ghidra feeds mangled names over a pipe | `gpl/bk-gpl-demangler-gnu` |
 | `GPL/GnuDisassembler` | `gdis`, a small C program over binutils' libopcodes that the user builds, used as an external disassembler for comparison | `gpl/bk-gpl-gdis` |
 | `GPL/DMG` | A Java program over the GPL HFSExplorer libraries that reads Apple DMG/HFS+ images for the file-system browser | `gpl/bk-gpl-dmg` |
 
-basilisk ports them and keeps Ghidra's separation, which is what lets the
+Basilisk ports them and keeps Ghidra's separation, which is what lets the
 rest stay Apache-2.0 (ADR-010):
 
 * They live in a top-level `gpl/` directory, outside `crates/`, each crate
@@ -376,13 +376,13 @@ Schedule: the GNU demangler with milestone M6 (it is self-contained and a
 candidate for an earlier wave); `gdis` and DMG with M10.
 
 ## ADR-017 — One binary: the GPL ports are linked in, behind a default feature
-*Superseded by ADR-018 (2026-11-12). basilisk is still one binary; the
+*Superseded by ADR-018 (2026-11-12). Basilisk is still one binary; the
 `gpl` feature, the `gpl/` directory and the dual licensing do not stand.*
 
 (Owner decision, 2026-11-12: "I want a single binary though." Supersedes
 the separate-program arrangement of ADR-016.)
 
-basilisk ships as **one executable**. The ports of Ghidra's GPL helpers
+Basilisk ships as **one executable**. The ports of Ghidra's GPL helpers
 (ADR-016) are ordinary library crates under `gpl/`, licensed
 GPL-3.0-or-later, and are linked into the `basilisk` binary instead of
 being run as helper processes.
@@ -426,7 +426,7 @@ Ghidra's helpers.
 (Owner decisions, 2026-11-12: "Not any wrappers and such. Just port the
 code" and "i dont mind gpl3". Supersedes ADR-010, ADR-016 and ADR-017.)
 
-basilisk is licensed **GPL-3.0-or-later** as a whole, and ships as a
+Basilisk is licensed **GPL-3.0-or-later** as a whole, and ships as a
 single binary. Ghidra's GPL modules (`GPL/DemanglerGnu`,
 `GPL/GnuDisassembler`, `GPL/DMG`; described in ADR-016) are ported to Rust
 exactly as Ghidra's Apache-2.0 code is: ordinary crates under `crates/`,
@@ -439,7 +439,7 @@ crates.
   may be part of a GPL-3.0 work): Ghidra stays attributed in `NOTICE`, and
   the Apache licence text is kept as `LICENSE-APACHE`.
 * Where Ghidra runs a GPL program over a pipe and parses its text output
-  (`Features/GnuDemangler` drives `demangler_gnu` this way), basilisk
+  (`Features/GnuDemangler` drives `demangler_gnu` this way), Basilisk
   calls the ported code as a library and takes structured results;
   Ghidra's tests of the text protocol are ported against the direct API.
 * Dependencies must be GPL-3.0-compatible: Apache-2.0, MIT, BSD, ISC,
@@ -451,7 +451,7 @@ crates.
   the GNU disassembler with M10.
 
 Ghidra's `gdis` is a 576-line program over binutils' libopcodes, which
-Ghidra does not include (the user builds binutils 2.41). How basilisk
+Ghidra does not include (the user builds binutils 2.41). How Basilisk
 provides it is settled by ADR-019.
 
 ## ADR-019 — binutils is built from source as its own crate
@@ -461,7 +461,7 @@ build it as its own crate." Resolves the open point of ADR-018.)
 Ghidra's GNU disassembler module (`GPL/GnuDisassembler`) lets the user
 compare SLEIGH's disassembly with GNU's. It is a small C program, `gdis`,
 over binutils' libopcodes and libbfd, and Ghidra makes the user fetch and
-build binutils 2.41 themselves. basilisk builds binutils in:
+build binutils 2.41 themselves. Basilisk builds binutils in:
 
 * A crate **`bk-binutils-sys`** compiles the parts of binutils 2.41 the
   disassembler needs (libopcodes, libbfd, libiberty and their headers)
@@ -530,7 +530,7 @@ and check that all code with miri that does need unsafe." Tightens the
 
 Currently no crate on `master` contains `unsafe`.
 
-## ADR-021 — Where Ghidra's result depends on the host, basilisk takes x86-64's
+## ADR-021 — Where Ghidra's result depends on the host, Basilisk takes x86-64's
 (Proposed by the `pcode` track, accepted 2026-11-12.)
 
 Some of Ghidra's C++ behaviour is not defined by its source but by the
@@ -540,8 +540,8 @@ C++ standard library. Ghidra's own tests show it: on macOS on Apple silicon
 the reference build fails one unit test (`double_decimal_precision`) and
 two `floatprint.xml` checks that pass on x86-64 Linux.
 
-basilisk's results must not depend on the host. Where Ghidra's does,
-basilisk produces **the result Ghidra gives on x86-64 Linux** (its
+Basilisk's results must not depend on the host. Where Ghidra's does,
+Basilisk produces **the result Ghidra gives on x86-64 Linux** (its
 reference platform, and the one its tests were written on), on every
 platform — unless a Ghidra test pins a different value, in which case the
 test wins and the case is recorded in the feature doc. Examples in
@@ -550,7 +550,7 @@ test wins and the case is recorded in the feature doc. Examples in
 Ghidra's Java tests pin saturation.
 
 Consequence for differential tests (ADR-007): an oracle built on another
-host disagrees with basilisk in exactly these documented cases; tests list
+host disagrees with Basilisk in exactly these documented cases; tests list
 them rather than loosen the comparison. The x86-64 behaviour that no test
 pins is taken from reading the source until someone runs the oracle on
 x86-64 Linux, which `scripts/build-reference.sh` in a container can do.
@@ -558,7 +558,7 @@ x86-64 Linux, which `scripts/build-reference.sh` in a container can do.
 ## ADR-022 — Windows, macOS and Linux are all first-class, from now
 (Owner decision, 2026-11-12: Windows is "first-class from now".)
 
-basilisk builds, passes its tests and offers every feature on Windows,
+Basilisk builds, passes its tests and offers every feature on Windows,
 macOS and Linux. A track does not merge until that holds on all three; a
 feature gap on one platform is fixed in the track, not recorded and
 deferred.
@@ -622,7 +622,7 @@ builder. `decodeSlaSpaces` belongs to `bk-sla`.
   format is decided with the CLI in M6; the record format then stays
   available as an option.
 
-## ADR-024 — Where Ghidra's C++ SLEIGH engine is undefined, basilisk defines the result
+## ADR-024 — Where Ghidra's C++ SLEIGH engine is undefined, Basilisk defines the result
 (Coordinator, 2026-11-13, from the `spec-sleigh` track; extends ADR-021.)
 
 Ghidra's C++ SLEIGH runtime has undefined behaviour on some inputs. A
@@ -636,7 +636,7 @@ panic-free port (ADR-009) needs a defined result for each; they are:
 * **Constructors with more than 20 operands are decoded.** The C++ engine
   cannot: PowerPC AltiVec constructors with 24 and 27 operands make
   `pcodedump` print "SLEIGH parser out of state space". The differential
-  harness expects the oracle's error for these and checks basilisk's
+  harness expects the oracle's error for these and checks Basilisk's
   result by other means (the spec says how). The M1 goal "match the
   reference tool for every language" carries this exception.
 * **No address-keyed parse cache.** Each decode starts from the context
@@ -782,7 +782,7 @@ tests; replayed oracle tables; **state after a pass, starting from
 Ghidra's state before it**; the trace of rule applications; the 760
 data-test checks; whole output. To make the middle levels possible:
 
-* **A basilisk-defined dump format for complete function state.** A
+* **A Basilisk-defined dump format for complete function state.** A
   console extension, compiled into the reference build's copy of the
   decompiler with `-fno-access-control`, writes it; `bk-decomp-ir` loads
   it. Heritage, the actions and the rule families are then each accepted
@@ -793,7 +793,7 @@ data-test checks; whole output. To make the middle levels possible:
   one record per rule or action application with each modified op before
   and after.
 * **Rule-subset configurations are an accepted oracle.** The reference
-  console with exactly the rules basilisk has ported enabled
+  console with exactly the rules Basilisk has ported enabled
   (`option togglerule`) is what a rule family is compared with. It is
   still the `ghidra` profile in ADR-025's sense: the same units, fewer
   enabled.
@@ -824,7 +824,7 @@ says how each is read. ADR-025 otherwise stands.)
   unit by it. A correct port of such a unit is not a failure of the check.
 * **3b, "the structurer runs on a copy"**: Ghidra's already does, but it
   edits the original through the copy (ten `negateCondition` sites flip
-  the real `CBRANCH` and swap the real block's out-edges). In basilisk the
+  the real `CBRANCH` and swap the real block's out-edges). In Basilisk the
   structurer takes per-block facts as input and **returns** the condition
   flips and goto edges as part of its result; the track that puts
   structuring on the IR applies them. Unverified: that no structuring
@@ -863,9 +863,9 @@ commit, same build script:
 * **Not known: the cause.** Candidates are a decision-tree score tie
   decided by the host's `log`, an unstable `std::sort` (libstdc++ and
   libc++ order equal elements differently), or iteration over a
-  pointer-keyed container. Which it is decides what basilisk must do: a
+  pointer-keyed container. Which it is decides what Basilisk must do: a
   floating-point tie is settled by ADR-024's host-independent `log`; a
-  sort-order dependence means basilisk needs a defined order, and equality
+  sort-order dependence means Basilisk needs a defined order, and equality
   with either host's bytes for those 14 files may then be the wrong
   acceptance test. The `sleigh-compiler-back` track does not start until
   this is established (`PROGRESS.md`, queue item `sla-host-diff`), using
@@ -874,9 +874,9 @@ commit, same build script:
 * **`bk-pcode`'s oracle table** (`tests/data/opbehavior_cpp.txt.gz`) was
   generated on AArch64. Regenerated on x86-64 Linux, 161 of the 77,148
   rows with the same inputs have a different result, all NaN signs in
-  float operations. Replaying the x86-64 table through basilisk's test,
+  float operations. Replaying the x86-64 table through Basilisk's test,
   the "created NaN sign" class disappears as intended, but **106 rows
-  differ**: basilisk does not yet follow x86-64 where an input is itself
+  differ**: Basilisk does not yet follow x86-64 where an input is itself
   a NaN. Under ADR-021 the x86-64 table becomes the checked-in one and
   those rows are fixed (queue item `x86-oracle`). The generator's inputs
   also depend on the host (argument evaluation order), so tables are
@@ -886,7 +886,7 @@ commit, same build script:
 (Owner decision, 2026-11-14: "use starlight but build docs in a container
 as I do not want to install nodejs"; a static site with Mermaid diagrams.)
 
-basilisk's documentation for users — how to use the whole program and how
+Basilisk's documentation for users — how to use the whole program and how
 each part of it works — is a site under `site/`, generated by **Starlight**
 (Astro) into plain static files.
 
@@ -906,7 +906,7 @@ each part of it works — is a site under `site/`, generated by **Starlight**
   versions in a committed lock file, each published at least two weeks
   before it is added (as for crates), installed with the lock file frozen.
   The site's dependencies are development tooling, not part of the product
-  (ADR-018's licence statement covers what basilisk ships).
+  (ADR-018's licence statement covers what Basilisk ships).
 * **Content is generated where it can be**, so it cannot go stale:
   screenshots by `bk-ui`'s screenshot renderer, the key-binding table from
   the action registry, command-line help from the binary, the Python API
@@ -922,7 +922,7 @@ each part of it works — is a site under `site/`, generated by **Starlight**
 choose tech freely but make it static. In same monorepo." Technology
 chosen by the coordinator. Extends ADR-030.)
 
-basilisk's public website and its user documentation are **one Astro
+Basilisk's public website and its user documentation are **one Astro
 project under `site/`**: the product site is hand-designed Astro pages at
 the root (`/`), and the documentation is the Starlight collection of
 ADR-030 under `/docs/`. One build produces one static tree for GitHub
@@ -936,13 +936,13 @@ Pages.
 * **Static**: no server, no client-side framework at run time. Pages are
   HTML and CSS; scripts only where a page needs them (search, theme
   switch, a screenshot viewer) and the page still reads without them.
-* **Design**: basilisk's own — the mark, Ember on Soot, the interface's
+* **Design**: Basilisk's own — the mark, Ember on Soot, the interface's
   fonts — designed by an agent briefed as a designer, with real
   screenshots of the interface from `bk-ui`'s renderer, never mock-ups.
 * **Honest content**: the site says what works today and what is planned.
   The parity table is generated from `docs/PARITY.md`, not written by
   hand, so the site cannot claim more than the matrix does. Ghidra is
-  credited as the work basilisk reimplements (`NOTICE`), and nothing
+  credited as the work Basilisk reimplements (`NOTICE`), and nothing
   suggests affiliation with or endorsement by Ghidra's authors. The
   licence (GPL-3.0-or-later) and the source link are on every page's
   footer.
@@ -950,7 +950,7 @@ Pages.
   the design system, the product pages and the documentation's shell;
   `docs-content` then fills the documentation (ADR-030's content rules).
 
-## ADR-032 — Ghidra's SLEIGH compiler output depends on floating-point contraction; basilisk computes the score as x86-64 does
+## ADR-032 — Ghidra's SLEIGH compiler output depends on floating-point contraction; Basilisk computes the score as x86-64 does
 (Coordinator, 2026-11-14, as proposed by the `sla-host-diff` track;
 evidence in `docs/research/sla-host-dependence.md`. Follows ADR-021.
 **Replaces ADR-029's "cause not known" and its conditions, and ADR-024's
@@ -973,7 +973,7 @@ x86-64 at all 25 nodes, but its `Math.log` is host-dependent (Homebrew's
 12.0 built on Apple silicon differs from the 11.4.2 release in ARM8_le
 and ARM8m_le).
 
-* **basilisk's score** is unfused IEEE `f64` arithmetic in Ghidra's
+* **Basilisk's score** is unfused IEEE `f64` arithmetic in Ghidra's
   order, with a `log` bit-equal to glibc's (FMA variant) on every `k/n`,
   1 ≤ k < n ≤ 16,384, verified against a checked-in table. Not
   `libm::log`: fdlibm's `log` changes ARM8_le and ARM8m_le. The output is
@@ -1008,7 +1008,7 @@ and corrects ADR-029's last bullet.)
   2026-11-14).
 * **Two NaN inputs**: on x86-64 `FLOAT_ADD` and `FLOAT_MULT` return a NaN
   with the sign of the second operand, `FLOAT_SUB` and `FLOAT_DIV` with
-  the sign of the first; AArch64 uses the first for all four. basilisk
+  the sign of the first; AArch64 uses the first for all four. Basilisk
   computes x86-64's result from the inputs' bits on every host. With one
   NaN input the result has that input's sign on both hosts; a NaN made
   from non-NaN inputs is negative, as on x86-64. The wide and exact paths
@@ -1018,7 +1018,7 @@ and corrects ADR-029's last bullet.)
   `0x8000000000000000` cut to the output size in x86-64's C++, and
   saturates in Ghidra's Java, where tests pin it
   (`FloatFormatTest.testOpTruncLongInt`, `OpBehaviorFloatTruncTest`).
-  **basilisk saturates** (NaN gives 0): the Java behaviour is the tested
+  **Basilisk saturates** (NaN gives 0): the Java behaviour is the tested
   and the saner one. This is a documented difference from the C++ engine
   (58 oracle rows, class `TruncSaturates`).
 * Correction: of the 161 rows that differ between the AArch64 and x86-64
@@ -1050,12 +1050,12 @@ one decimal-precision unit test still fail on AArch64 (ADR-021, ADR-033).
 Ghidra's `pcodedump` crashes when a delay-slot (or crossbuild) instruction
 has no p-code: `SleighBuilder::delaySlot` leaves the builder pointing at a
 walker on its own stack when `UnimplError` unwinds, and the handler in
-`oneInstruction` uses it (`research/pcodedump-crashes.md`). basilisk
+`oneInstruction` uses it (`research/pcodedump-crashes.md`). Basilisk
 returns "instruction not implemented in p-code" with the full flow length
 there, naming the innermost such instruction, and never leaves stale
 builder state behind an early return (ADR-009).
 
-## ADR-035 — Python hosts basilisk: the plugin bindings are an extension module, not an embedded interpreter
+## ADR-035 — Python hosts Basilisk: the plugin bindings are an extension module, not an embedded interpreter
 (Owner decision, 2026-11-14, on the finding of the `spec-plugin` track;
 `features/plugin-api.md`, `docs/agents/spec-plugin.md`. **Replaces the
 embedding in ADR-014**; the rest of ADR-014 stands: plugins are Python
@@ -1069,7 +1069,7 @@ mandatory, fixes its version and stops third-party C extensions loading
 on Windows; PyO3 cannot load libpython at run time. That cannot coexist
 with "basilisk is a single binary" (`DIRECTION.md`) and ADR-022.
 
-* basilisk's Python bindings are a **Python extension module** (crate
+* Basilisk's Python bindings are a **Python extension module** (crate
   `basilisk-py`, a `cdylib` built for the stable ABI), hosted by the
   user's own CPython: `python -m basilisk` and `import basilisk`. This is
   how Ghidra's PyGhidra works.
@@ -1100,7 +1100,7 @@ with "basilisk is a single binary" (`DIRECTION.md`) and ADR-022.
   the spec), and the object model keeps Ghidra's getter names beside
   Python properties, so bundled scripts port with mechanical changes.
 * The plugin API has its own version, declared by each plugin package and
-  separate from basilisk's release version.
+  separate from Basilisk's release version.
 * Plugin-defined views are declarative (described to the interface, not
   drawn by Python); actions go through the interface's action registry,
   which has to accept run-time entries first.

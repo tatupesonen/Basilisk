@@ -1,4 +1,4 @@
-/* licd: demo program for the basilisk interface (see README.md here).
+/* licd: demo program for the Basilisk interface (see README.md here).
  *
  * A small licence daemon: it reads a configuration file, checks a licence
  * key, decodes its obfuscated strings and talks to an activation server.

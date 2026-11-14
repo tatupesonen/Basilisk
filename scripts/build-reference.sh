@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds the reference tools basilisk is measured against (ADR-007,
+# Builds the reference tools Basilisk is measured against (ADR-007,
 # docs/features/reference-tools.md): Ghidra's SLEIGH compiler, decompiler
-# console and decompiler test runner, basilisk's pcodedump oracle, and a
+# console and decompiler test runner, Basilisk's pcodedump oracle, and a
 # compiled .sla for every processor language.
 #
 # Everything is written under one directory outside both repositories
@@ -592,7 +592,7 @@ fi
 write_stamp() {
   local stamp=$REF/STAMP.new f
   {
-    echo "basilisk reference tools (scripts/build-reference.sh)"
+    echo "Basilisk reference tools (scripts/build-reference.sh)"
     echo "generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "ghidra_dir: $GHIDRA"
     echo "ghidra_commit: $GHIDRA_COMMIT"

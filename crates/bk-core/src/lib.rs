@@ -1,5 +1,5 @@
 //! Address spaces, addresses, ranges, varnode data and bit helpers: the
-//! address model everything else in basilisk speaks.
+//! address model everything else in Basilisk speaks.
 //!
 //! This crate corresponds to Ghidra's `space.hh`/`space.cc`,
 //! `address.hh`/`address.cc`, the `VarnodeData` part of `pcoderaw.hh` and the

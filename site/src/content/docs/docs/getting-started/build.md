@@ -1,11 +1,11 @@
 ---
 title: Build and run
-description: Build basilisk from source and open the interface.
+description: Build Basilisk from source and open the interface.
 sidebar:
   order: 2
 ---
 
-There are no releases yet; basilisk is built from source. Windows, macOS and Linux are all supported.
+There are no releases yet; Basilisk is built from source. Windows, macOS and Linux are all supported.
 
 ## Requirements
 
@@ -16,7 +16,7 @@ There are no releases yet; basilisk is built from source. Windows, macOS and Lin
 ## Build and run
 
 ```sh
-git clone https://github.com/tatupesonen/basilisk
+git clone https://github.com/tatupesonen/Basilisk
 cd basilisk
 cargo run --release -p basilisk
 ```

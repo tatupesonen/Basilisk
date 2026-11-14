@@ -22,6 +22,6 @@ built):
 
     python3 crates/bk-ui/demo/generate.py /path/to/reference
 
-Provenance: all code in `licd.c` was written for basilisk (GPL-3.0-or-later);
+Provenance: all code in `licd.c` was written for Basilisk (GPL-3.0-or-later);
 the generated file contains only its compiled form. A few comments are
 added by the generator so each comment kind appears in the listing.

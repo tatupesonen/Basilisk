@@ -142,7 +142,7 @@ pub enum Stop {
     /// (`YYERROR`); the diagnostic has been reported.
     Abort,
     /// An error that aborts Ghidra's whole compile ("Unrecoverable error");
-    /// basilisk reports it as an ordinary error and stops.
+    /// Basilisk reports it as an ordinary error and stops.
     Fatal(String),
 }
 

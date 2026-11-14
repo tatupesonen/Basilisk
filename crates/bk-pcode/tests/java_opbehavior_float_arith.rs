@@ -27,7 +27,7 @@
 //!   a float result with `assertEquals(double, double, 0)`, which lets any
 //!   NaN equal any NaN and `+0` equal `-0`; each row checks that and, as an
 //!   extra, the exact encoding. An expected NaN is therefore written with
-//!   the sign basilisk gives it: [`NEG_NAN`] for a NaN an operation creates
+//!   the sign Basilisk gives it: [`NEG_NAN`] for a NaN an operation creates
 //!   (x86-64's default NaN), the sign of the first NaN input for a
 //!   propagated one.
 //! - The `...BigInteger` methods call the `BigInteger` overloads; here that

@@ -1,4 +1,4 @@
-# Shared definitions of the diagnostic cases (written for basilisk).
+# Shared definitions of the diagnostic cases (written for Basilisk).
 define endian=little;
 define alignment=1;
 define space ram type=ram_space size=4 default;

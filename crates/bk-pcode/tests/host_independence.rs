@@ -1,4 +1,4 @@
-//! Results that Ghidra's C++ takes from the host and basilisk must give the
+//! Results that Ghidra's C++ takes from the host and Basilisk must give the
 //! same on every host: directed NaN, conversion and rounding cases with the
 //! expected bits written out, so that CI on Linux x86-64, macOS AArch64 and
 //! Windows checks the same values.
@@ -20,9 +20,9 @@
 //!   largest double below one half (the C library's `round` is wrong there
 //!   on MinGW), `INT2FLOAT` of the most negative integers.
 //!
-//! `FLOAT_TRUNC` out of range is the one host-dependent case where basilisk
+//! `FLOAT_TRUNC` out of range is the one host-dependent case where Basilisk
 //! does not take x86-64's result (Java's tests pin saturation, ADR-021):
-//! `TRUNC` rows give basilisk's value and x86-64's in a comment. The wide
+//! `TRUNC` rows give Basilisk's value and x86-64's in a comment. The wide
 //! path (Java `BigFloat`) gives the positive quiet NaN for every NaN result.
 
 #![allow(
@@ -237,7 +237,7 @@ const HOST_LEVEL: &[Row] = &[
     (FloatInt2Float, 8, 4, 0x8000_0000, None, 0xc1e0_0000_0000_0000),
 ];
 
-/// Out-of-range and NaN `FLOAT_TRUNC`: basilisk saturates and maps NaN to 0
+/// Out-of-range and NaN `FLOAT_TRUNC`: Basilisk saturates and maps NaN to 0
 /// (Java's `(long)`); x86-64's `cvttsd2si` gives `i64::MIN` cut to the size.
 #[rustfmt::skip]
 const TRUNC: &[Row] = &[

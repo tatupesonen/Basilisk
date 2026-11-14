@@ -1,4 +1,4 @@
-# Decompiler quality: making basilisk's output more accurate and more readable than Ghidra's
+# Decompiler quality: making Basilisk's output more accurate and more readable than Ghidra's
 
 Research for the "then improve" part of ADR-004 and for the parts of the M3
 port that have to be decided early. Written 2026-11-12 against Ghidra commit
@@ -19,7 +19,7 @@ No Rust code; experiment inputs, commands and Ghidra's output are in
 | **[J]** | My judgement: an inference or a recommendation |
 
 Numbers from papers are the papers' own, on the benchmark named; they are not
-predictions for basilisk.
+predictions for Basilisk.
 
 **Where to find what.**
 
@@ -98,7 +98,7 @@ In order; details, evidence, effort and risk are in section 2.
 | # | Improvement | Why first |
 |---|---|---|
 | 0 | **A quality harness and a stage-equivalence check**, built during the port | Nothing else can be judged without it; it changes no output |
-| 1 | **Function summaries computed bottom-up over the call graph** (returns a value or not, does not return, parameters, tail calls) and used by callers and callees | Removes the largest class of *wrong* output found here; basilisk's in-process, parallel decompiler makes affordable what Ghidra leaves off by default |
+| 1 | **Function summaries computed bottom-up over the call graph** (returns a value or not, does not return, parameters, tail calls) and used by callers and callees | Removes the largest class of *wrong* output found here; Basilisk's in-process, parallel decompiler makes affordable what Ghidra leaves off by default |
 | 2 | **NaN-correct comparison printing** (`!(a >= b)`) | Small, self-contained, turns a known unsoundness into correct and readable output |
 | 3 | **Pointer, array and structure recovery in three steps**: pointer-ness from use, per-function structure synthesis, then cross-function unification | The largest readability gain with the strongest outside evidence |
 | 4 | **Compiler-aware structuring on top of the ported collapse engine**: un-rotate loops, rebuild switches from compare trees and bit tests, undo tail merging — each tried speculatively and kept only if the structure improves | The measured way to fewer gotos without the costs of goto-free methods |
@@ -140,8 +140,8 @@ corpus (cheap, built first; a working prototype is `tools/metrics.py`);
 ground truth from debug information for signatures, types and variables; and
 a stage-equivalence check that executes lifted p-code and final IR on the
 same inputs. Recompile-and-run and similarity to source come later. Every
-metric is reported for three columns — Ghidra's reference build, basilisk in
-the `ghidra` profile, basilisk in the default profile — in a `docs/QUALITY.md`
+metric is reported for three columns — Ghidra's reference build, Basilisk in
+the `ghidra` profile, Basilisk in the default profile — in a `docs/QUALITY.md`
 kept like `PERF.md`.
 
 ### 1.5 What could not be established
@@ -181,7 +181,7 @@ unless it can be switched off. The proposal **[J]**:
 * **One switch per improvement**, in the same option registry that carries
   Ghidra's own toggles (`OptionToggleRule`, `OptionSetAction` **[G]**
   `options.hh`). A profile is a list of switches. A test names its profile.
-* **Ghidra's units are never edited in place.** A basilisk improvement to a
+* **Ghidra's units are never edited in place.** A Basilisk improvement to a
   Ghidra rule is a second unit that replaces the first in the `basilisk`
   profile. This keeps "accidental difference = bug" (ADR-001) checkable and
   keeps a later re-synchronisation with a newer Ghidra commit mechanical.
@@ -1079,8 +1079,8 @@ at two rates, split by what each run needs **[J]**:
 | **Ground truth** | — | Signatures, then types and variables, against DWARF |
 | **Cost** | Seconds: the reference console runs all 74 fragments of this corpus (430 decompilations, counting the repeated ones) in 4.7 s on this machine; a full rebuild takes about 100 s, almost all of it container start-up **[E]** | Minutes to hours; every tool run has a time limit and every function a budget, so a hang is a recorded failure and not a stuck run |
 
-* The scorecard has three columns — **Ghidra reference | basilisk `ghidra`
-  profile | basilisk default profile** — per corpus. `docs/QUALITY.md` records
+* The scorecard has three columns — **Ghidra reference | Basilisk `ghidra`
+  profile | Basilisk default profile** — per corpus. `docs/QUALITY.md` records
   it with the command that produces it, as `PERF.md` does for speed.
 * Tests that need the reference tools skip when they are absent and fail
   under `BASILISK_REQUIRE_REFERENCE=1`, as everywhere else (ADR-007).

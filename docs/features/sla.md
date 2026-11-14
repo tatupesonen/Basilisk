@@ -350,7 +350,7 @@ model (`dhat`, as `bk-elf` does).
 ## 8. Differences from Ghidra
 
 * Validation (4.3) and limits (4.4): Ghidra checks a handful of ids and
-  crashes or misbehaves on the rest; basilisk rejects the file. In
+  crashes or misbehaves on the rest; Basilisk rejects the file. In
   particular decision nodes wider than 8 bits, operand `base` not below
   its own index, and operand-expression cycles are rejected.
 * An XML form can be read (Ghidra only writes it).

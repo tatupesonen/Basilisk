@@ -36,8 +36,8 @@
 //!   (`docs/features/pcode.md` section 8, "Structure"); that changes how
 //!   two `FLOAT_TRUNC` expectations are written, not their value.
 //!
-//! Where basilisk deliberately differs from the Java, the row asserts
-//! basilisk's result and a `// Java:` comment keeps the Java expectation.
+//! Where Basilisk deliberately differs from the Java, the row asserts
+//! Basilisk's result and a `// Java:` comment keeps the Java expectation.
 
 use bk_pcode::behavior::{self, wide};
 use bk_pcode::{BigFloat, FloatFormat, FloatFormats, OpCode, Wide};

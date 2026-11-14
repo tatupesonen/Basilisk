@@ -1,6 +1,6 @@
 # Reference tools
 
-basilisk is measured against Ghidra itself (ADR-007). This directory holds
+Basilisk is measured against Ghidra itself (ADR-007). This directory holds
 what is ours in that arrangement; Ghidra's own tools are built from its
 source by `scripts/build-reference.sh` and never checked in. Nothing here
 ships in the product (ADR-005). Specification:

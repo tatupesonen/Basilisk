@@ -22,7 +22,7 @@ not verified. The scripts behind the generated tables are described in
 `CPP/` holds 195,348 lines in `.cc`, `.hh`, `.y` and `.l` files **(ran:
 `wc -l`)**. By the Makefile's source groups (`.cc` plus `.hh`):
 
-| Group | Lines | What it is | basilisk |
+| Group | Lines | What it is | Basilisk |
 |---|---:|---|---|
 | `CORE` | 12,421 | XML, marshalling, spaces, addresses, floats, raw p-code, `Translate`, opcodes, metatypes, context database | `bk-marshal`, `bk-core`, `bk-pcode` (merged); `globalcontext` is open |
 | `DECCORE` | 129,004 | **The decompiler engine** (3,180 of these lines are `grammar.cc`, bison output) | milestone M3, this inventory |
@@ -214,11 +214,11 @@ initialised and `types->setupSizes()` fills in missing data-organisation
 values. The element loop is a chain of `else if` with no final `else`, so
 an unknown element inside `<compiler_spec>` is never consumed and the loop
 would not terminate **(read)**; all 107 files use only known elements, and
-basilisk reports an unknown element as an error.
+Basilisk reports an unknown element as an error.
 
 A bug found by reading: in the `<specextensions>` loop the `callfixup`,
 `callotherfixup` and `global` branches pass `decoder` (the already-closed
-`.cspec` decoder) instead of `decoderExt`. basilisk reads the extension
+`.cspec` decoder) instead of `decoderExt`. Basilisk reads the extension
 document with its own decoder.
 
 ### 3.2 `Varnode` and `VarnodeBank` (`varnode.hh`)
@@ -1113,7 +1113,7 @@ what the Java model in section 7.3 consumes.
 Found while reading; each is a place where a faithful port must choose
 (ADR-021: x86-64 Linux) and where Windows differs most easily.
 
-| Where | Dependence | basilisk |
+| Where | Dependence | Basilisk |
 |---|---|---|
 | `Datatype::hashName` (`type.cc`): `res += (uint8)nm[i]` | `char` signedness: a byte ≥ 0x80 in a type name is sign-extended on x86-64 and not on AArch64 Linux. The hash becomes the type's id | Sign-extend (x86-64) |
 | `TypePointer`, `TypeArray`, `TypePointerRel`, `TypePartial*`, `TypeCode::compareDependency` | "Compare absolute pointers": the order of types in the factory's set, and so of `dependentOrder` (`print C types`), follows heap addresses | Order by creation index |

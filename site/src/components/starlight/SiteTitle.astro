@@ -1,12 +1,12 @@
 ---
-// Starlight's site title, replaced by the basilisk logo and a "docs" label;
+// Starlight's site title, replaced by the Basilisk logo and a "docs" label;
 // the logo links to the product site, the label to the documentation home.
 import Logo from '../Logo.astro';
 const base = import.meta.env.BASE_URL;
 ---
 
 <span class="bk-sl-title">
-  <a href={base} class="bk-sl-logo" aria-label="basilisk home"><Logo height={28} /></a>
+  <a href={base} class="bk-sl-logo" aria-label="Basilisk home"><Logo height={28} /></a>
   <a href={`${base}docs/`} class="bk-sl-docs">docs</a>
 </span>
 

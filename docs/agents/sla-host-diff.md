@@ -74,7 +74,7 @@ feature spec edited.
 ## Proposed ADR revision
 
 The ready-to-paste text replacing ADR-029 is in research doc §6.4. In
-short: basilisk computes the score with unfused `f64` arithmetic in
+short: Basilisk computes the score with unfused `f64` arithmetic in
 Ghidra's order and a `log` bit-equal to glibc's (FMA variant) on every
 `k/n` with n ≤ 16,384, verified by a checked-in table
 (`docs/research/sla-host-dependence/logtable-glibc.txt.gz`); not

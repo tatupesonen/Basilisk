@@ -18,7 +18,7 @@ planned (`LOOP.md`); the test checklist is `tests/`.
 | `Ghidra/Extensions/` | Optional extensions: Jython, BSim Elastic, machine learning, Lisa, SleighDevTools (the p-code test framework), samples |
 | `Ghidra/Test/` | Cross-module integration tests (`IntegrationTest`, `DebuggerIntegrationTest`) and `TestResources` (test binaries and programs) |
 | `Ghidra/RuntimeScripts/`, `Configurations/` | Launch scripts and the release configuration |
-| `GPL/` | GPL-licensed helpers run as separate programs: the GNU demangler (libiberty, 34,000 lines of C), `gdis` over binutils, a DMG/HFS+ reader. Ghidra runs them as separate programs; basilisk ports them like any other code (ADR-018) |
+| `GPL/` | GPL-licensed helpers run as separate programs: the GNU demangler (libiberty, 34,000 lines of C), `gdis` over binutils, a DMG/HFS+ reader. Ghidra runs them as separate programs; Basilisk ports them like any other code (ADR-018) |
 | `GhidraBuild/`, `GhidraDocs/`, `gradle/` | Build infrastructure and documentation |
 
 A Ghidra module is a directory with `src/main/java`, optional
@@ -28,7 +28,7 @@ A Ghidra module is a directory with `src/main/java`, optional
 
 ## 2. Framework
 
-| Module | Lines | Contents | basilisk |
+| Module | Lines | Contents | Basilisk |
 |---|---:|---|---|
 | `SoftwareModeling` | 358,000 | **Program model** (`ghidra.program.model.*`, 124,000: address, memory, listing, symbol, data types, language, p-code) and its **database implementation** (`ghidra.program.database.*`, 108,000). **SLEIGH runtime** in Java (`ghidra.app.plugin.processors.sleigh`, 16,000) and the **SLEIGH compiler** in Java (`ghidra.pcodeCPort`, 19,000, a port of the C++; grammar in `src/main/antlr`, 4,200 lines of ANTLR). **Assembler** (`ghidra.app.plugin.assembler`, 18,000). P-code utilities, float formats and op behaviours (`ghidra.pcode`). Disassembler (`ghidra.program.disassemble`) | `bk-core`, `bk-pcode`, `bk-sleigh*`, `bk-lang`, `bk-program`, `bk-datatypes`, `bk-store`, `bk-disasm`, `bk-asm` |
 | `DB` | 45,000 | Ghidra's own storage engine: buffer files, B-tree tables with long/fixed/variable keys, indexes, chained buffers, transactions, versioned buffer files | `bk-store` (own design, ADR-003) |

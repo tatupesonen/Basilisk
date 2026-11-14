@@ -1,10 +1,10 @@
-# basilisk brand assets
+# Basilisk brand assets
 
 ![overview](png/preview-overview.png)
 
 ## The idea
 
-The basilisk is the crowned serpent whose gaze kills. The mark is that
+The Basilisk is the crowned serpent whose gaze kills. The mark is that
 serpent coiled into a ring, and the ring is the iris of an eye: the slit in
 the middle is the pupil. A tool that stares into binaries gets an emblem
 that is itself a stare. Read small it is an eye with a crown; read large it

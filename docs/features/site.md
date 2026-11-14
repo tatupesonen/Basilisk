@@ -1,4 +1,4 @@
-# basilisk website and documentation site (`site/`)
+# Basilisk website and documentation site (`site/`)
 
 Track `site-design` (ADR-030, ADR-031). Format of this document:
 `docs/LOOP.md`, "Feature documents". The track `docs-content` fills the
@@ -7,7 +7,7 @@ and build.
 
 ## 1. Purpose
 
-basilisk's public face: a product site at `/` that says what basilisk is,
+Basilisk's public face: a product site at `/` that says what Basilisk is,
 shows the real interface and states honestly what works today, and the
 user documentation at `/docs/`. Both are one static Astro project, styled
 as the same product as the desktop interface, built only inside a
@@ -47,7 +47,7 @@ hosting configuration (the owner enables GitHub Pages).
 
 | Path | What |
 |---|---|
-| `/` | Landing page: the mark, what basilisk is, real screenshots, status summary, why it exists, how to build and run it today, credit and licence |
+| `/` | Landing page: the mark, what Basilisk is, real screenshots, status summary, why it exists, how to build and run it today, credit and licence |
 | `/status/` | The full parity matrix from `docs/PARITY.md`, filterable by status without scripts (radio inputs and `:has()`) |
 | `/roadmap/` | Milestones M0–M10 with their checklists from `docs/PLAN.md`; the current milestone marked in ember |
 | `/docs/` | Starlight documentation; sidebar groups: Getting started, The interface, The command line, Analysis, The decompiler, Scripting and plugins, Formats and processors, How it works |
@@ -66,8 +66,8 @@ place follows from its directory (`autogenerate`) and `sidebar.order`.
   `docs/PARITY.md` and `docs/PLAN.md` at build time; a change in a
   heading or column layout there that the parser does not understand
   fails the build rather than showing stale or partial data.
-- **No affiliation implied.** Ghidra is credited as the work basilisk
-  reimplements, with a link to its source; every footer says basilisk is
+- **No affiliation implied.** Ghidra is credited as the work Basilisk
+  reimplements, with a link to its source; every footer says Basilisk is
   independent and not affiliated with or endorsed by Ghidra's authors.
 - **Licence and source** in every footer: GPL-3.0-or-later and the
   repository link.
@@ -202,7 +202,7 @@ both themes. Visual review from `scripts/site.sh shoot` at 1440 px and
 ## 8. Differences from Ghidra
 
 Not applicable: Ghidra's documentation is its in-program help, not a
-website. basilisk's in-program help (`PARITY.md`, "Docking, Gui, Help")
+website. Basilisk's in-program help (`PARITY.md`, "Docking, Gui, Help")
 is a separate, later question.
 
 ## 9. Status

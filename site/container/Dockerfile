@@ -1,4 +1,4 @@
-# Build image for basilisk's website and documentation (ADR-030, ADR-031).
+# Build image for Basilisk's website and documentation (ADR-030, ADR-031).
 #
 # Everything that needs Node.js runs in this image: npm, Astro, Starlight,
 # the Mermaid renderer (headless Chromium through Playwright) and the

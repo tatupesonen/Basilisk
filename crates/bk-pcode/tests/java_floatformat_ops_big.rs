@@ -11,7 +11,7 @@
 )]
 //! Port of Ghidra's JUnit class `ghidra.pcode.floatformat.FloatFormatTest`,
 //! part 4 of 5: the p-code float operations through Java's `BigInteger`
-//! overloads, which are basilisk's exact level ([`Wide`] encodings computed
+//! overloads, which are Basilisk's exact level ([`Wide`] encodings computed
 //! through [`BigFloat`]).
 //!
 //! Java methods ported here (each is one `#[test]` with the same name in
@@ -25,8 +25,8 @@
 //! `testOpTruncBigIntegerInt`, `testOpCeilBigInteger`,
 //! `testOpFloorBigInteger`, `testOpRoundBigInteger`.
 //!
-//! Java's comparisons return `BigInteger.ONE`/`ZERO`; basilisk's return
-//! `bool`. basilisk's exact comparisons are IEEE where Java's compare
+//! Java's comparisons return `BigInteger.ONE`/`ZERO`; Basilisk's return
+//! `bool`. Basilisk's exact comparisons are IEEE where Java's compare
 //! representations, but no expectation of this class depends on that.
 
 use bk_pcode::num_bigint::BigInt;
@@ -359,7 +359,7 @@ fn test_op_float2float_big_integer_float_format() {
 fn test_op_trunc_big_integer_int() {
     let ff = float_format(8);
 
-    // Java's `opTrunc(BigInteger, 8)` returns a signed BigInteger; basilisk
+    // Java's `opTrunc(BigInteger, 8)` returns a signed BigInteger; Basilisk
     // returns its 512-bit two's complement, which is compared in full and
     // then read back as the signed 8-byte integer.
     let cases = [

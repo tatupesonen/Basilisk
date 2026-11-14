@@ -46,7 +46,7 @@ impl Detached {
     /// The window title: its panes' kinds.
     pub fn title(&self) -> String {
         let names: Vec<&str> = self.tabs().map(|t| t.kind.title()).collect();
-        format!("basilisk — {}", names.join(", "))
+        format!("Basilisk — {}", names.join(", "))
     }
 }
 
@@ -416,7 +416,7 @@ mod tests {
         let w = l.detach(dec).unwrap();
         assert_eq!(l.window_of(dec), Some(Place::Window(w)));
         assert!(!kinds(&l.main).contains(&ViewKind::Decompiler));
-        assert_eq!(l.windows[0].title(), "basilisk — Decompile");
+        assert_eq!(l.windows[0].title(), "Basilisk — Decompile");
         // Another pane can join the detached window.
         let console = l.find_kind(ViewKind::Console).unwrap();
         let tab = l.remove(console).unwrap();

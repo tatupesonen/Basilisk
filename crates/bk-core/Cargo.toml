@@ -1,6 +1,6 @@
 [package]
 name = "bk-core"
-description = "basilisk: address spaces, addresses, ranges, varnode data and bit helpers (Ghidra's space, address, pcoderaw and translate)"
+description = "Basilisk: address spaces, addresses, ranges, varnode data and bit helpers (Ghidra's space, address, pcoderaw and translate)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

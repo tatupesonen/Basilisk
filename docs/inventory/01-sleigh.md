@@ -20,7 +20,7 @@ because they were compiled from line-by-line notes.
 
 ## 0. Sources and authority
 
-| Area | C++ | Java | Authority for basilisk |
+| Area | C++ | Java | Authority for Basilisk |
 |---|---|---|---|
 | `.sla` format | `CPP/slaformat.*`, the `encode`/`decode` methods in `sleighbase.cc`, `slghsymbol.cc`, `slghpattern.cc`, `slghpatexpress.cc`, `semantics.cc` | `SM/pcode/utils/SlaFormat.java`, `SM/app/plugin/processors/sleigh/**` `decode` methods | C++ (both read and write version 4; the reference files are written by the C++ compiler) |
 | Decoding, disassembly text, p-code | `sleigh.cc`, `context.cc`, `slghsymbol.cc`, `slghpatexpress.cc`, `slghpattern.cc`, `semantics.cc` | `SleighInstructionPrototype`, `ConstructState`, `ParserWalker`, `SleighParserContext`, `PcodeEmit*`, `Constructor.java` | C++, because `pcodedump` (the differential oracle, linked against it) and the decompiler use it. Where C++ behaviour is undefined (section 8) the spec states a defined result |

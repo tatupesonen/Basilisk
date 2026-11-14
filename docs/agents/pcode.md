@@ -70,7 +70,7 @@ spot-checked rows myself. Results:
   assertion has a Rust row with the same inputs, sizes and expected value;
   no sign errors, truncated hex or swapped operands; no dropped cases. The
   only differing expectations are the three `INT_DIV`-by-zero rows (Java 0,
-  basilisk `DivideByZero`), each with a `// Java:` comment — the documented
+  Basilisk `DivideByZero`), each with a `// Java:` comment — the documented
   difference. Confirmed: Ghidra's `OpBehaviorIntSLessTest` and
   `OpBehaviorIntSLessEqualTest` each test the other's operation (ported as
   they really test); `OpBehaviorIntMultTest` has two `assertEquals(long,
@@ -82,7 +82,7 @@ spot-checked rows myself. Results:
   random seeds and iteration counts (2,000 and 1,017-value loops included);
   the reimplemented `java.util.Random` is checked against the JDK. The only
   differing expectation is `op_round(-2.5)` on the host level (Java -2.0,
-  basilisk -3.0: the C++ `round()`), documented. The list of 5 unported
+  Basilisk -3.0: the C++ `round()`), documented. The list of 5 unported
   methods was exactly right.
 - The **18 `OpBehaviorFloat*Test` classes and the last 5 `FloatFormatTest`
   methods** were ported in this session by a helper agent, which compiled
@@ -100,7 +100,7 @@ spot-checked rows myself. Results:
 Each was checked against the C++/Java it cites, and the C++ ones against
 Ghidra's compiled code (`tests/cpp_oracle.rs`: an oracle program linked
 against the reference build's `libsla.a` evaluated 87,176 cases on
-AArch64; basilisk agrees with every row except the explained classes
+AArch64; Basilisk agrees with every row except the explained classes
 below). Full text in the spec, section 8.
 
 | Difference | Description accurate? | Verdict |
@@ -117,7 +117,7 @@ below). Full text in the spec, section 8.
 | Exact-path comparisons IEEE (Java: `+0 == -0` false, `x < NaN` true, `NaN <= NaN` true) | Yes — `opEqual` handles NaN correctly, `opLess`/`opLessEqual` use `compareTo`'s total order, `equals` distinguishes zero signs | Kept as a bug fix; no Java test pins the buggy values (both reviewers checked). |
 | x87 rounding carry fixed | Yes — the carry test `leadBit(fraction) > frac_size` never fires for x87 and bit 64 is OR-ed into the exponent | Kept as a bug fix. |
 | Java quirks kept (positive NaN on the exact path, `TRUNC` of infinity by the float's size, truncating `INT2FLOAT` for 2/10/16/32 bytes, no x87 subnormals, x87 infinity decoding as NaN, `1E+10.0`) | Spot-checked (`opTrunc(BigInteger)`, x87 decode) | Kept: defined Java behaviour, the emulator reference. |
-| `printDecimal` | — | Kept; note that with libc++ (macOS) Ghidra itself prints `1.7976931348623157e+308` for `DBL_MAX` and fails its `double_decimal_precision` test (ran `decomp_test`); basilisk follows the test (libstdc++). |
+| `printDecimal` | — | Kept; note that with libc++ (macOS) Ghidra itself prints `1.7976931348623157e+308` for `DBL_MAX` and fails its `double_decimal_precision` test (ran `decomp_test`); Basilisk follows the test (libstdc++). |
 
 ## Benchmarks
 
@@ -172,7 +172,7 @@ ns at 8 and 16 bytes (allocates, as Java's `BigFloat` does).
 - Sizes are plain `u32` byte counts; adopt `bk-core`'s size newtype at the
   entry points if one appears.
 - **Proposed ADR**: "Where Ghidra's C++ result depends on the host,
-  basilisk takes x86-64's (the platform Ghidra's tests are written for),
+  Basilisk takes x86-64's (the platform Ghidra's tests are written for),
   unless a Ghidra test pins another value" — currently that is the created
   NaN sign (x86-64) and `TRUNC` (Java's pinned saturation). This matters
   for differential tests against a reference build: the reference on
@@ -227,7 +227,7 @@ regenerate the table on x86-64 with the fixed generator (command below).
 
 1. **Two NaN inputs of opposite sign, `FLOAT_ADD`/`FLOAT_MULT`, 48 rows**
    (12 per op and size 4/8). x86-64 gives the quiet NaN with the sign of
-   the *second* input; basilisk gave the first's. Over all two-NaN rows of
+   the *second* input; Basilisk gave the first's. Over all two-NaN rows of
    the table (12 opposite-sign + 13 same-sign per op and size), x86-64
    is: ADD, MULT → sign of `b`; SUB, DIV → sign of `a`; AArch64 → sign of
    `a` for all four. One NaN input → its sign (both hosts, every row).
@@ -250,12 +250,12 @@ regenerate the table on x86-64 with the fixed generator (command below).
 2. **`FLOAT_TRUNC` of a NaN or a value outside `i64`, 58 rows.** x86-64's
    `cvttsd2si` gives `0x8000_0000_0000_0000`, then cut to the output size
    (so 0 at sizes 1/2/4 for a positive overflow, and `i64::MIN` at size 8
-   for NaN). basilisk saturates and maps NaN to 0. **Not changed**: ADR-021
+   for NaN). Basilisk saturates and maps NaN to 0. **Not changed**: ADR-021
    says so explicitly, because Ghidra's Java tests pin saturation
    (`FloatFormatTest.testOpTruncLongInt`, `OpBehaviorFloatTruncTest`) and
    the ported tests assert it on the `u64` path. It is now an explained
    class, `TruncSaturates`, recognised narrowly (input outside
-   `[-2^63, 2^63)` or NaN, C++ = `i64::MIN & mask`, basilisk = saturated
+   `[-2^63, 2^63)` or NaN, C++ = `i64::MIN & mask`, Basilisk = saturated
    `& mask`).
 
 ## What changed in the product
@@ -299,9 +299,9 @@ regenerate the table on x86-64 with the fixed generator (command below).
 - `TruncSaturates` (58): ADR-021, Java tests pin saturation.
 - `SubnormalRoundsToNormal` (3): the C++ returns zero for a subnormal that
   rounds up to the smallest normal ("TODO handle round to normal case",
-  both hosts); basilisk rounds correctly, as Java does.
+  both hosts); Basilisk rounds correctly, as Java does.
 - `RecoverShiftByZero` (10): the C++ shifts by 64 and reports a shift by 0
-  of an 8-byte value as not invertible; basilisk returns the output.
+  of an 8-byte value as not invertible; Basilisk returns the output.
 All three are in `docs/features/pcode.md`, section 8.
 
 ## Generator
@@ -335,7 +335,7 @@ both signs in both positions, NaN with a number, created NaNs (`inf-inf`,
 `ROUND(0.49999999999999994)`; `INT2FLOAT` of the most negative integers.
 Every expected value is x86-64's, and a second test checks each against
 the oracle table so the two cannot drift. Plus 8 `FLOAT_TRUNC` rows with
-basilisk's saturated values (x86-64's in comments) and the wide path's
+Basilisk's saturated values (x86-64's in comments) and the wide path's
 positive NaN at 4, 8, 16 bytes. Before the fix, the `u64` rows with two
 NaNs failed (they pinned the first operand's sign). CI runs it on Linux
 x86-64, macOS AArch64 and Windows.

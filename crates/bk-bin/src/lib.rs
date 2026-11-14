@@ -1,5 +1,5 @@
 //! Byte providers and the typed, endian-aware binary reader shared by every
-//! basilisk format parser (ELF, PE, Mach-O, DWARF, PDB, …).
+//! Basilisk format parser (ELF, PE, Mach-O, DWARF, PDB, …).
 //!
 //! This crate corresponds to Ghidra's `ghidra.app.util.bin` package:
 //!

@@ -113,7 +113,7 @@ wraps and a diagnostic where a value cannot be represented in the file.
 ### 4.4 Diagnostics
 Every error and warning of inventory sections 9 and 10 (d), 10 (c.5),
 with Ghidra's message text. A diagnostic carries the span of the
-construct it is about (basilisk's own, better than Ghidra's "current
+construct it is about (Basilisk's own, better than Ghidra's "current
 lexer line"), a severity and the text. Rendering as Ghidra prints them
 (`FILE:LINE - ERROR TEXT`, `WARN  TEXT`) is part 2's command line.
 Elaboration continues after an error wherever the C++ does (it reports
@@ -180,7 +180,7 @@ space); part 2 tests CRLF end to end.
 
 ### 6.2 Differential test against Ghidra's compiled files — all 150 specs
 For each `.slaspec` (compiled with its module's options, which
-`bk-testkit` knows), elaborate with basilisk, lower to the comparison
+`bk-testkit` knows), elaborate with Basilisk, lower to the comparison
 form, and compare with the reference `.sla` read through `bk_sla`. The
 two sides are put in a **canonical form keyed by operand symbol id**,
 because Ghidra's file has operands reordered by part 2's algorithm:
@@ -218,11 +218,11 @@ the test).
 `tests/diagnostics/`: small hand-written specifications, at least one per
 message of this half (the test holds the list of message patterns from
 inventory 9 and 10 (d) and fails if one has no case). Each is compiled by
-`REF/bin/sleigh` with the same options and by basilisk; required equal:
+`REF/bin/sleigh` with the same options and by Basilisk; required equal:
 success or failure, and the multiset of (severity, message text) —
 Ghidra's location prefix is stripped, because Ghidra reports many
 messages at the lexer's current line. Where Ghidra aborts with
-"Unrecoverable error" and basilisk reports an ordinary error, the case
+"Unrecoverable error" and Basilisk reports an ordinary error, the case
 lists that as expected. The warnings of the 150 shipped specs are
 compared in part 2 (they need the whole pipeline).
 
@@ -269,13 +269,13 @@ compared in part 2 (they need the whole pipeline).
 
 Appended by the implementing track (2026-11-14):
 
-* **Where Ghidra's compiler dies, basilisk reports and goes on.**
+* **Where Ghidra's compiler dies, Basilisk reports and goes on.**
   `constrainOperand` returns a null equation for "Constraining currently
   undefined operand", which the grammar then combines with `&` (Ghidra
   crashes); `expandMacros` deletes the macro placeholder and returns
   without replacing the op list after an expansion error, leaving a
   dangling op (Ghidra dies of a memory error after "Cannot currently
-  assign to bitrange of macro parameter that is a temporary"). basilisk
+  assign to bitrange of macro parameter that is a temporary"). Basilisk
   abandons the constructor in the first case and reports "Could not expand
   macros" with the usual "in table …" lines in the second. The diagnostic
   test lists both (`GHIDRA_CRASHES` in `tests/diagnostics.rs`) and checks
@@ -289,7 +289,7 @@ Appended by the implementing track (2026-11-14):
   pattern, a table name where a varnode is expected, …) are reported as
   Ghidra's "syntax error" at the construct, and the constructor is
   abandoned. Ghidra's parser recovers at the next `}`, which after an
-  `unimpl` constructor can swallow following constructors; basilisk
+  `unimpl` constructor can swallow following constructors; Basilisk
   resumes at the next item, so later diagnostics can differ in such
   files.
 * **Operand collisions**: a table already visited while collecting one
@@ -307,7 +307,7 @@ Appended by the implementing track (2026-11-14):
   and the "Unreferenced table" warnings use the tables reachable from
   `instruction` through operands defined by tables, which is exactly the
   set `buildPatterns` gives a pattern when it succeeds. The back half's
-  pattern errors stop the compile before the purge in Ghidra; in basilisk
+  pattern errors stop the compile before the purge in Ghidra; in Basilisk
   they will stop it after this half has run.
 * **Limits** (4.5): 2^24 symbols, 2^20 scopes, 1,000,000 ops per section
   after macro expansion, 1,024 context words, 1,000,000 errors ("Too many
@@ -319,7 +319,7 @@ Appended by the implementing track (2026-11-14):
   "Could not construct requested bit range" (a varnode with a real offset
   always has a real size), "Expression has no output", and "Unknown
   pointer varnode" (Ghidra's parser reduces the name to an assignment
-  target first and reports "Unknown assignment varnode", which basilisk
+  target first and reports "Unknown assignment varnode", which Basilisk
   does too). "Expecting integer but saw", "Must specify an indirect
   parameter for return" and the "redefined" forms of a single
   unbracketed name are found by `bk-sleigh-syntax` before elaboration.

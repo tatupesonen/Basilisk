@@ -23,7 +23,7 @@ pub fn ui(ui: &mut egui::Ui, tool: &Tool, t: &Tokens) -> Option<ActionId> {
         }
         ui.add_space(space::LG);
         ui.label(
-            RichText::new("basilisk")
+            RichText::new("Basilisk")
                 .text_style(typography::style::display())
                 .color(p.text),
         );

@@ -1,6 +1,6 @@
 ---
 title: Analysis
-description: Disassembly and auto-analysis in basilisk — planned for milestone M5.
+description: Disassembly and auto-analysis in Basilisk — planned for milestone M5.
 sidebar:
   order: 1
   label: Overview
@@ -22,5 +22,5 @@ Auto-analysis turns an imported binary into functions, references and data. As i
   format-specific analyzers.
 - The **decompiler** is wired in for parameter identification and switch analysis.
 
-basilisk's addition is parallelism: analysis runs in parallel where that is safe, and the interface never
+Basilisk's addition is parallelism: analysis runs in parallel where that is safe, and the interface never
 waits for it. Results are checked against Ghidra's headless analyzer on whole binaries.

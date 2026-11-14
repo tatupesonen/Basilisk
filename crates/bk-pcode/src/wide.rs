@@ -1,7 +1,7 @@
 //! [`Wide`]: the operand type of the wide evaluation path.
 //!
 //! Ghidra's Java behaviours work on `BigInteger` when an operand is wider than
-//! 8 bytes (vector registers, 80- and 128-bit floats). basilisk uses a fixed
+//! 8 bytes (vector registers, 80- and 128-bit floats). Basilisk uses a fixed
 //! 512-bit unsigned integer instead: it covers the widest register any Ghidra
 //! processor module computes with (the 64-byte AVX-512 `ZMM` registers), it is
 //! `Copy`, and evaluating an operation on it never allocates.

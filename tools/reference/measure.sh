@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Measures the reference tools: the baseline numbers in docs/PERF.md that
-# basilisk's SLEIGH compiler, decoder and decompiler are held against.
+# Basilisk's SLEIGH compiler, decoder and decompiler are held against.
 #
 #   tools/reference/measure.sh [--x86-64-code FILE]
 #

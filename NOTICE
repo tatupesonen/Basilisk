@@ -1,11 +1,11 @@
-basilisk
+Basilisk
 
-basilisk is a Rust reimplementation of Ghidra (https://github.com/NationalSecurityAgency/ghidra).
+Basilisk is a Rust reimplementation of Ghidra (https://github.com/NationalSecurityAgency/ghidra).
 Its algorithms, behaviour and test cases are ported from Ghidra's Java and C++ source, which is
 licensed under the Apache License, Version 2.0, and it reads Ghidra's processor specification
 files (SLEIGH, .ldefs, .pspec, .cspec, .opinion) unchanged.
 
-basilisk as a whole is licensed under the GNU General Public License, version 3 or later
+Basilisk as a whole is licensed under the GNU General Public License, version 3 or later
 (LICENSE). Code ported from Ghidra's Apache-2.0 source is included as that licence permits;
 its text is in LICENSE-APACHE. Code ported from the GPL-licensed modules Ghidra keeps under
 GPL/ (the GNU demangler from binutils' libiberty, and others) keeps its GPL terms.
