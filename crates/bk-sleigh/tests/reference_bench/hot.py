@@ -21,7 +21,7 @@ def main():
     data, binary, symbol = sys.argv[1:4]
     minimum = float(sys.argv[4]) if len(sys.argv) > 4 else 0.5
     script = subprocess.run(
-        ["perf", "script", "-i", data, "-F", "sym,symoff"],
+        ["perf", "script", "--no-demangle", "-i", data, "-F", "sym,symoff"],
         capture_output=True, text=True, check=True).stdout
     counts = collections.Counter()
     for line in script.splitlines():
