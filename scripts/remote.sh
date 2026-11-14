@@ -96,7 +96,10 @@ start)  # slug sha mode timeout jobs ref|noref cmd...
   checkout "$slug" "$sha" >&2
   mkdir -p "$BK/logs/$slug"
   log="$BK/logs/$slug/$(date +%Y%m%d-%H%M%S)-$mode.log"
-  export CARGO_BUILD_JOBS="$jobs" CARGO_TERM_COLOR=never
+  find "$BK/logs/$slug" -type f -mtime +14 -delete
+  # Temporary files (gate.sh keeps its test log there) stay under ~/bk.
+  mkdir -p "$BK/tmp/$slug"
+  export CARGO_BUILD_JOBS="$jobs" CARGO_TERM_COLOR=never TMPDIR="$BK/tmp/$slug"
   if [ "$ref" = ref ]; then
     export BASILISK_GHIDRA_DIR="$HOME/basilisk-ref/ghidra" BASILISK_REFERENCE_DIR="$BK/reference"
   else
@@ -135,10 +138,13 @@ status)
 heads) for d in "$BK"/wt/*/; do [ -d "$d" ] && echo "$(basename "$d") $(git -C "$d" rev-parse HEAD)"; done; true ;;
 clean)  # slug...
   for s in "$@"; do
-    ( lock "$s"; rm -rf "${BK:?}/wt/$s" "$BK/logs/$s"
-      git -C "$BK/repo.git" for-each-ref --format='%(refname)' | while read -r r; do
-        [ "$(printf '%s' "${r#refs/heads/}" | tr -c 'A-Za-z0-9._-' '-')" = "$s" ] && git -C "$BK/repo.git" update-ref -d "$r"
-      done; rm -f "$BK/locks/$s.lock"; echo "remote: removed $s" ) || true
+    ( lock "$s"; rm -rf "${BK:?}/wt/$s" "$BK/logs/$s" "$BK/tmp/$s"
+      for r in $(git -C "$BK/repo.git" for-each-ref --format='%(refname)' refs/heads); do
+        if [ "$(printf '%s' "${r#refs/heads/}" | tr -c 'A-Za-z0-9._-' '-')" = "$s" ]; then
+          git -C "$BK/repo.git" update-ref -d "$r"
+        fi
+      done
+      rm -f "$BK/locks/$s.lock"; echo "remote: removed $s" ) || true
   done
   ;;
 *) echo "remote: unknown remote op $op" >&2; exit 2 ;;
