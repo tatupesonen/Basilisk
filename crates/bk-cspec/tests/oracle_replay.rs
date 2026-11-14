@@ -1,8 +1,12 @@
-//! Replays the oracle table (`tests/data/cspec_oracle.txt.gz`, from
-//! Ghidra's compiled reader and models): every `.cspec` of the spec root is
-//! read against the spaces and registers Ghidra had, and every record of
-//! the table is produced again and compared. Needs the spec root (kind G);
-//! skipped with a printed reason without it.
+//! Replays the oracle tables (`tests/data/cspec_oracle.{libcxx,libstdcxx}.txt.gz`,
+//! from Ghidra's compiled reader and models built against libc++ and
+//! libstdc++): every `.cspec` of the spec root is read against the spaces
+//! and registers Ghidra had, and every record is produced again and
+//! compared with both tables. A row where the tables agree passes only if
+//! Basilisk agrees; a row where they disagree passes only if it is one of
+//! the counted causes of ADR-040 and Basilisk gives the result the ADR
+//! defines (`oracle_common::host`). Needs the spec root (kind G); skipped
+//! with a printed reason without it.
 
 #![allow(
     clippy::unwrap_used,
@@ -12,6 +16,7 @@
     clippy::print_stderr,
     clippy::allow_attributes,
     clippy::tests_outside_test_module,
+    clippy::many_single_char_names,
     reason = "test code"
 )]
 
@@ -20,7 +25,7 @@ mod oracle_common;
 
 use std::collections::BTreeMap;
 
-use bk_core::{Address, SpaceManager, SpaceType};
+use bk_core::SpaceManager;
 use bk_cspec::list::ParamList;
 use bk_cspec::proto::PrototypePieces;
 use bk_cspec::types::ParamTypes;
@@ -28,58 +33,89 @@ use bk_cspec::{CompilerSpec, ParamActive, ProtoModel, ReadOptions};
 use common::cparse;
 use common::testtypes::TestTypes;
 use oracle_common::describe::{model_records, spec_records};
-use oracle_common::{Pair, addr, b, desc, parse_vn, vn};
+use oracle_common::host::{self, Cause};
+use oracle_common::{Lib, Pair, addr, b, desc, parse_vn, vn};
 
 const SIGNATURES: &str = include_str!("oracle/signatures.txt");
 
+/// Rows per cause where the two tables differ (README, ADR-040). A
+/// regenerated table that changes these fails here until they are updated.
+const EXPECTED: [(Cause, usize); 4] = [
+    (Cause::EffectOrder, 56),
+    (Cause::EffectLookup, 24),
+    (Cause::IdenticalTrials, 38),
+    (Cause::EntrylessTrials, 1),
+];
+
+/// Addresses with several effect records in a non-merged model, over all
+/// pairs: each must be in document order in Basilisk's list. With the 6 in
+/// merged models (intersections of these lists; both tables agree there)
+/// they are the 89 ties of the README.
+const TIE_GROUPS: usize = 83;
+
 #[derive(Default)]
-struct Diffs {
-    by_kind: BTreeMap<String, Vec<String>>,
+struct Check {
     rows: usize,
+    differ: BTreeMap<String, Vec<String>>,
+    causes: BTreeMap<Cause, usize>,
+    tie_groups: usize,
 }
 
-impl Diffs {
-    fn check(&mut self, kind: &str, pair: &str, want: &str, got: &str) {
-        self.rows += 1;
-        if want != got {
-            self.by_kind
-                .entry(kind.to_owned())
-                .or_default()
-                .push(format!("{pair}\n  ghidra:   {want}\n  basilisk: {got}"));
-        }
-    }
-
-    /// As [`Diffs::check`], but rows equal after `norm` count as the
-    /// known difference `known` instead.
-    fn check_norm(
+impl Check {
+    /// One row: `a` from libc++, `b` from libstdc++, `got` from Basilisk.
+    /// `cause` recognises a row where the tables disagree.
+    fn row(
         &mut self,
         kind: &str,
         pair: &str,
-        (want, got): (&str, &str),
-        norm: fn(&str) -> String,
-        known: &str,
+        (a, b, got): (&str, &str, &str),
+        cause: impl FnOnce() -> Result<Cause, String>,
     ) {
-        if want != got && norm(want) == norm(got) {
-            self.rows += 1;
-            self.by_kind
-                .entry(known.to_owned())
-                .or_default()
-                .push(format!("{pair}\n  ghidra:   {want}\n  basilisk: {got}"));
+        self.rows += 1;
+        if a == b {
+            if got != a {
+                self.fail(kind, format!("{pair}\n  ghidra:   {a}\n  basilisk: {got}"));
+            }
             return;
         }
-        self.check(kind, pair, want, got);
+        match cause() {
+            Ok(c) => *self.causes.entry(c).or_default() += 1,
+            Err(why) => self.fail(
+                &format!("{kind} (tables disagree)"),
+                format!("{pair}: {why}\n  libc++:    {a}\n  libstdc++: {b}\n  basilisk:  {got}"),
+            ),
+        }
+    }
+
+    /// A row both tables agree on (inputs such as trial sets).
+    fn same(&mut self, kind: &str, pair: &str, want: &str, got: &str) {
+        self.row(kind, pair, (want, want, got), || unreachable!());
+    }
+
+    fn fail(&mut self, kind: &str, msg: String) {
+        self.differ.entry(kind.to_owned()).or_default().push(msg);
     }
 
     fn report(&self) -> usize {
         let mut total = 0;
-        for (k, v) in &self.by_kind {
-            eprintln!("{k}: {} differing rows", v.len());
+        for (k, v) in &self.differ {
+            eprintln!("{k}: {} rows", v.len());
             for e in v.iter().take(6) {
                 eprintln!("  {e}");
             }
             total += v.len();
         }
-        eprintln!("{} rows compared, {total} differ", self.rows);
+        for c in Cause::ALL {
+            eprintln!(
+                "tables disagree, {}: {} rows",
+                c.name(),
+                self.causes.get(&c).copied().unwrap_or(0)
+            );
+        }
+        eprintln!(
+            "{} rows compared, {total} unexplained; {} effect tie groups in document order",
+            self.rows, self.tie_groups
+        );
         total
     }
 }
@@ -103,7 +139,7 @@ fn sigs() -> Vec<(char, i32, String)> {
 fn read_pair(
     pair: &Pair,
     files: &BTreeMap<String, std::path::PathBuf>,
-) -> Result<(CompilerSpec, SpaceManager), String> {
+) -> Result<(CompilerSpec, SpaceManager, String), String> {
     let mut m = oracle_common::manager(pair);
     let path = files.get(&pair.cspec).ok_or("no such .cspec")?;
     let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
@@ -112,21 +148,154 @@ fn read_pair(
         ..ReadOptions::default()
     };
     let spec = CompilerSpec::read(&text, &mut m, opts).map_err(|e| e.to_string())?;
-    Ok((spec, m))
+    Ok((spec, m, text))
 }
 
-fn compare_rows(d: &mut Diffs, pair: &Pair, kind: &str, mine: &[String]) {
-    let theirs: Vec<String> = pair.get(kind).iter().map(|r| r.join("\t")).collect();
-    let n = theirs.len().max(mine.len());
-    for i in 0..n {
-        let w = theirs.get(i).map_or("<none>", String::as_str);
-        let g = mine.get(i).map_or("<none>", String::as_str);
-        d.check(kind, &pair.id, w, g);
+/// The two tables' records of one pair.
+struct Both<'a> {
+    a: &'a Pair,
+    b: &'a Pair,
+}
+
+impl Both<'_> {
+    fn id(&self) -> &str {
+        &self.a.id
     }
 }
 
-fn decode_dump(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
-    for s in pair.get("SPACE").iter().filter(|s| s[2] == "2") {
+fn compare_rows(c: &mut Check, p: &Both<'_>, kind: &str, mine: &[String]) {
+    let (ta, tb) = (p.a.get(kind), p.b.get(kind));
+    let n = ta.len().max(mine.len());
+    for i in 0..n {
+        let w = ta
+            .get(i)
+            .map_or_else(|| "<none>".to_owned(), |r| r.join("\t"));
+        let wb = tb
+            .get(i)
+            .map_or_else(|| "<none>".to_owned(), |r| r.join("\t"));
+        let g = mine.get(i).map_or("<none>", String::as_str);
+        c.row(kind, p.id(), (&w, &wb, g), || {
+            Err("no cause is known for this kind".into())
+        });
+    }
+}
+
+/// Inputs of [`host::doc_effects`] from the pair's records.
+struct DocInputs {
+    regs: BTreeMap<String, String>,
+    spaces: BTreeMap<String, String>,
+    retaddr: Option<String>,
+    default_model: String,
+}
+
+impl DocInputs {
+    fn of(p: &Pair) -> Self {
+        let spec = p.get("SPEC").first();
+        Self {
+            regs: p
+                .get("REG")
+                .iter()
+                .map(|r| (r[0].clone(), r[1].clone()))
+                .collect(),
+            spaces: p
+                .get("SPACE")
+                .iter()
+                .map(|s| (s[1].clone(), s[0].clone()))
+                .collect(),
+            retaddr: spec.map(|s| s[5].clone()),
+            default_model: spec.map(|s| s[0].clone()).unwrap_or_default(),
+        }
+    }
+
+    fn effects(&self, cspec: &str, model: &str) -> Result<Vec<(String, String)>, String> {
+        let names = host::DocNames {
+            regs: &self.regs,
+            spaces: &self.spaces,
+            default_ret: self.retaddr.as_deref(),
+            default_model: &self.default_model,
+        };
+        host::doc_effects(cspec, model, &names)
+    }
+}
+
+fn split_rows(rows: &[String]) -> Vec<Vec<String>> {
+    rows.iter()
+        .map(|r| r.split('\t').map(str::to_owned).collect())
+        .collect()
+}
+
+/// `EFFECT` rows: compared as the other kinds, a disagreement recognised
+/// as cause A; and every address with several records in a non-merged
+/// model of Basilisk's must be in document order.
+fn compare_effects(c: &mut Check, p: &Both<'_>, spec: &CompilerSpec, cspec: &str, mine: &[String]) {
+    let (ta, tb) = (p.a.get("EFFECT"), p.b.get("EFFECT"));
+    let got = split_rows(mine);
+    let doc = DocInputs::of(p.a);
+    if ta.len() != got.len() || tb.len() != got.len() {
+        compare_rows(c, p, "EFFECT", mine);
+        return;
+    }
+    let of_model = |rows: &[Vec<String>], model: &str| -> (usize, Vec<Vec<String>>) {
+        let first = rows.iter().position(|r| r[0] == model).unwrap_or(0);
+        (
+            first,
+            rows.iter().filter(|r| r[0] == model).cloned().collect(),
+        )
+    };
+    for i in 0..got.len() {
+        let (w, wb, g) = (ta[i].join("\t"), tb[i].join("\t"), &mine[i]);
+        c.row("EFFECT", p.id(), (&w, &wb, g), || {
+            let model = &ta[i][0];
+            let (first, la) = of_model(ta, model);
+            let (_, lb) = of_model(tb, model);
+            let (_, lg) = of_model(&got, model);
+            let d = doc.effects(cspec, model)?;
+            host::effect_order(&la, &lb, &lg, i - first, &d)
+        });
+    }
+    for name in spec.model_names() {
+        let model = spec.model_by_name(name).unwrap();
+        if model.is_merged() {
+            continue;
+        }
+        let (_, lg) = of_model(&got, name);
+        let mut keys: Vec<&str> = lg
+            .iter()
+            .map(|r| r[2].rsplit_once(':').unwrap().0)
+            .collect();
+        keys.dedup();
+        let tied: Vec<&str> = keys
+            .iter()
+            .copied()
+            .filter(|k| {
+                lg.iter()
+                    .filter(|r| r[2].rsplit_once(':').unwrap().0 == *k)
+                    .count()
+                    > 1
+            })
+            .collect();
+        if tied.is_empty() {
+            continue;
+        }
+        let checked = doc.effects(cspec, name).and_then(|d| {
+            tied.iter()
+                .try_for_each(|k| host::tie_group_in_doc_order(&lg, k, &d))
+        });
+        match checked {
+            Ok(()) => c.tie_groups += tied.len(),
+            Err(e) => c.fail("EFFECT document order", format!("{} {name}: {e}", p.id())),
+        }
+    }
+}
+
+fn decode_dump(c: &mut Check, p: &Both<'_>, spec: &CompilerSpec, m: &SpaceManager, cspec: &str) {
+    let pair = p.a;
+    for (s, sb) in pair
+        .get("SPACE")
+        .iter()
+        .zip(p.b.get("SPACE"))
+        .filter(|(s, _)| s[2] == "2")
+    {
         let index: u32 = s[0].parse().unwrap();
         let got = m.space_at(index).map_or_else(
             || "<none>".to_owned(),
@@ -143,11 +312,15 @@ fn decode_dump(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager
                 )
             },
         );
-        let want = format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}",
-            s[1], s[3], s[4], s[5], s[6], s[7], s[9]
-        );
-        d.check("SPACE", &pair.id, &want, &got);
+        let f = |s: &[String]| {
+            format!(
+                "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                s[1], s[3], s[4], s[5], s[6], s[7], s[9]
+            )
+        };
+        c.row("SPACE", p.id(), (&f(s), &f(sb), &got), || {
+            Err("no cause for SPACE".into())
+        });
     }
     let theirs_inj = pair.get("INJ");
     let mine_inj = spec.injects().payloads();
@@ -162,33 +335,42 @@ fn decode_dump(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager
         by.entry(k).or_default().push(v);
     }
     for kind in [
-        "MODEL", "LIST", "ENTRY", "RULE", "SHARED", "EFFECT", "TRASH", "INTERNAL", "LRANGE",
-        "PRANGE", "SPEC", "SPLIT", "GLOBAL",
+        "MODEL", "LIST", "ENTRY", "RULE", "SHARED", "TRASH", "INTERNAL", "LRANGE", "PRANGE",
+        "SPEC", "SPLIT", "GLOBAL",
     ] {
-        compare_rows(d, pair, kind, by.get(kind).map_or(&[], Vec::as_slice));
+        compare_rows(c, p, kind, by.get(kind).map_or(&[], Vec::as_slice));
     }
+    compare_effects(
+        c,
+        p,
+        spec,
+        cspec,
+        by.get("EFFECT").map_or(&[], Vec::as_slice),
+    );
     let mine: Vec<String> = mine_inj
         .iter()
         .enumerate()
-        .map(|(i, p)| {
+        .map(|(i, x)| {
             format!(
                 "{}\t{}\t{}\t{}\t{}\t{}",
                 i as i64 + base,
-                p.kind as u8,
-                p.name,
-                p.inputs.len(),
-                p.outputs.len(),
-                p.paramshift
+                x.kind as u8,
+                x.name,
+                x.inputs.len(),
+                x.outputs.len(),
+                x.paramshift
             )
         })
         .collect();
-    let theirs: Vec<String> = theirs_inj
+    let skip = base.max(0) as usize;
+    let theirs = theirs_inj
         .iter()
-        .skip(base.max(0) as usize)
-        .map(|r| r.join("\t"))
-        .collect();
-    for (w, g) in theirs.iter().zip(mine.iter()) {
-        d.check("INJ", &pair.id, w, g);
+        .skip(skip)
+        .zip(p.b.get("INJ").iter().skip(skip));
+    for ((w, wb), g) in theirs.zip(mine.iter()) {
+        c.row("INJ", p.id(), (&w.join("\t"), &wb.join("\t"), g), || {
+            Err("no cause for INJ".into())
+        });
     }
 }
 
@@ -278,15 +460,32 @@ fn query_row(list: &ParamList, m: &SpaceManager, probe: &str) -> String {
     )
 }
 
-fn heavy(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
-    let mut types = oracle_common::types(pair);
+/// Rows of one kind from both tables, joined.
+fn rows2<'p>(
+    p: &'p Both<'_>,
+    kind: &str,
+) -> impl Iterator<Item = (&'p Vec<String>, String, String)> {
+    let tb = p.b.get(kind);
+    p.a.get(kind).iter().enumerate().map(move |(i, r)| {
+        (
+            r,
+            r.join("\t"),
+            tb.get(i)
+                .map_or_else(|| "<none>".to_owned(), |x| x.join("\t")),
+        )
+    })
+}
+
+fn heavy(c: &mut Check, p: &Both<'_>, spec: &CompilerSpec, m: &SpaceManager) {
+    let mut types = oracle_common::types(p.a);
     let sigs = sigs();
     for (k, _, text) in &sigs {
         if *k == 'S' {
             cparse::structure(&mut types, text);
         }
     }
-    for row in pair.get("ASSIGN") {
+    let none = || Err::<Cause, String>("no cause is known for this kind".into());
+    for (row, w, wb) in rows2(p, "ASSIGN") {
         let model = spec.model_by_name(&row[0]).unwrap();
         let (kind, var, text) = &sigs[row[1].parse::<usize>().unwrap()];
         let mut proto = cparse::proto(&mut types, model.name(), text);
@@ -299,10 +498,11 @@ fn heavy(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
             row[1],
             assign_row(model, m, &mut types, &proto)
         );
-        d.check("ASSIGN", &pair.id, &row.join("\t"), &got);
+        c.row("ASSIGN", p.id(), (&w, &wb, &got), none);
     }
-    let sets = pair.get("TSET");
-    for (set, res) in sets.iter().zip(pair.get("TRES")) {
+    for (i, ((set, w, wb), res)) in rows2(p, "TSET").zip(p.a.get("TRES")).enumerate() {
+        // The trial sets are the generator's input: the same in both tables.
+        c.same("TSET", p.id(), &w, &wb);
         let model = spec.model_by_name(&set[0]).unwrap();
         let got = format!(
             "{}\t{}\t{}\t{}",
@@ -311,15 +511,18 @@ fn heavy(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
             set[2],
             trial_row(model, m, &set[1], &set[3])
         );
-        d.check_norm(
-            "TRES",
-            &pair.id,
-            (&res.join("\t"), &got),
-            unordered_tail,
-            "known: trials without an entry, in library order",
-        );
+        let rb =
+            p.b.get("TRES")
+                .get(i)
+                .map_or_else(|| "<none>".to_owned(), |x| x.join("\t"));
+        let ra = res.join("\t");
+        let tail = |r: &str| r.splitn(4, '\t').nth(3).unwrap_or("").to_owned();
+        let (ta, tb, tg) = (tail(&ra), tail(&rb), tail(&got));
+        c.row("TRES", p.id(), (&ra, &rb, &got), || {
+            host::trial_row(&ta, &tb, &tg)
+        });
     }
-    for row in pair.get("Q") {
+    for (row, w, wb) in rows2(p, "Q") {
         let model = spec.model_by_name(&row[0]).unwrap();
         let got = format!(
             "{}\t{}\t{}",
@@ -327,9 +530,9 @@ fn heavy(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
             row[1],
             query_row(list_of(model, &row[1]), m, &row[2])
         );
-        d.check("Q", &pair.id, &row.join("\t"), &got);
+        c.row("Q", p.id(), (&w, &wb, &got), none);
     }
-    for row in pair.get("JOIN") {
+    for (row, w, wb) in rows2(p, "JOIN") {
         let model = spec.model_by_name(&row[0]).unwrap();
         let list = list_of(model, &row[1]);
         let hi = &list.entries()[row[2].parse::<usize>().unwrap()];
@@ -346,41 +549,50 @@ fn heavy(d: &mut Diffs, pair: &Pair, spec: &CompilerSpec, m: &SpaceManager) {
         };
         let r = list.check_join(m, (hi.address(), hs), (lo.address(), ls));
         let got = format!("{}\t{}\t{}\t{}\t{}", row[0], row[1], row[2], row[3], b(r));
-        d.check("JOIN", &pair.id, &row.join("\t"), &got);
+        c.row("JOIN", p.id(), (&w, &wb, &got), none);
     }
-    for row in pair.get("SPLITQ") {
+    for (row, w, wb) in rows2(p, "SPLITQ") {
         let model = spec.model_by_name(&row[0]).unwrap();
         let list = list_of(model, &row[1]);
         let e = &list.entries()[row[2].parse::<usize>().unwrap()];
         let r = list.check_split(m, e.address(), e.size(), e.size() / 2);
         let got = format!("{}\t{}\t{}\t{}", row[0], row[1], row[2], b(r));
-        d.check("SPLITQ", &pair.id, &row.join("\t"), &got);
+        c.row("SPLITQ", p.id(), (&w, &wb, &got), none);
     }
-    for row in pair.get("EFF") {
+    for (i, (row, w, wb)) in rows2(p, "EFF").enumerate() {
         let model = spec.model_by_name(&row[0]).unwrap();
         let v = parse_vn(&row[1]).unwrap();
-        let e = model.has_effect(m, v.addr(), v.size);
-        let got = format!("{}\t{}\t{}", row[0], row[1], e as u8);
-        d.check("EFF", &pair.id, &row.join("\t"), &got);
+        let e = (model.has_effect(m, v.addr(), v.size) as u8).to_string();
+        let got = format!("{}\t{}\t{e}", row[0], row[1]);
+        let vb = p.b.get("EFF").get(i).map_or("", |x| x[2].as_str());
+        c.row("EFF", p.id(), (&w, &wb, &got), || {
+            host::effect_lookup(model, &row[1], (&row[2], vb, &e))
+        });
     }
 }
 
-/// The trials that matched no entry sort last in an order Ghidra leaves
-/// to `std::sort` (libc++ here, libstdc++ on Linux); basilisk keeps them in
-/// registration order. Sorts them so the rest can be compared.
-fn unordered_tail(row: &str) -> String {
-    let (head, tail): (Vec<&str>, Vec<&str>) = row
-        .split(' ')
-        .partition(|t| t.split('/').nth(3) != Some("-1"));
-    let mut tail = tail;
-    tail.sort_unstable();
-    format!("{} | {}", head.join(" "), tail.join(" "))
-}
-
-/// Rows whose difference is explained (spec section 8 and the host
-/// dependence of Ghidra's own sorts).
-fn known(kind: &str) -> bool {
-    kind.starts_with("known:")
+/// The two tables must describe the same pairs with the same records, in
+/// the same order and number; only values may differ.
+fn aligned(a: &[Pair], b: &[Pair]) {
+    assert_eq!(
+        a.len(),
+        b.len(),
+        "the tables hold different numbers of pairs"
+    );
+    for (x, y) in a.iter().zip(b) {
+        assert_eq!(
+            (&x.id, &x.cspec, x.heavy),
+            (&y.id, &y.cspec, y.heavy),
+            "pair order or heavy choice differs"
+        );
+        let shape = |p: &Pair| {
+            p.records
+                .iter()
+                .map(|(k, v)| (k.clone(), v.len()))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(shape(x), shape(y), "{}: record counts differ", x.id);
+    }
 }
 
 #[test]
@@ -389,24 +601,28 @@ fn oracle_replays_for_every_cspec() {
         return;
     };
     let files = oracle_common::cspec_files(&ghidra.processors_dir());
-    let text = oracle_common::table();
-    let (pairs, errs) = oracle_common::pairs(&text);
+    let [ta, tb] = Lib::ALL.map(oracle_common::table_of);
+    let (pairs, errs) = oracle_common::pairs(&ta);
+    let (pairs_b, errs_b) = oracle_common::pairs(&tb);
+    aligned(&pairs, &pairs_b);
+    assert_eq!(errs, errs_b, "the tables fail on different pairs");
     eprintln!(
         "{} pairs, {} failing in Ghidra itself",
         pairs.len(),
         errs.len()
     );
-    let mut d = Diffs::default();
+    let mut c = Check::default();
     let mut read_errors = Vec::new();
     let mut cspecs = std::collections::BTreeSet::new();
-    for pair in &pairs {
-        match read_pair(pair, &files) {
-            Err(e) => read_errors.push(format!("{}: {e}", pair.id)),
-            Ok((spec, m)) => {
-                cspecs.insert(pair.cspec.clone());
-                decode_dump(&mut d, pair, &spec, &m);
-                if pair.heavy {
-                    heavy(&mut d, pair, &spec, &m);
+    for (a, b) in pairs.iter().zip(&pairs_b) {
+        let p = Both { a, b };
+        match read_pair(a, &files) {
+            Err(e) => read_errors.push(format!("{}: {e}", a.id)),
+            Ok((spec, m, text)) => {
+                cspecs.insert(a.cspec.clone());
+                decode_dump(&mut c, &p, &spec, &m, &text);
+                if a.heavy {
+                    heavy(&mut c, &p, &spec, &m);
                 }
             }
         }
@@ -414,19 +630,23 @@ fn oracle_replays_for_every_cspec() {
     for e in &read_errors {
         eprintln!("read error: {e}");
     }
-    let total = d.report();
+    let total = c.report();
     eprintln!("{} distinct .cspec files read", cspecs.len());
-    assert!(
-        read_errors.is_empty(),
-        "{} pairs failed to read",
-        read_errors.len()
+    assert_eq!(read_errors, Vec::<String>::new(), "pairs failed to read");
+    assert_eq!(
+        total, 0,
+        "{total} rows differ from Ghidra without a known cause"
     );
-    let unexplained: usize = d
-        .by_kind
+    let got: Vec<(Cause, usize)> = Cause::ALL
         .iter()
-        .filter(|(k, _)| !known(k))
-        .map(|(_, v)| v.len())
-        .sum();
-    assert_eq!(unexplained, 0, "{total} rows differ from Ghidra");
-    let _ = (Address::INVALID, SpaceType::Join);
+        .map(|c0| (*c0, c.causes.get(c0).copied().unwrap_or(0)))
+        .collect();
+    assert_eq!(
+        got, EXPECTED,
+        "rows per cause where libc++ and libstdc++ disagree"
+    );
+    assert_eq!(
+        c.tie_groups, TIE_GROUPS,
+        "effect tie groups checked against document order"
+    );
 }

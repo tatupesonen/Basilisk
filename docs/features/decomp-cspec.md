@@ -490,11 +490,17 @@ Appended by the implementing agent (D03, 2026-11-15):
 - **Prototype before `<stackpointer>`.** Ghidra's `ProtoModel` constructor
   computes default ranges from the stack space and crashes (null pointer)
   when there is none; basilisk decodes the model with empty default ranges.
-- **Stable sorts.** Ghidra sorts effect lists and trials with `std::sort`,
-  which leaves equal keys in a library-dependent order (libc++ and
-  libstdc++ differ); basilisk sorts stably. Seen once in the oracle table:
-  output trials that match no entry (x86-64 golang), compared up to their
-  order.
+- **Stable sorts (ADR-040).** Ghidra sorts effect lists and trials with
+  `std::sort`, which leaves equal keys in a library-dependent order;
+  Ghidra's answers then differ between libc++ and libstdc++ (119 rows of
+  the oracle, both tables checked in, every row recognised by cause; see
+  `tests/data/README.md`). Basilisk keeps equal effects in document order
+  (the default return address last), so `hasEffect` at such an address
+  answers with the last in document order; equal trials keep their order
+  from before the sort (registration order on input). Trials are sorted
+  by a stable insertion sort, which never panics on Ghidra's comparator
+  (not a strict weak ordering in two corner cases) and is libstdc++'s own
+  algorithm up to 16 elements.
 - **Hostile values refused.** A `<pentry>` with a negative or zero size or
   a negative alignment is an error ("ParamEntry sizes must not be
   negative"); Ghidra divides by or counts with such values. Recursion
@@ -557,3 +563,9 @@ check (G), 50 derived tests (S), 4 properties (S), fuzz target
 `bk_cspec_decode`, benchmarks (`PERF.md`). Gaps: see the report (no
 `.sla`-backed register source yet, so the G tests take registers from the
 checked-in table; the oracle has no `FuncProto` encode records).
+
+Host independence (2026-11-14, track `cspec-host`, `docs/agents/cspec-host.md`):
+the oracle exists for libc++ and libstdc++; the replay compares every row
+with both (135,208 rows; 119 where the libraries disagree, in four counted
+causes, Basilisk equal to the ADR-040 rule), and `oracle_regen.rs`
+regenerates the host's table when the reference directory is set.

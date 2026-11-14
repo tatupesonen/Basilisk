@@ -408,6 +408,20 @@ Appended by the `sla` track (2026-11-14):
   models read from differently ordered but equivalent documents compare
   equal.
 
+Note of 2026-11-14 (track `sleigh-fixups`): **label numbers are no longer
+checked when reading.** The rule of 4.3 item 2 "label numbers (`LABEL`,
+`const_relative`) are < the template's `labels`" is now a separate,
+explicit check, `Template::check_labels` and `Sla::check_labels`, which
+also requires every branch to a label (an op whose first input is a
+`const_relative`) to name a label the same template places. Ghidra's
+decoders (`ConstructTpl::decode`/`OpTpl::decode`, `semantics.cc`; Java
+`ConstructTpl.decode`) do not check labels, and its snippet compiler
+produces a branch to a label that is never placed; such a template fails
+only when p-code is built from it (`PcodeCacher::resolveRelatives`,
+`sleigh.cc` 96-110: "Reference to non-existant sleigh label"), which
+`bk-sleigh` reproduces as `LiftError::MissingLabel`, bounded and without
+allocating per label number. All 150 reference files pass the check.
+
 ## 9. Status
 
 Done (track `sla`, 2026-11-14). Crate `crates/bk-sla`:

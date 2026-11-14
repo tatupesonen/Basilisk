@@ -57,6 +57,21 @@ fn the_unedited_fixture_is_valid() {
     assert!(edited(&[]).is_ok());
 }
 
+/// A label number beyond the template's count is read, as Ghidra's
+/// `ConstructTpl::decode` reads it; the separate label check refuses it.
+#[test]
+fn label_numbers_are_checked_apart_from_reading() {
+    edited(&[]).unwrap().check_labels().unwrap();
+    let sla = edited(&[(
+        "<const_relative val=\"0x0\"/>",
+        "<const_relative val=\"0x1\"/>",
+    )])
+    .unwrap();
+    let text = sla.check_labels().unwrap_err().to_string();
+    assert!(text.contains("label 1 is not below 1"), "{text}");
+    assert!(text.contains("table \"instruction\" constructor"), "{text}");
+}
+
 #[test]
 fn each_xml_violation_is_rejected() {
     let sub_decision_twice = format!("{SUB_DECISION}{SUB_DECISION}");
@@ -218,14 +233,6 @@ fn each_xml_violation_is_rejected() {
             "directive inputs",
             vec![("code=\"CROSSBUILD\"", "code=\"BUILD\"")],
             "directive BUILD has malformed inputs",
-        ),
-        (
-            "label number",
-            vec![(
-                "<const_relative val=\"0x0\"/>",
-                "<const_relative val=\"0x1\"/>",
-            )],
-            "label 1 is not below 1",
         ),
         (
             "operand position",

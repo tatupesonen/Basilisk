@@ -1,17 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 20:17)
+## Now — RESUME HERE (2026-11-14 21:37)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Milestone M0 is complete and on `master`**; `master` (`a961ff3` plus
-docs) also has `bk-ui`, the GNU disassembler crates, `bk-sla`,
-`bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2 (decoding and
-p-code generation, `basilisk disasm`), `bk-sleigh-compiler` part 1 and
-the website; the gate is green on Rust 1.100.0 with 1,966 tests and the
-last CI run on the merged tree, 43610564062, is green on every job on
-Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+**Milestones M0 and M2 are complete and on `master`**; `master`
+(`5664c61` plus docs) also has `bk-ui`, the GNU disassembler crates,
+`bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
+(decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
+compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
+`bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
+green on Rust 1.100.0 with 2,095 tests and the last CI run on the merged
+tree, 43632387623, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -103,16 +104,94 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 20:14)
+### Running (state at 2026-11-14 21:37)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
-tests and gates on kassini through `scripts/remote.sh`.
+tests and gates on kassini through `scripts/remote.sh`. **Both slots
+are kept filled; the coordinator picks the order; defects found in
+Ghidra go into `docs/GHIDRA-BUGS.md`** (owner, 20:35, before leaving the
+coordinator to work alone). The Mac must stay awake: `caffeinate` runs,
+but a closed lid needs `sudo pmset -a disablesleep 1`, which only the
+owner can run (told at 20:38).
+
+**Merged: `sleigh-snippet`** (`af1bd08864645b02b`; `98537a8`, CI run
+43627941051 green on all 8 jobs, integration gate on the build host
+2,053 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). **M2 (the SLEIGH compiler) is
+complete.** New crate `bk-sleigh-snippet`: all 137 shipped snippet
+elements (130 `<pcode>` outside XML comments plus 7 jump-table
+`*_pcode`) compiled for every language that uses each file — 116
+languages, 588 compilations, no difference from Ghidra's template; 236
+hand-written cases and 200,000 generated ones against the new oracle
+`snippetdump` (456 counted bit-range cases, 4 octal cases on the Mac
+only); `PcodeParserTest` ported. Follow-ups, all still open: **a bug in
+`bk-sleigh-compiler`'s shared builder** (`pcode/bitrange.rs`: Ghidra
+does the bit-range arithmetic in 32 bits and wraps; ours does not; then
+remove `wraps_32_bits` from the snippet crate's
+`tests/oracle_random.rs`); `bk-testkit` should own `Tool::Snippetdump`
+(the wrapper is in the snippet crate's `tests/common/oracle.rs`);
+`bk-sla`'s template reader refuses a branch to a label that is never
+placed, which Ghidra compiles; the decompiler's injection library (D18)
+uses one compiler per program and carries the temporary allocator in
+payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
+queue item 3 below (`sleigh-fixups`). On the Mac the track added
+`bin/snippetdump` to `../reference` (the script also rebuilt
+`bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Merged: `sleigh-fixups`** (`a729d10fd3ad89e8d`; `5664c61`, CI run
+43632387623 green on all 8 jobs, integration gate on the build host
+2,095 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). (a) Bit-range
+arithmetic wraps at 32 bits as in Ghidra (`pcode/bitrange.rs`, and
+`defineBitrange` in `compiler/define.rs`, which overflowed in debug
+builds); the snippet crate's generated comparison has no tolerated row
+any more (200,000 bodies, 0 differ), all 150 specifications still
+byte-identical. (b) `bk-testkit` has `Tool::Snippetdump` and
+`ReferenceDir::module_options()`. (c) `bk-sla` reads a branch to an
+unplaced label as Ghidra does; the check is explicit
+(`Template::check_labels`, `Sla::check_labels`); `bk-sleigh` gives
+Ghidra's error when p-code is built. (d) **Ghidra rejects a byte-order
+mark** in both compilers, so the stripping stays in the compiler's
+driver as a documented difference and was not moved. (e) Manifest
+warnings 8 → 4: `authors`, `anyhow`, `memmap2`, `rayon` removed; the
+entries for `bk-cspec`, `bk-decomp-types`, `bk-gnu-disasm`,
+`bk-sleigh-snippet` stay until a crate depends on them (cargo's
+`unused_workspace_dependencies` lint could silence them; not done, it
+would hide real dead entries). Both of its gates 2,092 tests. On
+`integration` the coordinator removed a pending snapshot file
+(`assign_bitrange_wrap.snap.new`) committed by accident; `*.snap.new`
+is now git-ignored. Follow-up for whoever next owns `bk-sleigh`: Ghidra
+truncates label numbers to 32 bits and `bk-sleigh` does not (only a
+hand-made `.sla` shows it) — truncate, or record under ADR-024.
+
+**Merged: `cspec-host`** (`a85106d421cedbda2`; `60936c3`, CI run
+43630477395 green on all 8 jobs, integration gate on the build host
+2,056 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). The `bk-cspec` oracle exists
+for both C++ libraries (`cspec_oracle.{libcxx,libstdcxx}.txt.gz`), from
+a generator that is deterministic (pairs sorted by id; the
+uninitialised `ParamListMerged` fields set before use; 20 of 20 runs
+byte-identical on each machine, valgrind clean). The tables differ in
+119 of 152,046 rows, all from `std::sort` on equal keys: 56 effect
+rows, 24 `hasEffect` answers, 39 trial rows. **ADR-040**: every such
+sort is stable (document order for effects, slot order for trials);
+`bk-cspec` already sorted stably, and its trial sort is now an insertion
+sort that cannot panic on Ghidra's comparator (not a strict weak
+ordering); the replay compares with both tables and requires the counts
+A 56, B 24, C 38, D 1 exactly; `oracle_regen.rs` regenerates the host's
+table when the reference is present. The agent's "ADR-038" citations
+were renumbered to ADR-040 on `integration`. `GHIDRA-BUGS.md` entries
+6, 15 and 17 carry its findings. Open: Microsoft's library was not run
+(a third table, built with clang-cl or MSVC — a candidate job for the
+testbed's Wine set-up); `docs/agents/decomp-cspec.md` and
+`remote-build.md` still describe the single table (historical reports,
+left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:05 with its work committed (`8731612`: findings and plan, the `snippetdump` oracle source, lexer, scope, parser and driver; test support half written), **resumed 20:14**. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. Told to `git merge master` once and to use the build host for everything from then on; it is the first agent to use `scripts/remote.sh` from a worktree other than its author's. Its findings (the spec is wrong in seven places: snippets have their own lexer and grammar, a leading `0` is octal, only the first error is reported, many errors do not fail the compile, no label check, no `_size` constants for `inst_dest`/`inst_ref`, `<truncate_space>` is an input) are accepted: the oracle decides. Corpus: 139 elements (132 `<pcode>` plus 7 jump-table `*_pcode`). |
-| `cspec-host` (worktree `../basilisk-wt/cspec-host`, cut from `master` `3e43909`) | Opus | `a85106d421cedbda2` | started 20:17. Queue item 1 below: make the `bk-cspec` oracle generator deterministic and crash-free, generate the libc++ (Mac) and libstdc++ (build host) tables, trace every differing row to its cause in Ghidra's source, propose per cause the result Basilisk gives (ADR text comes back in its report; the coordinator records it), implement it and make the replay strict against both tables. |
+| `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33; handed back partial work at about 21:26 and was sent on at 21:27 to finish. Built: `remote.sh` subcommands `wine`, `ubuntu`, `long miri\|fuzz\|proptest\|sanitizers\|differential\|all`, `publish`, `nightly install\|remove\|run\|status`, `report`, `clean --target`, with the work in `tools/testbed/`. Proven so far on the build host: Wine (gnu target, whole workspace) 2,036 passed in 2 min 11 s; ASan and UBSan on the binutils crates (two known UBSan sites); 16 fuzz targets × 600 s, no finding; the whole suite with the reference required, 2,030 passed and none skipped. Still owed: the 1,000,000-case property run's results, `ubuntu`, `wine --msvc`, the nightly installed and run once with its report, the `remote-build` regression checks, a `git merge master` (allowed once), dep-age and both gates. Findings for other owners: (1) `bk-sleigh`'s `every_language` coverage snapshot holds an oracle-crash count that differs by host (ARM v8-m: 5 on macOS, 4 on Linux) — keep those counts out of the snapshot (`sleigh-perf-linux`'s brief); (2) `PROPTEST_CASES` has no effect in 11 property-test files that fix their case count (`followups`). The coordinator installed `qemu-user-static` on the host at 21:26 (arm64 containers run). |
+| `decomp-range` (worktree `../basilisk-wt/decomp-range`, cut from `master` `4891f37`) | Opus | `a8550db77f2254819` | started 21:24. D01: `bk-decomp-range` from `features/decomp-range.md` (`CircleRange`; 117 `testcirclerange` tests, oracle table generated on both C++ libraries and compared, UBSan and valgrind on the oracle, properties, fuzz target, benchmark). Adds lines to the root `Cargo.toml`, which `sleigh-fixups` also changed (removals): resolve by reading. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -140,7 +219,7 @@ each; jobs survive a dropped connection; a job refuses to start under
 1,966 tests, 174 s cold, about 64 s warm, peak memory 8.5 GB. Thread
 scaling of `bk-sleigh` there: 6.7–7.9× at 8 threads, 12.6–15.2× at 16
 (the 6× target is met). `LOOP.md` and `RULES.md` have the build-host
-text. The two findings of its report are queue items 1 and 3 below.
+text. The two findings of its report are queue items 1 and 4 below.
 Small things left: `cargo deny --offline` needs `cargo fetch --locked`
 first on a fresh machine (the script does it; the gate could);
 `remote.sh clean` has no "build output only" option; `miri.sh` and the
@@ -276,7 +355,7 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (two agents at a time; in this order)
 
-1. **`cspec-host` (Opus; running)** — `bk-cspec`'s oracle table depends on the
+1. **`cspec-host` (merged 21:16; the text below is the brief it had)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
    where Ghidra's `hasEffect` answers 1 or 2 instead of 3 (so a lookup
@@ -304,9 +383,27 @@ start a fresh agent briefed from the branch's files.
    not — `../reference` is the oracle and equals x86-64 Linux for the
    SLEIGH compiler. This is a new case: Ghidra's own answer differs
    between its platforms.)
-2. **`testbed`** — the item below (-2), now that `remote-build` is
+2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
-3. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
+3. **`sleigh-fixups` (merged 21:36; the text below is the brief it had)** (before
+   `sleigh-perf-linux`, whose measurements need the build host quiet,
+   which it is not while `testbed` runs its long jobs). Small
+   corrections left by the SLEIGH tracks, each checked against Ghidra's
+   source: (a) `bk-sleigh-compiler` `src/pcode/bitrange.rs` computes bit
+   ranges in 64 bits where Ghidra's `uint4` wraps (`pcodecompile.cc`
+   `createBitRange`, `assignBitRange`, `buildTruncatedVarnode`) — follow
+   Ghidra, then remove `wraps_32_bits` from
+   `crates/bk-sleigh-snippet/tests/oracle_random.rs` and rerun the
+   200,000 generated cases with no tolerated row; (b) `bk-testkit` gets
+   `Tool::Snippetdump` and the oracle wrapper now in the snippet crate's
+   `tests/common/oracle.rs` (ADR-007), and `module_options`; (c)
+   `bk-sla`'s template reader accepts a branch to a label that is never
+   placed (Ghidra compiles it), and the skip in the snippet crate's
+   property test goes; (d) `bk-sleigh-syntax` strips a byte-order mark
+   if Ghidra's reader does (read the source first); (e) the 8 cargo
+   manifest warnings (unused `[workspace.dependencies]` entries, the
+   unused `authors` field).
+4. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
@@ -318,137 +415,98 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-4. D01 `bk-decomp-range`, then the rest of the order below.
+5. **D01 `decomp-range` (Opus; running since 21:24)** — `bk-decomp-range` from
+   `features/decomp-range.md` (117 `testcirclerange` tests); spec
+   complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
+   027, 028) is the main line from here on: one slot stays on it.
+6. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — an
+   Opus agent writes `features/decomp-oracle.md` and
+   `features/decomp-cfg.md`; the plan's sections 4.2, 6 and 9.1 are the
+   briefs (the earlier spec agent `a0c25da932de14a37` was Fable; its
+   worktree `../basilisk-wt/spec-decompiler` is kept, at an old
+   `master`). D00 includes Ghidra itself built and run headless on the
+   build host (state dumps, recorded p-code) — what `testbed` leaves
+   for it is in its report. Then D00 and D04 are implemented, which
+   ends wave 1; wave 2 is D05 `bk-decomp-ir` (needs D00, D02, D04), D06
+   symbols and the host trait (needs D02, D03) and the D16a printer
+   spike. Briefs carry `decomp-types`' follow-ups: `PrototypeCodec`
+   and `TypeEnv::default_model` (D03, check what `decomp-cspec` did),
+   `SpacebaseScopes` and `TypeSource` (D06), the five `cast_*` tests
+   (D08); D18 gets the injection notes in
+   `docs/agents/sleigh-snippet.md`.
 
--2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
-   idea of 2026-11-14: kassini as the project's testbed, since it has
-   the cores and memory the Mac lacks. On top of `scripts/remote.sh`:
-   (a) the Windows build and tests under Wine and the Ubuntu 26.04 / GCC
-   15 container run natively there (on the Mac both run under x86-64
-   emulation), as `remote.sh` subcommands, with the scratch scripts kept
-   in `../basilisk-wt/windows-ci/target/windows*` and
-   `../basilisk-wt/gnu-disasm/target/{windows,linux,ubuntu2604}` turned
-   into committed ones (this replaces the old `win-local` item); (b)
-   the long runs that are too heavy for the Mac: the full differential
-   over every language, fuzz targets for minutes rather than seconds,
-   property tests at high case counts, on a schedule there with a
-   summary the coordinator reads; (c) Ghidra itself, built and run
-   headless there, as the oracle the decompiler and analysis tracks will
-   need (D00 oracle tooling: state dumps, recorded p-code) — to be
-   specified with the D00 spec. Nothing of it changes what CI runs.
--1. Second `name-case` pass (after `sleigh-pcode` and `decomp-cspec`
-   merge): the files the first pass skipped, and a second look at what
-   it left.
-0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
-0a. **Plugin tracks** (`features/plugin-api.md`; ADR-035, ADR-036,
-   ADR-037; unblocked by the owner on 2026-11-14): P0 reference fixtures,
-   P1 host and packaging, P3 flat scripting layer can start; the first of
-   them also corrects the spec's script-failure default (keep changes,
-   roll back only on opt-in). They come after the SLEIGH compiler back
-   half in the order below. Also from the spec, independent of those:
-   (i) move the monitor type (cancel and progress) out of `bk-ui` into a
-   low crate before the M4/M5 specs — a small Opus track; (ii) the next
-   UI track lets the action registry and the view kinds accept run-time
-   entries; (iii) the program-model, storage, analysis and decompiler
-   D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
-   9, 11 and 13.
-0a2. (running) `site-design`.
-0a3. **`docs-content`** (Opus; after `site-design` and `spec-plugin`) —
-   the documentation itself: Getting started, the interface (one page per
-   view, from `features/ui-shell.md`), the command line, analysis, the
-   decompiler, scripting and plugins (from `features/plugin-api.md`),
-   formats and processors, and "How it works" (SLEIGH, p-code, the
-   decompiler pipeline, the program database) with Mermaid diagrams of
-   the data flow, the pipelines and the crate map; each page says plainly
-   what exists today and what is planned; the key-binding table is
-   generated from the action registry, CLI help from the binary, the
-   Python API reference from the plugin package when it exists; adds the
-   rule to `RULES.md` that a track changing user-visible behaviour
-   updates its page.
-0b. **`x86-oracle`** (Opus, small): make the x86-64 table
-   (`../reference-x86_64/opbehavior_cpp.x86_64.txt.gz`) `bk-pcode`'s
-   checked-in oracle, fix the 106 rows where Basilisk does not follow
-   x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
-   provenance (ADR-029).
-0c. `ref-nofma` is merged (2026-11-14; ADR-034): `../reference` is the
-   unfused build and the oracle for all 150 specifications;
-   `features/sleigh-compiler-back.md` carries ADR-032's edits. Left over:
-   `tools/reference/README.md` still lists `ADDITIONAL_FLAGS` without the
-   flag (give it to the next tooling track); the five ARM v8-m
-   `pcodedump` crashes are not reproduced (probably a second bug:
-   `sleigh-pcode` is to record their bytes and context); Docker image
-   `e750467579a2` (arm64 `gcc:14`, untagged, 1.5 GB) can be removed when
-   nothing needs it.
-1. `sleigh-compiler-front` (Opus) — can start now (`sleigh-decode` is
-   running). Then `sleigh-pcode` (after `sleigh-decode`),
-   `sleigh-compiler-back` (after the front half and `ref-nofma`),
-   `sleigh-snippet`.
-2. Decompiler wave 1 (`features/decomp-plan.md`; ADR-026, 027, 028):
-   a. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — resume
-      the spec agent `a0c25da932de14a37` (Fable; its worktree
-      `../basilisk-wt/spec-decompiler` is kept, at master) to write
-      `features/decomp-oracle.md` and `features/decomp-cfg.md`; the plan's
-      sections 4.2, 6 and 9.1 are the briefs. Both tracks can start as
-      soon as their specs exist, and D05 (IR) needs both.
-   b. D03 `decomp-cspec` (Opus) — `bk-cspec` from
-      `features/decomp-cspec.md`; spec complete, can start now.
-   c. D01 `decomp-range` (Opus, small) — `bk-decomp-range` from
-      `features/decomp-range.md`; spec complete, can start now.
-   d. Then D00 and D04 implementation, then wave 2 (D05 needs D00, D02,
-      D04; D06 needs D02, D03; D16a printer spike).
-3. `spec-program-model` (Fable) — `inventory/03-program-model.md`,
-   `features/program-model-plan.md` (M4); reads the store-spike notes and,
-   when it exists, `research/storage-engine.md`.
-4. `spec-pe` (Fable) — `features/pe.md`, crate decision by experiment as
-   for ELF (M4). Four helper fact sheets wait in
-   `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md` (debug directory,
-   load config/exception/security, resources/rich header, CLI metadata).
-5. `spec-macho` (Fable) — `features/macho.md` (M4).
-6. `win-local` (Opus, small): `scripts/windows-test.sh` (and the
-   sanitizer runner) from `gnu-disasm`'s scratch container scripts — run a
-   crate's or the workspace's tests for `x86_64-pc-windows-gnu` and
-   `-msvc` under Wine, bounded, documented in `LOOP.md` and `RULES.md`.
-   Also from `gnu-disasm`'s follow-ups: make `bk-binutils-sys` an
-   optional feature of the fuzz crate so other targets' fuzz builds do
-   not compile binutils; wire `bk-lang`'s external names (`gnu`,
-   `gdis.disassembler.options.file`) to `Architecture` and `gdis_config`;
-   mark Hexagon's `0x18:0x5` (binutils 2.41 has no Hexagon disassembler;
-   the number decodes as M9S12X).
-6b. `followups` (Opus): move `bk-lang` and `bk-testkit` XML reading onto
-   `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in place
-   of local "find Ghidra" helpers; differential test of `bk-marshal`'s
-   encoders against Ghidra's binary; move `windows_spelling` (duplicated
-   in `bk-lang` and `bk-sleigh-syntax` by `windows-ci`) into a shared
-   foundation crate; evaluate `dunce` for showing plain `C:\…` paths.
-7. `ui` follow-ups (Opus), when the owner has looked at the merged UI:
-   the weak spots its report lists (empty Console on first open, no
+Side work for the other slot, in this order:
+
+7. **The monitor type** (cancel and progress) moves out of `bk-ui` into
+   a low crate (plugin spec, binding constraints) — small, Opus; the
+   SLEIGH compile then accepts it.
+8. **Second `name-case` pass**: the files the first pass skipped and a
+   second look at what it left.
+9. **M4 preparation**: resume `spec-pe` (`a53aca50251d9e64c`;
+   `features/pe.md`, crate decision by experiment as for ELF; four
+   helper fact sheets in
+   `../basilisk-wt/spec-pe/docs/agents/notes-pe-*.md`), then
+   `store-spike` (`a8012f27279847feb`; `research/storage-engine.md`,
+   decides ADR-003's engine) — both as they are (owner, 2026-11-14);
+   then `spec-program-model` (`inventory/03-program-model.md`,
+   `features/program-model-plan.md`; reads the spike's result) and
+   `spec-macho` (`features/macho.md`). The program-model, storage,
+   analysis and decompiler D07/D17 specs state compliance with
+   binding-constraint items 3, 6, 7, 9, 11 and 13.
+10. **Plugin tracks** (`features/plugin-api.md`; ADR-035, 036, 037): P0
+   reference fixtures, P1 host and packaging, P3 the flat scripting
+   layer can start; the first of them also corrects the spec's
+   script-failure default (keep changes, roll back only on opt-in).
+   The next UI track lets the action registry and the view kinds accept
+   run-time entries (P6 needs it).
+11. **`docs-content`** (Opus) — the documentation on the site: Getting
+   started, the interface (one page per view, from
+   `features/ui-shell.md`), the command line, analysis, the decompiler,
+   scripting and plugins, formats and processors, and "How it works"
+   (SLEIGH, p-code, the decompiler pipeline, the program database) with
+   Mermaid diagrams; each page says plainly what exists today and what
+   is planned; the key-binding table is generated from the action
+   registry, CLI help from the binary, the Python API reference from
+   the plugin package when it exists; adds the rule to `RULES.md` that
+   a track changing user-visible behaviour updates its page.
+12. **`followups`** (Opus): the 11 property-test files that fix their case count and so ignore `PROPTEST_CASES` (list in `docs/agents/testbed.md`); `bk-lang` and `bk-testkit` XML reading onto
+   `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in
+   place of local "find Ghidra" helpers; a differential test of
+   `bk-marshal`'s encoders against Ghidra's binary; `windows_spelling`
+   (duplicated in `bk-lang` and `bk-sleigh-syntax`) into a shared
+   foundation crate; evaluate `dunce`. From `gnu-disasm`:
+   `bk-binutils-sys` as an optional feature of the fuzz crate; wire
+   `bk-lang`'s external names (`gnu`, `gdis.disassembler.options.file`)
+   to `Architecture` and `gdis_config`; mark Hexagon's `0x18:0x5`.
+   From `ref-nofma`: `tools/reference/README.md` still lists
+   `ADDITIONAL_FLAGS` without the flag; Docker image `e750467579a2`
+   (arm64 `gcc:14`, 1.5 GB) can be removed.
+13. **`ui` follow-ups** (Opus), when the owner has looked at the merged
+   UI: the weak spots its report lists (empty Console on first open, no
    draggable horizontal scroll bar in a narrow Listing, key-binding page
    controls, snapshot tab hiding the live view), and whether the GUI
-   crates should leave the default workspace build (a clean build of the
-   GUI stack takes about 5 minutes and the gate about 20).
+   crates should leave the default workspace build.
+14. `features/sleigh-language.md` is a draft with open `[to verify]`
+   items (nothing Java was run); complete it before its wave (M1's last
+   open track).
+
+Done and no longer queued: every SLEIGH track of M1/M2 except
+`sleigh-language`, `x86-oracle` (ADR-033), `ref-nofma` (ADR-034),
+`site-design`, `remote-build`; `win-local` is part of `testbed`.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order (owner, 2026-11-14: finish SLEIGH
-   first): `toolchain-1.100` only if the gate or CI is red on 1.100.0;
-   `sleigh-compiler-back`; `sleigh-snippet`; then the decompiler's first
-   wave: D01
-   `decomp-range`, an Opus agent to write the D00 and D04 specs,
-   `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
-   the rest of the queue.
-2. `decomp-types`: in CI (above). Follow-ups it names for D03
-   (`PrototypeCodec`, `TypeEnv::default_model`), D06 (`SpacebaseScopes`,
-   `TypeSource`) and D08 (the five `cast_*` tests) go into those briefs.
-3. `sleigh-decode` reports → review against `features/sleigh-decode.md`,
-   integration branch, merge; start `sleigh-pcode`.
-4. `site-design` reports → look at its screenshots, integration branch
-   (it adds a CI job), merge; tell the owner what to enable for Pages;
-   start `docs-content`.
-5. Owner answers the plugin-host Blocker → adopt the ADRs, plan P0–P7.
-6. `store-spike` reports → decide ADR-003's engine; then
-   `spec-program-model`.
-7. `features/sleigh-language.md` is a draft with open `[to verify]` items
-   (nothing Java was run); complete it before its wave.
+1. `cspec-host` is merged (above).
+2. `sleigh-fixups` is merged (above). `testbed` reports → review; install the packages it lists on the
+   build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
+   read the first nightly report. Start `sleigh-perf-linux` in its slot
+   (tell it to measure when no other job runs — `scripts/remote.sh
+   status` — and, while it is in `bk-sleigh`, to truncate label numbers
+   to 32 bits as Ghidra does and to keep host-dependent oracle-crash
+   counts out of the `every_language` snapshot). `decomp-range` reports → merge; start
+   the D00/D04 spec agent.
+3. After that the queue above, one slot on the decompiler line (5, 6),
+   the other on the side work (7 onwards).
 
 ### Working notes
 

@@ -168,8 +168,114 @@ against a fixture `Sla`); 60 s without a finding.
 
 ## 8. Differences from Ghidra
 
-(The implementing track fills this in.)
+Appended by the implementing track (2026-11-14). Behaviour follows Ghidra's
+C++ `PcodeSnippet` everywhere it is defined; the oracle `snippetdump`
+decides. What a user can meet:
+
+* **Text past a NUL byte and very long tokens.** Ghidra's lexer copies a
+  token into a 256-byte buffer without a bound check (`PcodeLexer::curtoken`,
+  undefined behaviour past 255 characters); Basilisk reads any length. A NUL
+  ends the text in both.
+* **Limits** (ADR-009): a text over `Options::max_text_len` (1 MiB by
+  default) is refused with `SnippetError::TooLong`; expressions nested more
+  than `Options::max_depth` (1,000) levels fail with Ghidra's text "memory
+  exhausted", which Ghidra's parser gives at a stack of 10,000 states (a
+  different depth).
+* **Every message is kept.** Ghidra keeps the first error only;
+  `SnippetError::messages()` has all of them, the first being Ghidra's, and
+  errors Ghidra reports but ignores on a successful compile are returned as
+  `Compiled::warnings` (and logged at debug level).
+* **Message order inside a failing statement** is Ghidra's for everything
+  the tests exercise: Basilisk evaluates the expressions Ghidra's parser had
+  reduced before failing, so their errors come first. Where Ghidra would
+  have reduced a larger expression than Basilisk's precedence climbing, the
+  difference adds only operators, which report nothing.
+* **Bit ranges with values near 2³²** (`r[0,0xffffffff]`): Ghidra computes
+  `(numbits+7)/8`, `bitoffset+numbits` and `byteoffset+numbytes` in 32-bit
+  unsigned arithmetic, which wraps (`pcodecompile.cc` `createBitRange`,
+  `assignBitRange`, `buildTruncatedVarnode`; the grammar casts both numbers to
+  `uint4`, `pcodeparse.y` 114, 187); the shared builder of
+  `bk-sleigh-compiler` does not wrap, so such a snippet can get a different
+  template or error. Not a choice: a bug in that crate's builder, reported
+  as a follow-up; 456 of 200,000 generated snippets hit it (the test counts
+  them and checks nothing else differs), none of the shipped.
+* **Host-dependent number reading** (ADR-021): an octal literal holding an 8
+  or a 9 (`09`, `0189`) reads as 0 quietly with libstdc++ (x86-64 Linux, the
+  reference) and as a `BADINTEGER` ("Parsed integer is too big (overflow)",
+  value 0) with libc++ (macOS), whose `num_get` fails when `strtoull` stops
+  before the end of the collected digits. Basilisk gives the x86-64 result.
+* **Extra address spaces** (`Options::extra_spaces`): Ghidra's snippets see
+  every space of the program's space manager of type constant, processor,
+  spacebase or internal at the time of the compile, including the `.cspec`'s
+  stack space; Basilisk sees the `.sla`'s and the ones the caller adds.
+
+Spec items this section corrects (spec text left as written):
+
+* §4.2 The grammar is not the SLEIGH semantic section's: `PcodeSnippet` has
+  its own lexer (`#` comments, `.` in names, a leading `0` means octal, a
+  NUL ends the text, an unknown character ends the input) and grammar
+  (productions in §9). `goto`/`call` destinations are `inst_*` symbols,
+  integers, `k[space]` and labels — not operands or registers. Not
+  available: `build`, `delayslot`, `crossbuild`, `export`, macros, sections,
+  `cpool`, `newobject`, `popcount`, `lzcount`; `borrow` is a keyword without
+  a rule.
+* §4.1 `inst_dest`/`inst_ref` give `const_flowdest`/`const_flowref` with size
+  0, never the `_size` constants.
+* §4.4 Only size propagation runs: no label check (a label used but never
+  placed compiles; placing one twice is an ignored error); the failure
+  message is the first error of the whole compile; errors of the builder
+  that do not stop Ghidra's parser (bit-range problems, integer overflow,
+  duplicate parameter names) do not fail the compile; `SleighError`s thrown
+  by `PcodeCompile` ("Requested bit range out of bounds", "Could not
+  construct requested bit range", "Localtemp size mismatch") escape
+  `parseInject` bare, without `<source>: Unable to compile pcode:`
+  (`SnippetError::Aborted`).
+* §1/§6.2 The shipped trees hold **137** snippet elements outside XML
+  comments (130 `<pcode>` and 7 jump-table `*_pcode`) in 49 files; the
+  count of 132 included two commented-out elements of `x86win.cspec` and
+  left out the jump-table elements. 16 are dynamic payloads without a body,
+  which Ghidra never compiles.
+* §6.2 The tool's record format and the `<truncate_space>` handling are in
+  `tools/reference/README.md`; languages with `<truncate_space>` (AARCH64
+  ilp32, MIPS 64-32addr, PowerPC 64-32) need `Options::truncate_space`.
+
+Note of 2026-11-14 (track `sleigh-fixups`): **the bit-range item above is
+no longer a difference.** `bk-sleigh-compiler`'s builder now computes
+`(numbits+7)/8` and `bitoffset+numbits` as Ghidra's `uint4` does, wrapping
+at 2³² (`byteoffset+numbytes` cannot wrap: both are below 2²⁹). The
+generated comparison has no tolerance any more: 200,000 bodies, 0
+differences; the hand-written cases include bit ranges near 2³².
 
 ## 9. Status
 
-Not started.
+Done (track `sleigh-snippet`, 2026-11-14). Crate `bk-sleigh-snippet`:
+
+* `SnippetCompiler::new(&Sla, &Options)` (visible names and spaces computed
+  once; `Send + Sync`), `compile(text, &[Parameter], &mut TempAllocator) ->
+  Result<Compiled, SnippetError>`; `compile(text, &Sla, &[Parameter], &mut
+  TempAllocator, &Options) -> Result<Template, SnippetError>` as the spec's
+  one-shot form. `TempAllocator::{for_injection, for_executable}` give
+  Ghidra's bases (`unique_base + 0x200`, 0x2000) and step 16; the allocator
+  advances only on success. `space_table()` for encoding.
+* Modules: `lex` (PcodeLexer), `scope` (the snippet's tree, the language's
+  visible symbols, the builder's resolver), `parse/` (the grammar,
+  recursive descent over the bison automaton), `compile` (driver),
+  `options`, `error`. The template is built by
+  `bk_sleigh_compiler::pcode::Builder` and `propagate_size`.
+* Grammar accepted (`pcodeparse.y` 98–225): statements `lhs = e;`, `name =
+  e;`, `name:n = e;`, `local name [:n] [= e];`, `*[space]:n e = e;`,
+  `lhs[lo,len] = e;`, `userop(args);`, `goto dest;`, `goto [e];`, `call
+  dest;`, `call [e];`, `return [e];`, `if e goto dest;`, `<label>`;
+  expressions: integers (`k`, `k:n`), `&v`, `&:n v`, names, `name:n`,
+  `name(k)`, `name[lo,len]`, `userop(args)` (a leading comma allowed after
+  `(`), the fourteen built-ins, unary `- ~ ! f-`, loads `*[space]:n e`, the
+  binary operators with SLEIGH's precedence (comparisons non-associative).
+  Error rules: "Unknown varnode parameter", "Unknown assignment varnode",
+  "Unknown jump destination", "Redefinition of symbol", "Illegal truncation
+  on left-hand side of assignment", "Illegal subpiece on left-hand side of
+  assignment", "Must specify an indirect parameter for return", "syntax
+  error".
+* Results: all 588 compilations of the 121 shipped bodies (116 languages)
+  equal Ghidra's XML; 236 hand-written cases and 200,000 generated snippets
+  equal Ghidra's results except the counted cases in §8. Gaps: none against
+  §7; the bit-range wrap is a follow-up for `bk-sleigh-compiler`.

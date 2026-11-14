@@ -9,7 +9,6 @@ edition = "2024"
 rust-version = "1.97"
 license = "GPL-3.0-or-later"
 publish = false
-authors = ["Basilisk contributors"]
 
 [workspace.dependencies]
 # Internal crates (see docs/PLAN.md, crate map). Add a line when a crate is created.
@@ -29,15 +28,13 @@ bk-decomp-types = { path = "crates/bk-decomp-types" }
 bk-sleigh = { path = "crates/bk-sleigh" }
 bk-sleigh-compiler = { path = "crates/bk-sleigh-compiler" }
 bk-cspec = { path = "crates/bk-cspec" }
+bk-sleigh-snippet = { path = "crates/bk-sleigh-snippet" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"
-anyhow = "1.0.104"
 tracing = "0.1.44"
 bitflags = "2.13.2"
 memchr = "2.8.3"
-memmap2 = "0.9.11"
-rayon = "1.12.0"
 parking_lot = "0.12.5"
 roxmltree = "0.21.2"
 quick-xml = "0.42.0"

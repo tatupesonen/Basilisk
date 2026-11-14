@@ -167,15 +167,18 @@ pub enum Tool {
     DecompTest,
     /// Basilisk's disassembly and p-code oracle (`tools/reference/pcodedump.cc`).
     Pcodedump,
+    /// Basilisk's p-code snippet oracle (`tools/reference/snippetdump.cc`).
+    Snippetdump,
 }
 
 impl Tool {
     /// Every tool, in the order the build script lists them.
-    pub const ALL: [Self; 4] = [
+    pub const ALL: [Self; 5] = [
         Self::Sleigh,
         Self::Decomp,
         Self::DecompTest,
         Self::Pcodedump,
+        Self::Snippetdump,
     ];
 
     /// The tool's file name under `bin`.
@@ -185,6 +188,7 @@ impl Tool {
             Self::Decomp => "decomp",
             Self::DecompTest => "decomp_test",
             Self::Pcodedump => "pcodedump",
+            Self::Snippetdump => "snippetdump",
         }
     }
 }
@@ -252,6 +256,26 @@ impl ReferenceDir {
     /// The compiled form of `<module>/data/languages/<name>.slaspec`.
     pub fn sla_file(&self, module: &str, name: &str) -> PathBuf {
         self.language_dir(module).join(format!("{name}.sla"))
+    }
+
+    /// The `sleigh` options the reference build compiled a processor
+    /// module's specifications with — the module's `build.gradle` options
+    /// that the C++ compiler accepts, such as `-l` or `-DNAME=VALUE`, in
+    /// order. `scripts/build-reference.sh` keeps them one per line in
+    /// `.state/lang/<Module>.opts`; a module without that file (or with an
+    /// unreadable one) has none.
+    pub fn module_options(&self, module: &str) -> Vec<String> {
+        let path = self
+            .root
+            .join(".state")
+            .join("lang")
+            .join(format!("{module}.opts"));
+        std::fs::read_to_string(path)
+            .unwrap_or_default()
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(str::to_owned)
+            .collect()
     }
 }
 
@@ -374,6 +398,34 @@ mod tests {
     #[test]
     fn tool_names_match_the_build_script() {
         let names: Vec<_> = Tool::ALL.iter().map(ToString::to_string).collect();
-        assert_eq!(names, ["sleigh", "decomp", "decomp_test", "pcodedump"]);
+        assert_eq!(
+            names,
+            [
+                "sleigh",
+                "decomp",
+                "decomp_test",
+                "pcodedump",
+                "snippetdump"
+            ]
+        );
+    }
+
+    #[test]
+    fn module_options_are_read_one_per_line() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("STAMP"), "generated: test\n").unwrap();
+        let state = dir.path().join(".state").join("lang");
+        std::fs::create_dir_all(&state).unwrap();
+        std::fs::write(
+            state.join("ARM.opts"),
+            "-l\n\n-DBASE=/Ghidra/Processors/ARM\n",
+        )
+        .unwrap();
+        let reference = ReferenceDir::at(dir.path()).unwrap();
+        assert_eq!(
+            reference.module_options("ARM"),
+            ["-l", "-DBASE=/Ghidra/Processors/ARM"]
+        );
+        assert_eq!(reference.module_options("x86"), Vec::<String>::new());
     }
 }

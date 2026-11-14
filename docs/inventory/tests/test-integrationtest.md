@@ -160,7 +160,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.program.disassemble.DisassemblerTest` (slow, 38 tests)
 - [x] `ghidra.program.model.lang.AArch64ProtoModelTest` (slow, 1 tests) → `crates/bk-cspec/tests/java_protomodel.rs` (`aarch64_proto_model_std_call`; through the C++ model, no exceptions)
 - [x] `ghidra.program.model.lang.MipsPrototypeModelTest` (slow, 1 tests) → `crates/bk-cspec/tests/java_protomodel.rs` (`mips_prototype_model_std_call`; through the C++ model, no exceptions)
-- [ ] `ghidra.program.model.lang.PcodeParserTest` (slow, 1 tests)
+- [x] `ghidra.program.model.lang.PcodeParserTest` (slow, 1 tests) → `crates/bk-sleigh-snippet/tests/pcode_parser_test.rs`
 - [x] `ghidra.program.model.lang.PowerPCPrototypeModelTest` (slow, 1 tests) → `crates/bk-cspec/tests/java_protomodel.rs` (`powerpc_prototype_model_std_call`; through the C++ model, no exceptions)
 - [ ] `ghidra.program.model.lang.RegisterValueContextTest` (slow, 4 tests)
 - [ ] `ghidra.program.model.lang.RegisterValueTest` (slow, 4 tests)
