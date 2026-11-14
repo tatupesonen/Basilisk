@@ -72,7 +72,7 @@ State: **done**, pending the coordinator's review and merge.
 - `cargo clippy -p bk-decomp-types --all-targets --target
   x86_64-pc-windows-msvc -- -D warnings` clean. Windows and Linux test runs
   rest on CI.
-- Gate (`scripts/gate.sh`, 2026-11-14): exit 0, "tests: 1717 passed, 0 failed".
+- Gate (`scripts/gate.sh`, 2026-11-14), after the fork fix, run twice: exit 0 both times, "tests: 1719 passed, 0 failed" (before the fix: 1717).
 
 Oracle generation (L): `tests/oracle/regen.sh` compiles
 `tests/oracle/types_oracle.cc` (`c++ -std=c++11 -fno-access-control
