@@ -124,6 +124,21 @@ count (bk-sleigh `fixture_never_panics…`: 1.2 s at 10^6, 12.3 s at 10^7), so
 these counts are real. No suite needed a cap. The 11 files that fix their own
 count (the `PROPTEST_CASES` finding below) were not run at length.
 
+### Ubuntu 26.04 / GCC 15 (`ubuntu`, 1 min 6 s)
+
+`gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0`, C default `202311L` (C23), Rust
+1.100.0, amd64 natively. All steps pass:
+
+| Step | Result | Wall |
+|---|---|---|
+| `cargo test -p bk-binutils-sys -p bk-gnu-disasm` (Ghidra tree mounted) | 66 passed, 0 failed, 1 ignored (benchmark) | 20 s |
+| `cargo clippy` of both, `--all-targets -D warnings` | clean | 9 s |
+| `scripts/build-reference.sh` with GCC 15 (cold) | unit tests 205/205, data tests 760/760, 150 languages | 36 s |
+| every `.sla` against the host's reference (Debian GCC 14) | **150 of 150 byte-identical** | 0 s |
+
+arm64 is done differently, by cross-building rather than running the whole
+Ubuntu image under emulation; see `arm64` below.
+
 ### Wine and CI's `windows-latest`
 
 `wine` builds for `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14, Debian 13's
