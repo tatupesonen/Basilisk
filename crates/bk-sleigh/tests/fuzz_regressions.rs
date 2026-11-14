@@ -1,17 +1,31 @@
 //! Replays the inputs saved under `fuzz/regressions/bk_sleigh_*` through the
 //! fuzz targets' bodies (`fuzz/fuzz_targets/bk_sleigh_shared/mod.rs`), and a
 //! few fixed inputs so the bodies are exercised even with no saved input.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 #[path = "../../../fuzz/fuzz_targets/bk_sleigh_shared/mod.rs"]
 mod bk_sleigh_shared;
 
 fn saved(target: &str) -> Vec<Vec<u8>> {
-    let dir = bk_testkit::workspace_root().join("fuzz").join("regressions").join(target);
+    let dir = bk_testkit::workspace_root()
+        .join("fuzz")
+        .join("regressions")
+        .join(target);
     let Ok(entries) = std::fs::read_dir(&dir) else {
         return Vec::new();
     };
-    entries.map(|e| std::fs::read(e.unwrap().path()).unwrap()).collect()
+    entries
+        .map(|e| std::fs::read(e.unwrap().path()).unwrap())
+        .collect()
 }
 
 #[test]

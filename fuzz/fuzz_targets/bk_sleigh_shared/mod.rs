@@ -21,9 +21,13 @@ mod fixture;
 fn languages() -> &'static [Arc<Language>] {
     static LANGS: OnceLock<Vec<Arc<Language>>> = OnceLock::new();
     LANGS.get_or_init(|| {
-        let mut out = vec![Arc::new(Language::from_sla(Arc::new(fixture::build())).expect("fixture"))];
+        let mut out = vec![Arc::new(
+            Language::from_sla(Arc::new(fixture::build())).expect("fixture"),
+        )];
         if let Some(root) = std::env::var_os("BASILISK_REFERENCE_DIR") {
-            let root = std::path::PathBuf::from(root).join("Ghidra").join("Processors");
+            let root = std::path::PathBuf::from(root)
+                .join("Ghidra")
+                .join("Processors");
             for (module, file) in [
                 ("x86", "x86-64.sla"),
                 ("ARM", "ARM8_le.sla"),
@@ -67,10 +71,15 @@ fn exercise(lang: &Arc<Language>, offset: u64, words: &[u32], bytes: &[u8]) {
 /// instruction bytes.
 pub(crate) fn decode(data: &[u8]) {
     let langs = languages();
-    let Some((&selector, rest)) = data.split_first() else { return };
+    let Some((&selector, rest)) = data.split_first() else {
+        return;
+    };
     let lang = &langs[selector as usize % langs.len()];
     let (context, bytes) = rest.split_at(rest.len().min(8));
-    let words: Vec<u32> = context.chunks(4).map(|c| c.iter().fold(0u32, |w, &b| (w << 8) | u32::from(b))).collect();
+    let words: Vec<u32> = context
+        .chunks(4)
+        .map(|c| c.iter().fold(0u32, |w, &b| (w << 8) | u32::from(b)))
+        .collect();
     let offset = u64::from(selector) * 2;
     exercise(lang, offset, &words, bytes);
 }
@@ -82,10 +91,21 @@ pub(crate) fn hostile_sla(data: &[u8]) {
         inflated_size: 1 << 22,
         ..Limits::default()
     };
-    let Ok(sla) = Sla::decode_packed(data, &limits) else { return };
-    let Ok(lang) = Language::from_sla(Arc::new(sla)) else { return };
+    let Ok(sla) = Sla::decode_packed(data, &limits) else {
+        return;
+    };
+    let Ok(lang) = Language::from_sla(Arc::new(sla)) else {
+        return;
+    };
     let lang = Arc::new(lang);
-    let patterns: [&[u8]; 4] = [&[0; 16], &[0xff; 16], &[0x55, 0xaa, 0x0f, 0xf0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], &[0x80; 16]];
+    let patterns: [&[u8]; 4] = [
+        &[0; 16],
+        &[0xff; 16],
+        &[
+            0x55, 0xaa, 0x0f, 0xf0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+        ],
+        &[0x80; 16],
+    ];
     for (i, bytes) in patterns.iter().enumerate() {
         exercise(&lang, 0x1000 * i as u64, &[0, u32::MAX], bytes);
     }
