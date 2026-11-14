@@ -1125,3 +1125,48 @@ Known work this causes: the monitor type moves out of `bk-ui` into a low
 crate; model edits record an origin and the replaced value; variables get
 a stable identity; decompiler results are `Arc` + `Sync` and outlive the
 call; `bk-ui`'s action registry and view kinds accept run-time entries.
+
+## ADR-038 — Where Ghidra's p-code depends on its parse cache or on uninitialised memory, Basilisk gives the result of a fresh parse
+
+Date: 2026-11-14. Status: accepted. Extends ADR-024 (defined results
+where Ghidra's SLEIGH engine has undefined behaviour) to p-code
+generation. Proposed by track `sleigh-pcode`.
+
+**Context.** `bk-sleigh`'s p-code is compared with `pcodedump` for every
+language (ADR-007). Three kinds of record cannot be equal, because
+Ghidra's result is not a function of the instruction bytes and context:
+
+1. *Unset handles* (1,543 records in 18 languages at the time of
+   writing). A template reads the handle of a subtable operand whose
+   constructor exports nothing. Ghidra reads a `FixedHandle` that was
+   never set for this parse and holds whatever an earlier parse left
+   there.
+2. *A clobbered parse cache* (1 record: Toy `harvard_rev`, a branch with
+   `skvs` in its delay slot). The delay-slot instruction uses
+   `inst_next2`; looking that instruction up evicts the branch's own
+   parse from Ghidra's two-entry cache, and the branch is then built from
+   the wrong parse.
+3. *A crossbuild target that is not in the cache* (1 record). Ghidra
+   fails; the target is perfectly decodable.
+
+Separately, 37 instructions crash `pcodedump` outright (a walker left
+dangling after an error in a delay slot; six ARM v8-m `vpt…` cases that
+read an unset handle whose space pointer is null).
+
+**Decision.** Basilisk's result for an instruction depends only on the
+bytes, the address and the context. An unset handle reads as the constant
+0. Delay-slot, `inst_next2` and crossbuild targets are decoded on demand,
+never taken from a cache whose content depends on what was decoded
+before. Where `pcodedump` crashes, Basilisk returns its ordinary typed
+error or lifts the instruction.
+
+**How the difference is kept honest.** The differential harness does not
+skip these records. It models Ghidra's two-entry parse cache and the
+unset-handle condition, recognises each record as one of the three kinds,
+and counts them per language; a record that differs and is not recognised
+fails the test. The crashing inputs are regression tests.
+
+**Consequences.** A user comparing Basilisk's p-code with Ghidra's for
+such an instruction can see a difference; `features/sleigh-pcode.md`
+section 8 lists the kinds. The three behaviours and the two crashes are
+candidates for bug reports to Ghidra.
