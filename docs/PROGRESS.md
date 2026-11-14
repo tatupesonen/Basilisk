@@ -32,20 +32,20 @@ started with `gh workflow run CI --ref integration`; it is merged to
 and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
-### Running (state at 12:41, 2026-11-14; earlier stamp: 11:31)
+### Running (state at 2026-11-14 13:03)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `x86-oracle` | Opus | `a6eeb040907dff5c6` | started 12:50; `bk-pcode` follows x86-64 for the 106 NaN rows, the x86-64 table becomes the checked-in oracle, the generator is made deterministic (ADR-021, ADR-029). |
-| `sleigh-decode` | Opus | `a07f201f2114ec7f5` | started 11:45; `bk-sleigh` part 1 from `features/sleigh-decode.md`: language loading, context database, decoder, disassembly text, the `pcodedump` harness. |
-| `sleigh-compiler-front` | Opus | `a657ab279c091c7b8` | started 12:05; `bk-sleigh-compiler` part 1 from `features/sleigh-compiler-front.md`: elaboration up to symbols, constructors and templates, compared with Ghidra's files for all 150 specifications. |
+| `site-design` (fix round) | Opus | `ad3bb266abb408203` | resumed 13:00 with the CI failure (Docker `--cpus 3` on a 2-CPU runner); also checking everything else that assumes this Mac. |
+| `sleigh-compiler-front` | Opus | `a657ab279c091c7b8` | started 12:05; `bk-sleigh-compiler` part 1; waiting on its own final run. |
+| `decomp-cspec` | Opus | `aaa90a7df42087601` | started 13:03; D03, `bk-cspec` from `features/decomp-cspec.md`, briefed with D02's hooks (`PrototypeCodec`, `TypeEnv::default_model`). |
 
-**Sent back, waiting for a slot** (resume before anything else in the
-queue — a one-line fix that unblocks the website and `docs-content`):
+Finished, in or waiting for the integration branch:
 
-| Branch | Agent id | What |
+| Branch | Agent id | Result |
 |---|---|---|
-| `site-design` (7 commits, worktree kept) | `ad3bb266abb408203` | The site and the documentation's shell are built (ADR-030, ADR-031; screenshots in the branch under `docs/features/site-screenshots/`, shown to the owner). On the integration branch every Rust job was green on all three systems, but **the new `site` CI job failed** (run 43585590683): `docker: Error response from daemon: range of CPUs is from 0.01 to 2.00, as there are only 2 CPUs available` — `scripts/site.sh` asks for `--cpus 3` and the hosted runner has 2. The agent is to cap the CPU and memory limits at what the host has, check nothing else assumes this Mac (image pull time against the job's `timeout-minutes`, running as the calling user on the runner, arm64 versus amd64 image), and report. Then: integration branch, CI, merge; tell the owner the Pages steps (Settings → Pages → Source "GitHub Actions", then the `Pages` workflow). |
+| `sleigh-decode` (13 commits) | `a07f201f2114ec7f5` | **In CI** on branch `integration` (run 43587818592; gate on the branch green, 1,781 tests). `bk-sleigh` part 1: no `I`/`E`/`T` record differs from `pcodedump` over 175 language configurations (99.33 % of root pairs confirmed, 97.2 % of constructors); decode 3.25 M instructions/s against 3.17 M for Ghidra, decode + text 2.41 M against 1.50 M, no allocation per instruction. Missed: 8-thread scaling 4.78× against a 6× target, measured on a loaded machine — re-measure idle. Found: `pcodedump` crashes on a delay-slot instruction with an `unimpl` body (36 cases). CI replays only a fixture language built in Rust; the full run needs the local reference build. Green → merge, tick `sleigh-decode` in `PLAN.md`, start `sleigh-pcode`. |
+| `x86-oracle` (6 commits, worktree kept) | `a6eeb040907dff5c6` | **Next into the integration branch.** `bk-pcode` now follows x86-64 for two NaN inputs (ADD/MULT take `b`'s sign, SUB/DIV `a`'s), computed from the bits; `ceil`/`floor` through `libm`; the x86-64 table is the checked-in oracle with 0 unexplained rows and three explained classes (`TruncSaturates` 58 — Java's tests pin saturation, x86-64 C++ gives `i64::MIN`; two C++ faults). 188 directed rows with literal expected bits run on all three CI systems. The generator is now deterministic. Own gate green. **After the merge the coordinator runs the regeneration on `kassini`** (`regen.sh` against the box's reference, then compare the decompressed text with the checked-in table: expected identical). Correction to ADR-029's last bullet: 50 of the 161 differing rows are `FLOAT_TRUNC`, not NaN signs. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -177,11 +177,9 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: the `site-design` fix, D03
-   `decomp-cspec` (D02 is on `master`; brief it with D02's follow-ups:
-   implement `PrototypeCodec`, provide `TypeEnv::default_model` and the
-   model names for the parser's callback, parameters are counted after
-   storage assignment including a hidden return parameter),
+1. As slots free, in this order: `sleigh-pcode` (when `sleigh-decode`
+   is on `master`), `docs-content` (when the site is merged), D01
+   `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
 2. `decomp-types`: in CI (above). Follow-ups it names for D03
