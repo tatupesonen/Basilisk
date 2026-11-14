@@ -686,12 +686,12 @@ int main(int argc, char **argv) {
       pushShift(r, CPUI_INT_SRIGHT, size, s, 32, in2s);
     }
   }
-  // The step bound of INT_LEFT, including bounds whose doubling overflows.
-  // Only shift amounts up to 128: with a bound of 0x7fffffff and a shift of
-  // 2^32-1, Ghidra's loop runs four billion times.
+  // The step bound of INT_LEFT. Not above 2^30: there the doubling of the
+  // int4 step overflows, reaches 0, and normalize() divides by it (SIGFPE on
+  // x86-64; with a shift of 2^32-1 the loop also runs four billion times).
   vector<CircleRange> smallShifts(in2s.begin(), in2s.begin() + 23);
   smallShifts.push_back(in2s.back());
-  const int4 maxSteps[] = {-1, 0, 1, 4, 1 << 20, 0x7fffffff};
+  const int4 maxSteps[] = {-1, 0, 1, 4, 1 << 20, 1 << 30};
   for (size_t i = 0; i < N.maxStep; ++i) {
     const CircleRange &r = fb[i];
     int4 size = r.isempty ? 1 : sizeOf(r);
