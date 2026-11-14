@@ -7,6 +7,9 @@
 .DS_Store
 /.claude/
 *.swp
+# insta: snapshots waiting for review (a failed comparison writes one)
+*.snap.new
+*.pending-snap
 # Website (site/, scripts/site.sh): generated in the container
 /site/node_modules/
 /site/dist/

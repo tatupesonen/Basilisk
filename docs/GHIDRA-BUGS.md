@@ -35,8 +35,9 @@ and the coordinator adds it here.
 | 10 | SLEIGH compiler, `EqualEquation` | The C++ range test compares signed where Java compares unsigned | Constraints on 64-bit fields are unsatisfiable in the C++ compiler | read | `features/sleigh-compiler-back.md` §8 |
 | 11 | SLEIGH compiler, enumeration | A constraint enumerates every value of the fields involved; equations, expressions and table chains recurse without bound | Never finishes, or overflows the stack, on wide fields or deep nesting | read | `features/sleigh-compiler-back.md` §8 |
 | 12 | P-code snippet lexer (`PcodeLexer::curtoken`) | A token is copied into a 256-byte buffer without a bound check | Buffer overflow for a token longer than 255 characters | read | `features/sleigh-snippet.md` §8 |
-| 13 | P-code snippets, bit ranges (`pcodecompile.cc` `createBitRange`, `assignBitRange`, `buildTruncatedVarnode`; `pcodeparse.y` 114, 187) | `(numbits+7)/8`, `bitoffset+numbits` and `byteoffset+numbytes` are computed in 32-bit unsigned arithmetic and wrap | A bit range with numbers near 2³² gets a wrong template instead of an error | confirmed against the oracle | `features/sleigh-snippet.md` §8 |
+| 13 | P-code snippets, bit ranges (`pcodecompile.cc` `createBitRange`, `assignBitRange`, `buildTruncatedVarnode`; `pcodeparse.y` 114, 187) | `(numbits+7)/8`, `bitoffset+numbits` and `byteoffset+numbytes` are computed in 32-bit unsigned arithmetic and wrap | A bit range with numbers near 2³² gets a wrong template instead of an error (Basilisk reproduces the wrap since `sleigh-fixups`, so that its output equals Ghidra's) | confirmed against the oracle | `features/sleigh-snippet.md` §8, `agents/sleigh-fixups.md` |
 | 17 | Parameter trials (`ParamTrial::operator<`, `fspec.cc:1881`) | The comparator is not a strict weak ordering: the reverse-stack flag is read from one operand only, the offset is compared only within one exclusive entry, and all trials without an entry compare equal | Undefined behaviour in `std::sort` (`sortTrials`, `fspec.hh:322`; `fillinMapFallback`, `fspec.cc:1659`, `1708`); the order of such trials is the library's choice | read; its effect is confirmed as entry 15 | `agents/cspec-host.md`, ADR-040 |
+| 18 | SLEIGH engine, labels (`sleigh.cc` `PcodeCacher::addLabel`, lines 69–74) | The label vector is grown up to the label id read from the compiled language, an unchecked `uint4` | A crafted `.sla` makes the engine allocate up to about 16 GiB | read | `agents/sleigh-fixups.md` |
 
 ## Results that depend on the host
 
@@ -53,6 +54,20 @@ and the coordinator adds it here.
   placed (`features/sleigh-snippet.md` §8 and "Spec items found wrong").
 * `OrPattern::doOr` modifies its left operand (a negative shift); nothing
   observes it (`features/sleigh-compiler-back.md` §8).
+* Label numbers are truncated to 32 bits in the engine (`addLabel(uint4)`,
+  `uint4 id = ptr->offset`), so a hand-made `.sla` with label 2³²+n
+  resolves as label n; a branch to a label that is never placed is
+  caught only when p-code is built (`PcodeCacher::resolveRelatives`,
+  `sleigh.cc` 96–110), not when the template is read
+  (`agents/sleigh-fixups.md`).
+* Both compilers reject a `.slaspec` that starts with a byte-order mark
+  (`slghscan.l` has no rule for it; Java reads ISO-8859-1 and reports
+  three unknown characters) — not a defect, but a file saved by a
+  Windows editor fails with a bare "syntax error"
+  (`agents/sleigh-fixups.md`; Basilisk ignores the mark).
+* `defineBitrange` (`slgh_compile.cc` 2800–2822) computes
+  `(size-bitoffset-numb)/8` in 32-bit unsigned arithmetic, wrapping like
+  entry 13 (`agents/sleigh-fixups.md`).
 * The SLEIGH compiler's token-mismatch message prints pointers
   (`features/sleigh-compiler-back.md` §8).
 * `FileManage::matchListDir` (`filemanage.cc:177–203`) returns files in

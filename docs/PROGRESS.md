@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 21:18)
+## Now — RESUME HERE (2026-11-14 21:26)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 21:18)
+### Running (state at 2026-11-14 21:26)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,6 +139,32 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
+**Finished, integration gate running on the build host (started
+21:25):** `sleigh-fixups` (`a729d10fd3ad89e8d`) on branch `integration`
+(worktree `../basilisk-wt/sleigh-fixups`, `aa8b136`). (a) Bit-range
+arithmetic wraps at 32 bits as in Ghidra (`pcode/bitrange.rs`, and
+`defineBitrange` in `compiler/define.rs`, which overflowed in debug
+builds); the snippet crate's generated comparison has no tolerated row
+any more (200,000 bodies, 0 differ), all 150 specifications still
+byte-identical. (b) `bk-testkit` has `Tool::Snippetdump` and
+`ReferenceDir::module_options()`. (c) `bk-sla` reads a branch to an
+unplaced label as Ghidra does; the check is explicit
+(`Template::check_labels`, `Sla::check_labels`); `bk-sleigh` gives
+Ghidra's error when p-code is built. (d) **Ghidra rejects a byte-order
+mark** in both compilers, so the stripping stays in the compiler's
+driver as a documented difference and was not moved. (e) Manifest
+warnings 8 → 4: `authors`, `anyhow`, `memmap2`, `rayon` removed; the
+entries for `bk-cspec`, `bk-decomp-types`, `bk-gnu-disasm`,
+`bk-sleigh-snippet` stay until a crate depends on them (cargo's
+`unused_workspace_dependencies` lint could silence them; not done, it
+would hide real dead entries). Both of its gates 2,092 tests. On
+`integration` the coordinator removed a pending snapshot file
+(`assign_bitrange_wrap.snap.new`) committed by accident; `*.snap.new`
+is now git-ignored. Follow-up for whoever next owns `bk-sleigh`: Ghidra
+truncates label numbers to 32 bits and `bk-sleigh` does not (only a
+hand-made `.sla` shows it) — truncate, or record under ADR-024. Gate
+green → push, CI, merge, delete branch and worktree, clean the host.
+
 **Merged: `cspec-host`** (`a85106d421cedbda2`; `60936c3`, CI run
 43630477395 green on all 8 jobs, integration gate on the build host
 2,056 tests, 0 new packages, advisories ok; worktree and branches
@@ -165,7 +191,7 @@ left as they are).
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33. The build host as testbed, on top of `scripts/remote.sh`: the Windows GNU target under Wine natively, the GCC 15 container for the C-binding crates, Miri, sanitizers, fuzzing and property tests at length, the full differential runs, a nightly scheduled run with a report (`remote.sh report`), `clean --target`. Findings in crates are reported, not fixed. |
-| `sleigh-fixups` (worktree `../basilisk-wt/sleigh-fixups`, cut from `master` `739b393`) | Opus | `a729d10fd3ad89e8d` | started 21:03. Queue item 3 below: the bit-range 32-bit wrap in `bk-sleigh-compiler` (then no tolerated row in the snippet crate's generated comparison), `Tool::Snippetdump` and `module_options` in `bk-testkit`, `bk-sla` reading a branch to an unplaced label, the BOM (after reading what Ghidra does), the cargo manifest warnings. |
+| `decomp-range` (worktree `../basilisk-wt/decomp-range`, cut from `master` `4891f37`) | Opus | `a8550db77f2254819` | started 21:24. D01: `bk-decomp-range` from `features/decomp-range.md` (`CircleRange`; 117 `testcirclerange` tests, oracle table generated on both C++ libraries and compared, UBSan and valgrind on the oracle, properties, fuzz target, benchmark). Adds lines to the root `Cargo.toml`, which `sleigh-fixups` also changed (removals): resolve by reading. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -359,7 +385,7 @@ start a fresh agent briefed from the branch's files.
    between its platforms.)
 2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
-3. **`sleigh-fixups` (Opus; running since 21:03)** (before
+3. **`sleigh-fixups` (finished 21:22, merging; the text below is the brief it had)** (before
    `sleigh-perf-linux`, whose measurements need the build host quiet,
    which it is not while `testbed` runs its long jobs). Small
    corrections left by the SLEIGH tracks, each checked against Ghidra's
@@ -389,7 +415,7 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-5. **D01 `decomp-range` (Opus, small)** — `bk-decomp-range` from
+5. **D01 `decomp-range` (Opus; running since 21:24)** — `bk-decomp-range` from
    `features/decomp-range.md` (117 `testcirclerange` tests); spec
    complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
    027, 028) is the main line from here on: one slot stays on it.
@@ -471,12 +497,14 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 ### Coordinator's next steps
 
 1. `cspec-host` is merged (above).
-2. `testbed` reports → review; install the packages it lists on the
+2. `sleigh-fixups`: integration gate → CI → merge (state above).
+   `testbed` reports → review; install the packages it lists on the
    build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
    read the first nightly report. Start `sleigh-perf-linux` in its slot
-   (the host is quiet then apart from `sleigh-fixups`' gates; tell it to
-   measure when no other job runs — `scripts/remote.sh status`).
-   `sleigh-fixups` reports → merge; start D01.
+   (tell it to measure when no other job runs — `scripts/remote.sh
+   status` — and to truncate label numbers to 32 bits as Ghidra does
+   while it is in `bk-sleigh`). `decomp-range` reports → merge; start
+   the D00/D04 spec agent.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
