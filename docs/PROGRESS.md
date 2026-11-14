@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 00:37)
+## Now — RESUME HERE (2026-11-15 00:50)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`31c529e` plus docs) also has `bk-decomp-range`, `bk-ui`, the GNU disassembler crates,
+(`374fd08` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,254 tests and the last CI run on the merged
-tree, 43642488252, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,358 tests and the last CI run on the merged
+tree, 43649366489, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 00:37)
+### Running (state at 2026-11-15 00:50)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,11 +139,11 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished except its oracle acceptance; integration gate green (2,358
-tests, 0 new packages, advisories ok), in CI as run 43649366489 since
-00:41 on 2026-11-15:** `decomp-cfg`
-(`ae8492491a7ef480f`) on branch `integration` (worktree
-`../basilisk-wt/decomp-cfg`, `33cb6f6`). New crate `bk-decomp-cfg`
+**Merged, oracle acceptance still owed: `decomp-cfg`**
+(`ae8492491a7ef480f`; `374fd08`, CI run 43649366489 green on all 8
+jobs, integration gate on the build host 2,358 tests, 0 new packages,
+advisories ok; worktree and branches removed, the host cleaned and
+`master` published). New crate `bk-decomp-cfg`
 (D04; 7,100 lines of source, every file under 600, no `unsafe`, no
 recursion; depends on `bk-marshal` and `thiserror`): the arena block
 graph with Ghidra's edge order, every edge-surgery method and analysis,
@@ -165,7 +165,6 @@ helpers (`tests/support/dump.rs`) by `bk-testkit`'s. The steps are in
 the State section of `docs/agents/decomp-cfg.md`. **After D00 is on
 `master`: resume this agent** (a fresh worktree and branch
 `decomp-cfg-oracle` cut from `master`; tell it the path) to do them.
-Gate green → push, CI, merge, delete, clean, publish.
 
 **Merged: `sleigh-perf-linux`** (`a20fadd7bd1040732`; `31c529e`, CI run
 43642488252 green on all 8 jobs, integration gate on the build host
@@ -642,8 +641,8 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `sleigh-perf-linux` is merged (above). `decomp-cfg`: integration
-   gate → CI → merge (state above). `decomp-oracle` reports → check the
+   `sleigh-perf-linux` is merged (above). `decomp-cfg` is merged, its
+   oracle acceptance owed (above). `decomp-oracle` reports → check the
    before/after hashes of both reference directories, merge through
    `integration`, then **resume the `decomp-cfg` agent** on a new
    branch for its oracle acceptance (that takes the slot; the monitor
