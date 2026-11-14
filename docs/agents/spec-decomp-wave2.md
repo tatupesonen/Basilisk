@@ -13,16 +13,16 @@ shipping code.
       `globalcontext.*`, `override.*`, the `ghidra_*` host classes,
       the parts of `architecture.cc`, `sleigh_arch.cc`, `xml_arch.cc`
       that build and fill these.
-- [ ] D06 oracle prototypes run (in progress).
-- [ ] `docs/features/decomp-symbols.md`.
+- [x] D06 oracle prototypes run on both reference builds (W2–W4).
+- [x] `docs/features/decomp-symbols.md` (complete draft).
 - [ ] D05 revision.
 - [ ] Final report.
 
 ## Next
 
-Write the oracle generator prototypes under
-`docs/research/decomp-wave2/`, run them on both reference builds, then
-write the D06 document.
+D05 revision of `docs/features/decomp-ir.md`: fold the corrections,
+check against `varnode.*`, `op.*`, `cover.*`, `BlockBasic`,
+`funcdata_*`, align with D00 (as merged) and D04.
 
 ## Notes so far (2026-11-15, paused)
 
@@ -32,8 +32,8 @@ write the D06 document.
   pad, 248 loader symbols, 173 read-only ranges, 403 property change
   points, 658 global-scope entries, 180 context split points, 158
   tracked-set split points, 1,744 load probes of which 432 fail).
-- `scope_oracle`: crashes (SIGSEGV) in case 6 after `addFunction` +
-  `getFunction`; under investigation. Encoding an instantiated function
+- `scope_oracle`: second crash found to be Ghidra's (an entry past the
+  end of its space, `addMapSym`); runs clean after avoiding it. Encoding an instantiated function
   without a prototype model crashes in `FuncProto::encode` (null
   `model`, fspec.cc:4569) — confirmed, worked around by hiding the
   Funcdata.
