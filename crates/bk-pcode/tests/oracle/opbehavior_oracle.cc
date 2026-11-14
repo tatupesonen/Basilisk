@@ -7,6 +7,11 @@
 // which tests/cpp_oracle.rs compares with basilisk. Not part of the Rust
 // build.
 //
+// The inputs, and their order, are the same on every host and compiler:
+// every random draw is a separate statement (never two in one argument
+// list, whose evaluation order C++ leaves unspecified). Only the results
+// may differ between hosts, so two tables compare line by line.
+//
 // Line format (hexadecimal numbers, no prefix):
 //   U <op> <sizeout> <sizein> <in1> = <result>|E
 //   B <op> <sizeout> <sizein> <in1> <in2> = <result>|E
@@ -159,6 +164,18 @@ void recover_binary(const OpBehavior *b, int op, int slot, int out, uint64_t o, 
   print_result(ok, r);
 }
 
+// A binary case on two random operands of `bytes` bytes. The draws are
+// sequenced explicitly, second operand first: C++ leaves the order in which
+// function arguments are evaluated unspecified (GCC on x86-64 evaluates
+// right to left, clang left to right), and the table must not depend on the
+// compiler. The order is the one GCC used for the table checked in on
+// 2026-11-14, so this generator reproduces its inputs on every host.
+void random_pair(const OpBehavior *b, int op, int out, int in, int bytes) {
+  uint64_t c = next_random() & mask(bytes);
+  uint64_t a = next_random() & mask(bytes);
+  binary(b, op, out, in, a, c);
+}
+
 bool is_float_op(int op) { return op >= CPUI_FLOAT_EQUAL && op <= CPUI_FLOAT_ROUND; }
 
 bool is_shift(int op) { return op == CPUI_INT_LEFT || op == CPUI_INT_RIGHT || op == CPUI_INT_SRIGHT; }
@@ -216,8 +233,13 @@ int main(void) {
     }
     if (op == CPUI_PTRADD) {
       for (int s : {1, 2, 4, 8})
-        for (int i = 0; i < 40; ++i)
-          ternary(b, op, s, s, next_random() & mask(s), next_random() & 0xff, next_random() & 0x1f);
+        for (int i = 0; i < 40; ++i) {
+          // Last operand drawn first: see random_pair.
+          uint64_t d = next_random() & 0x1f;
+          uint64_t c = next_random() & 0xff;
+          uint64_t a = next_random() & mask(s);
+          ternary(b, op, s, s, a, c, d);
+        }
       continue;
     }
     if (b->isUnary()) {
@@ -252,20 +274,20 @@ int main(void) {
             for (uint64_t c : seconds) binary(b, op, out, in, a, c);
         }
         else {
-          for (int i = 0; i < 24; ++i)
-            binary(b, op, out, in, next_random() & mask(in), next_random() & mask(in));
+          for (int i = 0; i < 24; ++i) random_pair(b, op, out, in, in);
         }
       }
     }
     // A differing output size.
     for (int i = 0; i < 24; ++i) {
-      binary(b, op, 8, 4, next_random() & mask(4), next_random() & mask(4));
-      binary(b, op, 2, 4, next_random() & mask(4), next_random() & mask(4));
+      random_pair(b, op, 8, 4, 4);
+      random_pair(b, op, 2, 4, 4);
     }
     binary(b, op, 0, 0, 5, 3);
     // Recovery of either input.
     for (int in : {1, 2, 4, 8}) {
       uint64_t m = mask(in);
+      // A braced list is evaluated left to right on every compiler.
       vector<uint64_t> vals = {0, 1, m, (m >> 1) + 1, next_random() & m, next_random() & m};
       for (int slot : {0, 1})
         for (uint64_t o : vals)
