@@ -3,7 +3,8 @@
 # interleaved in one job and pinned to one core: REPS rounds, each running
 # the bench_pcode sweeps (best of 5 inside) and then slabench (best of 5
 # inside); prints every round and then the best and the median of the rounds.
-# Linux only (taskset). Run build.sh first.
+# Pinned with taskset where there is one (Linux); unpinned elsewhere (macOS
+# has no way to pin a thread). Run build.sh first.
 # Usage: crates/bk-sleigh/tests/reference_bench/compare.sh [REFERENCE_DIR] [REPS] [CORE]
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -20,21 +21,29 @@ for line in sys.stdin:
     m = json.loads(line)
     if m.get("reason") == "compiler-artifact" and m.get("executable") and m["target"]["name"] == "bench_pcode":
         print(m["executable"])')
-echo "cpu: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
-echo "load before: $(cut -d' ' -f1-3 /proc/loadavg)"
+cpu() {
+  if [ -r /proc/cpuinfo ]; then grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//'
+  else sysctl -n machdep.cpu.brand_string; fi
+}
+load() {
+  if [ -r /proc/loadavg ]; then cut -d' ' -f1-3 /proc/loadavg; else sysctl -n vm.loadavg; fi
+}
+if command -v taskset > /dev/null; then pin=(taskset -c "$CORE"); else pin=(); fi
+echo "cpu: $(cpu)"
+echo "load before: $(load)"
 log=$(mktemp)
 for rep in $(seq "$REPS"); do
-  BK_BENCH_SINGLE=1 BASILISK_REFERENCE_DIR=$REF taskset -c "$CORE" "$exe" bench_pcode_x86_64 \
+  BK_BENCH_SINGLE=1 BASILISK_REFERENCE_DIR=$REF ${pin[@]+"${pin[@]}"} "$exe" bench_pcode_x86_64 \
     --exact --ignored --nocapture 2>&1 |
     sed -n -e "s/^\(decode[^:]*\): \([0-9.]*\) M instructions\/s.*/bk \1\t\2/p" -e "s/^x86-64 code: [0-9]* bytes, \([0-9]*\) instructions, \([0-9]*\) ops/bk instructions\t\1\nbk ops\t\2/p" | tee -a "$log"
-  taskset -c "$CORE" "$bench/slabench" "$langs/x86-64.sla" "$langs/x86-64.pspec" "$bench/x86-64-code.bin" 5 |
+  ${pin[@]+"${pin[@]}"} "$bench/slabench" "$langs/x86-64.sla" "$langs/x86-64.pspec" "$bench/x86-64-code.bin" 5 |
     awk -F'\t' '$1 == "decode_mips" { print "ref decode only\t" $2 }
       $1 == "text_mips" { print "ref decode + text\t" $2 }
       $1 == "lift_mips" { print "ref decode + lift (counting emitter)\t" $2 }
       $1 == "text_lift_mips" { print "ref decode + text + lift\t" $2 }
       $1 == "instructions" || $1 == "ops" { print "ref " $1 "\t" $2 }' | tee -a "$log"
 done
-echo "load after: $(cut -d' ' -f1-3 /proc/loadavg)"
+echo "load after: $(load)"
 python3 - "$log" << 'EOF'
 import statistics, sys
 rows = {}
