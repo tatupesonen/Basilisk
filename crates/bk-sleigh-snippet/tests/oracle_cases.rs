@@ -75,6 +75,30 @@ fn render(bodies: &[String], outcomes: &[Outcome]) -> String {
     out
 }
 
+/// Whether `body` has a number token starting with `0` (not `0x`) that
+/// holds an 8 or a 9.
+fn has_bad_octal(body: &str) -> bool {
+    let bytes = body.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let starts = bytes[i] == b'0'
+            && (i == 0 || !(bytes[i - 1].is_ascii_alphanumeric() || bytes[i - 1] == b'_'));
+        if starts {
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j].is_ascii_digit() {
+                j += 1;
+            }
+            if bytes[i + 1..j].iter().any(|&c| c == b'8' || c == b'9') {
+                return true;
+            }
+            i = j;
+        } else {
+            i += 1;
+        }
+    }
+    false
+}
+
 #[test]
 fn hand_written_cases_match_ghidra() {
     let sla = common::fixture::sla();
@@ -94,8 +118,27 @@ fn hand_written_cases_match_ghidra() {
         &std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("snippet-fixture"),
     );
     let expected = run_oracle(&tool, &root, common::fixture::LANGUAGE_ID, &recs);
+    // ADR-021: Basilisk follows the x86-64 Linux reference (libstdc++). A
+    // reference built on macOS reads numbers with libc++, whose `num_get`
+    // fails on an octal literal holding an 8 or a 9 (stage 2 collects every
+    // digit, then `strtoull` stops early and the stream sets failbit), so
+    // Ghidra's lexer returns BADINTEGER there (`pcodeparse.y`,
+    // `PcodeLexer::getNextToken`, `s1 >> curnum`). Such cases are counted,
+    // not compared, on that host only.
+    let libcxx = std::fs::read_to_string(reference.stamp_file())
+        .is_ok_and(|stamp| stamp.lines().any(|l| l.starts_with("host: Darwin")));
+    let mut tolerated = 0;
     let mut differences = Vec::new();
     for ((body, exp), act) in bodies.iter().zip(&expected).zip(&actual) {
+        if exp != act
+            && libcxx
+            && has_bad_octal(body)
+            && matches!(exp, Outcome::Ok { first_error: Some(m), .. }
+                if m == "Parsed integer is too big (overflow)")
+        {
+            tolerated += 1;
+            continue;
+        }
         if exp != act {
             differences.push(format!(
                 "{}\n  ghidra:   {exp:?}\n  basilisk: {act:?}",
@@ -104,9 +147,11 @@ fn hand_written_cases_match_ghidra() {
         }
     }
     eprintln!(
-        "cases: {} compared with snippetdump, {} differ",
+        "cases: {} compared with snippetdump, {} differ, {} host-dependent octal cases \
+         tolerated (libc++ reference)",
         bodies.len(),
-        differences.len()
+        differences.len(),
+        tolerated
     );
     for d in &differences {
         eprintln!("{d}");

@@ -14,11 +14,8 @@ pub(crate) const LANGUAGE_ID: &str = "Fixture:LE:32:default";
 
 /// The fixture compiled.
 pub(crate) fn sla() -> Sla {
-    let parsed = bk_sleigh_syntax::parse_str(
-        "fixture.slaspec",
-        SPEC,
-        &bk_sleigh_syntax::Defines::new(),
-    );
+    let parsed =
+        bk_sleigh_syntax::parse_str("fixture.slaspec", SPEC, &bk_sleigh_syntax::Defines::new());
     assert!(!parsed.has_errors(), "{:?}", parsed.diagnostics);
     let compiled =
         bk_sleigh_compiler::compile_parsed(&parsed, bk_sleigh_compiler::Options::default());
