@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 01:49)
+## Now — RESUME HERE (2026-11-15 02:00)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`a8eceba` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
+(`9fbadf3` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,420 tests and the last CI run on the merged
-tree, 43653928732, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,421 tests and the last CI run on the merged
+tree, 43655392031, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 01:49)
+### Running (state at 2026-11-15 02:00)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,11 +139,10 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate green (2,421 tests, 0 new packages,
-advisories ok), in CI as run 43655392031 since 01:52 on 2026-11-15:**
-`decomp-cfg-oracle` (`ae8492491a7ef480f`) on branch
-`integration` (worktree `../basilisk-wt/decomp-cfg-oracle`, `3e46ca8`)
-— D04's oracle acceptance, which completes D04. Its tests now use
+**Merged: `decomp-cfg-oracle`** (`ae8492491a7ef480f`; `9fbadf3`, CI run
+43655392031 green on all 8 jobs, integration gate on the build host
+2,421 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host cleaned and `master` published) — D04's oracle acceptance, which completes D04. Its tests now use
 `bk-testkit`'s formats and `decomp_bk`. **Generated graphs**: 12,000
 graphs, 40,000 dumps (`bk cfg analyze`, `bk structure bare trace`,
 `bare finish`, `asgiven trace`), each build's table generated twice and
@@ -163,8 +162,8 @@ unexplained. `Case block has become detached from switch` is Ghidra's
 result too (46 generated graphs); the rows where the reference never
 finishes are Basilisk's `TraceCycle`. Largest corpus function: 42
 nodes, 7 µs. Wine and arm64 105 passed each; its gates 2,421 tests.
-Checked-in tables: about 1.2 MB, all gzip. Gate green → push, CI,
-merge, delete, clean, publish; then `PLAN.md` D04 complete.
+Checked-in tables: about 1.2 MB, all gzip. **Wave 1 of the
+decompiler is complete** (`PLAN.md`).
 
 **Merged: `spec-decomp-wave2`** (`a2f24c167e7e94cd7`; `4ed9ee1`, merged
 directly at 01:35 on 2026-11-15, docs only; worktree and branch
@@ -753,8 +752,8 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `decomp-oracle` is merged (above). `decomp-cfg-oracle`: integration
-   gate → CI → merge (state above). `decomp-oracle-v2` reports → check
+   `decomp-oracle` is merged (above). `decomp-cfg-oracle` is merged
+   (above). `decomp-oracle-v2` reports → check
    its before/after hashes, merge through `integration`, tell
    `decomp-symbols` that version 2 dumps exist, and start **D05
    `decomp-ir`** (`features/decomp-ir.md`, ADR-046) in its slot.
