@@ -166,3 +166,56 @@ fn check_xml(
     }
     Ok(())
 }
+
+/// Test 4, the mutation check: a model that differs from the reference in
+/// one attribute value fails both comparisons of tests 1 and 2. Each
+/// mutation edits one attribute in the model's XML, decodes it, and checks
+/// that the packed stream no longer equals the inflated reference file and
+/// the XML no longer equals `sleigh -y`'s text.
+#[test]
+fn mutated_models_fail_the_differential_checks() {
+    let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::Sleigh) else {
+        return;
+    };
+    let limits = Limits::default();
+    let sla_path = reference.sla_file("Toy", "toy_be");
+    let stream = inflate(&std::fs::read(&sla_path).unwrap(), &limits).unwrap();
+    let out = tempfile::tempdir().unwrap();
+    let target = out.path().join("toy_be.sla");
+    let spec = reference.language_dir("Toy").join("toy_be.slaspec");
+    reference.sleigh().switch('y').compile(&spec, &target).unwrap();
+    let oracle_xml = std::fs::read_to_string(&target).unwrap();
+    let xml = Sla::decode_packed(&stream, &limits).unwrap().encode_xml().unwrap();
+    assert_eq!(xml, oracle_xml, "the unmutated model passes");
+    // (description, attribute text found first in the document, replacement)
+    let mutations = [
+        ("header uniqbase", "uniqbase=\"0x3d00\"", "uniqbase=\"0x3d01\""),
+        ("space delay", "name=\"ram\" index=\"3\" bigendian=\"true\" delay=\"1\"", "name=\"ram\" index=\"3\" bigendian=\"true\" delay=\"2\""),
+        ("symbol name", "name=\"r0\"", "name=\"r0x\""),
+        ("varnode offset", "space=\"register\" off=\"0x1000\"", "space=\"register\" off=\"0x1001\""),
+        ("constructor line", " line=\"", " line=\"1"),
+        ("print piece", "<print piece=\" \"/>", "<print piece=\"  \"/>"),
+        ("operand minlen", "minlen=\"0\"", "minlen=\"1\""),
+        ("token field signbit", "signbit=\"false\"", "signbit=\"true\""),
+        ("decision number", "<decision number=\"", "<decision number=\"9"),
+        ("mask word", "<mask_word mask=\"0x80000000\" val=\"0x0\"", "<mask_word mask=\"0x80000000\" val=\"0x80000000\""),
+        ("const_real", "<const_real val=\"0x4\"/>", "<const_real val=\"0x5\"/>"),
+        ("opcode", "code=\"COPY\"", "code=\"INT_ZEXT\""),
+    ];
+    let mut tried = 0;
+    for (name, find, replace) in mutations {
+        let Some(at) = xml.find(find) else {
+            panic!("{name}: `{find}` not in the toy_be document");
+        };
+        let mut mutated = xml.clone();
+        mutated.replace_range(at..at + find.len(), replace);
+        let model = match Sla::decode_xml(&mutated, &limits) {
+            Ok(model) => model,
+            Err(error) => panic!("{name}: the mutated model does not decode: {error}"),
+        };
+        assert_ne!(model.encode_packed().unwrap(), stream, "{name}: test 1 still passes");
+        assert_ne!(model.encode_xml().unwrap(), oracle_xml, "{name}: test 2 still passes");
+        tried += 1;
+    }
+    eprintln!("mutation check: {tried} single-attribute mutations, each failed tests 1 and 2");
+}
