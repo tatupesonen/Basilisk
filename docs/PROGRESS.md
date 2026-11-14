@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 15:48)
+## Now — RESUME HERE (2026-11-14 15:51)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -13,72 +13,68 @@ tests). M0:
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
 
-Workers count helpers; agents are told to start none. Fable 5.2 (high effort) for research and
-specs, Opus 5.5 (medium) for implementation.
+**Working rules in force** (all in `DIRECTION.md`): two running workers
+for now, counting helpers (agents start none); new agents are Opus 5.5 at
+medium effort; the coordinator does no hands-on work; existing work is
+never thrown away — agents are paused at a safe point and resumed by id,
+worktrees and branches are removed only when their content is on
+`master`.
 
-**Hard cap: three running workers** (owner, 2026-11-14; replaces the four
-above).
-
-**`master` is green in CI on Linux, macOS and Windows** since the merge
-of branch `integration` on 2026-11-14 11:30 (CI run 43578142514 on the
-branch: every job green; local gate 1,708 tests). It holds `bk-sla`, the
-GCC 15 build fix for `bk-binutils-sys` and the Windows path fixes.
-
-**How merges are done now** (owner allows pushing tested feature
-branches, 2026-11-14): finished branches are merged into a branch
-`integration` cut from `master`; the gate, `scripts/check-dep-age.py
-master` and `cargo deny check advisories` run on it; it is pushed and CI
-started with `gh workflow run CI --ref integration`; it is merged to
-`master` (`--no-ff`) only when every job is green on all three systems,
-and then deleted. A red job goes back to the agent whose crate it is.
-A report that says "not run" for a platform is not a reason to skip this.
-
-**Resumed 2026-11-14 15:07 after the usage-limit stop of 13:30.** Cap:
-**two workers** (owner, 15:07; three and briefly five earlier the same
-day). Existing work is never thrown away (owner): pause agents at a safe
-point, keep worktrees and branches until their content is on `master`.
-`sleigh-pcode` was asked at 15:07 to pause cleanly (commit, clean status,
-stop) and is **first to resume** when a slot frees.
+**How merges are done**: finished branches are merged into a branch
+`integration` cut from `master` (in its own worktree if the main checkout
+is busy); the gate, `scripts/check-dep-age.py master` and
+`cargo deny check advisories` run on it; it is pushed and CI started with
+`gh workflow run CI --ref integration`; it is merged to `master`
+(`--no-ff`) only when every job is green on all three systems, then
+deleted. A red job goes back to the agent whose crate it is. Conflicts in
+manifests are resolved by reading them, never by a script that keeps both
+sides (that broke `fuzz/Cargo.toml` once; neither the gate nor CI builds
+the fuzz crate — check it with `cargo metadata --manifest-path
+fuzz/Cargo.toml`). Branches that touch only docs and development scripts
+may be merged directly.
 
 **`master` is RED on Rust 1.100.0** (`144859f`, committed directly at the
-owner's choice on 2026-11-14 at 15:50; released 2026-11-09). The gate on
-`master` fails at its format step: rustfmt 1.100 formats six places in
-`crates/bk-elf` differently (macro invocations in
-`src/constants/mod.rs` and others). The gate stops at the first failing
-step, so what clippy, rustdoc and the tests say on 1.100.0 is not known
-yet; CI on the push will show the lint job red at least. **Nothing is
-merged to `master` until this is fixed.** Track `toolchain-1.100` (Opus)
-takes the slot of `decomp-cspec`, which was asked to pause cleanly at
-16:00: on a branch from `master`, `cargo fmt`, then fix everything clippy
-(`-D warnings`, all targets), rustdoc and the tests report on 1.100.0
-across the workspace and the fuzz crate, without weakening lints; check
-the Windows target and Wine; gate; integration branch; CI; merge. The
-running agents keep their worktrees on 1.97.1 until then (they were NOT
-told to change it); after the merge each is told to set
-`rust-toolchain.toml` to 1.100.0, run `cargo fmt` and clippy on its own
-crate, and continue.
+owner's choice on 2026-11-14; rustc 1.100.0 is dated 2026-11-09). The
+gate fails at its format step: rustfmt 1.100 formats six places in
+`crates/bk-elf` differently. The gate stops at the first failing step, so
+what clippy, rustdoc and the tests say on 1.100.0 was not known when the
+fix track started. **Nothing is merged to `master` until `toolchain-1.100`
+is merged.** After that merge, every running or paused implementation
+agent is told to set its worktree's `rust-toolchain.toml` to 1.100.0, run
+`cargo fmt` and clippy on its own crate, and continue (their worktrees
+are on 1.97.1 until then).
 
-**On `master` since 15:27 (CI run 43598927755 green on every job on all
-three systems, including the new `site` job; gate 1,819 tests):
-`bk-sleigh` part 1 (`sleigh-decode`), `bk-sleigh-compiler` part 1
-(`sleigh-compiler-front`), `bk-pcode` on the x86-64 oracle (`x86-oracle`,
-ADR-033; the regeneration on `kassini` with the fixed generator gave text
-identical to the checked-in table) and the website with the
-documentation's shell (`site/`, ADR-030, ADR-031). Their worktrees and
-branches are removed; `integration` is deleted.
+**On `master`** besides M0: `bk-ui`, the GNU disassembler crates,
+`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1, `bk-sleigh-compiler`
+part 1, `bk-pcode` on the x86-64 oracle, the website and documentation
+shell (`site/`), the unfused reference build. Last green CI on `master`
+before the toolchain change: run 43598927755 (all jobs, all three
+systems; gate 1,819 tests).
 
-**For the owner, to publish the site**: GitHub → Settings → Pages →
-Build and deployment → Source "GitHub Actions"; then the `Pages` workflow
-is run (`gh workflow run Pages`). It goes live at
-`https://tatupesonen.github.io/basilisk/`, or at a custom domain if one
-is set in the same settings.
+**The site is built but not published** (owner: "Not until there is more
+to show"). When the owner says so: GitHub → Settings → Pages → Source
+"GitHub Actions", then `gh workflow run Pages`
+(`https://tatupesonen.github.io/basilisk/`).
 
-### Running (updated 15:28; state at 2026-11-14 15:07)
+### Running (state at 2026-11-14 15:51)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 15:07 (three uncommitted files); D03, `bk-cspec`. |
-| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | resumed 15:28 from its status file (reading done, six-step plan); given the `pcodedump` crash analysis. `bk-sleigh` part 2 from `features/sleigh-pcode.md`. |
+| `toolchain-1.100` (worktree `../basilisk-wt/toolchain`) | Opus | `ae408076ffaacbf39` | started 15:51; makes the workspace pass the gate on Rust 1.100.0 without weakening lints. Finished → integration branch, CI, merge, then tell the other agents to move to 1.100.0. |
+| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | resumed 15:28; the p-code builder, emitters, `lift` and `build_template` are committed; `bk-sleigh` part 2 from `features/sleigh-pcode.md`. |
+
+**Paused for the toolchain fix, first to resume** (when `toolchain-1.100`
+reports): `decomp-cspec` (`aaa90a7df42087601`; worktree kept, clean, last
+commit `43cd830`, a work-in-progress commit). D03, `bk-cspec`: the crate
+is written (about 10,400 lines); `testfuncproto.cc` 21/21 and
+`testparamstore.cc` 5/5 ported and passing; the nine Java classes (12
+tests; the spec says 13, the inventory 12) pass; the oracle replay over
+all 294 language/compiler pairs compares 127,088 rows with none
+unexplained. Unfinished: `tests/derived.rs` in the last commit has never
+been compiled; then a corpus counts test, property tests, the fuzz
+target, benchmarks, docs and checklists, two gate runs, the Windows
+clippy check. Its status file has the detail. On resume it also moves to
+Rust 1.100.0.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
