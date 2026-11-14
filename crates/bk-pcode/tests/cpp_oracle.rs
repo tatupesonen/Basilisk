@@ -103,8 +103,9 @@ fn explain(
     if op == OpCode::FloatTrunc {
         let mask = bk_pcode::mask::calc_mask(size_out);
         let value = input_format.host_float(inputs[0]).0;
-        let in_range =
-            (-9.223_372_036_854_775_808e18..9.223_372_036_854_775_808e18).contains(&value);
+        // 2^63: the `i64` range is [-2^63, 2^63).
+        let limit = (1u64 << 63) as f64;
+        let in_range = (-limit..limit).contains(&value);
         // x86-64's "integer indefinite" value.
         let x86_indefinite = 1u64 << 63;
         let saturated = value as i64 as u64;
