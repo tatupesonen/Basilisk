@@ -46,6 +46,12 @@ fn language_root() -> tempfile::TempDir {
         .join("languages");
     std::fs::create_dir_all(&languages).unwrap();
     fixture::pcode::write_language_dir(&languages);
+    // The registry wants every file a language names.
+    std::fs::write(
+        languages.join("bkpc.cspec"),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<compiler_spec>\n</compiler_spec>\n",
+    )
+    .unwrap();
     dir
 }
 
@@ -54,8 +60,20 @@ fn help_and_exit_statuses() {
     let help = basilisk(&[s("--help")]);
     assert_eq!(help.status.code(), Some(0));
     let text = String::from_utf8(help.stdout).unwrap();
-    assert!(text.starts_with("USAGE: basilisk disasm --language <id>"), "{text}");
-    for option in ["--root", "--base", "--context", "--hex", "--format", "--no-pcode", "--quiet", "--timing"] {
+    assert!(
+        text.starts_with("USAGE: basilisk disasm --language <id>"),
+        "{text}"
+    );
+    for option in [
+        "--root",
+        "--base",
+        "--context",
+        "--hex",
+        "--format",
+        "--no-pcode",
+        "--quiet",
+        "--timing",
+    ] {
         assert!(text.contains(option), "{option}");
     }
     // Bad command lines: 2.
@@ -64,7 +82,12 @@ fn help_and_exit_statuses() {
         vec![s("--language"), s("x:LE:32:d"), s("--bogus")],
         vec![s("--language"), s("x:LE:32:d"), s("--hex"), s("0")],
         vec![s("--language"), s("x:LE:32:d"), s("--format"), s("xml")],
-        vec![s("--language"), s("x:LE:32:d"), s("--context"), s("novalue")],
+        vec![
+            s("--language"),
+            s("x:LE:32:d"),
+            s("--context"),
+            s("novalue"),
+        ],
     ] {
         assert_eq!(basilisk(&args).status.code(), Some(2), "{args:?}");
     }
@@ -72,8 +95,20 @@ fn help_and_exit_statuses() {
     let root = language_root();
     let r = root.path().as_os_str();
     for args in [
-        vec![s("--language"), s("Nope:LE:32:default"), s("--root"), r, s("--hex"), s("00")],
-        vec![s("--language"), s("BkPcode:BE:32:default"), s("--hex"), s("00")],
+        vec![
+            s("--language"),
+            s("Nope:LE:32:default"),
+            s("--root"),
+            r,
+            s("--hex"),
+            s("00"),
+        ],
+        vec![
+            s("--language"),
+            s("BkPcode:BE:32:default"),
+            s("--hex"),
+            s("00"),
+        ],
         vec![
             s("--language"),
             s("BkPcode:BE:32:default"),
@@ -92,12 +127,20 @@ fn help_and_exit_statuses() {
 /// The recorded block of `pcodedump` output for the stream at `base`.
 fn recorded(base: &str) -> (String, String) {
     let text = std::fs::read_to_string(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../bk-sleigh/tests/data/pcode-fixture-oracle.txt"),
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../bk-sleigh/tests/data/pcode-fixture-oracle.txt"),
     )
     .unwrap();
-    let mut lines = text.lines().skip_while(|l| !l.starts_with(&format!("stream\t{base}\t")));
+    let mut lines = text
+        .lines()
+        .skip_while(|l| !l.starts_with(&format!("stream\t{base}\t")));
     lines.next().expect("stream recorded");
-    let bytes = lines.next().unwrap().strip_prefix("bytes\t").unwrap().to_owned();
+    let bytes = lines
+        .next()
+        .unwrap()
+        .strip_prefix("bytes\t")
+        .unwrap()
+        .to_owned();
     let mut out = String::new();
     for line in lines.take_while(|l| *l != "end") {
         out.push_str(line);
@@ -121,12 +164,20 @@ fn output_equals_recorded_pcodedump() {
             s("--hex"),
             s(&bytes),
         ]);
-        assert_eq!(out.status.code(), Some(0));
+        assert_eq!(
+            out.status.code(),
+            Some(0),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
         let text = String::from_utf8(out.stdout).unwrap();
         let (header, rest) = text.split_once('\n').unwrap();
         assert_eq!(
             header,
-            format!("H\t1\tBkPcode:BE:32:default\tram\t{base}\t{}", bytes.len() / 2)
+            format!(
+                "H\t1\tBkPcode:BE:32:default\tram\t{base}\t{}",
+                bytes.len() / 2
+            )
         );
         assert_eq!(rest, expected, "stream {base}");
     }
