@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Size restriction error in table 'instruction'
+  Problem in Zero extension(zext) operator
+  Output size must be strictly bigger than input size
+=> no output

@@ -466,7 +466,9 @@ impl<R: SymbolResolver> Builder<'_, R> {
             }
             ExportValue::Deref { star, name } => {
                 let (space, size) = self.star(star)?;
-                let vn = self.export_name(*name, "Unknown pointer varnode: ")?;
+                // Ghidra's parser reduces the name to `lhsvarnode` first, so the
+                // message is that of an assignment.
+                let vn = self.export_name(*name, "Unknown assignment varnode: ")?;
                 let temp = self.resolver.allocate_temp();
                 Ok(HandleTpl {
                     space,

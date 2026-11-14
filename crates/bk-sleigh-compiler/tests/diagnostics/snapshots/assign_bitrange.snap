@@ -1,0 +1,10 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2): Assigned bitrange is bad
+error (line 2): Assigning to bitrange is superfluous
+error (line 2): Assigned bitrange is bad
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error: Duplicate (offset,size) pair for registers: r0 and alias0
+=> no output

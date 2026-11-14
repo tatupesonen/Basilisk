@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3): syntax error
+error (line 5, located): No matching global symbol 'r0'
+error: No default space specified
+=> no output

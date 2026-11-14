@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 operations wrote to temporaries that were not read
+warning: Use -t switch to list each individually
+=> elaborated

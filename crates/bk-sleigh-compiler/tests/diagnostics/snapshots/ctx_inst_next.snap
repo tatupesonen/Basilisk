@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2): Cannot use 'inst_next' or 'inst_next2' to set context variable: mode
+=> no output

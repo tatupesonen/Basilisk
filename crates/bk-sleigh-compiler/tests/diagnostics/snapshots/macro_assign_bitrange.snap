@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error: Cannot currently assign to bitrange of macro parameter that is a temporary
+error (line 3, located): in table "instruction" constructor starting at line 3
+error (line 3, located):    Main section: Could not expand macros
+=> no output

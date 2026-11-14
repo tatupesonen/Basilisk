@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): in table "instruction" constructor starting at line 2
+error (line 2, located):    Main section: Could not resolve at least 1 variable size
+=> no output

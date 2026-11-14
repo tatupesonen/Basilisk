@@ -1,0 +1,6 @@
+define endian=little;
+define space ram type=ram_space size=4 default;
+define space register type=register_space size=4;
+define register offset=0x300 size=4 [ ctx2 ];
+define context ctx2 cf=(30,40);
+:x is epsilon { }
