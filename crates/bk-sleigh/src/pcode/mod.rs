@@ -199,13 +199,19 @@ impl Decoder {
         }
         let lang: &crate::Language = &self.lang;
         let main = &self.main;
-        let mut parses: [&Parse; 1 + crate::decode::MAX_DELAY_INSTRUCTIONS] =
-            [main; 1 + crate::decode::MAX_DELAY_INSTRUCTIONS];
+        // The instruction and its delay-slot instructions; the array is
+        // filled only when there are delay slots.
+        let all: [&Parse; 1 + crate::decode::MAX_DELAY_INSTRUCTIONS];
         let delays = self.delays.get(..self.num_delays).unwrap_or_default();
-        for (slot, d) in parses.iter_mut().skip(1).zip(delays) {
-            *slot = d;
-        }
-        let parses = parses.get(..=delays.len()).unwrap_or_default();
+        let only = [main];
+        let parses: &[&Parse] = if delays.is_empty() {
+            &only
+        } else {
+            all = std::array::from_fn(|i| {
+                i.checked_sub(1).and_then(|d| delays.get(d)).unwrap_or(main)
+            });
+            all.get(..=delays.len()).unwrap_or_default()
+        };
         let mut builder = Builder {
             lang,
             source: Some((bytes, &*context)),
