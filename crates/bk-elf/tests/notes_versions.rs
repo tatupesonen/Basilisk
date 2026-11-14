@@ -58,7 +58,7 @@ fn lld_build_id_and_pt_note_agree_with_object() {
         .map(|n| n.unwrap())
         .map(|n| (n.name.into_bytes(), n.vendor_type, n.description))
         .collect();
-    assert!(!expected.is_empty());
+    assert_ne!(expected, []);
     assert_eq!(ours, expected);
     assert_eq!(ours[0].2, id.id());
     assert_eq!(elf.program_headers_of_type(SegmentType::PT_NOTE).count(), 1);

@@ -24,7 +24,7 @@ use rstest::rstest;
 #[test]
 fn ldefs_reads_every_attribute_and_child() {
     let parsed = ldefs::parse(LDEFS, Mode::Strict).unwrap();
-    assert!(parsed.warnings.is_empty());
+    assert_eq!(parsed.warnings, []);
     let [first, second] = parsed.value.languages.as_slice() else {
         panic!("two languages")
     };

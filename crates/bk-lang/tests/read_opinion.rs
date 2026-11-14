@@ -232,12 +232,12 @@ fn malformed_documents_are_errors_not_panics() {
     // Namespaced elements are not the schema's elements.
     let namespaced = r#"<opinions xmlns:x="urn:x"><x:constraint/></opinions>"#;
     assert!(opinion::parse(namespaced, Mode::Strict).is_err());
-    assert!(
+    assert_eq!(
         opinion::parse(namespaced, Mode::Lenient)
             .unwrap()
             .value
-            .constraints()
-            .is_empty()
+            .constraints(),
+        []
     );
 }
 

@@ -66,7 +66,7 @@ fn starts_with_a(name: &str) -> Option<String> {
 fn boolean_expression_test(#[case] expression: &str, #[case] expected: bool) {
     let result = evaluate(expression, &identity).unwrap();
     assert_eq!(result.value, expected, "{expression}");
-    assert!(result.undefined.is_empty());
+    assert_eq!(result.undefined, Vec::<String>::new());
 }
 
 #[rstest]

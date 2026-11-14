@@ -464,7 +464,7 @@ mod tests {
         assert_eq!((first.line, first.column), (1, 1));
         assert_eq!(map.source_range(Span::new(5, 7)), Some((FileId(0), 5..7)));
         assert_eq!(map.snippet(Span::new(5, 7)), "cd");
-        assert!(map.include_chain(loc.include).is_empty());
+        assert_eq!(map.include_chain(loc.include), []);
     }
 
     #[test]

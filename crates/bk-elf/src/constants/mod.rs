@@ -221,30 +221,36 @@ macro_rules! newtype {
 
 newtype!(
     /// The target architecture, `e_machine`.
-    Machine(u16), 6
+    Machine(u16),
+    6
 );
 newtype!(
     /// The object file type, `e_type`.
-    ElfType(u16), 6
+    ElfType(u16),
+    6
 );
 newtype!(
     /// The operating system / ABI identification, `e_ident[EI_OSABI]`.
-    OsAbi(u8), 4
+    OsAbi(u8),
+    4
 );
 newtype!(
     /// A section type, `sh_type`.
-    SectionType(u32), 10
+    SectionType(u32),
+    10
 );
 newtype!(
     /// A segment type, `p_type`.
-    SegmentType(u32), 10
+    SegmentType(u32),
+    10
 );
 newtype!(
     /// A dynamic table tag, `d_tag`.
     ///
     /// Ghidra keeps the tag as a 32-bit value; in a 64-bit file the upper
     /// half of `d_tag` is dropped when the entry is read.
-    DynamicTag(u32), 10
+    DynamicTag(u32),
+    10
 );
 
 impl ElfType {

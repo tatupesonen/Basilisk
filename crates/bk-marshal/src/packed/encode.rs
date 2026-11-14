@@ -78,7 +78,7 @@ impl PackedEncoder {
     /// Writes a type byte with the length code filled in, then the value in
     /// seven-bit groups, most significant first.
     fn write_integer(&mut self, type_code: u8, value: u64) {
-        let bits = u64::BITS - value.leading_zeros();
+        let bits = value.bit_width();
         let groups = bits.div_ceil(RAWDATA_BITSPERBYTE);
         self.out.push((type_code << TYPECODE_SHIFT) | groups as u8);
         for group in (0..groups).rev() {

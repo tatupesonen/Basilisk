@@ -478,7 +478,10 @@ fn test_to_double() {
     assert_eq!(1.0, BigFloat::from_f64(1.0).to_f64());
     assert_eq!(-2.5, BigFloat::from_f64(-2.5).to_f64());
     assert_eq!(f64::MAX, BigFloat::from_f64(f64::MAX).to_f64());
-    assert_eq!(MIN_VALUE_F64, BigFloat::from_f64(MIN_VALUE_F64).to_f64());
+    assert_eq!(
+        MIN_VALUE_F64.to_bits(),
+        BigFloat::from_f64(MIN_VALUE_F64).to_f64().to_bits()
+    );
     // Infinite.
     assert_eq!(f64::INFINITY, BigFloat::from_f64(f64::INFINITY).to_f64());
     assert_eq!(
@@ -507,7 +510,10 @@ fn test_to_float() {
     assert_eq!(1.0, BigFloat::from_f32(1.0).to_f32());
     assert_eq!(-2.5, BigFloat::from_f32(-2.5).to_f32());
     assert_eq!(f32::MAX, BigFloat::from_f32(f32::MAX).to_f32());
-    assert_eq!(MIN_VALUE_F32, BigFloat::from_f32(MIN_VALUE_F32).to_f32());
+    assert_eq!(
+        MIN_VALUE_F32.to_bits(),
+        BigFloat::from_f32(MIN_VALUE_F32).to_f32().to_bits()
+    );
     // Infinite.
     assert_eq!(f32::INFINITY, BigFloat::from_f32(f32::INFINITY).to_f32());
     assert_eq!(

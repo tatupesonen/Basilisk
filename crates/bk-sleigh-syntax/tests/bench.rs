@@ -47,7 +47,7 @@ fn bench_specs(label: &str, specs: &[PathBuf], runs: usize) {
     let mut nodes = 0usize;
     for spec in specs {
         let parsed = parse_file(spec, &defines, &mut FsLoader);
-        assert!(parsed.diagnostics.is_empty());
+        assert_eq!(parsed.diagnostics, []);
         lines += parsed.sources.line_count();
         bytes += parsed.sources.text().len();
         tokens += parsed.token_count;

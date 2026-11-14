@@ -27,7 +27,7 @@ fn opens_at_main_with_a_full_listing() {
     let mut seen = 0;
     while seen < n {
         let rows = p.listing_rows(RowIndex(seen), 500).unwrap();
-        assert!(!rows.is_empty());
+        assert_ne!(rows, []);
         seen += rows.len() as u64;
     }
     assert_eq!(seen, n);
@@ -99,7 +99,7 @@ fn decompiled_lines_map_to_instructions_both_ways() {
         .iter()
         .find(|l| l.tokens.iter().any(|t| &*t.text == "load_config"))
         .unwrap();
-    assert!(!call.ranges.is_empty());
+    assert_ne!(call.ranges, []);
     let target = call
         .tokens
         .iter()
