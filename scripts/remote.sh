@@ -103,6 +103,9 @@ start)  # slug sha mode timeout jobs ref|noref cmd...
     unset BASILISK_GHIDRA_DIR BASILISK_REFERENCE_DIR
   fi
   cd "$wt"
+  # Every platform's crates: the gate's `cargo deny --offline` reads the
+  # metadata of all of them, and a build downloads only the host's.
+  timeout 600 cargo fetch --locked -q >&2 || echo "remote: cargo fetch failed; continuing" >&2
   # Detached from the ssh session and bounded: a dropped connection neither
   # stops the job nor leaves it running for ever. timeout signals the whole
   # process group.
@@ -179,7 +182,7 @@ lost() {
 start_job() {  # mode ref cmd...
   local mode=$1 ref=$2 sha log; shift 2
   sha=$(push_head)
-  log=$(rcall 300 start "$slug" "$sha" "$mode" "$TMO" "$JOBS" "$ref" "$@") || exit $?
+  log=$(rcall 900 start "$slug" "$sha" "$mode" "$TMO" "$JOBS" "$ref" "$@") || exit $?
   [ -n "$log" ] || die "the job did not start"
   printf '%s' "$log"
 }
