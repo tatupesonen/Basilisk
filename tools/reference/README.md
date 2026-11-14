@@ -262,6 +262,12 @@ file <datatests>/elseif.xml` is the conventional set-up.
 | `bk dump structure <file>` | the current function's structured hierarchy (`P` and `S` records; leaves are `L<position of the basic block in the block list>`) |
 | `bk cfg analyze <graph> <out>` | Ghidra's analyses on a graph file: format `bkcfg 1` |
 | `bk structure <graph> <out> [bare\|asgiven] [finish] [trace] [xml <file>]` | Ghidra's structurer on a graph file: format `bkstruct 1` |
+| `bk dump state <file>` | the complete state of the current function: format `bkstate 1` |
+| `bk capture structure <prefix>` | decompiles the current function, stopping at every `blockstructure` start, the action after each and the action after `finalstructure`; writes `<prefix>.<k>.blocks.bkg` at each start whose structure is empty (structuring run *k*), `<prefix>.<k>.structure.bks` at the next action, `<prefix>.final.{structure.bks,state}` and `<prefix>.end.{structure.bks,state}` |
+| `bk pcode record <file>` | from now on, records every answer of Ghidra's lifter (format `pcoderec 1`); give it after `load test file`/`load file` and before the first `load function` |
+| `bk pcode replay <file>` | from now on, answers `oneInstruction` and `instructionLength` from a recording, by address |
+| `bk pcode stop` | ends recording (writes the file) or replay |
+| `bk trace stream` | points the debug stream, where the `OPACTION_DEBUG` trace goes, at the bulk output (`decomp_bk_dbg` only; `load test file` already does it) |
 
 Positions are what `list action` prints; give them by path from `bk list
 actions` (`ActionList::position_of` in `bk-testkit`), never as numbers
@@ -411,6 +417,131 @@ commands may have changed — without `list action`'s blank separator lines
 and `<--` state marker. The path joins the names from the root with `:`
 (`universal:fullloop:mainloop:blockstructure`); a line's position is its
 index.
+
+### State dumps, `bkstate` version 1 (`bk dump state`)
+
+Everything that defines where Ghidra's pipeline stands for the current
+function, every object named by a reproducible key, never a host pointer:
+varnodes `v<create index, hex>`, ops by sequence number
+`<address>:0x<time>` (`-:0x…` when the op has no address), basic blocks
+`b<index>`, call specs `c<position in qlst>`, jump tables `j<position>`,
+high variables `h<n>` (numbered by their smallest member's create index),
+symbols `s<symbol id, hex>`, data types `t<n>` (position in `@types`, in
+order of first reference). The three kinds of host pointer Ghidra keeps in
+varnode offsets are written by key: an `iop` varnode's offset as
+`op:<seqnum>`, an `fspec` varnode's as `call:c<k>` (`call:-` when the call
+spec is no longer in `qlst`: Ghidra deleted it and the varnode keeps the
+dangling pointer), a `LOAD`/`STORE` space constant (a constant of pointer
+size equal to an `AddrSpace *`) as `space:<name>`; such a constant's `nzm`
+is its key too. The varnode bank orders are written with those keys in
+place of the pointers (op time, call-spec position — the largest key for a
+dead one —, space index); Ghidra's own order among those varnodes follows
+heap addresses.
+
+```
+BKSTATE	1	<ghidra commit>	<architecture id>
+@<section>	<record count>          (18 sections, in this order, each present)
+…
+END	<number of lines before END>
+```
+
+| Section | Records (fields after the tag) |
+|---|---|
+| `@function` | `F` name, display name, entry, size, flags, clean_up_index, high_level_index, cast_phase_index, minLanedSize · `K` next create index, uniqbase, next unique offset, next op time · `W` per comment of the function (warnings included): type, address, uniq, text · `O` the local overrides as `Override::encode` writes them, when any · `X` per `lanedMap` entry: storage, size, whole size, lane-size mask · `U` per `unionMap` entry: type id, op time, encoding, base type, resolved type, field, lock |
+| `@actions` | per line of `list action`, in order: `A` position, path, status, count, lcount (`-` until Ghidra sets them), count_tests, count_apply, flags, breakpoint, state (`restart:<curstart>`, `child:<i>` and `op:<seqnum>/<rule index>` where a group or pool stands mid-way) · `R` position, path, flags, count_tests, count_apply, breakpoint |
+| `@spaces` | `P` index, name, type, shortcut (or `-`), word size, address size, flags, delay, dead-code delay |
+| `@varnodes` | `V` per varnode, by create index: id, space, offset, size, flags, addlflags, mergegroup, def, readers (in `descend` order), type, consumed, nzm, high, symbol entry (`s<id>:<position in mapentry>`) |
+| `@locorder`, `@deforder` | one `O` record: every varnode, in the bank's order with canonical keys |
+| `@ops` | `O` per op (`optree` and `alttree`), by sequence number: seqnum, order, opcode, flags, addlflags, output, inputs, parent block, `alive`/`dead`, `main`/`alt`, the op as `print raw` prints it |
+| `@oplists` | `L` per list of `PcodeOpBank` (`alive`, `dead`, `store`, `load`, `return`, `userop`): the ops in list order |
+| `@blocks` | `B` per basic block in list order: block, position, flags, immediate dominator, numdesc, cover ranges (`<space>:0x<first>-0x<last>`), ops in block order · `E` per in-edge of that block: source, out-slot, label |
+| `@structure` | the `S` and `P` records of a structure dump (leaves `L<position of the basic block>`), when the hierarchy is not empty |
+| `@proto` | the function's prototype: `M` model (or `-`), extrapop (`-` without a model: Ghidra leaves it uninitialised until `setModel`), flags, injectid, returnBytesConsumed · `Q` per parameter: `in`/`out`, position, name, storage, size, type, flags (`t` type lock, `n` name lock, `z` size lock, `h` this, `i` indirect storage, `r` hidden return, `u` name undefined) · `X` per effect: type, address, size · `Y` per likely-trash location: address, size · `A` per `ParamActive` (`activeoutput`): direction, slotbase, stackplaceholder, numpasses, maxpass, isfullychecked, needsfinalcheck, recoversubcall, joinMostSigFirst · `T` per trial of it: address, size, flags, model entry (`<space>:0x<base>:<size>`), slot, offset, fixedPosition |
+| `@callspecs` | per call spec in `qlst` order: `C` call, op, name, entry, effective_extrapop, stackoffset, stackPlaceholderSlot, paramshift, isinputactive, isoutputactive, isbadjumptable, isstackoutputlock, inputConsume; then its prototype records (`M`, `Q`, `X`, `Y`) and, when active, `A`/`T` for `activeinput` and `activeoutput` |
+| `@jumptables` | `J` per table: table, BRANCHIND, opaddress, addresstable, block2addr (`<out-edge position>:<address index>`), labels, defaultBlock, lastBlock, switchVarConsume, recoverCount, displayFormat, partialTable, collectloads, defaultIsFolded, model kind, original model kind, isOverride · `D` per load table: address, size, entries |
+| `@scope` | `Z` the local scope: name, stack space, stackGrowsNegative, rangeLocked, overlapProblems, openParamRefs, minParamOffset, maxParamOffset, owned ranges · `N` name recommendations · `D` dynamic recommendations · `Y` type recommendations · `S` per symbol, by id: id, name, display name, type, flags, dispflags, category, catindex, nameDedup, kind, wholeCount · `M` per map entry of it: storage (address, `hash:0x…` or `-`), size, offset, use-limit ranges, extraflags, properties · `G` per symbol of another scope that the function's records name: id, name, scope, storage |
+| `@heritage` | `Z` pass, maxdepth · `I` per heritaged space: space, delay, deadcodedelay, deadremoved, loadGuardSearch, warningissued, hasCallPlaceholders · `M` per `globaldisjoint` range: address, size, pass · `L` per load and store guard: `load`/`store`, op, space, pointerBase, minimum, maximum, step, analysis state · `C` loadCopyOps |
+| `@highs` | `H` per high variable: high, members (`inst` order), numMergeClasses, highflags, flags, type, name representative, symbol, symbol offset, piece (`<first high of the group>:<offset>:<size>:<group size>:<group symbol offset>`) |
+| `@types` | `T` per referenced type: name in the dump, Ghidra's id, metatype, size, name, `Datatype::encode` on one line |
+| `@c` | `C` per line of `print C`, when the function is finished (`processing_complete` set and the root action not stopped mid-way: the flag survives `Funcdata::clear`) |
+
+Left out, deliberately: host addresses; caches Ghidra rebuilds from the
+state (covers, `HighVariable`'s cached properties beyond what `highflags`
+says is valid, intersection caches); scratch valid inside one algorithm
+(`Varnode::temp`, visit counts, marks); the architecture (spaces are
+listed, models, types and global symbols referred to by name and id);
+the partial `Funcdata` copies of jump-table recovery; the printer's state;
+fields Ghidra never sets (`FuncCallSpecs::matchCallCount`); `Heritage`'s
+per-pass work arrays (`domchild`, `augment`, `flags`, `depth`, `merge`),
+rebuilt by every pass.
+
+### Recorded p-code, `pcoderec` version 1 (`bk pcode record`)
+
+The proxy translator that replaces `Architecture::translate` shares the
+original's spaces and copies its endianness, alignment, unique base and
+float formats; it forwards every method and, while recording, logs every
+`oneInstruction` and `instructionLength` call in call order (repeats
+included: flow is followed again by every `decompile`, by inlining and by
+jump-table recovery).
+
+```
+H	pcoderec	1	<language id>	<compiler spec id>
+X	<address>                              (addresses whose records differ)
+I	<address>	<length>	<op count>     (oneInstruction returned; its P records follow)
+P	<op address>	<opcode>	<output or ->	<inputs…>
+U	<address>	unimplemented|baddata|error	<length or ->	<message>
+L	<address>	<length>                     (instructionLength)
+T	<I count>	<U count>	<L count>
+```
+
+Varnodes are written as `pcodedump` writes them: `(space,0xOFFSET,SIZE)`,
+or `(space,0xOFFSET,SIZE,NAME)` when a register is exactly that location; a
+`LOAD`/`STORE` space constant is `(const,0x<space index>,<size>,<space
+name>)`. Replay answers by address — an `I` record replays its ops, a `U`
+record rethrows `UnimplError` (with its length), `BadDataError` or
+`LowlevelError` with the message — and refuses a recording with `X`
+records (`context-dependent records at <address>`); an address that is not
+in the recording is an error (`pcode replay: no record for <address>`).
+
+### The trace (`decomp_dbg`, `decomp_bk_dbg`)
+
+Ghidra's own `OPACTION_DEBUG` output (`Funcdata::debugModPrint`), with
+`trace address` (no argument: the whole function) and `trace enable`
+before `decompile`:
+
+```
+DEBUG <count>: <action or rule name>
+<seqnum>: <op before, or ** when it was dead or had no block>
+   <seqnum>: <op after, or **>
+…
+<empty line>
+```
+
+The records are written into the console's output, between its other
+lines; `bk_testkit::oracle::Trace::extract` picks them out. The trace does
+not cover the partial functions of jump-table recovery.
+
+### The capture driver (`bk-oracle`)
+
+`cargo run -p bk-testkit --bin bk-oracle -- capture <datatests|research|all>
+<out>` runs, for every data test (in the data-test directory, as `load test
+file <name>.xml` and the test's commands) and every research fragment (in
+`docs/research/decompiler-quality`, its script as it is), four console
+runs: `decomp_bk` with state dumps at the four standard points (the action
+after `start`, the first start of `oppool1`, the start of `cleanup`,
+`stop`; positions by path from `bk list actions`) and at the end, with
+`print raw` at the first point and `print raw` and `print tree varnode` at
+the end, recording the p-code; `decomp_bk` replaying that recording;
+`decomp_bk_dbg` with the trace; `decomp_bk` with `bk capture structure`.
+It also runs the plain script with `print raw`, `print tree varnode` and
+`print tree block` after each decompilation through `decomp` and
+`decomp_dbg`. It checks that every end dump is complete against the
+console's own listings (`decomp-oracle.md` 6.2), that the replay gives the
+same `print raw` (6.3) and that `decomp_dbg` prints what `decomp` prints,
+host pointers aside (6.6); it runs everything twice and requires the two
+captures to be byte-identical (6.5). `bk-oracle compare` classifies the
+differences between two builds' captures by named cause, `bk-oracle check`
+reports drift against `fixtures/decomp-oracle/`.
 
 ## Measuring
 
