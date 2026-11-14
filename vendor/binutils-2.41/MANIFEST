@@ -4,7 +4,7 @@ source: git://sourceware.org/git/binutils-gdb.git
 tag: binutils-2_41
 commit: 2c73aeb8d2e02de7b69cbcb13361cfbca9d76a4e
 generated: opcodes/s390-opc.tab (opcodes/s390-mkopc.c < opcodes/s390-opc.txt)
-patches: 0001-arm-dis-sequence-state-per-info.patch 0002-cgen-dis-cache-switch.patch 0003-xgate-cris-sequence-state-per-info.patch
+patches: 0001-arm-dis-sequence-state-per-info.patch 0002-cgen-dis-cache-switch.patch 0003-xgate-cris-sequence-state-per-info.patch 0004-cr16-dis-stale-argument.patch
 files (sha256, path):
 231f7edcc7352d7734a96eef0b8030f77982678c516876fcb81e25b32d68564c  COPYING
 56bdea73b6145ef6ac5259b3da390b981d840c24cb03b8e1cbc678de7ecfa18d  COPYING.LIB
@@ -275,7 +275,7 @@ a26f659b5d17892c1bb936947a93d03ac39502c9230fa612d8cccbf91651d30e  opcodes/bpf-op
 11401c96fc545a33acda3d9ef02bf5dd9324dc90187be31351425d168a0e9939  opcodes/cgen-bitset.c
 a883d5c737c3b5e985fcc0efdc73b7b630ca21c90ce69ef52a2781761b06ec00  opcodes/cgen-dis.c
 e22a8842b55e436bbb19291b03d6f278e64bcff1ba249a62c8f3e78e1da8ade1  opcodes/cgen-opc.c
-77c17a552af64eb21e3765b3dd87fc99f736d3534aeddbe2fcd80d6a420077ea  opcodes/cr16-dis.c
+472e30753355c0d12ea05a50c54161db3e83d638c86b447ad0ca747734a93020  opcodes/cr16-dis.c
 f6b04659522c208814855c0e5bc23f14d4660e2cd853d391e0bff2c1cb84719b  opcodes/cr16-opc.c
 721ee9f167233a08f277584d3f242d40aa56cae7fa6e7a5cabcbe2716a8c42c2  opcodes/cris-dis.c
 f857504876852c2b6d64406124fa869e90ccd910934734c2625945c5537504c5  opcodes/cris-opc.c
