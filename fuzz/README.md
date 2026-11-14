@@ -54,3 +54,11 @@ error, into a finding.
 
 This target makes every `cargo fuzz build` of this crate compile binutils
 (about 280 C files), whichever target is asked for.
+
+## `bk_decomp_range_ops`
+
+Arbitrary bytes read as three `CircleRange`s with any field values (bounds,
+mask, step including 0 and negatives, empty flag), two sizes, an opcode, a
+constant and a step bound, then every method of `bk-decomp-range`. Nothing
+to instrument outside Rust; plain `cargo +nightly fuzz run
+bk_decomp_range_ops -- -max_total_time=300`.

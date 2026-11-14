@@ -517,3 +517,21 @@ template; there is no per-language work after `new`. The whole shipped
 corpus (588 compilations in 116 languages) is compiled in well under a
 millisecond of compile time; the differential test's 0.5 s is spent
 loading `.sla` files and running the oracle.
+
+### `bk-decomp-range`
+
+2026-11-14, the Linux build host (a 20-vCPU x86-64 Linux VM, AMD Ryzen
+Threadripper 7970X), rustc 1.100.0, `--release` (thin LTO), one test
+thread. 4,096 well-formed ranges of 1–8 bytes with steps 1–8, 500 rounds.
+Command:
+
+    cargo test -p bk-decomp-range --release --test bench -- --ignored --nocapture --test-threads=1
+
+| Benchmark | ns/call |
+|---|---:|
+| `intersect`, consecutive pairs of the set | 8.0 |
+| `pull_back_binary`, mix of `INT_ADD`, `INT_SUB`, `INT_LESS`, `INT_EQUAL`, `INT_RIGHT`, `INT_SRIGHT`, constants 0–7 | 5.8 |
+| `push_forward_binary`, mix of `INT_ADD` (two ranges), `INT_MULT`, `INT_LEFT`, `INT_RIGHT`, `SUBPIECE` (constant second input), `INT_EQUAL` | 7.8 |
+
+Every method is a handful of branches on a 32-byte `Copy` value and
+allocates nothing (`tests/no_allocation.rs`).
