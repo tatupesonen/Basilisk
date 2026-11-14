@@ -311,6 +311,11 @@ impl BigFloat {
 
     /// The nearest `f32` (`floatValue`). A NaN gives the positive quiet NaN.
     pub fn to_f32(&self) -> f32 {
+        // Explicit: the sign and payload of a NaN converted by `as` are not
+        // guaranteed to be the same on every target.
+        if self.is_nan() {
+            return f32::NAN;
+        }
         self.to_binary(24, -126) as f32
     }
 

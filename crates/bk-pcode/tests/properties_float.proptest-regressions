@@ -8,3 +8,5 @@ cc 89a5911300c5b1db88ec18a0587e5cf9f5858e038e41077e34af344b75079e37 # shrinks to
 cc a56f14d7aa88a8e12badb6051174cd6697bc7da46ab159aa7758d5810c639288 # shrinks to digits = "0", point = 0, exponent = 0, negative = true
 cc 423d0d0354cedb7a66d17a96a886413de3bfa8b997f72c639c49d664452f8ee4 # shrinks to digits = "1", point = 0, exponent = -45, negative = true
 cc 3ba3589e43e6215eaf43a3397d71ce1eb831bc59fa759eafbc670f9ecf703f28 # shrinks to bits = 9218868437227405311
+cc 86aec6ec18ca0a1d5a0a6cd4deb085d40913ea2a39cf6803f40f336ded4dd13b # shrinks to a = 18444492273895866368, b = 9221120237041090560
+cc 02f12b13ec88809caf75467dacb896cc9b30145bae747beae561e4aa1c40c9e9 # shrinks to a = 2139095041, b = 4290772992
