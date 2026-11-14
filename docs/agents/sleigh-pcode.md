@@ -198,7 +198,13 @@ free-standing template is a no-op.
 * macOS arm64: everything above.
 * Windows: `cargo clippy -p bk-sleigh --all-targets --target
   x86_64-pc-windows-msvc -- -D warnings` and the same for `-p basilisk`
-  clean. Wine: see the final message.
+  clean. Wine: bk-sleigh's tests built for `x86_64-pc-windows-gnu` and run
+  under Wine in the `bk-gnu-disasm-win` container (scripts copied to
+  `target/windows/`, with `rustup target add` for the 1.100.0 toolchain):
+  all pass — unit 21, `pcode_units` 30, `pcode_fixture` 1, `fixture_oracle` 1,
+  `pcode_properties` 2, `properties` 3, `fuzz_regressions` 3, `bench_heap` 1,
+  `decode_units` 6, `recorded` 2, `differential` 1 (oracle tests SKIPPED).
+  `basilisk`'s `disasm` tests were not run under Wine.
 * Linux: rests on CI.
 
 ## Follow-ups
