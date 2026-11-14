@@ -147,7 +147,10 @@ transactions).
   every snapshot), features 16, properties 2, reference_sla 2 (skipped:
   no reference), bench ignored — including the `log` table on x86-64
   emulation. (Insta needs `INSTA_WORKSPACE_ROOT='Z:\work\build\src'` under
-  Wine.) `basilisk`'s command tests under Wine: see the final message.
+  Wine.) `basilisk` under Wine: unit 8 (incl. `SleighCompileOptionsTest`)
+  and the 6 command tests pass (output written by rename, also over an
+  existing file; CRLF, BOM, path spellings); the Ghidra comparison skipped.
+  Build directories deleted afterwards; scripts kept.
 * Linux: not run locally; rests on CI.
 * Without the oracle variables: reference tests print `SKIPPED …` and pass.
 
@@ -182,5 +185,12 @@ transactions).
 
 ## Gate
 
-Recorded in the final message (both runs, with and without the oracle
-variables).
+`scripts/gate.sh > gate.log 2>&1; echo $?` (default cargo parallelism, as
+the owner allowed on 2026-11-14), macOS arm64, final tree:
+
+* both oracle variables unset: `0`, last line `tests: 2026 passed, 0 failed`
+  (the first attempt failed only on the known flaky `bk-ui`
+  `task::tests::requests_complete_off_thread_and_wake`; rerun green);
+* `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra
+  BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`: `0`, last line
+  `tests: 2026 passed, 0 failed`.
