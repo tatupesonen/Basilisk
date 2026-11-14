@@ -8,7 +8,7 @@ excluded), commit `42db038f3c`. `list::sort` and `stable_sort` are stable
 and not listed. "Dump path" = the state dump of
 `docs/features/decomp-oracle.md` walks the result.
 
-## `std::sort` (34 sites)
+## `std::sort` (33 sites)
 
 | Site | Comparator | Ties possible? | Dump path |
 |---|---|---|---|
