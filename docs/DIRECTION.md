@@ -111,6 +111,10 @@ and a sane architecture in mind.
   its design choices stand (dark default theme, fixed-height listing rows
   with instruction bytes cut at six, Functions/Defined Strings/References
   open beside the Console, twelve syntax colours).
+* **A documentation site for users** (owner, 2026-11-14): "great
+  looking docs for the usage of the whole program and how each aspect of
+  the program works". Proposed technology: Starlight (Astro), pending the
+  owner's confirmation; queued as track `docs-site` in `PROGRESS.md`.
 * **The plugin system is to be worked on now, not left to M9** (owner,
   2026-11-14: "remember to work on the plugin system"). What was decided
   is ADR-014: Python through PyO3. Its design spec is written now so the
