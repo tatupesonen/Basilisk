@@ -85,12 +85,20 @@ place follows from its directory (`autogenerate`) and `sidebar.order`.
 ### Mermaid diagrams
 
 Fenced `mermaid` blocks in documentation Markdown are rendered to inline
-SVG at build time, twice — light and dark, with the site's theme
+SVG at build time (a Sätteri mdast plugin, `site/src/lib/mermaid.mjs`;
+Sätteri is Astro 7's default Markdown pipeline), twice — light and dark, with the site's theme
 variables — and CSS shows the one matching the active theme. Rendering
 runs Mermaid in headless Chromium (Playwright) inside the build image, so
 text is measured with the same Inter the page uses. A diagram that fails
 to parse or render stops the build with its file and message. No Mermaid
-code is shipped to the browser.
+code is shipped to the browser. Authors mark nodes with the classes `done`
+(exists today), `planned` (dashed) and `here` (ember), and row labels of
+block diagrams with `layer`; their colours live in
+`site/src/lib/mermaid-theme.mjs` so they follow the theme. A
+`title="…"` after the fence becomes the caption. Flowcharts whose
+subgraphs are linked ignore `direction` inside the subgraphs (Mermaid's
+rule); use `block-beta` for grid layouts such as the crate map. On phones
+a wide diagram keeps a legible size and scrolls sideways.
 
 ## 5. Design
 
@@ -138,7 +146,15 @@ code is shipped to the browser.
 - `npm ci` installs from the committed `site/package-lock.json` when
   `node_modules` is missing or older than the lock file.
 - `site/scripts/prepare.sh` copies screenshots and brand files and makes
-  the WOFF2 fonts (fontTools, in the image) into git-ignored folders.
+  the WOFF2 fonts (fontTools, in the image) into git-ignored
+  `site/src/generated/`; `site/scripts/crops.mjs` trims the renderer's
+  black margin from the screenshots and cuts three detail views (palette,
+  hover preview, references) for the landing page's gallery — crops of
+  the real images, never retouched.
+- `site/src/lib/screenshots.ts` lists the screenshots the pages use (an
+  imported image is emitted into the build even when unused, so only
+  used ones are listed); `<Screenshot name="…">` picks the dark or light
+  rendering by theme and serves responsive WebP.
 - `build` → `site/dist/`. `SITE_BASE` (default `/`) and `SITE_URL` set
   the base path and canonical origin.
 - `check` = build + `check-links.mjs` (every internal `href`/`src`
@@ -184,4 +200,24 @@ is a separate, later question.
 
 ## 9. Status
 
-See `docs/agents/site-design.md` for the track report.
+Built by track `site-design` (report: `docs/agents/site-design.md`),
+2026-11-14:
+
+- Astro 7.4.4 + Starlight 0.42.8 project under `site/`; product pages `/`,
+  `/status/`, `/roadmap/`, `/404.html`; the documentation shell under
+  `/docs/` with an overview page per section (Getting started has two)
+  and three Mermaid diagrams (headless data flow and crate map in "How it
+  works", the decompiler pipeline).
+- `scripts/site.sh build|serve|check|shoot|dep-age|lock|shell`; image
+  `bk-site/build:<Dockerfile hash>` from `site/container/Dockerfile`,
+  `FROM mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a7…768f`.
+- `scripts/site.sh check` passes from a clean state at `/` and under
+  `/basilisk/` (14 pages, 616 links and resources, 3 diagrams in both
+  themes); all 468 locked package versions are at least 14 days old.
+- CI job `site`; `.github/workflows/pages.yml` (manual dispatch).
+- Screenshots of the result: `docs/features/site-screenshots/`.
+
+Gaps: generated reference pages (key bindings, CLI help, Python API) and
+one page per interface view are for `docs-content`; no social preview
+image; Pagefind's search UI is Starlight's, restyled only through its
+variables.
