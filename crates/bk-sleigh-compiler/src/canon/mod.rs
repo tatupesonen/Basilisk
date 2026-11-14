@@ -63,7 +63,7 @@ impl Canonical {
 pub struct Difference {
     /// The path.
     pub path: String,
-    /// basilisk's value, if it has the path.
+    /// Basilisk's value, if it has the path.
     pub ours: Option<String>,
     /// The reference's value, if it has the path.
     pub theirs: Option<String>,
@@ -73,7 +73,7 @@ impl std::fmt::Display for Difference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}: basilisk {} / Ghidra {}",
+            "{}: Basilisk {} / Ghidra {}",
             self.path,
             self.ours.as_deref().unwrap_or("<absent>"),
             self.theirs.as_deref().unwrap_or("<absent>")

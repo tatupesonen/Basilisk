@@ -1,6 +1,6 @@
 [package]
 name = "bk-bin"
-description = "basilisk: byte providers and the typed, endian-aware binary reader shared by all format parsers"
+description = "Basilisk: byte providers and the typed, endian-aware binary reader shared by all format parsers"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -1,4 +1,4 @@
-//! GNU binutils' disassemblers, built into basilisk.
+//! GNU binutils' disassemblers, built into Basilisk.
 //!
 //! This crate compiles the part of binutils 2.41 that disassembles —
 //! libopcodes with every target, the architecture tables of libbfd and a few

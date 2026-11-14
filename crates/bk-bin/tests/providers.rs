@@ -327,7 +327,7 @@ fn range_mapped_test_merge_adjacent_sparse_ranges() {
     assert_eq!(provider.range_count(), 2);
 }
 
-/// Not in Ghidra's test, and a place where basilisk deliberately differs:
+/// Not in Ghidra's test, and a place where Basilisk deliberately differs:
 /// Ghidra marks a sparse range with offset −1, so a real range starting at
 /// `sparse_len − 1` satisfies its "continues the previous range" check and
 /// is swallowed by the sparse range (its bytes then read as zeros).

@@ -478,7 +478,7 @@ fn pspec_lenient_mode_falls_back_as_ghidras_reader_would() {
 #[test]
 fn memory_block_booleans_accept_every_schema_spelling() {
     // Ghidra's schema allows yes/no/1/0 here but its MemoryBlockDefinition
-    // then throws on them; basilisk reads them.
+    // then throws on them; Basilisk reads them.
     for (text, expected) in [("yes", true), ("1", true), ("no", false), ("0", false)] {
         let block = format!(
             r#"<default_memory_blocks><memory_block name="m" start_address="0" length="1" initialized="{text}" overlay="{text}"/></default_memory_blocks>"#

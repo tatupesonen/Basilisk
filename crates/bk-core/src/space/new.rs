@@ -94,7 +94,7 @@ impl Space {
     /// (Ghidra `ConstantSpace`).
     ///
     /// Ghidra gives this space the endianness of the host it runs on;
-    /// basilisk always makes it little endian, x86-64's, so that results do
+    /// Basilisk always makes it little endian, x86-64's, so that results do
     /// not depend on the host (ADR-021).
     pub fn constant() -> Self {
         let mut space = Self::special(

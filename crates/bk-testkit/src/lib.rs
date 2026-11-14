@@ -1,7 +1,7 @@
-//! Test support for basilisk: finding Ghidra and the reference tools,
+//! Test support for Basilisk: finding Ghidra and the reference tools,
 //! running them, and comparing against what they say.
 //!
-//! basilisk's correctness is measured against Ghidra itself (ADR-007). This
+//! Basilisk's correctness is measured against Ghidra itself (ADR-007). This
 //! crate is what other crates' tests use to do that; it is a
 //! dev-dependency only and nothing here ships in the product. It has no
 //! counterpart in Ghidra, but it wraps three of Ghidra's native programs —
@@ -28,7 +28,7 @@
 //! };
 //! let dump = reference.pcodedump().dump("x86:LE:64:default", 0x1000, &[0x55, 0xc3])?;
 //! for instruction in dump.instructions() {
-//!     // compare with what basilisk decodes at `instruction.address`
+//!     // compare with what Basilisk decodes at `instruction.address`
 //! }
 //! # Ok(())
 //! # }

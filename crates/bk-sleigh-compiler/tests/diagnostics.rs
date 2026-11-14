@@ -107,7 +107,7 @@ fn ours(path: &Path) -> (bool, Vec<(String, String)>, String) {
 }
 
 /// Cases where Ghidra's compiler dies of a memory error after printing
-/// its first messages; basilisk reports the same messages and then the
+/// its first messages; Basilisk reports the same messages and then the
 /// ones Ghidra never reaches.
 const GHIDRA_CRASHES: &[(&str, &str)] = &[
     (

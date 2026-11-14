@@ -1,4 +1,4 @@
-//! The basilisk mark as a texture, decoded once per context.
+//! The Basilisk mark as a texture, decoded once per context.
 
 use crate::design::ThemeKind;
 

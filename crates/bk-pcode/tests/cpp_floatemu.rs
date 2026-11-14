@@ -3,9 +3,9 @@
 //! machine's own `f32`/`f64` arithmetic.
 //!
 //! The C++ tests compare with whatever the host FPU produces, including the
-//! sign of a NaN it creates. basilisk fixes that sign (see
+//! sign of a NaN it creates. Basilisk fixes that sign (see
 //! `bk_pcode::float::host`), so where the native result is a NaN the
-//! expected encoding is the quiet NaN with the sign basilisk documents: that
+//! expected encoding is the quiet NaN with the sign Basilisk documents: that
 //! of the first NaN input, and negative (x86-64's default NaN) when no input
 //! is a NaN.
 
@@ -61,7 +61,7 @@ fn float_test_values() -> Vec<f32> {
 const INT_TEST_VALUES: [i32; 7] = [0, -1, 1, 1234, -1234, i32::MIN, i32::MAX];
 
 /// The encoding the C++ test expects for a native result, with the sign of a
-/// NaN result settled as basilisk does.
+/// NaN result settled as Basilisk does.
 fn expected(native: f32, inputs: &[f32]) -> u64 {
     if native.is_nan() {
         let negative = inputs

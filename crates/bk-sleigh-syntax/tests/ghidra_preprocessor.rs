@@ -6,7 +6,7 @@
 //! `includes` and compares the result, line by line, with the matching
 //! `*.output` file. The expected files are in Ghidra's marker format
 //! (`\bfile###line\b`, `\b$(NAME)\b`); `SourceMap::to_ghidra_text` renders
-//! basilisk's result in that format. The files are read in place from the
+//! Basilisk's result in that format. The files are read in place from the
 //! Ghidra tree (ADR-002) and the test skips when the tree is absent.
 
 #![allow(

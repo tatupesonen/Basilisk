@@ -6,7 +6,7 @@
 //! `recoverInput*` functions. It was produced by
 //! `tests/oracle/opbehavior_oracle.cc`, linked against the reference build's
 //! `libsla.a`, on x86-64 Linux with GCC (`tests/oracle/regen.sh` rebuilds
-//! it). Where Ghidra's result depends on the host, basilisk takes x86-64's
+//! it). Where Ghidra's result depends on the host, Basilisk takes x86-64's
 //! (ADR-021), so the table is x86-64's.
 //!
 //! Every row must agree bit for bit, except the documented differences
@@ -14,14 +14,14 @@
 //! and counted:
 //!
 //! - `FLOAT_TRUNC` of a NaN or of a value outside the `i64` range: x86-64's
-//!   `cvttsd2si` gives `i64::MIN` (cut to the output size); basilisk
+//!   `cvttsd2si` gives `i64::MIN` (cut to the output size); Basilisk
 //!   saturates and maps NaN to 0, as Java's `(long)` cast does and Ghidra's
 //!   Java tests pin (ADR-021);
 //! - a subnormal that rounds up to the smallest normal value: the C++ gives
-//!   zero; basilisk the smallest normal;
+//!   zero; Basilisk the smallest normal;
 //! - recovering the input of a shift by 0 of an 8-byte value: the C++
 //!   shifts by 64, which both hosts take as 0, and so reports every non-zero
-//!   output as out of range; basilisk returns the output.
+//!   output as out of range; Basilisk returns the output.
 
 #![allow(
     clippy::unwrap_used,
@@ -88,7 +88,7 @@ fn is_float_op(op: OpCode) -> bool {
     )
 }
 
-/// Classifies a mismatch between the C++ result `cpp` and basilisk's `ours`
+/// Classifies a mismatch between the C++ result `cpp` and Basilisk's `ours`
 /// for a float operation whose result is in `out` and whose inputs are in
 /// `input_format`. `None` means unexplained.
 fn explain(
@@ -214,7 +214,7 @@ fn u64_path_equals_ghidra_cpp() {
         };
         match reason {
             Some(reason) => *explained.entry(reason).or_default() += 1,
-            None => unexplained.push(format!("{line}  (basilisk: {result:x?})")),
+            None => unexplained.push(format!("{line}  (Basilisk: {result:x?})")),
         }
     }
     eprintln!("{rows} rows; explained differences: {explained:?}");

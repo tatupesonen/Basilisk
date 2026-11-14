@@ -1,7 +1,7 @@
 //! Where the Ghidra source tree and the reference directory are.
 //!
 //! Both roots are resolved the same way: an environment variable if it is
-//! set, otherwise a directory beside the basilisk checkout (`../ghidra`,
+//! set, otherwise a directory beside the Basilisk checkout (`../ghidra`,
 //! `../reference` relative to the workspace root). A root that is not there
 //! is `None`, never an error: tests decide what to do about it (see
 //! [`crate::skip`]).
@@ -40,7 +40,7 @@ impl Environment for ProcessEnvironment {
     }
 }
 
-/// The root of the basilisk workspace this crate was compiled in.
+/// The root of the Basilisk workspace this crate was compiled in.
 pub fn workspace_root() -> PathBuf {
     // crates/bk-testkit -> crates -> workspace root
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -165,7 +165,7 @@ pub enum Tool {
     Decomp,
     /// Ghidra's decompiler test runner (`decomp_test_dbg`).
     DecompTest,
-    /// basilisk's disassembly and p-code oracle (`tools/reference/pcodedump.cc`).
+    /// Basilisk's disassembly and p-code oracle (`tools/reference/pcodedump.cc`).
     Pcodedump,
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "bk-pcode"
-description = "basilisk: p-code opcodes, the arithmetic of every p-code operation, float formats and multiprecision helpers"
+description = "Basilisk: p-code opcodes, the arithmetic of every p-code operation, float formats and multiprecision helpers"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

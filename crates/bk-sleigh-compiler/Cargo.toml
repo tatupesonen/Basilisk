@@ -1,6 +1,6 @@
 [package]
 name = "bk-sleigh-compiler"
-description = "basilisk: the SLEIGH compiler (part 1: symbols, constructors, p-code templates, checks)"
+description = "Basilisk: the SLEIGH compiler (part 1: symbols, constructors, p-code templates, checks)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

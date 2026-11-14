@@ -4,7 +4,7 @@
 // deterministic set of operands and sizes, and prints one line per case.
 //
 // Built and run by regen.sh; its output is tests/data/opbehavior_cpp.txt,
-// which tests/cpp_oracle.rs compares with basilisk. Not part of the Rust
+// which tests/cpp_oracle.rs compares with Basilisk. Not part of the Rust
 // build.
 //
 // The inputs, and their order, are the same on every host and compiler:

@@ -1,6 +1,6 @@
 [package]
 name = "bk-binutils-sys"
-description = "basilisk: binutils 2.41's disassemblers (libopcodes), built from vendored source and wrapped in a minimal sound interface"
+description = "Basilisk: binutils 2.41's disassemblers (libopcodes), built from vendored source and wrapped in a minimal sound interface"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

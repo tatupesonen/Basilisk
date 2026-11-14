@@ -63,7 +63,7 @@ impl View for ConsoleView {
                         &t,
                         icons::CONSOLE,
                         "No messages",
-                        "Messages from basilisk appear here.",
+                        "Messages from Basilisk appear here.",
                     );
                     return;
                 }

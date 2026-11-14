@@ -1,6 +1,6 @@
 [package]
 name = "bk-sla"
-description = "basilisk: the compiled SLEIGH language file (.sla): model, validating reader, writers that reproduce Ghidra's bytes"
+description = "Basilisk: the compiled SLEIGH language file (.sla): model, validating reader, writers that reproduce Ghidra's bytes"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

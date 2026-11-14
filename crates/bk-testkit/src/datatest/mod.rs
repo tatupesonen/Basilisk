@@ -5,7 +5,7 @@
 //! output must match a given number of times. Ghidra reads them in
 //! `testfunction.cc` (`FunctionTestCollection`) and `loadimage_xml.cc`; this
 //! module turns one into plain data ([`DataTest`]) for the oracle wrappers
-//! and for basilisk's own decompiler test runner.
+//! and for Basilisk's own decompiler test runner.
 
 mod model;
 mod parse;

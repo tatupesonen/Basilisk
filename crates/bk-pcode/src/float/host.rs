@@ -10,11 +10,11 @@
 //! [`FloatFormat::is_host_format`] holds. For other formats they return an
 //! unspecified value; they never panic.
 //!
-//! Where Ghidra's result depends on the machine it runs on, basilisk gives
+//! Where Ghidra's result depends on the machine it runs on, Basilisk gives
 //! one result on every host:
 //!
 //! - **The sign of a NaN result.** The C++ takes it from the host FPU, and
-//!   basilisk computes it explicitly as Ghidra's reference build on x86-64
+//!   Basilisk computes it explicitly as Ghidra's reference build on x86-64
 //!   Linux (GCC, SSE2) gives it, never from the host's own arithmetic.
 //!   Decoding keeps only a NaN's sign (`getHostFloat` returns the host's
 //!   quiet NaN with that sign), so the result is always the quiet NaN of the
@@ -35,13 +35,13 @@
 //!     to print as `-NAN` (it fails on AArch64).
 //! - **`TRUNC` of a NaN, an infinity or a value outside the `i64` range.**
 //!   The C++ cast is undefined; x86-64 (`cvttsd2si`) gives `i64::MIN`,
-//!   AArch64 saturates and maps NaN to 0. Here basilisk does not follow
+//!   AArch64 saturates and maps NaN to 0. Here Basilisk does not follow
 //!   x86-64: it saturates and maps NaN to 0, as Java's `(long)` cast does,
 //!   which `FloatFormatTest.testOpTruncLongInt` pins for the emulator's
 //!   path.
 //! - **A subnormal that rounds up to the smallest normal value.** The C++
 //!   shifts by a negative amount (its comment says "TODO handle round to
-//!   normal case") and on both hosts returns zero. basilisk returns the
+//!   normal case") and on both hosts returns zero. Basilisk returns the
 //!   smallest normal value, the correctly rounded result, as Java does.
 
 use super::format::{FloatClass, FloatFormat};

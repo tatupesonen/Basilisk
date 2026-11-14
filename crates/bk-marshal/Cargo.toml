@@ -1,6 +1,6 @@
 [package]
 name = "bk-marshal"
-description = "basilisk: Ghidra's XML and packed marshalling (encoder, decoder, element and attribute ids)"
+description = "Basilisk: Ghidra's XML and packed marshalling (encoder, decoder, element and attribute ids)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

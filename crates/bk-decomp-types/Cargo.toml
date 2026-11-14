@@ -1,6 +1,6 @@
 [package]
 name = "bk-decomp-types"
-description = "basilisk: the decompiler's type system (Ghidra's type.cc, metatype.cc and the C declaration parser of grammar.y)"
+description = "Basilisk: the decompiler's type system (Ghidra's type.cc, metatype.cc and the C declaration parser of grammar.y)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

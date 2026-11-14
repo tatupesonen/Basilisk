@@ -2,7 +2,7 @@
 //!
 //! Ghidra records this for symbols as `SourceType` (`DEFAULT`, `ANALYSIS`,
 //! `AI`, `IMPORTED`, `USER_DEFINED`) and uses its priority to decide which
-//! of two sources may overwrite the other. basilisk keeps finer kinds — an
+//! of two sources may overwrite the other. Basilisk keeps finer kinds — an
 //! import, a library signature and debug information are told apart — and
 //! carries the value on types as well as names, across the program trait in
 //! both directions.

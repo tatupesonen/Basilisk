@@ -1,7 +1,7 @@
 //! What `pcodedump` reports: instructions, their p-code and decode errors.
 //!
 //! Opcodes and address spaces are plain names here. This crate depends on no
-//! other basilisk crate, so the consumer maps them to its own types.
+//! other Basilisk crate, so the consumer maps them to its own types.
 
 /// One run of `pcodedump`: a linear sweep over a byte buffer.
 #[derive(Debug, Clone, PartialEq, Eq)]
