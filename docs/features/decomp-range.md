@@ -253,6 +253,73 @@ repository; **L** needs the live reference tools.
 
 (The implementing agent appends further differences here.)
 
+- `translate2Op` returns four codes, not two: 0 (a comparison), 1 (every
+  input: the range is full), 2 (not one comparison), 3 (no input: the range
+  is empty); `Translated` has a variant for each.
+- **Undefined behaviour in the C++, defined here as both reference builds
+  compute it** (ADR-024 form; every row of the oracle that hits one is marked
+  ` #ub=…` and agrees with Basilisk; counts in
+  `crates/bk-decomp-range/tests/data/README.md`):
+  shift counts of 64 or more, or negative, are taken modulo 64
+  (`pullBackBinary` `INT_RIGHT`/`INT_SRIGHT`, rangeutil.cc:949, 961–962,
+  975, 989–990; `pushForwardBinary` `SUBPIECE`, `INT_RIGHT`, `INT_SRIGHT`,
+  1288–1293, 1308–1313, 1334–1335; `sign_extend` asked to narrow,
+  address.cc:1003, and `sign_extend(intb, bit)`, address.hh:605); the
+  `int4` step shift of `setNZMask` (696) is taken modulo 32; signed
+  overflow wraps (`valRight + 1`, 1331); and `SUBPIECE` with an offset of
+  2^28 or more, where `(int4)in2.left * 8` overflows (1283), keeps the step
+  only for offset 0 (both compilers test `sa == 0` as "offset is 0") but
+  shifts by the wrapped product.
+- **The two reference hosts disagree on one kind, and Basilisk follows
+  x86-64**: `pushForwardBinary` `INT_LEFT` with a shift amount of 64 or
+  more (rangeutil.cc:1269–1270). g++ on x86-64 shifts modulo 64; Apple
+  clang on AArch64 vectorises the two shifts into one `USHL`, which reads
+  the amount's low byte as a signed count (64–127 give 0, 128–255 shift
+  right). 834 rows of the checked-in macOS table (5,185 of the extended
+  set) differ for this reason, each recognised and counted
+  (`tests/common/host.rs`).
+- **Where Ghidra crashes or hangs, Basilisk returns a defined result**:
+  a step of 0 (no valid range has one; the C++ divides by it, a crash on
+  x86-64) divides as AArch64 does, `x / 0 = 0` and `x % 0 = x`;
+  `INT_LEFT` push-forward with a step bound above 2^30 doubles the `int4`
+  step past overflow to 0 and Ghidra's `normalize` then divides by it
+  (SIGFPE on x86-64); Basilisk wraps the doubling the same way and the
+  division gives the value; `INT_MULT` push-forward with a constant whose
+  low 32 bits are 0 and a step bound above 2^30 makes Ghidra's doubling
+  loop run forever; Basilisk returns `false`. The oracle stays below these
+  bounds; `tests/edge_cases.rs` pins Basilisk's results.
+- **Uninitialised fields of an empty range**: `getMax`, `getMaxInfo`,
+  `setStride`, `minimalContainer` and `widen` read the bounds of an empty
+  range without looking at `isempty`; in Ghidra the answer then depends on
+  whatever memory the default constructor left. Basilisk's empty range has
+  bounds 0, mask 0 and step 1, and the methods compute with those (2,777
+  oracle rows, marked ` #uninit`, found with valgrind).
+- **Kept as Ghidra has them** (not differences; the soundness properties of
+  `tests/properties.rs` exclude each by name and `tests/edge_cases.rs` pins
+  several): `contains` of a full stepped range ignores phase;
+  `intersect` never compares phases of equal-step operands, and its
+  `newStride` misreads ranges that wrap or round past the top; `INT_SUB`
+  pull-back with the variable in slot 1 does not reverse the bounds;
+  `INT_RIGHT` and `INT_SRIGHT` push-forwards of wrapping ranges are one
+  value short; a comparison pull-back of a range holding both outcomes
+  gives `[0,2)` instead of everything; `minimalContainer` of a full range
+  returns the other range, and leaves `right - step + 1` unmasked;
+  `getMaxInfo` ignores the step and the sign bit, so `INT_MULT` and
+  `INT_LEFT` push-forwards can miss a wrap; `SUBPIECE` of a full stepped
+  range loses its phase. Reported under Follow-ups in
+  `docs/agents/decomp-range.md`.
+
 ## 9. Status
 
-Not started.
+Implemented (track `decomp-range`, 2026-11-14): `crates/bk-decomp-range`,
+every method of section 3, no allocation, no `unsafe`, no panic on any
+field values. Tests: the 117 cases of `testcirclerange.cc`; the oracle
+tables of both reference hosts (152,913 rows each, replayed in full) and
+the live regeneration with the extended case set (592,213 rows) where the
+reference exists; 11 soundness and robustness properties at 4,096 cases;
+edge cases, a no-allocation test, a fuzz target `bk_decomp_range_ops`,
+and the benchmark of 6.4 (`docs/PERF.md`). Deviations from section 6.2,
+for table size: the checked-in table samples 100 of the 1-byte ranges for
+the pair set and 10,000 random pairs (the extended set, regenerated and
+replayed live, has the 300-range sample and 200,000 pairs); the 1-byte
+set of section 6.2 has 87,040 ranges, not "about 12,000".
