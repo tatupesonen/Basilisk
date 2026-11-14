@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 21:27)
+## Now — RESUME HERE (2026-11-14 21:37)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`60936c3` plus docs) also has `bk-ui`, the GNU disassembler crates,
+(`5664c61` plus docs) also has `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,056 tests and the last CI run on the merged
-tree, 43630477395, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,095 tests and the last CI run on the merged
+tree, 43632387623, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 21:27)
+### Running (state at 2026-11-14 21:37)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,9 +139,10 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate green (2,095 tests, 0 new packages,
-advisories ok), in CI as run 43632387623 since 21:29:** `sleigh-fixups` (`a729d10fd3ad89e8d`) on branch `integration`
-(worktree `../basilisk-wt/sleigh-fixups`, `aa8b136`). (a) Bit-range
+**Merged: `sleigh-fixups`** (`a729d10fd3ad89e8d`; `5664c61`, CI run
+43632387623 green on all 8 jobs, integration gate on the build host
+2,095 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). (a) Bit-range
 arithmetic wraps at 32 bits as in Ghidra (`pcode/bitrange.rs`, and
 `defineBitrange` in `compiler/define.rs`, which overflowed in debug
 builds); the snippet crate's generated comparison has no tolerated row
@@ -162,8 +163,7 @@ would hide real dead entries). Both of its gates 2,092 tests. On
 (`assign_bitrange_wrap.snap.new`) committed by accident; `*.snap.new`
 is now git-ignored. Follow-up for whoever next owns `bk-sleigh`: Ghidra
 truncates label numbers to 32 bits and `bk-sleigh` does not (only a
-hand-made `.sla` shows it) — truncate, or record under ADR-024. Gate
-green → push, CI, merge, delete branch and worktree, clean the host.
+hand-made `.sla` shows it) — truncate, or record under ADR-024.
 
 **Merged: `cspec-host`** (`a85106d421cedbda2`; `60936c3`, CI run
 43630477395 green on all 8 jobs, integration gate on the build host
@@ -385,7 +385,7 @@ start a fresh agent briefed from the branch's files.
    between its platforms.)
 2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
-3. **`sleigh-fixups` (finished 21:22, merging; the text below is the brief it had)** (before
+3. **`sleigh-fixups` (merged 21:36; the text below is the brief it had)** (before
    `sleigh-perf-linux`, whose measurements need the build host quiet,
    which it is not while `testbed` runs its long jobs). Small
    corrections left by the SLEIGH tracks, each checked against Ghidra's
@@ -497,8 +497,7 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 ### Coordinator's next steps
 
 1. `cspec-host` is merged (above).
-2. `sleigh-fixups`: integration gate → CI → merge (state above).
-   `testbed` reports → review; install the packages it lists on the
+2. `sleigh-fixups` is merged (above). `testbed` reports → review; install the packages it lists on the
    build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
    read the first nightly report. Start `sleigh-perf-linux` in its slot
    (tell it to measure when no other job runs — `scripts/remote.sh
