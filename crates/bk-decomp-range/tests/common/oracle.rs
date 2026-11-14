@@ -11,7 +11,9 @@ use bk_pcode::OpCode;
 /// The table, decompressed.
 pub(crate) fn gunzip(bytes: &[u8]) -> String {
     let mut s = String::new();
-    flate2::read::GzDecoder::new(bytes).read_to_string(&mut s).unwrap();
+    flate2::read::GzDecoder::new(bytes)
+        .read_to_string(&mut s)
+        .unwrap();
     s
 }
 
@@ -26,8 +28,8 @@ pub(crate) struct Row<'a> {
 }
 
 pub(crate) fn split(line: &str) -> Row<'_> {
-    let (body, marks) = match line.find(" #") {
-        Some(i) => (&line[..i], line[i + 2..].split(" #").collect()),
+    let (body, marks) = match line.split_once(" #") {
+        Some((body, rest)) => (body, rest.split(" #").collect()),
         None => (line, Vec::new()),
     };
     let (lhs, results) = body.split_once(" =").unwrap();
@@ -76,7 +78,15 @@ pub(crate) fn put(out: &mut String, r: &CircleRange) {
     if r.is_empty() {
         out.push('!');
     }
-    write!(out, "{:x},{:x},{:x},{}", r.min(), r.end(), r.mask(), r.step()).unwrap();
+    write!(
+        out,
+        "{:x},{:x},{:x},{}",
+        r.min(),
+        r.end(),
+        r.mask(),
+        r.step()
+    )
+    .unwrap();
 }
 
 fn flag(out: &mut String, b: bool) {
@@ -106,7 +116,9 @@ fn size_of(r: &CircleRange) -> u32 {
     if r.is_empty() {
         return 8;
     }
-    (1..=8).find(|&s| bk_core::bits::calc_mask(s) == r.mask()).unwrap_or(8)
+    (1..=8)
+        .find(|&s| bk_core::bits::calc_mask(s) == r.mask())
+        .unwrap_or(8)
 }
 
 /// The second inputs of an `F` row: `shiftInputs`, or for the step-bound
@@ -123,8 +135,35 @@ pub(crate) fn second_inputs(row: &Row<'_>) -> Vec<CircleRange> {
 /// The second inputs of the shift-like push-forwards (`shiftInputs`).
 fn shift_inputs() -> Vec<CircleRange> {
     let vals: [u64; 29] = [
-        0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 24, 31, 32, 33, 48, 56, 63, 64, 65, 127, 128, 0x2000_0000, 0x7fff_ffff,
-        0x8000_0000, 0xffff_ffff, 0x1_0000_0000, u64::MAX,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        9,
+        15,
+        16,
+        17,
+        24,
+        31,
+        32,
+        33,
+        48,
+        56,
+        63,
+        64,
+        65,
+        127,
+        128,
+        0x2000_0000,
+        0x7fff_ffff,
+        0x8000_0000,
+        0xffff_ffff,
+        0x1_0000_0000,
+        u64::MAX,
     ];
     let mut v: Vec<CircleRange> = vals.iter().map(|&x| CircleRange::single(x, 8)).collect();
     v.push(CircleRange::new(1, 3, 8, 1));
@@ -203,126 +242,150 @@ const BOOL_OUT: [OpCode; 18] = [
 
 /// Basilisk's results for a row, in the table's format.
 pub(crate) fn compute(row: &Row<'_>) -> String {
-    let mut o = String::new();
-    let i = &row.inputs;
+    let mut text = String::new();
+    let args = &row.inputs;
     match row.tag {
         "Q" => {
-            let r = range(i[0]);
+            let r = range(args[0]);
             let bitmap = row.results.rsplit(' ').next().unwrap().len() == 64;
-            queries(&mut o, &r, bitmap);
+            queries(&mut text, &r, bitmap);
         }
         "S" => {
-            let r = range(i[0]);
+            let r = range(args[0]);
             for s in [1, 2, 4, 8, 16] {
                 for rem in [0, 1, 3] {
                     let mut c = r;
                     c.set_stride(s, rem);
-                    if !o.is_empty() {
-                        o.push(' ');
+                    if !text.is_empty() {
+                        text.push(' ');
                     }
-                    put(&mut o, &c);
+                    put(&mut text, &c);
                 }
             }
         }
-        "P" => pair(&mut o, &range(i[0]), &range(i[1])),
+        "P" => pair(&mut text, &range(args[0]), &range(args[1])),
         "M" => {
-            let (a, b) = (range(i[0]), range(i[1]));
+            let (a, b) = (range(args[0]), range(args[1]));
             for m in [-1, 0, 1, 2, 3, 4, 8, 16, 32, 64, 128, 256] {
                 let mut c = a;
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.minimal_container(&b, m));
-                o.push(':');
-                put(&mut o, &c);
+                flag(&mut text, c.minimal_container(&b, m));
+                text.push(':');
+                put(&mut text, &c);
             }
         }
         "N" => {
             let mut c = CircleRange::new(0x11, 0x33, 2, 2);
-            flag(&mut o, c.set_nz_mask(hex(i[0]), int(i[1])));
-            o.push(':');
-            put(&mut o, &c);
+            flag(&mut text, c.set_nz_mask(hex(args[0]), int(args[1])));
+            text.push(':');
+            put(&mut text, &c);
         }
         "UP" => {
-            let (r, inn, out) = (range(i[0]), int(i[1]), int(i[2]));
+            let (r, inn, out) = (range(args[0]), int(args[1]), int(args[2]));
             for op in PULL_UNARY {
                 let mut c = r;
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.pull_back_unary(op, inn, out));
-                o.push(':');
-                put(&mut o, &c);
+                flag(&mut text, c.pull_back_unary(op, inn, out));
+                text.push(':');
+                put(&mut text, &c);
             }
             let mut c = r;
-            o.push(' ');
-            flag(&mut o, c.pull_back_unary(OpCode::IntAdd, inn, out));
+            text.push(' ');
+            flag(&mut text, c.pull_back_unary(OpCode::IntAdd, inn, out));
         }
         "UF" => {
-            let (r, inn, out) = (range(i[0]), int(i[1]), int(i[2]));
+            let (r, inn, out) = (range(args[0]), int(args[1]), int(args[2]));
             for op in PUSH_UNARY {
                 let mut c = receiver();
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.push_forward_unary(op, &r, inn, out));
-                o.push(':');
-                put(&mut o, &c);
+                flag(&mut text, c.push_forward_unary(op, &r, inn, out));
+                text.push(':');
+                put(&mut text, &c);
             }
             let mut c = receiver();
-            o.push(' ');
-            flag(&mut o, c.push_forward_unary(OpCode::PopCount, &r, inn, out));
+            text.push(' ');
+            flag(
+                &mut text,
+                c.push_forward_unary(OpCode::PopCount, &r, inn, out),
+            );
         }
         "B" => {
-            let (r, opc, slot, inn, out) = (range(i[0]), op(i[1]), int(i[2]), int(i[3]), int(i[4]));
+            let (r, opc, slot, inn, out) = (
+                range(args[0]),
+                op(args[1]),
+                int(args[2]),
+                int(args[3]),
+                int(args[4]),
+            );
             for v in CONSTS {
                 let mut c = r;
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.pull_back_binary(opc, v, slot, inn, out));
-                o.push(':');
-                put(&mut o, &c);
+                flag(&mut text, c.pull_back_binary(opc, v, slot, inn, out));
+                text.push(':');
+                put(&mut text, &c);
             }
         }
         "F" => {
-            let (r, opc, inn, out, max) = (range(i[0]), op(i[1]), int(i[2]), int(i[3]), int(i[4]));
+            let (r, opc, inn, out, max) = (
+                range(args[0]),
+                op(args[1]),
+                int(args[2]),
+                int(args[3]),
+                int(args[4]),
+            );
             for b in second_inputs(row) {
                 let mut c = receiver();
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.push_forward_binary(opc, &r, &b, inn, out, max));
-                o.push(':');
-                put(&mut o, &c);
+                flag(&mut text, c.push_forward_binary(opc, &r, &b, inn, out, max));
+                text.push(':');
+                put(&mut text, &c);
             }
         }
         "K" => {
-            let (a, b) = (range(i[0]), range(i[1]));
+            let (a, b) = (range(args[0]), range(args[1]));
             for opc in BOOL_OUT {
                 let mut c = receiver();
-                if !o.is_empty() {
-                    o.push(' ');
+                if !text.is_empty() {
+                    text.push(' ');
                 }
-                flag(&mut o, c.push_forward_binary(opc, &a, &b, size_of(&a), 1, 32));
-                o.push(':');
-                put(&mut o, &c);
+                flag(
+                    &mut text,
+                    c.push_forward_binary(opc, &a, &b, size_of(&a), 1, 32),
+                );
+                text.push(':');
+                put(&mut text, &c);
             }
         }
         "T" => {
-            let (a, b, c3) = (range(i[0]), range(i[1]), range(i[2]));
+            let (a, b, c3) = (range(args[0]), range(args[1]), range(args[2]));
             let size = size_of(&a);
             let mut c = receiver();
-            flag(&mut o, c.push_forward_trinary(OpCode::PtrAdd, [&a, &b, &c3], size, size, 32));
-            o.push(':');
-            put(&mut o, &c);
-            o.push(' ');
+            flag(
+                &mut text,
+                c.push_forward_trinary(OpCode::PtrAdd, [&a, &b, &c3], size, size, 32),
+            );
+            text.push(':');
+            put(&mut text, &c);
+            text.push(' ');
             let mut c = receiver();
-            flag(&mut o, c.push_forward_trinary(OpCode::IntAdd, [&a, &b, &c3], size, size, 32));
+            flag(
+                &mut text,
+                c.push_forward_trinary(OpCode::IntAdd, [&a, &b, &c3], size, size, 32),
+            );
         }
         other => panic!("unknown row tag {other:?}"),
     }
-    o
+    text
 }
 
 fn queries(o: &mut String, r: &CircleRange, bitmap: bool) {

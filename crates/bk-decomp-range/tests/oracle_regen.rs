@@ -45,7 +45,7 @@ fn have(tool: &str) -> bool {
 
 /// The table body without its marks.
 fn bare(line: &str) -> &str {
-    line.find(" #").map_or(line, |i| &line[..i])
+    line.split_once(" #").map_or(line, |(body, _)| body)
 }
 
 #[test]
@@ -84,15 +84,30 @@ fn regenerated_tables_agree() {
     };
 
     // 1. The base table equals the checked-in one.
-    let fresh = gunzip(&std::fs::read(out.join(format!("circlerange_oracle.{lib}.txt.gz"))).unwrap());
-    let checked_in = gunzip(&std::fs::read(manifest.join(format!("tests/data/circlerange_oracle.{lib}.txt.gz"))).unwrap());
-    assert_eq!(fresh.lines().count(), checked_in.lines().count(), "line counts differ");
+    let fresh =
+        gunzip(&std::fs::read(out.join(format!("circlerange_oracle.{lib}.txt.gz"))).unwrap());
+    let checked_in = gunzip(
+        &std::fs::read(manifest.join(format!("tests/data/circlerange_oracle.{lib}.txt.gz")))
+            .unwrap(),
+    );
+    assert_eq!(
+        fresh.lines().count(),
+        checked_in.lines().count(),
+        "line counts differ"
+    );
     for (i, (f, c)) in fresh.lines().zip(checked_in.lines()).enumerate() {
-        assert_eq!(f, bare(c), "line {} of the {lib} table differs from a fresh generation", i + 1);
+        assert_eq!(
+            f,
+            bare(c),
+            "line {} of the {lib} table differs from a fresh generation",
+            i + 1
+        );
     }
 
     // 2. The extended case set agrees with Basilisk.
-    let extended = gunzip(&std::fs::read(out.join(format!("circlerange_oracle_extended.{lib}.txt.gz"))).unwrap());
+    let extended = gunzip(
+        &std::fs::read(out.join(format!("circlerange_oracle_extended.{lib}.txt.gz"))).unwrap(),
+    );
     let mut causes = BTreeMap::new();
     let mut bad = Vec::new();
     let mut rows = 0usize;
@@ -112,6 +127,10 @@ fn regenerated_tables_agree() {
         eprintln!("{b}");
     }
     eprintln!("extended {lib}: {rows} rows, host differences {causes:?}");
-    assert!(bad.is_empty(), "{} of {rows} extended rows differ from Ghidra", bad.len());
+    assert!(
+        bad.is_empty(),
+        "{} of {rows} extended rows differ from Ghidra",
+        bad.len()
+    );
     let _ = std::fs::remove_dir_all(&out);
 }

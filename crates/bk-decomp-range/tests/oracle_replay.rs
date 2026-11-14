@@ -90,36 +90,67 @@ fn every_x86_64_row_agrees_with_basilisk() {
     for b in bad.iter().take(20) {
         eprintln!("{b}");
     }
-    assert!(bad.is_empty(), "{} of {} rows differ from Ghidra", bad.len(), text.lines().count());
-    let pinned: BTreeMap<String, usize> = MARKS.iter().map(|(k, v)| ((*k).to_owned(), *v)).collect();
-    assert_eq!(marks, pinned, "the marks of the table changed: update MARKS and section 8");
+    assert!(
+        bad.is_empty(),
+        "{} of {} rows differ from Ghidra",
+        bad.len(),
+        text.lines().count()
+    );
+    let pinned: BTreeMap<String, usize> =
+        MARKS.iter().map(|(k, v)| ((*k).to_owned(), *v)).collect();
+    assert_eq!(
+        marks, pinned,
+        "the marks of the table changed: update MARKS and section 8"
+    );
 }
 
 #[test]
 fn the_macos_table_differs_only_for_known_causes() {
     let x86 = gunzip(X86_64);
     let arm = gunzip(AARCH64);
-    assert_eq!(x86.lines().count(), arm.lines().count(), "the tables have different row counts");
+    assert_eq!(
+        x86.lines().count(),
+        arm.lines().count(),
+        "the tables have different row counts"
+    );
     let mut causes: BTreeMap<Cause, usize> = BTreeMap::new();
     let mut unexplained = Vec::new();
     for (n, (x, a)) in x86.lines().zip(arm.lines()).enumerate() {
         let (x, a) = (split(x), split(a));
-        assert_eq!((x.tag, &x.inputs), (a.tag, &a.inputs), "line {}: the inputs differ", n + 1);
+        assert_eq!(
+            (x.tag, &x.inputs),
+            (a.tag, &a.inputs),
+            "line {}: the inputs differ",
+            n + 1
+        );
         if x.results == a.results {
             continue;
         }
         match recognise(&a, &second_inputs(&a)) {
             Some(cause) => *causes.entry(cause).or_default() += 1,
-            None => unexplained.push(format!("line {}\n  x86-64:  {}\n  aarch64: {}", n + 1, x.results, a.results)),
+            None => unexplained.push(format!(
+                "line {}\n  x86-64:  {}\n  aarch64: {}",
+                n + 1,
+                x.results,
+                a.results
+            )),
         }
     }
     for u in unexplained.iter().take(10) {
         eprintln!("{u}");
     }
-    assert!(unexplained.is_empty(), "{} rows differ for no known cause", unexplained.len());
+    assert!(
+        unexplained.is_empty(),
+        "{} rows differ for no known cause",
+        unexplained.len()
+    );
     for (cause, count) in &causes {
         eprintln!("{}: {count} rows", cause.name());
     }
-    let pinned: BTreeMap<Cause, usize> = HOST_ROWS.iter().copied().filter(|(_, n)| *n > 0).collect();
-    assert_eq!(causes, pinned, "the host differences changed: update HOST_ROWS and section 8");
+    let pinned: BTreeMap<Cause, usize> =
+        HOST_ROWS.iter().copied().filter(|(_, n)| *n > 0).collect();
+    assert_eq!(
+        causes, pinned,
+        "the host differences changed: update HOST_ROWS and section 8"
+    );
 }

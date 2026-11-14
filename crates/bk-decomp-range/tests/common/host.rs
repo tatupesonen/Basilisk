@@ -63,7 +63,8 @@ fn push_left_ushl(in1: &CircleRange, in2: &CircleRange, max_step: i32) -> (bool,
             left = if step == 1 {
                 0
             } else {
-                left.checked_rem(i64::from(step).cast_unsigned()).unwrap_or(left)
+                left.checked_rem(i64::from(step).cast_unsigned())
+                    .unwrap_or(left)
             };
             right = left;
         }
