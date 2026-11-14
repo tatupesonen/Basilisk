@@ -140,7 +140,18 @@ impl Tables {
                 matches!(c, bk_sla::ContextChange::Commit { symbol, .. }
                     if matches!(sla.symbol(*symbol).map(|s| s.kind), Some(SymbolKind::Next2)))
             });
-            tables.next2_anywhere |= export_next2 || commit_next2;
+            // `inst_next2` in a p-code template: the builder needs it.
+            let template_next2 = sla
+                .template_ids(ctor)
+                .filter_map(|id| sla.template(id))
+                .any(|t| {
+                    t.ops().iter().any(|op| {
+                        t.output(op).into_iter().chain(t.inputs(op)).any(|vn| {
+                            [vn.space, vn.offset, vn.size].contains(&bk_sla::ConstTpl::Next2)
+                        })
+                    })
+                });
+            tables.next2_anywhere |= export_next2 || commit_next2 || template_next2;
             tables.ctors.push(CtorInfo {
                 ops: start,
                 num_ops,

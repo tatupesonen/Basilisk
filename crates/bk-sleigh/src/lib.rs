@@ -22,8 +22,11 @@
 
 pub mod context;
 pub mod decode;
+pub mod dump;
+pub mod emit;
 pub mod error;
 pub mod language;
+pub mod pcode;
 mod print;
 pub mod translate;
 
@@ -32,6 +35,8 @@ pub use decode::{
     ByteSource, Commit, Decoder, Disassembly, FixedHandle, Node, Parse, ParseState, Prepared,
     SliceBytes, WINDOW,
 };
+pub use emit::{CollectedOp, PcodeCollector, PcodeCounter, PcodeEmit, PcodeRecords};
 pub use error::{DecodeError, ErrorClass, Limit, LoadError, RawText, TableKind};
 pub use language::{Language, RegisterTable};
+pub use pcode::{BuildFeature, BuildObserver, InjectContext, LiftError, LiftLimit};
 pub use translate::{Translate, Translator};

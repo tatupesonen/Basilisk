@@ -58,12 +58,12 @@ pub(crate) fn load(reference: &ReferenceDir, id: &str) -> Arc<Language> {
     Arc::new(Language::load(&registry, &id).unwrap_or_else(|e| panic!("load {id}: {e}")))
 }
 
-/// The oracle's records of one run, without `H`, `P` and `U`.
+/// The oracle's records of one run: each `I` record with its `P`/`U`
+/// lines, each `E` record, and the `T` counts.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct OracleDump {
     pub(crate) lines: Vec<String>,
     pub(crate) instructions: u64,
-    /// Errors in the `T` record minus the `U` records.
     pub(crate) errors: u64,
 }
 
@@ -133,24 +133,33 @@ pub(crate) fn locate_crash(
     (start, bad)
 }
 
-/// Keeps the `I`, `E` and `T` records of `pcodedump` output.
+/// Groups `pcodedump` output into records: an `I` line with the `P` and
+/// `U` lines after it, an `E` line; and the `T` counts.
 pub(crate) fn parse_oracle(text: &str) -> OracleDump {
     let mut dump = OracleDump::default();
-    let mut unlifted = 0u64;
     for line in text.lines() {
         match line.as_bytes().first() {
             Some(b'I' | b'E') => dump.lines.push(line.to_owned()),
-            Some(b'U') => unlifted += 1,
+            Some(b'P' | b'U') => {
+                if let Some(last) = dump.lines.last_mut() {
+                    last.push('\n');
+                    last.push_str(line);
+                }
+            }
             Some(b'T') => {
                 let mut fields = line.split('\t').skip(1);
                 dump.instructions = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0);
-                let errors: u64 = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0);
-                dump.errors = errors.saturating_sub(unlifted);
+                dump.errors = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0);
             }
             _ => {}
         }
     }
     dump
+}
+
+/// Whether two records have the same first (`I` or `E`) line.
+fn same_first_line(a: &str, b: &str) -> bool {
+    a.lines().next() == b.lines().next()
 }
 
 fn line_address(line: &str) -> u64 {
@@ -167,6 +176,12 @@ pub(crate) struct Tolerated {
     pub(crate) over_20_operands: u64,
     pub(crate) past_byte_16: u64,
     pub(crate) next2_and_commit: u64,
+    /// A crossbuild target that Ghidra's parse cache would not hold (it
+    /// was not decoded earlier in the sweep); basilisk decodes it on demand.
+    pub(crate) cross_uncached: u64,
+    /// A template read the handle of a subtable operand that exports
+    /// nothing: Ghidra reads stale memory, basilisk the constant 0.
+    pub(crate) unset_handle: u64,
 }
 
 impl Tolerated {
@@ -174,6 +189,8 @@ impl Tolerated {
         self.over_20_operands += other.over_20_operands;
         self.past_byte_16 += other.past_byte_16;
         self.next2_and_commit += other.next2_and_commit;
+        self.cross_uncached += other.cross_uncached;
+        self.unset_handle += other.unset_handle;
     }
 }
 
@@ -211,7 +228,8 @@ pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
             continue;
         }
         let without_flow = |l: &str| {
-            let mut f: Vec<&str> = l.split('\t').collect();
+            let first = l.lines().next().unwrap_or("");
+            let mut f: Vec<&str> = first.split('\t').collect();
             if f.len() > 3 {
                 f[3] = "";
             }
@@ -231,6 +249,16 @@ pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
             out.tolerated.past_byte_16 += 1;
         } else if previous.is_some_and(|p| p.uses_next2 && p.committed) {
             out.tolerated.next2_and_commit += 1;
+        } else if record.built.features[7] > 0 && same_first_line(line, &record.line) {
+            out.tolerated.unset_handle += 1;
+        } else if record.built.cross_targets.iter().any(|t| {
+            *t != record.address
+                && !ours.records[..bi]
+                    .iter()
+                    .any(|r| r.address == *t && !r.constructors.is_empty())
+        }) && line.contains("Could not obtain cached crossbuild instruction")
+        {
+            out.tolerated.cross_uncached += 1;
         } else if out.failures.len() < 20 {
             out.failures
                 .push(format!("expected {line}\n     got {}", record.line));
