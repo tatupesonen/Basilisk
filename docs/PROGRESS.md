@@ -139,8 +139,8 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate running on the build host (started
-22:33):** `decomp-range` (`a8550db77f2254819`) on branch `integration`
+**Finished, integration gate green (2,245 tests, 0 new packages,
+advisories ok), in CI as run 43638494204 since 22:37:** `decomp-range` (`a8550db77f2254819`) on branch `integration`
 (worktree `../basilisk-wt/decomp-range`, `8932173`). New crate
 `bk-decomp-range`: `CircleRange` (D01), a 32-byte `Copy` value, no
 allocation, no panic on any field values. All 117 `testcirclerange`
