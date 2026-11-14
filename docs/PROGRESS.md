@@ -139,8 +139,9 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate running on the build host (started
-23:18):** `sleigh-perf-linux` (`a20fadd7bd1040732`) on branch
+**Finished, integration gate green (2,254 tests, 0 new packages,
+advisories ok; `long differential sleigh-every-language` passes on the
+host now), in CI as run 43642488252 since 23:22:** `sleigh-perf-linux` (`a20fadd7bd1040732`) on branch
 `integration` (worktree `../basilisk-wt/sleigh-perf-linux`, `394b439`).
 `bk-sleigh` single-threaded against the g++ reference on the build host
 (host CPU model), Basilisk ÷ Ghidra, before → after: decode 0.86 →
