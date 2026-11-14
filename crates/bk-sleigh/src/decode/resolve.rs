@@ -93,7 +93,7 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), Fa
         let ctor_id = node
             .constructor()
             .ok_or(Fault::Model(What::NodeConstructor))?;
-        let info = *lang
+        let info = lang
             .tables
             .ctor(ctor_id)
             .ok_or(Fault::Model(What::Constructor))?;
@@ -102,7 +102,7 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), Fa
         while oper < info.num_ops {
             let op = *lang
                 .tables
-                .op(&info, oper)
+                .op(info, oper)
                 .ok_or(Fault::Model(What::Operand))?;
             let base = if op.base < 0 {
                 node.offset
@@ -197,14 +197,14 @@ fn set_constructor(
     n: u32,
     ct: ConstructorId,
 ) -> Result<(), Fault> {
-    let info = *lang
+    let info = lang
         .tables
         .ctor(ct)
         .ok_or(Fault::Model(What::Constructor))?;
     if let Some(node) = parse.nodes.get_mut(n as usize) {
         node.ctor = ct.index();
     }
-    for change in lang.tables.changes(&info) {
+    for change in lang.tables.changes(info) {
         match *change {
             ContextChange::Op {
                 word,

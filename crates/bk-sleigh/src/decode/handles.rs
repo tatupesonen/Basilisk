@@ -54,7 +54,7 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
         let Some(ctor_id) = node.constructor() else {
             continue;
         };
-        let info = *lang
+        let info = lang
             .tables
             .ctor(ctor_id)
             .ok_or(Fault::Model(What::Constructor))?;
@@ -62,7 +62,7 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
         // reports it at Ghidra's point.
         let ops = lang
             .tables
-            .ops_of(&info)
+            .ops_of(info)
             .ok_or(Fault::Model(What::Operand))?;
         for (oper, op) in (0u32..).zip(ops) {
             if let OpDef::Subtable(_) = op.def {
@@ -74,7 +74,7 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
                 *slot = handle;
             }
         }
-        let handle = match lang.tables.export(&info) {
+        let handle = match lang.tables.export(info) {
             Some(export) => fix(&env(lang, parse, naddr), export, cur)?,
             None => FixedHandle::UNSET,
         };
@@ -100,7 +100,7 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
         let ctor_id = node
             .constructor()
             .ok_or(Fault::Model(What::NodeConstructor))?;
-        let info = *lang
+        let info = lang
             .tables
             .ctor(ctor_id)
             .ok_or(Fault::Model(What::Constructor))?;
@@ -109,7 +109,7 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
         while oper < info.num_ops {
             let op = *lang
                 .tables
-                .op(&info, oper)
+                .op(info, oper)
                 .ok_or(Fault::Model(What::Operand))?;
             if depth > MAX_DEPTH - 2 {
                 return Err(Fault::Limit(Limit::Depth));
@@ -137,7 +137,7 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
         if descended {
             continue;
         }
-        if let Some(export) = lang.tables.export(&info) {
+        if let Some(export) = lang.tables.export(info) {
             let handle = fix(&env(lang, parse, naddr), export, cur)?;
             if let Some(slot) = parse.handles.get_mut(cur as usize) {
                 *slot = handle;

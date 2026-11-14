@@ -99,7 +99,7 @@ where
             });
         }
         self.depth += 1;
-        let ctor = Self::ctor_of(&w);
+        let ctor = if O::WATCHES { Self::ctor_of(&w) } else { None };
         self.obs.template(ctor, section);
         if section.is_some() {
             self.obs.feature(BuildFeature::NamedSection);
