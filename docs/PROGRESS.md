@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 23:10)
+## Now — RESUME HERE (2026-11-14 23:19)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 23:10)
+### Running (state at 2026-11-14 23:19)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,33 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Finished, integration gate running on the build host (started
+23:18):** `sleigh-perf-linux` (`a20fadd7bd1040732`) on branch
+`integration` (worktree `../basilisk-wt/sleigh-perf-linux`, `394b439`).
+`bk-sleigh` single-threaded against the g++ reference on the build host
+(host CPU model), Basilisk ÷ Ghidra, before → after: decode 0.86 →
+1.11; decode + text 1.24 → 1.50; decode + p-code 0.76 → **1.00**
+(0.94–1.05; level, not ahead); decode + text + p-code 0.99 → 1.18. The
+Mac got faster too (decode 1.32, p-code 1.38 against its reference).
+Cause found with `perf`: store-to-load forwarding stalls on x86-64
+(values written in pieces and read back with one wider load) plus extra
+work per instruction (model look-ups at every decision node, a 48-byte
+`Result` through memory); fixed by data layout (handles beside 24-byte
+nodes, decision trees laid out for the decoder, 16-byte decision nodes,
+a two-byte internal error type), no `unsafe`, no new dependency, every
+differential test still byte-equal. Label numbers are 32 bits as in
+both Ghidra engines; the `every_language` snapshot holds
+`unset-or-crash` (the sum is the same on both hosts) and the thresholds
+run first. Public API: `Node::handle()` became `Parse::handle(n)`. New
+tools in `crates/bk-sleigh/tests/reference_bench/` (`compare.sh`,
+`hot.py`; `build.sh` runs on Linux). Its gates: 2,104 tests. Follow-up
+(queue): a compiled form of p-code templates and exports for a clear
+margin in decode + p-code on x86-64 (Basilisk still runs about 8,260
+machine instructions per instruction to Ghidra's 6,300 there); a shared
+benchmark input across hosts. The integration job also runs `long
+differential sleigh-every-language`, the item that failed on the host
+before. Gate green → push, CI, merge, delete, clean, publish.
 
 **Merged: `spec-decomp-wave1`** (`a3e1e4fb110ba60cf`; `d702880`, merged
 directly at 23:08, docs only; worktree and branch removed).
@@ -273,7 +300,7 @@ left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-perf-linux` (worktree `../basilisk-wt/sleigh-perf-linux`, cut from `master` `12f1705`) | Opus | `a20fadd7bd1040732` | started 22:03. Queue item 4 below: re-measure `bk-sleigh` against the reference on the build host's new CPU model, profile both with `perf`, close the single-thread gap without `unsafe` or output changes, numbers on both machines; plus label numbers truncated to 32 bits as in Ghidra and the host-dependent oracle-crash count taken out of the `every_language` snapshot. May touch `bk-sla` if the profile points there. |
+| `decomp-cfg` (worktree `../basilisk-wt/decomp-cfg`, cut from `master` `bf8d45b`) | Opus | `ae8492491a7ef480f` | started 23:18. D04 from `features/decomp-cfg.md`: crate `bk-decomp-cfg` (block graph, graph algorithms, structured hierarchy, the structurer; `structure(graph, facts, options)`). Starts with what needs no D00 (the `structure blocks` cross-check, properties, fuzz, benchmark); its `bk structure`/`bk cfg` oracle tests are written to the specified formats and skip until `decomp_bk` exists. **When D00's commands are on `master`, message it** (it may then `git merge master`, at most twice); if it hands back first with only the oracle acceptance open, resume it after D00 merges. |
 | `decomp-oracle` (worktree `../basilisk-wt/decomp-oracle`, cut from `master` `e8041d6`) | Opus | `a5bfa968bedb8543f` | started 23:09. D00 from `features/decomp-oracle.md` (ADR-042): the console extension (`tools/reference/consoleext/`, consoles `decomp_bk`, `decomp_bk_dbg`, plus `decomp_dbg`), the dump, graph, structure, trace and p-code-recording formats, their readers in `bk-testkit`, a nightly `oracle` item. Told to deliver `bk structure` and `bk cfg` first (D04 needs them), to develop against scratch copies of the reference, and to run the new build script on the two shared reference directories only at the end, adding files only, with before/after hashes in its report. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
@@ -485,7 +512,7 @@ start a fresh agent briefed from the branch's files.
    if Ghidra's reader does (read the source first); (e) the 8 cargo
    manifest warnings (unused `[workspace.dependencies]` entries, the
    unused `authors` field).
-4. **`sleigh-perf-linux` (Opus; running since 22:03)** — on x86-64 Linux `bk-sleigh` is
+4. **`sleigh-perf-linux` (finished 23:15, merging; the text below is the brief it had)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
@@ -519,6 +546,11 @@ start a fresh agent briefed from the branch's files.
 
 Side work for the other slot, in this order:
 
+6b. **`sleigh-templates` (Opus), not urgent**: a compiled form of p-code
+   templates and exports in `bk-sleigh`, laid out like the decision
+   trees, for a clear single-thread margin in decode + p-code on x86-64
+   Linux (level with Ghidra after `sleigh-perf-linux`); and one
+   benchmark input shared by both hosts.
 7. **The monitor type** (cancel and progress) moves out of `bk-ui` into
    a low crate (plugin spec, binding constraints) — small, Opus; the
    SLEIGH compile then accepts it.
@@ -581,15 +613,13 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `sleigh-perf-linux` reports → merge; start **D04 `decomp-cfg`**
-   (`features/decomp-cfg.md`; it begins with the `structure blocks`
-   cross-check and takes `bk structure`/`bk cfg` from `decomp-oracle`'s
-   branch state or from `master` once D00's first step is merged — if
-   D00 has committed that step, ask it to say so and merge it early).
+   `sleigh-perf-linux`: integration gate → CI → merge (state above).
    `decomp-oracle` reports → check the before/after hashes of both
-   reference directories, merge through `integration`, start queue
-   item 7 (the monitor type). After each merge: `scripts/remote.sh
-   publish`.
+   reference directories, merge through `integration`, **message
+   `decomp-cfg`** that the commands are on `master`, start queue item 7
+   (the monitor type). `decomp-cfg` reports → merge (or resume it for
+   the oracle acceptance if D00 was not merged yet). After each merge:
+   `scripts/remote.sh publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
