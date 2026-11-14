@@ -9,8 +9,10 @@
 
 mod codec;
 pub mod ids;
+mod program;
 pub mod records;
 mod sections;
+mod write;
 
 pub use ids::{
     BlockRef, CallRef, EntryRef, EntryStorage, HighRef, IndexPair, JumpRef, OracleRange, SeqNum,
