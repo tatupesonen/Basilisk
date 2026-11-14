@@ -45,7 +45,7 @@ pub struct ListingView {
     seen_generation: Option<u64>,
     columns: Columns,
     cw: f32,
-    find: Option<Pending<Option<Address>>>,
+    find: Option<Pending<SourceResult<Option<Address>>>>,
     preview: super::preview::Preview,
     /// Where the cursor is, for other views and the status bar.
     cursor_address: Option<Address>,
@@ -150,11 +150,14 @@ impl ListingView {
         {
             self.find = None;
             match found {
-                Some(a) => cx.shared.nav.go(Location::at(a)),
-                None => cx.requests.push(Request::Notify(
+                Ok(Some(a)) => cx.shared.nav.go(Location::at(a)),
+                Ok(None) => cx.requests.push(Request::Notify(
                     super::Level::Info,
                     "Nothing further in that direction".into(),
                 )),
+                Err(e) => cx
+                    .requests
+                    .push(Request::Notify(super::Level::Warning, e.to_string())),
             }
         }
     }
@@ -431,7 +434,7 @@ impl ListingView {
         let from = self.cursor;
         self.find = Some(
             cx.client
-                .request(move |s| Find { kind, forward }.run(s, from)),
+                .request(move |s| Ok(Find { kind, forward }.run(s, from))),
         );
     }
 }
