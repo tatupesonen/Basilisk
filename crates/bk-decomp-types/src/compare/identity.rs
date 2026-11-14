@@ -2,7 +2,7 @@
 //! `DatatypeCompare`), and a hash consistent with it.
 //!
 //! Where Ghidra compares component *pointers* ("Compare absolute pointers")
-//! this compares component [`TypeId`]s, which follow creation order instead
+//! this compares component [`TypeId`](crate::TypeId)s, which follow creation order instead
 //! of heap addresses (spec 4.3). Where Ghidra would cast a type to the wrong
 //! class (two kinds sharing a sub-metatype, which Ghidra never creates in
 //! practice but which hostile XML can), the kinds' families are compared.

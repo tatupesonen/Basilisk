@@ -95,7 +95,7 @@ pub struct BitField {
 
 impl BitField {
     /// A bitfield known only by its width and position in a declaration;
-    /// offsets are assigned by [`TypeFactory::assign_raw_fields`](crate::TypeFactory::assign_raw_fields)
+    /// offsets are assigned by [`TypeFactory::assign_raw_struct_fields`](crate::TypeFactory::assign_raw_struct_fields)
     /// (Ghidra's `TypeBitField(id, numBits, …)`).
     pub fn declared(ident: i32, num_bits: i32, big_endian: bool, name: &str, ty: TypeId) -> Self {
         Self {
