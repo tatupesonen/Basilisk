@@ -74,44 +74,106 @@ macro_rules! check {
 
 #[test]
 fn paramstore_x64() {
-    let Some(mut e) = Env::new("x86:LE:64:default:gcc", "__stdcall") else { return };
+    let Some(mut e) = Env::new("x86:LE:64:default:gcc", "__stdcall") else {
+        return;
+    };
     check!(e, "void func(int4,int4);", "void,EDI,ESI");
     check!(e, "void func(float4,float4);", "void,XMM0:4,XMM1:4");
     check!(e, "void func(int2 a,int4 b,int1 c);", "void,DI,ESI,DX:1");
     check!(e, "void func(int8,int8);", "void,RDI,RSI");
     check!(e, "void func(float8,float8);", "void,XMM0:8,XMM1:8");
-    check!(e, "void func(int4,float4,int4,float4);", "void,EDI,XMM0:4,ESI,XMM1:4");
-    check!(e, "void func(float4,int4,float4,int4);", "void,XMM0:4,EDI,XMM1:4,ESI");
-    check!(e, "void func(int4,float8,float8,int4);", "void,EDI,XMM0:8,XMM1:8,ESI");
-    check!(e, "void func(float8,int8,int8,float8);", "void,XMM0:8,RDI,RSI,XMM1:8");
+    check!(
+        e,
+        "void func(int4,float4,int4,float4);",
+        "void,EDI,XMM0:4,ESI,XMM1:4"
+    );
+    check!(
+        e,
+        "void func(float4,int4,float4,int4);",
+        "void,XMM0:4,EDI,XMM1:4,ESI"
+    );
+    check!(
+        e,
+        "void func(int4,float8,float8,int4);",
+        "void,EDI,XMM0:8,XMM1:8,ESI"
+    );
+    check!(
+        e,
+        "void func(float8,int8,int8,float8);",
+        "void,XMM0:8,RDI,RSI,XMM1:8"
+    );
     check!(e, "void func(float10);", "void,stack8:10");
-    check!(e, "void func(float4,float10,float4);", "void,XMM0:4,stack8:10,XMM1:4");
+    check!(
+        e,
+        "void func(float4,float10,float4);",
+        "void,XMM0:4,stack8:10,XMM1:4"
+    );
     e.parse_type("struct intfloatpair { int4 a; float4 b;};");
     check!(e, "void func(intfloatpair);", "void,RDI");
     e.parse_type("struct longfloatpair { int8 a; float4 b;};");
-    check!(e, "void func(int4,longfloatpair);", "void,EDI,join XMM0:8 RSI");
+    check!(
+        e,
+        "void func(int4,longfloatpair);",
+        "void,EDI,join XMM0:8 RSI"
+    );
     e.parse_type("struct longdoublepair { int8 a; float8 b;};");
-    check!(e, "void func(int4,longdoublepair);", "void,EDI,join XMM0:8 RSI");
+    check!(
+        e,
+        "void func(int4,longdoublepair);",
+        "void,EDI,join XMM0:8 RSI"
+    );
     e.parse_type("struct intdoublepair { int4 a; float8 b;};");
-    check!(e, "void func(int4,intdoublepair);", "void,EDI,join XMM0:8 RSI");
+    check!(
+        e,
+        "void func(int4,intdoublepair);",
+        "void,EDI,join XMM0:8 RSI"
+    );
     e.parse_type("struct floatintpair { float4 a; int4 b;};");
     check!(e, "void func(int4,floatintpair);", "void,EDI,RSI");
     e.parse_type("struct doubleintpair { float8 a; int4 b;};");
-    check!(e, "void func(int4,doubleintpair);", "void,EDI,join RSI XMM0:8");
+    check!(
+        e,
+        "void func(int4,doubleintpair);",
+        "void,EDI,join RSI XMM0:8"
+    );
     e.parse_type("struct intintfloat { int4 a; int4 b; float4 c; };");
-    check!(e, "void func(int4,intintfloat);", "void,EDI,join XMM0:4 RSI");
+    check!(
+        e,
+        "void func(int4,intintfloat);",
+        "void,EDI,join XMM0:4 RSI"
+    );
     e.parse_type("struct intintfloatfloat { int4 a; int4 b; float4 c; float4 d;};");
-    check!(e, "void func(int4,intintfloatfloat);", "void,EDI,join XMM0:8 RSI");
+    check!(
+        e,
+        "void func(int4,intintfloatfloat);",
+        "void,EDI,join XMM0:8 RSI"
+    );
     e.parse_type("struct intfloatfloatint { int4 a; float4 b; float4 c; int4 d;};");
-    check!(e, "void func(int4,intfloatfloatint);", "void,EDI,join RDX RSI");
+    check!(
+        e,
+        "void func(int4,intfloatfloatint);",
+        "void,EDI,join RDX RSI"
+    );
     e.parse_type("struct intfloatfloat { int4 a; float4 b; float4 c; };");
-    check!(e, "void func(int4,intfloatfloat);", "void,EDI,join XMM0:4 RSI");
+    check!(
+        e,
+        "void func(int4,intfloatfloat);",
+        "void,EDI,join XMM0:4 RSI"
+    );
     e.parse_type("struct floatfloatpair { float4 a; float4 b; };");
     check!(e, "void func(int4,floatfloatpair);", "void,EDI,XMM0:8");
     e.parse_type("struct doublefloatpair { float8 a; float4 b; };");
-    check!(e, "void func(int4,doublefloatpair);", "void,EDI,join XMM1:8 XMM0:8");
+    check!(
+        e,
+        "void func(int4,doublefloatpair);",
+        "void,EDI,join XMM1:8 XMM0:8"
+    );
     e.parse_type("struct floatfloatfloat { float4 a; float4 b; float4 c; };");
-    check!(e, "void func(floatfloatfloat,int8);", "void,join XMM1:4 XMM0:8,RDI");
+    check!(
+        e,
+        "void func(floatfloatfloat,int8);",
+        "void,join XMM1:4 XMM0:8,RDI"
+    );
     e.parse_type("struct intintintint { int4 a; int4 b; int4 c; int4 d; };");
     check!(e, "void func(intintintint);", "void,join RSI RDI");
     check!(e, "void func(int4,intintintint);", "void,EDI,join RDX RSI");
@@ -139,7 +201,9 @@ fn paramstore_x64() {
 
 #[test]
 fn paramstore_x64_go() {
-    let Some(mut e) = Env::new("x86:LE:64:default:golang", "abi-internal") else { return };
+    let Some(mut e) = Env::new("x86:LE:64:default:golang", "abi-internal") else {
+        return;
+    };
     check!(e, "void func(int2 a,int8 b,char c);", "void,AX,RBX,CL");
     check!(e, "void func(float4 a,float4 b);", "void,XMM0:4,XMM1:4");
     check!(e, "void func(float4 a,float8 c);", "void,XMM0:4,XMM1:8");
@@ -155,21 +219,47 @@ fn paramstore_x64_go() {
         "void,XMM0:4,XMM1:4,XMM2:4,XMM3:4,XMM4:4,XMM5:4,XMM6:4,XMM7:4,XMM8:4,XMM9:4,XMM10:4,\
          XMM11:4,XMM12:4,XMM13:4,XMM14:4,stack8:4"
     );
-    check!(e, "void func(int8 a,int8 b[3],int8 c);", "void,RAX,stack8:24,RBX");
+    check!(
+        e,
+        "void func(int8 a,int8 b[3],int8 c);",
+        "void,RAX,stack8:24,RBX"
+    );
     e.parse_type("struct Person { bool a; int4 b; };");
     e.parse_type("struct Myriad { int8 a; bool b; Person c; float4 d; };");
     check!(e, "void func(Person a);", "void,join EBX pad:3 AL");
-    check!(e, "void func(bool a,Myriad b);", "void,AL,join XMM0:4 ESI pad:3 DIL pad:3 CL RBX");
+    check!(
+        e,
+        "void func(bool a,Myriad b);",
+        "void,AL,join XMM0:4 ESI pad:3 DIL pad:3 CL RBX"
+    );
     check!(e, "Person func(void);", "join EBX pad:3 AL");
-    check!(e, "float8 func(int8 a,int8 b[10])[5];", "stack58:40,RAX,stack8:80");
-    check!(e, "char func(char a[3],char b[7],int8 c)[5];", "stack18:5,stack8:3,stackb:7,RAX");
-    check!(e, "void func(float4 a,int8 b[1],int8 c[2]);", "void,XMM0:4,RAX,stack8:16");
+    check!(
+        e,
+        "float8 func(int8 a,int8 b[10])[5];",
+        "stack58:40,RAX,stack8:80"
+    );
+    check!(
+        e,
+        "char func(char a[3],char b[7],int8 c)[5];",
+        "stack18:5,stack8:3,stackb:7,RAX"
+    );
+    check!(
+        e,
+        "void func(float4 a,int8 b[1],int8 c[2]);",
+        "void,XMM0:4,RAX,stack8:16"
+    );
 }
 
 #[test]
 fn paramstore_ppc64be_stdcall() {
-    let Some(mut e) = Env::new("PowerPC:BE:64:default:default", "__stdcall") else { return };
-    check!(e, "void func(int4 a,float4 b,float8 c);", "void,r3:4,join f1,f2");
+    let Some(mut e) = Env::new("PowerPC:BE:64:default:default", "__stdcall") else {
+        return;
+    };
+    check!(
+        e,
+        "void func(int4 a,float4 b,float8 c);",
+        "void,r3:4,join f1,f2"
+    );
     check!(e, "void func(float8 a,int8 b,float8 c);", "void,f1,r4,f2");
     e.parse_type("struct sparm { int4 a; float8 dd; };");
     check!(
@@ -181,27 +271,77 @@ fn paramstore_ppc64be_stdcall() {
 
 #[test]
 fn paramstore_mips32be_stdcall() {
-    let Some(mut e) = Env::new("MIPS:BE:32:default:default", "__stdcall") else { return };
+    let Some(mut e) = Env::new("MIPS:BE:32:default:default", "__stdcall") else {
+        return;
+    };
     check!(e, "void func(int2 a,int4 b,char c);", "void,a0:2,a1,a2:1");
     check!(e, "void func(float8 a,float8 b);", "void,f12_13,f14_15");
     check!(e, "void func(float4 a,float4 b);", "void,f12,f14");
     check!(e, "void func(float4 a,float8 b);", "void,f12,f14_15");
     check!(e, "void func(float8 a,float4 b);", "void,f12_13,f14");
-    check!(e, "void func(int4 a,int4 b,int4 c,int4 d);", "void,a0,a1,a2,a3");
-    check!(e, "void func(float8 a,int4 b,float8 c);", "void,f12_13,a2,stack10:8");
+    check!(
+        e,
+        "void func(int4 a,int4 b,int4 c,int4 d);",
+        "void,a0,a1,a2,a3"
+    );
+    check!(
+        e,
+        "void func(float8 a,int4 b,float8 c);",
+        "void,f12_13,a2,stack10:8"
+    );
     check!(e, "void func(float8 a,int4 b,int4 c);", "void,f12_13,a2,a3");
     check!(e, "void func(float4 a,int4 b,int4 c);", "void,f12,a1,a2");
-    check!(e, "void func(int4 a,int4 b,int4 c,float8 d);", "void,a0,a1,a2,stack10:8");
-    check!(e, "void func(int4 a,int4 b,int4 c,float4 d);", "void,a0,a1,a2,a3");
-    check!(e, "void func(int4 a,int4 b,float8 c);", "void,a0,a1,join a2 a3");
+    check!(
+        e,
+        "void func(int4 a,int4 b,int4 c,float8 d);",
+        "void,a0,a1,a2,stack10:8"
+    );
+    check!(
+        e,
+        "void func(int4 a,int4 b,int4 c,float4 d);",
+        "void,a0,a1,a2,a3"
+    );
+    check!(
+        e,
+        "void func(int4 a,int4 b,float8 c);",
+        "void,a0,a1,join a2 a3"
+    );
     check!(e, "void func(int4 a,float8 b);", "void,a0,join a2 a3");
-    check!(e, "void func(float4 a,float4 b,float4 c,float4 d);", "void,f12,f14,a2,a3");
-    check!(e, "void func(float4 a,int4 b,float4 c,int4 d);", "void,f12,a1,a2,a3");
-    check!(e, "void func(float8 a,float4 b,float4 c);", "void,f12_13,f14,a3");
-    check!(e, "void func(float4 a,float4 b,float8 c);", "void,f12,f14,join a2 a3");
-    check!(e, "void func(int4 a,float4 b,int4 c,float4 d);", "void,a0,a1,a2,a3");
-    check!(e, "void func(int4 a,float4 b,int4 c,int4 d);", "void,a0,a1,a2,a3");
-    check!(e, "void func(int4 a,int4 b,float4 c,int4 d);", "void,a0,a1,a2,a3");
+    check!(
+        e,
+        "void func(float4 a,float4 b,float4 c,float4 d);",
+        "void,f12,f14,a2,a3"
+    );
+    check!(
+        e,
+        "void func(float4 a,int4 b,float4 c,int4 d);",
+        "void,f12,a1,a2,a3"
+    );
+    check!(
+        e,
+        "void func(float8 a,float4 b,float4 c);",
+        "void,f12_13,f14,a3"
+    );
+    check!(
+        e,
+        "void func(float4 a,float4 b,float8 c);",
+        "void,f12,f14,join a2 a3"
+    );
+    check!(
+        e,
+        "void func(int4 a,float4 b,int4 c,float4 d);",
+        "void,a0,a1,a2,a3"
+    );
+    check!(
+        e,
+        "void func(int4 a,float4 b,int4 c,int4 d);",
+        "void,a0,a1,a2,a3"
+    );
+    check!(
+        e,
+        "void func(int4 a,int4 b,float4 c,int4 d);",
+        "void,a0,a1,a2,a3"
+    );
     check!(e, "int4 func(void);", "v0");
     check!(e, "float4 func(void);", "f0");
     check!(e, "float8 func(void);", "f0_1");
@@ -216,7 +356,9 @@ fn paramstore_mips32be_stdcall() {
 
 #[test]
 fn paramstore_aarch64_cdecl() {
-    let Some(mut e) = Env::new("AARCH64:LE:64:v8A:default", "__cdecl") else { return };
+    let Some(mut e) = Env::new("AARCH64:LE:64:v8A:default", "__cdecl") else {
+        return;
+    };
     check!(e, "void func(int2 a,int4 b,int1 c);", "void,w0:2,w1,w2:1");
     check!(e, "void func(int4, int4);", "void,w0,w1");
     check!(e, "void func(int8,int8);", "void,x0,x1");

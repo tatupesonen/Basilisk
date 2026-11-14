@@ -222,7 +222,8 @@ pub(crate) fn arch(
     let files = cspec_files(&ghidra.processors_dir());
     let cspec = std::fs::read_to_string(&files[&pair.cspec]).unwrap();
     let mut m = manager(pair);
-    let spec = bk_cspec::CompilerSpec::read(&cspec, &mut m, bk_cspec::ReadOptions::default()).unwrap();
+    let spec =
+        bk_cspec::CompilerSpec::read(&cspec, &mut m, bk_cspec::ReadOptions::default()).unwrap();
     let mut t = types(pair);
     let size = |tag: &str, default: i32| {
         cspec
