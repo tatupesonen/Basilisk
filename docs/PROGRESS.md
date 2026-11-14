@@ -112,9 +112,16 @@ start a fresh agent briefed from the branch's files.
    Node on this Mac, ever)**. The track: (1) a short spec
    `features/docs-site.md`; (2) `scripts/site.sh build|serve|check`
    running a pinned image by digest, with a frozen lock file and versions
-   at least two weeks old; (3) the site under `site/` with the brand's
-   palette and fonts (`assets/brand/`, `features/ui-design.md`) in light
-   and dark; (4) the structure — Getting started, the interface (one page
+   at least two weeks old; (3) the site under `site/` **styled as
+   basilisk's own, not a stock Starlight theme** (owner, 2026-11-14:
+   "customize the style for a basilisk twist"): the brand's mark, Ember
+   on Soot palette and the UI's fonts and spacing (`assets/brand/`,
+   `features/ui-design.md`) in light and dark, a landing page with the
+   logo and real screenshots of the interface, code and listing samples
+   coloured with the UI's own syntax colours, Mermaid diagrams themed to
+   match — so the site and the program look like one product; the agent
+   is briefed as a designer as the UI agent was, and shows screenshots
+   of the result in its report; (4) the structure — Getting started, the interface (one page
    per view, from `features/ui-shell.md`), the command line, analysis, the
    decompiler, scripting and plugins (from `features/plugin-api.md` when it
    exists), formats and processors, and "How it works" (SLEIGH, p-code,

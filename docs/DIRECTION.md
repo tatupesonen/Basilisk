@@ -115,7 +115,9 @@ and a sane architecture in mind.
   looking docs for the usage of the whole program and how each aspect of
   the program works" — a **static** site made with **Starlight**, with
   **Mermaid** diagrams, **built in a container: Node.js is not installed
-  on this machine** (ADR-030). Track `docs-site` in `PROGRESS.md`.
+  on this machine** (ADR-030). Its style is customised "for a basilisk
+  twist": the site and the program look like one product. Track
+  `docs-site` in `PROGRESS.md`.
 * **The plugin system is to be worked on now, not left to M9** (owner,
   2026-11-14: "remember to work on the plugin system"). What was decided
   is ADR-014: Python through PyO3. Its design spec is written now so the
