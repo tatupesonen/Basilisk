@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 19:03)
+## Now — RESUME HERE (2026-11-14 20:14)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -103,56 +103,35 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 19:03) — USAGE LIMIT REACHED
+### Running (state at 2026-11-14 20:14)
 
-The usage limit was reached at 19:03. **The cap is now one agent**
-(`remote-build` is merged). The only agent, `sleigh-snippet`, was told
-to commit, write its status file and stop at a safe point; resume it by
-id when usage is back.
+**The cap is one agent** (owner, 2026-11-14), and every agent builds,
+tests and gates on kassini through `scripts/remote.sh`.
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`, cut from what is now `master` `8762851`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:03. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. It has the remote-script instructions (merge `master` once, then `scripts/remote.sh gate` / `gate --no-ref` / `run -- …`; final gates on kassini). Check its status file and `git log` before resuming. |
+| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:05 with its work committed (`8731612`: findings and plan, the `snippetdump` oracle source, lexer, scope, parser and driver; test support half written), **resumed 20:14**. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. Told to `git merge master` once and to use the build host for everything from then on; it is the first agent to use `scripts/remote.sh` from a worktree other than its author's. Its findings (the spec is wrong in seven places: snippets have their own lexer and grammar, a leading `0` is octal, only the first error is reported, many errors do not fail the compile, no label check, no `_size` constants for `inst_dest`/`inst_ref`, `<truncate_space>` is an input) are accepted: the oracle decides. Corpus: 139 elements (132 `<pcode>` plus 7 jump-table `*_pcode`). |
 
-**Merged: `remote-build`** (`add42668f53ed4fa3`; worktree
-`../basilisk-wt/kassini-setup` and branch `kassini-setup` still exist —
-remove them, the content is on `master`). `scripts/remote.sh` (`setup`,
-`sync`, `gate [--no-ref]`, `run -- CMD`, `log`, `status`, `clean
-BRANCH|--merged|--all`) reads the host from `~/.config/basilisk/remote`
-(written on the Mac) or the environment; exit 2 = no host, 75 = branch
-busy, 124 = time bound, 255 = connection dropped. On kassini: Rust
-1.100.0 and nightly, cargo-deny 0.20.2, cargo-fuzz, everything under
-`~/bk` (one `target/` per branch, 13–15 GB each; jobs survive a dropped
-connection; a job refuses to start under 40 GB free); the reference
-tools rebuilt into `~/bk/reference` (all 150 `.sla` byte-identical to
-the Mac's). The gate on Linux x86-64: exit 0, 1,966 tests, 174 s cold,
-about 64 s warm, peak memory 8.5 GB.
-
-**Still to do from its report (not done because of the limit):**
-1. Put its proposed text into `docs/LOOP.md` ("The build host") and
-   `docs/agents/RULES.md` (it is in the "Proposed text" section of
-   `docs/agents/remote-build.md`), and into every later brief.
-2. **`bk-cspec`'s oracle is host-dependent** — queue a track: on Linux
-   x86-64 the regenerated table differs from the checked-in (macOS,
-   libc++) one in 20 `EFF` rows (Ghidra's `hasEffect` gives 1 or 2
-   where the Mac gives 3), 39 `TRES` rows (tricore 24, Loongarch lp64f
-   14, x86 golang 1), 48 reordered `EFFECT` rows, the pair order, and
-   which pair carries the full tables for 3 `.cspec` files. By ADR-034
-   the x86-64 Linux build is the oracle, so the table is regenerated
-   there and `bk-cspec` made to match or the difference defined
-   (ADR-024). The generator also crashes in 25–75 % of runs on Linux:
-   Ghidra's `ParamListMerged` never sets `numgroup`; skip merged models
-   in `assignTable`.
-3. **`bk-sleigh` is slower than the g++-built reference on x86-64 Linux
-   single-threaded** (decode 3.0–3.3 against 4.0–4.2 M instructions/s;
-   decode + lift 1.5 against 2.1 M/s) — the reverse of the Mac. Queue a
-   performance track. Thread scaling there meets the target: 6.7–7.9×
-   at 8 threads, 12.6–15.2× at 16.
-4. `cargo deny --offline` needs `cargo fetch --locked` first on a fresh
-   machine (the script does it; the gate could).
-5. `remote.sh clean` has no "build output only" option; `miri.sh` and
-   the fuzz smoke were not run on kassini; optional `apt-get install
-   gdb` there.
+**Merged: `remote-build`** (`add42668f53ed4fa3`, `7b0cfa6`; worktree and
+branch removed, its checkout on the host cleaned). `scripts/remote.sh`
+(`setup`, `sync`, `gate [--no-ref]`, `run -- CMD`, `log`, `status`,
+`clean BRANCH|--merged|--all`) reads the host from
+`~/.config/basilisk/remote` (written on the Mac) or the environment;
+exit 2 = no host, 75 = branch busy, 124 = time bound, 255 = connection
+dropped. On kassini: Rust 1.100.0 and nightly, cargo-deny 0.20.2,
+cargo-fuzz, everything under `~/bk` (one `target/` per branch, 13–15 GB
+each; jobs survive a dropped connection; a job refuses to start under
+40 GB free); the reference tools rebuilt into `~/bk/reference` (all 150
+`.sla` byte-identical to the Mac's). The gate on Linux x86-64: exit 0,
+1,966 tests, 174 s cold, about 64 s warm, peak memory 8.5 GB. Thread
+scaling of `bk-sleigh` there: 6.7–7.9× at 8 threads, 12.6–15.2× at 16
+(the 6× target is met). `LOOP.md` and `RULES.md` have the build-host
+text. The two findings of its report are queue items 1 and 3 below.
+Small things left: `cargo deny --offline` needs `cargo fetch --locked`
+first on a fresh machine (the script does it; the gate could);
+`remote.sh clean` has no "build output only" option; `miri.sh` and the
+fuzz smoke were not run on the host; optional `apt-get install gdb`
+there (the coordinator can, with sudo).
 
 **Merged:** `sleigh-compiler-back` (`8762851`, CI run 43616696840 green
 on every job, integration gate 2,030 tests, 0 new packages, advisories
@@ -279,7 +258,47 @@ start a fresh agent briefed from the branch's files.
   (Microsoft's licence terms accepted on the machine's behalf); the owner
   was told on 2026-11-13.
 
-### Queue (start as slots free, in this order)
+### Queue (one agent at a time; in this order)
+
+1. **`cspec-host` (Opus)** — `bk-cspec`'s oracle table depends on the
+   C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
+   it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
+   where Ghidra's `hasEffect` answers 1 or 2 instead of 3 (so a lookup
+   result, not only an order), 39 `TRES` rows (tricore 24, Loongarch
+   lp64f 14, x86 golang 1), 48 `EFFECT` rows in 12 pairs (NDS32, every
+   RISC-V gcc pair) with two effects at one address swapped; besides,
+   the pair order follows the directory-scan order of the filesystem and
+   the pair that carries the full tables changes for 3 `.cspec` files
+   (HCS08, AARCH64_golang, riscv32-fp). The generator also aborts in
+   25–75 % of runs on Linux (`ParamListMerged` never sets `numgroup`;
+   `assignParameterStorage` on the merged `__cdecl/__regparm` model of
+   x86gcc.cspec resizes a vector to the uninitialised value before the
+   expected exception). To do: make the generator deterministic (sorted
+   scan; skip merged models in `assignTable`); for every differing row
+   trace the cause in Ghidra's source (an unstable `std::sort` on equal
+   keys, an uninitialised read, …) and say what each library does;
+   decide per cause what Basilisk gives — the result must be the same on
+   every platform and defined by the specification file, not by a sort's
+   tie order (ADR-024/038 form: a defined result, counted, the harness
+   recognising each tolerated row against both libraries' tables) —
+   and bring `bk-cspec` and its table in line, with the table generated
+   on the build host and the libc++ rows kept as the second witness.
+   The exact rows are in `docs/agents/remote-build.md`. (An earlier
+   note here said ADR-034 makes the Linux build "the oracle"; it does
+   not — `../reference` is the oracle and equals x86-64 Linux for the
+   SLEIGH compiler. This is a new case: Ghidra's own answer differs
+   between its platforms.)
+2. **`testbed`** — the item below (-2), now that `remote-build` is
+   merged.
+3. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
+   slower than the g++-built reference single-threaded (decode 3.0–3.3
+   against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
+   the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
+   not met there. Profile on the build host (`perf` needs installing:
+   coordinator, with sudo), find where the time goes (allocator, bounds
+   checks, code layout, the x86-64 code generator against AArch64's),
+   fix it without `unsafe`, and report numbers on both machines.
+4. D01 `bk-decomp-range`, then the rest of the order below.
 
 -2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
    idea of 2026-11-14: kassini as the project's testbed, since it has
