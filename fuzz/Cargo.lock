@@ -28,6 +28,7 @@ dependencies = [
  "bk-binutils-sys",
  "bk-core",
  "bk-cspec",
+ "bk-decomp-range",
  "bk-decomp-types",
  "bk-elf",
  "bk-lang",
@@ -95,6 +96,14 @@ dependencies = [
  "serde",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "bk-decomp-range"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+ "bk-pcode",
 ]
 
 [[package]]

@@ -18,6 +18,7 @@ bk-bin = { path = "../crates/bk-bin" }
 bk-binutils-sys = { path = "../crates/bk-binutils-sys" }
 bk-core = { path = "../crates/bk-core" }
 bk-cspec = { path = "../crates/bk-cspec" }
+bk-decomp-range = { path = "../crates/bk-decomp-range" }
 bk-decomp-types = { path = "../crates/bk-decomp-types" }
 bk-elf = { path = "../crates/bk-elf" }
 bk-lang = { path = "../crates/bk-lang" }
@@ -40,6 +41,13 @@ bench = false
 [[bin]]
 name = "bk_cspec_decode"
 path = "fuzz_targets/bk_cspec_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_range_ops"
+path = "fuzz_targets/bk_decomp_range_ops.rs"
 test = false
 doc = false
 bench = false

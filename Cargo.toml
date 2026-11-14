@@ -29,6 +29,7 @@ bk-sleigh = { path = "crates/bk-sleigh" }
 bk-sleigh-compiler = { path = "crates/bk-sleigh-compiler" }
 bk-cspec = { path = "crates/bk-cspec" }
 bk-sleigh-snippet = { path = "crates/bk-sleigh-snippet" }
+bk-decomp-range = { path = "crates/bk-decomp-range" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"

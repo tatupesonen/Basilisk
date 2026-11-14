@@ -1,0 +1,22 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 75fa2bd8e3446582e30a282944370e55c36bdcfee6b3ed295b102ba04e56857c # shrinks to r = CircleRange { left: 65, right: 2, mask: 255, step: 1, empty: false }, op = IntEqual, val = 0, slot = 0
+cc e0a9367d7095f54b1288321213b3ec7c3663d75d912dfaf3dd268a2fa8351a79 # shrinks to a = CircleRange { left: 0, right: 0, mask: 255, step: 2, empty: false }, b = CircleRange { left: 1, right: 1, mask: 255, step: 2, empty: false }
+cc 0330f5ceb5ef0b3b80f74b27ac110bf5c868b4e8fc864dc4ca5ef1c90266ba20 # shrinks to a = CircleRange { left: 0, right: 0, mask: 255, step: 1, empty: false }, b = CircleRange { left: 1, right: 1, mask: 255, step: 1, empty: false }
+cc ce559c8b5534e5c5aca6c403195303b6307382b0d46327b41a8373ed8df50f0e # shrinks to a = CircleRange { left: 0, right: 0, mask: 255, step: 1, empty: false }, b = CircleRange { left: 0, right: 0, mask: 0, step: 1, empty: true }, op = IntRight
+cc e9a5752cc3d2cac6819a8dc828a8848e2f30de968a405768e2c52abb3870d865 # shrinks to a = CircleRange { left: 1, right: 1, mask: 65535, step: 2, empty: false }, b = CircleRange { left: 0, right: 0, mask: 255, step: 2, empty: false }
+cc ee9fde6244e1c1ee143f8022aa0d760b9e483057461fcf53955bcf68f047124a # shrinks to a = CircleRange { left: 0, right: 0, mask: 255, step: 4, empty: false }, b = CircleRange { left: 229, right: 230, mask: 255, step: 1, empty: false }
+cc bd088e5c15e75841126e0a74a2ef79fa48fe5fceac16c5dc3440d06284f4cdaa # shrinks to a = CircleRange { left: 4, right: 4, mask: 65535, step: 8, empty: false }, b = CircleRange { left: 0, right: 0, mask: 65535, step: 8, empty: false }
+cc e3c0d3057030b909704bf29fb52b448428e33fcc6f11bbfe868a76b046160a35 # shrinks to a = CircleRange { left: 253, right: 0, mask: 255, step: 1, empty: false }, b = CircleRange { left: 0, right: 0, mask: 255, step: 4, empty: false }
+cc 667392f77ca980ece3d20a79f78761f1f0c50c5308ef257f424a7d0823397e55 # shrinks to a = CircleRange { left: 225, right: 1, mask: 255, step: 8, empty: false }, b = CircleRange { left: 0, right: 1, mask: 255, step: 1, empty: false }
+cc a52a9026ecf6afe86b0421439e82e05e736c9a82e6402c7ff5d8e2952e438011 # shrinks to a = CircleRange { left: 129, right: 2, mask: 255, step: 1, empty: false }, b = CircleRange { left: 1, right: 1, mask: 255, step: 2, empty: false }, op = IntLeft
+cc 6ea8e682514bcbf80fed28bede630638eba74c274e6a4ab11e90550050e32b30 # shrinks to a = CircleRange { left: 0, right: 0, mask: 255, step: 1, empty: false }, b = CircleRange { left: 0, right: 0, mask: 0, step: 1, empty: true }, op = IntSRight
+cc e29ce94cd58371de48a41c728b3324b69446c7b90e6d2f8c5f4f18612c849e6d # shrinks to a = CircleRange { left: 1, right: 1, mask: 255, step: 2, empty: false }, b = CircleRange { left: 0, right: 0, mask: 0, step: 1, empty: true }, op = SubPiece
+cc 2cfcbae138b4c3d52fcaefa677f9e86e003184dc1c624cf09e48bb165ccd9cb0 # shrinks to a = CircleRange { left: 102, right: 254, mask: 255, step: 2, empty: false }, b = CircleRange { left: 0, right: 0, mask: 255, step: 4, empty: false }
+cc 8c927e5198d01297f05d57663156e137f6388c515da7f5355a628ed99202aa5b # shrinks to a = CircleRange { left: 225, right: 226, mask: 255, step: 1, empty: false }, b = CircleRange { left: 1, right: 1, mask: 255, step: 4, empty: false }, op = IntMult
+cc a7aeaa43200fcafc1f1fab2f29377f0735a31ed3f8b3c7014e0fb5aa03ff8261 # shrinks to a = CircleRange { left: 1, right: 229, mask: 255, step: 4, empty: false }, b = CircleRange { left: 145, right: 146, mask: 255, step: 1, empty: false }, op = IntLeft
+cc fff86fb6fa1584ef5802d29f1e5b2bc37cdee9f8ff23b4e32ac1a127052f822a # shrinks to a = CircleRange { left: 65, right: 195, mask: 255, step: 2, empty: false }, b = CircleRange { left: 1, right: 1, mask: 255, step: 2, empty: false }, op = IntLeft
