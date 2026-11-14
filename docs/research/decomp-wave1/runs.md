@@ -37,3 +37,10 @@ block 0 (an unreachable cycle has no root for `clipExtraRoots` or
 block to the same target or with in-edges to the entry. Two runs:
 outputs byte-identical (sha256 of all outputs `124c7654…`) and logs
 identical.
+
+## R4. The same 3,000 graphs on the build host
+
+`scripts/remote.sh run -- bash -c '…'` with the host's reference
+(`$BASILISK_REFERENCE_DIR`, Debian g++ 14.2, libstdc++): exit 0, 161
+`Could not finish collapsing block structure`, sha256 of all outputs
+`124c7654…` — byte-identical to the Mac (libc++).
