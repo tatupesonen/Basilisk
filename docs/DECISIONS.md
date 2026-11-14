@@ -1170,3 +1170,43 @@ fails the test. The crashing inputs are regression tests.
 such an instruction can see a difference; `features/sleigh-pcode.md`
 section 8 lists the kinds. The three behaviours and the two crashes are
 candidates for bug reports to Ghidra.
+
+## ADR-039 — The decision-tree `log` reproduces every multiply-add GCC fuses in glibc, not one
+
+Date: 2026-11-14. Status: accepted. Amends ADR-032 (which stays as
+written: the score itself is computed unfused, and the `log` must equal
+glibc's on x86-64). Found by track `sleigh-compiler-back`.
+
+**Context.** ADR-032 and `features/sleigh-compiler-back.md` section 4.3
+said the `log` used by `DecisionNode::getScore` could be ported from
+glibc's source with its one explicit FMA "and no other fusion". That
+port was written and tested against the checked-in table of glibc
+results (`research/sla-host-dependence/logtable-glibc.txt.gz`, 16,383
+lines): it differed on 1,134 lines, and equalled musl instead.
+
+**Cause.** glibc is compiled as GNU C, where GCC's default is
+`-ffp-contract=fast`. On x86-64 with FMA available through glibc's
+function multiversioning, GCC fuses every product whose only uses are
+additions or subtractions, not just the one the source spells out. The
+shipped `log` is therefore the source *as contracted by GCC*.
+
+**Decision.** `bk-sleigh-compiler`'s `log` is a port of Arm
+optimized-routines' `log` (revision
+`20859d3fd9e797dde592c489c8ef7d383f778620`, MIT OR Apache-2.0 WITH
+LLVM-exception, recorded in the module and in `NOTICE`; glibc's `log` is
+that code) in which each of those contractions is written out as an
+explicit `fma`. It is bit-equal to the table on all 16,383 lines, on
+every host, because nothing is left to the compiler: Rust does not
+contract floating-point expressions.
+
+**Verification.** The table test runs in the gate on every platform. The
+150-specification comparison is byte for byte with no tolerated
+difference, and a mutation that computes the score with fused arithmetic
+makes exactly the 14 files of ADR-029 differ, so the comparison is known
+to see decision-tree differences.
+
+**Consequence.** The oracle is one build of glibc's `log`; a future
+glibc that changes its `log`, or a reference build on a host without
+FMA, could order tied decision nodes differently again. The table is the
+definition; if the reference is ever rebuilt on another libc, the table
+test says so before any `.sla` differs.
