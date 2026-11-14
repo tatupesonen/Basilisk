@@ -14,34 +14,51 @@ use bk_sla::{BlockId, DecisionId, DisjointPattern, MaskWord, Sla, SymbolKind};
 
 use crate::decode::tree::NONE;
 
-/// One decision node.
+/// What a decision node does.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Step {
+#[repr(u8)]
+pub(crate) enum Kind {
     /// A leaf: pairs `first..first + count` of [`Trees::pairs`].
-    Leaf { first: u32, count: u32 },
-    /// Tests `size` instruction bits; child `v` is node `first + v`.
-    Bits {
-        /// `start_bit / 8`: the byte from the node's offset.
-        byte: i32,
-        /// Bytes read (`(bit + size - 1) / 8 + 1`).
-        byte_size: u32,
-        /// Left shift that drops the bits before the field.
-        shl: u32,
-        /// Right shift that keeps the field (`32 - size`).
-        shr: u32,
-        /// `2^size`.
-        children: u32,
-        first: u32,
-    },
-    /// Tests `size` context bits at `start_bit`; child `v` is `first + v`.
-    Context {
-        start_bit: i32,
-        size: u32,
-        children: u32,
-        first: u32,
-    },
+    Leaf,
+    /// Tests instruction bits: `(read(offset + pos, a) << b) >> c`.
+    Bits,
+    /// Tests context bits: word `pos` shifted `<< a >> b`, and when `c > 0`
+    /// the next word `>> (32 - c)` (Ghidra `getContextBits`).
+    Context,
     /// A node id the model does not have.
     Missing,
+}
+
+/// One decision node, sixteen bytes so that a tree walk touches as few
+/// cache lines as possible. Shift counts are stored modulo 32, as the
+/// wrapping shifts they feed use them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Step {
+    /// The first child (`Bits`, `Context`) or pair (`Leaf`).
+    pub(crate) first: u32,
+    /// `Bits`: `start_bit / 8`; `Context`: the context word.
+    pub(crate) pos: i32,
+    /// The number of children (`2^size`) or of pairs.
+    pub(crate) count: u32,
+    pub(crate) kind: Kind,
+    /// `Bits`: bytes read, capped at 255; `Context`: left shift.
+    pub(crate) a: u8,
+    /// `Bits`: left shift; `Context`: right shift.
+    pub(crate) b: u8,
+    /// `Bits`: right shift; `Context`: bits taken from the next word.
+    pub(crate) c: u8,
+}
+
+impl Step {
+    const MISSING: Self = Self {
+        first: NONE,
+        pos: 0,
+        count: 0,
+        kind: Kind::Missing,
+        a: 0,
+        b: 0,
+        c: 0,
+    };
 }
 
 /// What one block of a pair tests.
@@ -132,32 +149,44 @@ impl Trees {
                         context,
                     });
                 }
-                Step::Leaf {
+                Step {
                     first,
+                    pos: 0,
                     count: trees.pairs.len() as u32 - first,
+                    kind: Kind::Leaf,
+                    a: 0,
+                    b: 0,
+                    c: 0,
                 }
             } else {
                 let size = u32::from(node.size);
                 let first = sla.decision_child(node, 0).map_or(NONE, DecisionId::index);
-                let children = node.num_children();
+                let count = node.num_children();
                 if node.context {
-                    Step::Context {
-                        start_bit: node.start_bit,
-                        size,
-                        children,
+                    // The arithmetic of `Env::context_bits`, done once.
+                    let bit_offset = node.start_bit.rem_euclid(32) as u32;
+                    let remaining = (size as i32 - 32).wrapping_add(bit_offset as i32);
+                    Step {
                         first,
+                        pos: node.start_bit.div_euclid(32),
+                        count,
+                        kind: Kind::Context,
+                        a: (bit_offset & 31) as u8,
+                        b: (32u32.wrapping_sub(size) & 31) as u8,
+                        c: remaining.clamp(0, 255) as u8,
                     }
                 } else {
                     // The arithmetic of `Env::instruction_bits`, done once.
                     let bit = (node.start_bit % 8) as u32;
                     let byte_size = bit.wrapping_add(size).saturating_sub(1) / 8 + 1;
-                    Step::Bits {
-                        byte: node.start_bit / 8,
-                        byte_size,
-                        shl: (8 * (4 - byte_size.min(4))).wrapping_add(bit),
-                        shr: 32u32.wrapping_sub(size),
-                        children,
+                    Step {
                         first,
+                        pos: node.start_bit / 8,
+                        count,
+                        kind: Kind::Bits,
+                        a: byte_size.min(255) as u8,
+                        b: ((8 * (4 - byte_size.min(4))).wrapping_add(bit) & 31) as u8,
+                        c: (32u32.wrapping_sub(size) & 31) as u8,
                     }
                 }
             };
@@ -193,6 +222,16 @@ impl Trees {
         self.steps
             .get(id as usize)
             .copied()
-            .unwrap_or(Step::Missing)
+            .unwrap_or(Step::MISSING)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn steps_are_small() {
+        assert_eq!(size_of::<Step>(), 16);
     }
 }

@@ -114,29 +114,6 @@ impl Env<'_> {
         res
     }
 
-    /// `size` context bits at `start_bit` (Ghidra `getContextBits`).
-    #[inline]
-    pub(crate) fn context_bits(&self, start_bit: i32, size: u32) -> u32 {
-        let word_index = start_bit.div_euclid(32);
-        let bit_offset = start_bit.rem_euclid(32) as u32;
-        let word = |i: i32| {
-            usize::try_from(i)
-                .ok()
-                .and_then(|i| self.parse.context.get(i))
-                .copied()
-        };
-        let mut res = word(word_index).unwrap_or(0);
-        res = res.wrapping_shl(bit_offset);
-        res = res.wrapping_shr(32u32.wrapping_sub(size));
-        let remaining = size as i32 - 32 + bit_offset as i32;
-        if remaining > 0
-            && let Some(next) = word(word_index + 1)
-        {
-            res |= next.wrapping_shr(32 - remaining as u32);
-        }
-        res
-    }
-
     fn token_field(&self, field: &Field, node_offset: u32) -> Result<i64, Fault> {
         let size = field
             .end_byte

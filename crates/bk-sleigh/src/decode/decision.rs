@@ -8,7 +8,7 @@ use bk_sla::{ConstructorId, SymbolId};
 use super::bytes::WINDOW;
 use super::expr::Env;
 use super::fault::{Fault, What};
-use crate::language::decide::{Block, Step, Trees};
+use crate::language::decide::{Block, Kind, Trees};
 
 impl Env<'_> {
     /// The constructor of subtable `table` that the bytes at `node_offset`
@@ -24,11 +24,12 @@ impl Env<'_> {
         // A validated tree is at most 64 levels deep; the bound only keeps a
         // malformed one from looping.
         for _ in 0..=256 {
-            let (value, children, first) = match trees.step(id) {
-                Step::Leaf { first, count } => {
+            let step = trees.step(id);
+            let value = match step.kind {
+                Kind::Leaf => {
                     let pairs = trees
                         .pairs
-                        .get(first as usize..first.wrapping_add(count) as usize)
+                        .get(step.first as usize..step.first.wrapping_add(step.count) as usize)
                         .unwrap_or_default();
                     for pair in pairs {
                         if self.block_matches(trees, pair.instruction, node_offset)?
@@ -45,33 +46,42 @@ impl Env<'_> {
                     }
                     return Err(Fault::NoConstructor);
                 }
-                Step::Bits {
-                    byte,
-                    byte_size,
-                    shl,
-                    shr,
-                    children,
-                    first,
-                } => {
-                    // `Env::instruction_bits` with the arithmetic done.
-                    let pos = node_offset.wrapping_add(byte as u32);
+                Kind::Bits => {
+                    // `getInstructionBits` with the arithmetic done.
+                    let pos = node_offset.wrapping_add(step.pos as u32);
                     if pos as usize >= WINDOW {
                         return Err(Fault::TooLong);
                     }
+                    let byte_size = u32::from(step.a);
                     if pos as usize + byte_size as usize > WINDOW {
                         self.parse.overhang.set(true);
                     }
                     let raw = self.parse.window.read(pos, byte_size.min(4));
-                    (raw.wrapping_shl(shl).wrapping_shr(shr), children, first)
+                    raw.wrapping_shl(u32::from(step.b))
+                        .wrapping_shr(u32::from(step.c))
                 }
-                Step::Context {
-                    start_bit,
-                    size,
-                    children,
-                    first,
-                } => (self.context_bits(start_bit, size), children, first),
-                Step::Missing => return Err(Fault::Model(What::DecisionNode)),
+                Kind::Context => {
+                    // `getContextBits` with the arithmetic done.
+                    let word = |i: i32| {
+                        usize::try_from(i)
+                            .ok()
+                            .and_then(|i| self.parse.context.get(i))
+                            .copied()
+                    };
+                    let mut value = word(step.pos)
+                        .unwrap_or(0)
+                        .wrapping_shl(u32::from(step.a))
+                        .wrapping_shr(u32::from(step.b));
+                    if step.c > 0
+                        && let Some(next) = word(step.pos.wrapping_add(1))
+                    {
+                        value |= next.wrapping_shr(32u32.wrapping_sub(u32::from(step.c)));
+                    }
+                    value
+                }
+                Kind::Missing => return Err(Fault::Model(What::DecisionNode)),
             };
+            let (children, first) = (step.count, step.first);
             if value >= children {
                 return Err(Fault::Model(What::DecisionChild));
             }
