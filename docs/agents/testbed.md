@@ -139,6 +139,24 @@ count (the `PROPTEST_CASES` finding below) were not run at length.
 arm64 is done differently, by cross-building rather than running the whole
 Ubuntu image under emulation; see `arm64` below.
 
+### Linux AArch64 (`arm64`, 2 min 52 s)
+
+Cross-built on the host for `aarch64-unknown-linux-gnu` (Debian 13 cross
+GCC 14 for the C parts and linking) and run under `qemu-aarch64` in the
+image `tools/testbed/arm64/Dockerfile`. Only the test binaries are
+emulated, so it costs about as much as a native build. Default crates: the
+floating-point-contraction cases of ADR-029/ADR-032/ADR-039,
+`bk-sleigh-compiler`, `bk-pcode` and `bk-sla`, with the Ghidra tree and the
+reference mounted. The x86-64 reference tools that a test starts run
+natively.
+
+Result: **447 passed, 0 failed, 9 ignored (benchmarks), 0 SKIPPED**.
+`bk-sleigh-compiler` `reference_sla` passed: all 150 specifications compile
+to the reference's bytes, and to its `-y` XML, from an AArch64 build
+(79 s emulated). So the decision-tree score and its `log` come out
+bit-identical where a C compiler would fuse multiply-adds by default.
+`scripts/remote.sh arm64 -- -p <crate>` runs any other crates.
+
 ### Wine and CI's `windows-latest`
 
 **`wine --msvc`** (cargo-xwin 0.23.1, clang-cl 19, lld, Microsoft's CRT
