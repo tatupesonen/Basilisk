@@ -164,6 +164,10 @@ and a sane architecture in mind.
     folders); scratch scripts, uncommitted work and anything outside the
     project's own folders are left alone. `PROGRESS.md` has the
     procedure.
+  - *kassini is the project's build machine* (owner, 2026-11-14): it may
+    be used heavily and anything may be installed on it; use it whenever
+    the Mac is short of disk or CPU. Credentials for it are never written
+    into the repository.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer

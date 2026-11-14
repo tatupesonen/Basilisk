@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 17:43)
+## Now — RESUME HERE (2026-11-14 18:15)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -101,12 +101,38 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 17:26)
+### Running (state at 2026-11-14 18:15)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`, cut from `integration` `c613bd2`) | Opus | `a41574e3f4a6e75b9` | started 17:14, stopped by the full disk before writing anything, resumed 17:25. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Findings so far (in its hand-back, to be written to its status file first): `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` has to be ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. |
-| `ui-flake` (worktree `../basilisk-wt/ui-flake`, cut from `name-case`) | Opus | `afdc9312b2424f522` | started 17:12, stopped by the full disk, resumed 17:25. `bk-ui` test `task::tests::requests_complete_off_thread_and_wake` fails about one run in three on a busy machine (the worker stores the result, then wakes; the test asserts the wake at once). Diagnosis from reading: a test bug, plus a real gap (a request finished before `set_waker` wakes nobody; hidden today by the views' fallback repaints) and a panic in a task leaving `running` raised. It fixes all three, reproduces before and after under load, runs the gate. |
+| `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`) | Opus | `a41574e3f4a6e75b9` | resumed 17:25 after the full disk. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Its findings: `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` is ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. Cut from the integration branch that is now `master` `a961ff3`. |
+| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:12. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
+
+**In CI:** `ui-flake` (`afdc9312b2424f522`, finished) on branch
+`integration` (worktree `../basilisk-wt/ui-flake`, `82ffd0a`), CI run
+43613387498; local gate 1,970 tests, 0 new packages, advisories ok. It
+was a test bug (the worker stores the result, then wakes; the test
+asserted the wake at once: 308 failures in 3,000 runs under load before,
+0 in 5,000 after) plus real gaps fixed on the way: `set_waker` now wakes
+once (a request finished before the waker was installed woke nobody),
+the busy count is given back before the wake and on every path, a
+panicking task delivers `SourceError::TaskPanicked` instead of leaving
+the spinner on. Green → merge, delete branch and worktree.
+
+**kassini is the build host** (owner, 2026-11-14: "You can use this
+computer heavily and install whatever you'd like on it", "If you are
+stuck without compute to use, then you can at any point use that"). The
+owner enlarged it that day to 20 cores, 32 GB of memory and a 480 GB
+disk; the coordinator grew the root filesystem to 471 GB (the swap
+partition that blocked it was replaced by an 8 GB swap file; the old
+partition table and fstab are saved on the machine), installed the build
+tools and verified that it reboots cleanly. Login is by a dedicated SSH
+key on the Mac, installed with the owner's approval, so agents need no
+password; the password stays out of every project file (the owner had it
+recorded in the coordinator's own memory instead). Once `scripts/remote.sh`
+is merged: integration gates, Linux runs before CI, x86-64 oracle
+regeneration and benchmarks go there, and the Mac keeps its disk and CPU
+for the agents' editing and small builds.
 
 **Merged on 2026-11-14 after the toolchain fix** (worktrees and branches
 removed, build output deleted; the Wine scratch scripts of the two code
