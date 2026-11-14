@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14, 10:20)
+## Now — RESUME HERE (2026-11-14, 11:15)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -40,20 +40,25 @@ is run on Linux x86-64 with GCC (container) and for Windows under Wine
 before it is merged; "not run" on a platform in an agent's report is a
 reason to send it back, not a note.
 
-### Running (resumed 2026-11-14 10:20 after the usage-limit stop of 2026-11-13 18:00)
+### Running (state at 2026-11-14 11:15)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `windows-ci2` (worktree `../basilisk-wt/windows-ci`) | Opus | `af713570d2e64dbed` | fixes the three failing Windows tests; told to run Windows tests under Wine with the scripts in `../basilisk-wt/gnu-disasm/target/windows/` and to say whether Wine reproduces the CI failure. |
-| `gnu-disasm` (worktree kept, fast-forwarded to master) | Opus | `a5b2605fa521b5dd2` | fixes the GCC/Linux build of `bk-binutils-sys`; verifies in a `linux/amd64` Ubuntu 24.04 container with GCC. |
-| `sla` | Opus | `a10095edf70216b9d` | resumed; had 3 commits (model, reader, structural diff in progress). First SLEIGH track, `features/sla.md`. |
+| `windows-ci2` (worktree `../basilisk-wt/windows-ci`) | Opus | `af713570d2e64dbed` | 5 commits (drive-letter case fixed, Wine runs, a `bk-pcode` rounding fix); waiting on its own final run, report not in yet. |
+| `spec-plugin` | Opus | `a0c2d046fd7132d8c` | started 10:50; `inventory/05-extension-points.md`, `features/plugin-api.md`, `features/plugin-binding-constraints.md` (ADR-014; the owner asked for it). |
+| `decomp-types` | Opus | `ae9088c291801e2f1` | resumed 11:15 (nothing was on disk); D02, `features/decomp-types.md`. |
 
-Stopped by the limit, to resume by id when a slot frees (work is in their
-worktrees, committed up to the stop):
+Finished, waiting for the integration branch (below):
+
+| Branch | Agent id | Result |
+|---|---|---|
+| `gnu-disasm` (2nd round, 5 commits) | `a5b2605fa521b5dd2` | GCC 15 on Ubuntu 26.04 (the runner) defaults to C23, where `static_assert` is a keyword: the build now pins `gnu17`. Full suites of both crates pass in an emulated amd64 Ubuntu 26.04 container. Patch 0004 to the vendored tree: CR16 printed a stale operand (found by the gate's property test). Both crates passed every test on the real Windows runner in run 43456260254. Own gate green, 1,681 tests. |
+| `sla` (14 commits) | `a10095edf70216b9d` | `bk-sla` meets `features/sla.md` section 7: all 150 reference files round-trip byte for byte through two decoders, XML equals `sleigh -y`, 16 mutations tried; `x86-64.sla` reads in 17.9 ms against 30.8 ms for Ghidra's loader; model heap 13.4 MB. Own gate green. Windows compile-checked only; Linux not run. |
+
+Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
 | Branch | Model | Agent id | State at the stop |
 |---|---|---|---|
-| `decomp-types` | Opus | `ae9088c291801e2f1` | nothing on disk yet (it was reading `grammar.y`); D02, `features/decomp-types.md`. |
 | `store-spike` | Fable | `a8012f27279847feb` | 3 commits (workload section, verified notes) plus uncommitted files; `research/storage-engine.md`. |
 | `spec-pe` | Fable | `a53aca50251d9e64c` | 2 commits (core PE fact sheet, crate evaluation started) plus uncommitted files; `features/pe.md`. |
 
@@ -63,10 +68,15 @@ start a fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* When `windows-ci2` and `gnu-disasm` report: review, merge `--no-ff`,
-  gate, `scripts/check-dep-age.py`, `cargo deny check advisories`, push,
-  and **read the CI run of that push on all three systems** before
-  starting anything that depends on it.
+* **Integration branch before `master`** (the owner allows pushing tested
+  feature branches, 2026-11-14): when `windows-ci2` reports, make branch
+  `integration` from `master`, merge `gnu-disasm`, `windows-ci2` and `sla`
+  into it (`--no-ff` each), run the gate, `scripts/check-dep-age.py
+  master` and `cargo deny check advisories`, push the branch,
+  `gh workflow run CI --ref integration`, and merge it to `master` only
+  when every job is green on all three systems. Red job → the exact
+  failure goes to the agent whose crate it is. Then start `sleigh-decode`
+  and `sleigh-compiler-front` (both need `sla` on `master`).
 * **Windows tests can be run locally under Wine**, as `gnu-disasm` did
   (MinGW and MSVC targets, cross-compiled; `cargo-xwin` for the MSVC CRT
   and SDK). Its container scripts are scratch files in
@@ -82,9 +92,8 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (start as slots free, in this order)
 
-0. Resume the three stopped agents above: `decomp-types` first (critical
-   path), then `spec-pe`, then `store-spike`.
-0a. **`spec-plugin`** (Opus 5.5 — all new agents are, `DIRECTION.md`; the owner asked for it on 2026-11-14) —
+0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
+0a. (running) **`spec-plugin`** (Opus 5.5 — all new agents are, `DIRECTION.md`; the owner asked for it on 2026-11-14) —
    `inventory/05-extension-points.md` and `features/plugin-api.md` for
    ADR-014 (Python through PyO3): Ghidra's extension surface
    (`GhidraScript`/`FlatProgramAPI`, analyzers, loaders, exporters,
