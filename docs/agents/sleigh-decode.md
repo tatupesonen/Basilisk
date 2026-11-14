@@ -111,7 +111,7 @@ recorder), `differential` 1 (+1 ignored full run), `bench_heap` 1,
   by `tests/fuzz_regressions.rs`): 60 s each, clean — 2,109,703 runs (the
   fixture plus seven reference languages via `BASILISK_REFERENCE_DIR`) and
   374,008 runs (seeded with the six smallest inflated reference streams).
-* Gate: see the last line of this report section in the final message.
+* Gate: `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` printed 0; last line `tests: 1742 passed, 0 failed` (macOS arm64, 2026-11-14).
 
 ## Benchmarks
 
@@ -187,12 +187,15 @@ word-level context sets as in Ghidra.
   x86_64-pc-windows-msvc -- -D warnings` clean (it found `result_large_err`
   on `LoadError`, fixed by boxing); the crate's tests built for
   `x86_64-pc-windows-gnu` and run under Wine in the `bk-gnu-disasm-win`
-  container (scripts copied to `target/windows/`) — result in the final
-  message.
+  container (scripts copied to `target/windows/`): all oracle-free tests
+  pass (unit 18, `decode_units` 6, `fixture_oracle` 1, `properties` 3,
+  `fuzz_regressions` 2, `bench_heap` 1; the reference tests print SKIPPED).
 * Linux: rests on CI.
 
 ## Follow-ups
 
+* `fuzz/Cargo.lock` also gains `bk-binutils-sys`, which the fuzz crate
+  already depended on but master's lock lacked (additions only).
 * No new third-party crate. `wait-timeout` (workspace version, already in
   the lock) is a new dev-dependency of `bk-sleigh`; `Cargo.lock` gains only
   `bk-sleigh`; the fuzz crate's lock gains `bk-sleigh`.

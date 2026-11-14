@@ -627,7 +627,6 @@ dependencies = [
  "bk-sla",
  "bk-testkit",
  "dhat",
- "flate2",
  "insta",
  "proptest",
  "tempfile",
