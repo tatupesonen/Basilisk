@@ -73,3 +73,23 @@ where every tracked set is empty: `encode` writes `<context_points/>`
 creates nothing, and encoding again writes nothing. Host: two runs
 identical; against the Mac the only difference was the oracle printing
 the offset of an invalid `Address` (uninitialised), fixed afterwards.
+
+## W5. Duplicate names in the `decompile` root (Mac)
+
+`decomp_bk -i` with `load test file DT/elseif.xml` and `bk list
+actions`: 243 lines; names (last path component) occurring twice:
+`blockstructure`, `deadcode`, `directwrite`, `dynamicsymbols`,
+`prefercomplement`, `structuretransform`, `unreachable` — seven, not the
+nine the old `decomp-ir.md` stated.
+
+## W6. Counts read with grep (no run)
+
+* `TypeOp::registerInstructions` registers 73 opcodes (`inst[CPUI_…]`
+  lines); typeop.cc defines 74 `TypeOp…::TypeOp…` constructors; the
+  `OpCode` enum names 73 opcodes, `CPUI_MAX` = 75.
+* `debugModCheck`: 12 calls in funcdata_op.cc, 1 in funcdata_varnode.cc
+  (`destroyVarnode`), 0 in funcdata_block.cc.
+* `PcodeOp::special` appears 15 times in typeop.cc.
+* `Funcdata::newIndirect` callers: funcdata_op.cc:704, 729;
+  coreaction.cc:1561; constseq.cc:456, 912; double.cc:1367;
+  ruleaction.cc:1001; transform.cc:233. No `opSetOpcode(…, CPUI_INDIRECT)`.
