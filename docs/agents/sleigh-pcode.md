@@ -1,10 +1,28 @@
 # Track `sleigh-pcode` — status (in progress, paused)
 
 Branch `sleigh-pcode`, worktree `/Users/tatu/slop/basilisk-wt/sleigh-pcode`.
-Spec: `docs/features/sleigh-pcode.md`. Paused by the coordinator (worker cap
-lowered to two) after the reading phase; no code written yet.
+Spec: `docs/features/sleigh-pcode.md`. Resumed 2026-11-14 after a pause.
 
-## Done
+## Done (code)
+
+* `bk-sleigh`: `emit` (`PcodeEmit`, `PcodeCollector`, `PcodeCounter`,
+  `PcodeRecords`, `write_record`), `pcode/{mod,buffer,location,build,nested,
+  error}` (`Decoder::lift`, `lift_observed`, `build_template`,
+  `BuildObserver`, `BuildFeature`, `InjectContext`, `LiftError`), `dump`
+  (pcodedump sweep and record writer). `inst_next2` decode errors are kept
+  (`Parse::next2_error`) and raised when a template needs `inst_next2`.
+* `basilisk disasm` (`crates/basilisk/src/cmd/disasm.rs`): `cmp`-equal to
+  `pcodedump` on 256 kB of arm64 code read as AARCH64, x86-64, MIPS BE,
+  Hexagon (SPARC: `pcodedump` segfaults, basilisk does not).
+* Harness compares `P`/`U` and full `T`; template coverage and feature
+  columns (`tests/common/templates.rs`); model of Ghidra's parse cache
+  (`tests/common/cache.rs`) for tolerated cache-history cases.
+* Full run (every language): no difference left except tolerated ones:
+  unset handles of subtables exporting nothing (Ghidra reads stale memory),
+  one Toy harvard_rev record where Ghidra's 2-entry cache hands the builder
+  a clobbered parse (delay slot `skvs` uses `inst_next2`).
+
+## Done (reading)
 
 * Read RULES, LOOP, DIRECTION, ADR-021/022/023/024/027/032, the spec,
   inventory 1.7, 5.1–5.2, 7, 8, 8a, part 1's report, `bk-sleigh` (decode,
@@ -50,7 +68,7 @@ lowered to two) after the reading phase; no code written yet.
   operand index; `uniqmask` 0; flowref/flowdest = call address, sizes = its
   space's address size; BUILD has no subtable (no-op).
 
-## Plan (next, in order)
+## Plan (next, in order; 1–3 done)
 
 1. `src/pcode/{mod,buffer,location,build,delay,crossbuild,inject,error}.rs`,
    `src/emit.rs` (`PcodeEmit`, collecting/counting/`P`-record emitters),
