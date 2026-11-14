@@ -76,6 +76,8 @@ void writeProtoSection(StateDump &d)
   d.w.end();
 }
 
+/// matchCallCount is left out: no constructor initialises it and nothing in
+/// the decompiler sets it (FuncCallSpecs::countMatchingCalls has no caller).
 void writeCallSpecSection(StateDump &d)
 {
   d.w.begin("callspecs");
@@ -85,7 +87,7 @@ void writeCallSpecSection(StateDump &d)
     for (size_t i = 0; i < fc->inputConsume.size(); ++i) consume.push_back(num(fc->inputConsume[i]));
     d.w.add(record({"C", d.ids.call(fc), d.ids.op(fc->op), escape(fc->name), addrText(fc->entryaddress),
                     num(fc->effective_extrapop), hx(fc->stackoffset), num(fc->stackPlaceholderSlot),
-                    num(fc->paramshift), num(fc->matchCallCount), flag(fc->isinputactive), flag(fc->isoutputactive),
+                    num(fc->paramshift), flag(fc->isinputactive), flag(fc->isoutputactive),
                     flag(fc->isbadjumptable), flag(fc->isstackoutputlock), joinList(consume)}));
     writeProto(d, *fc);
     if (fc->isinputactive) writeActive(d, "in", fc->activeinput);

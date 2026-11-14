@@ -407,8 +407,6 @@ record! {
         stack_placeholder_slot: i32 = Dec<i32>,
         /// `paramshift`.
         param_shift: i32 = Dec<i32>,
-        /// `matchCallCount`.
-        match_call_count: i32 = Dec<i32>,
         /// `isinputactive`.
         input_active: bool = Flag,
         /// `isoutputactive`.
