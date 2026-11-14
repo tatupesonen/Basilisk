@@ -1,4 +1,13 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 //! Unit tests of the structuring rules on hand-built graphs
 //! (`docs/features/decomp-cfg.md` 6.1, 4.4–4.8). Graphs are written as
 //! out-lists, `"1,2|3|3|"` meaning 0→1, 0→2, 1→3, 2→3 (out-slot order);
@@ -9,15 +18,20 @@ mod support {
 }
 
 use bk_decomp_cfg::{
-    Analyse, BlockFacts, Cfg, CfgError, CondOp, Fact, GhidraGotoSelector, GotoCause, Kind,
-    NodeId, Record, StructureOptions, Structured, edge_labels, node_flags, structure,
+    Analyse, BlockFacts, Cfg, CfgError, CondOp, Fact, GhidraGotoSelector, GotoCause, Kind, NodeId,
+    Record, StructureOptions, Structured, edge_labels, node_flags, structure,
 };
 use rstest::rstest;
 
 fn cfg(spec: &str) -> Cfg {
     let outs: Vec<Vec<usize>> = spec
         .split('|')
-        .map(|p| p.split(',').filter(|s| !s.is_empty()).map(|s| s.parse().unwrap()).collect())
+        .map(|p| {
+            p.split(',')
+                .filter(|s| !s.is_empty())
+                .map(|s| s.parse().unwrap())
+                .collect()
+        })
         .collect();
     let mut c = Cfg::new();
     let ids: Vec<NodeId> = outs.iter().map(|_| c.add_node(0).unwrap()).collect();
@@ -73,7 +87,13 @@ fn first_rule(#[case] spec: &str, #[case] rule: &str) {
     let c = cfg(spec);
     let mut facts = BlockFacts::neutral(c.id_bound());
     if rule == "blockor" {
-        facts.set(1, Fact { complex: false, ..Fact::NEUTRAL });
+        facts.set(
+            1,
+            Fact {
+                complex: false,
+                ..Fact::NEUTRAL
+            },
+        );
     }
     let s = run_with(&c, &facts).unwrap();
     let r = rules(&s);
@@ -107,13 +127,25 @@ fn or_needs_a_simple_second_block() {
 fn or_creates_int_or() {
     let c = cfg("1,2|3,2|4|4|");
     let mut facts = BlockFacts::neutral(c.id_bound());
-    facts.set(1, Fact { complex: false, ..Fact::NEUTRAL });
+    facts.set(
+        1,
+        Fact {
+            complex: false,
+            ..Fact::NEUTRAL
+        },
+    );
     let s = run_with(&c, &facts).unwrap();
     let h = &s.hierarchy;
-    let cond = (0..h.node_count() as u32).map(n).find(|&x| h.kind(x) == Some(Kind::Condition)).unwrap();
+    let cond = (0..h.node_count() as u32)
+        .map(n)
+        .find(|&x| h.kind(x) == Some(Kind::Condition))
+        .unwrap();
     // Created as INT_OR; negated afterwards when the if rule flips it.
     let op = h.condition_op(cond).unwrap();
-    assert!(matches!(op, CondOp::IntOr | CondOp::BoolAnd | CondOp::BoolOr), "{op:?}");
+    assert!(
+        matches!(op, CondOp::IntOr | CondOp::BoolAnd | CondOp::BoolOr),
+        "{op:?}"
+    );
 }
 
 #[test]
@@ -121,7 +153,13 @@ fn proper_if_with_false_clause_negates() {
     // Clause on out-edge 0 (false): the condition is negated first.
     let c = cfg("1,2|2|");
     let mut facts = BlockFacts::neutral(c.id_bound());
-    facts.set(0, Fact { negation_changes_dataflow: true, ..Fact::NEUTRAL });
+    facts.set(
+        0,
+        Fact {
+            negation_changes_dataflow: true,
+            ..Fact::NEUTRAL
+        },
+    );
     let s = run_with(&c, &facts).unwrap();
     assert_eq!(s.flips, [n(0)]);
     assert_eq!(s.dataflow_changes, 1);
@@ -148,10 +186,19 @@ fn neutral_negation_changes_no_dataflow() {
 fn while_do_overflow_follows_complexity(#[case] complex: bool) {
     let c = cfg("1|2,3|1|");
     let mut facts = BlockFacts::neutral(c.id_bound());
-    facts.set(1, Fact { complex, ..Fact::NEUTRAL });
+    facts.set(
+        1,
+        Fact {
+            complex,
+            ..Fact::NEUTRAL
+        },
+    );
     let s = run_with(&c, &facts).unwrap();
     let h = &s.hierarchy;
-    let w = (0..h.node_count() as u32).map(n).find(|&x| h.kind(x) == Some(Kind::WhileDo)).unwrap();
+    let w = (0..h.node_count() as u32)
+        .map(n)
+        .find(|&x| h.kind(x) == Some(Kind::WhileDo))
+        .unwrap();
     assert_eq!(h.has_overflow_syntax(w), complex);
 }
 
@@ -162,7 +209,10 @@ fn input_goto_label_makes_a_goto_node() {
     let s = run_with(&c, &BlockFacts::neutral(3)).unwrap();
     assert_eq!(rules(&s)[0], "blockgoto");
     let h = &s.hierarchy;
-    let gotos: Vec<_> = (0..h.node_count() as u32).map(n).filter(|&x| h.kind(x) == Some(Kind::Goto)).collect();
+    let gotos: Vec<_> = (0..h.node_count() as u32)
+        .map(n)
+        .filter(|&x| h.kind(x) == Some(Kind::Goto))
+        .collect();
     assert_eq!(gotos.len(), 1);
     assert_eq!(h.goto_target(gotos[0]).unwrap().1, node_flags::GOTO_GOTO);
     assert_eq!(s.measure.input_gotos, 1);
@@ -176,7 +226,11 @@ fn goto_on_false_branch_negates_and_makes_if_goto() {
     assert_eq!(rules(&s)[0], "blockgoto");
     assert_eq!(s.flips, [n(0)]);
     let h = &s.hierarchy;
-    assert!((0..h.node_count() as u32).map(n).any(|x| h.kind(x) == Some(Kind::IfGoto)));
+    assert!(
+        (0..h.node_count() as u32)
+            .map(n)
+            .any(|x| h.kind(x) == Some(Kind::IfGoto))
+    );
 }
 
 #[test]
@@ -186,7 +240,10 @@ fn goto_on_switch_makes_multigoto() {
     let s = run_with(&c, &BlockFacts::neutral(5)).unwrap();
     assert_eq!(rules(&s)[0], "blockgoto");
     let h = &s.hierarchy;
-    let m = (0..h.node_count() as u32).map(n).find(|&x| h.kind(x) == Some(Kind::MultiGoto)).unwrap();
+    let m = (0..h.node_count() as u32)
+        .map(n)
+        .find(|&x| h.kind(x) == Some(Kind::MultiGoto))
+        .unwrap();
     assert_eq!(h.multi_goto(m).unwrap().0.len(), 1);
 }
 
@@ -213,9 +270,16 @@ fn case_fallthru_marks_gotos() {
     let s = run("1,2,3|2|4|4|").unwrap();
     let r = rules(&s);
     assert!(r.contains(&"casefallthru"), "{r:?}");
-    assert!(s.goto_edges.iter().any(|g| g.cause == GotoCause::CaseFallthru && g.source == n(1)));
+    assert!(
+        s.goto_edges
+            .iter()
+            .any(|g| g.cause == GotoCause::CaseFallthru && g.source == n(1))
+    );
     let h = &s.hierarchy;
-    let sw = (0..h.node_count() as u32).map(n).find(|&x| h.kind(x) == Some(Kind::Switch)).unwrap();
+    let sw = (0..h.node_count() as u32)
+        .map(n)
+        .find(|&x| h.kind(x) == Some(Kind::Switch))
+        .unwrap();
     let chained: Vec<i32> = h.cases(sw).iter().map(|c| c.chain).collect();
     assert!(chained.contains(&1), "case 0 chains to case 1: {chained:?}");
 }
@@ -227,7 +291,10 @@ fn selected_goto_cuts_an_unreachable_loop() {
     let s = run("|2|1").unwrap();
     assert_eq!(s.goto_edges.len(), 1);
     assert_eq!(s.goto_edges[0].cause, GotoCause::Selected);
-    assert_eq!((s.goto_edges[0].source, s.goto_edges[0].target), (n(2), n(1)));
+    assert_eq!(
+        (s.goto_edges[0].source, s.goto_edges[0].target),
+        (n(2), n(1))
+    );
     assert_eq!(rules(&s), ["blockgoto", "blockcat"]);
     assert_eq!(s.measure.goto_marks.total() as usize, s.goto_edges.len());
 }
@@ -276,7 +343,10 @@ fn as_given_equals_recompute_after_analysis() {
     let mut a = c.clone();
     let roots = a.structure_loops().unwrap();
     a.forward_dominators(&roots).unwrap();
-    let options = StructureOptions { record: Record::Trace, ..StructureOptions::default() };
+    let options = StructureOptions {
+        record: Record::Trace,
+        ..StructureOptions::default()
+    };
     let given = structure(&a, &facts, &options, &mut GhidraGotoSelector::new()).unwrap();
     assert_eq!(format!("{:?}", rec.trace), format!("{:?}", given.trace));
     assert_eq!(rec.flips, given.flips);

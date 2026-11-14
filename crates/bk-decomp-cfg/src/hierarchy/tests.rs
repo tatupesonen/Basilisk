@@ -40,7 +40,11 @@ fn consistent(g: &Graph) -> bool {
 #[test]
 fn sizes() {
     assert_eq!(std::mem::size_of::<Edge>(), 12);
-    assert!(std::mem::size_of::<Node>() <= 168, "{}", std::mem::size_of::<Node>());
+    assert!(
+        std::mem::size_of::<Node>() <= 168,
+        "{}",
+        std::mem::size_of::<Node>()
+    );
 }
 
 #[test]
@@ -91,7 +95,12 @@ fn force_output_num_adds_loop_back_self_edges() {
     let mut g = graph(1, &[]);
     g.force_output_num(n(0), 2).unwrap();
     assert_eq!(outs(&g, 0), [0, 0]);
-    assert!(g.node(n(0)).outs.iter().all(|e| e.label == edge_labels::LOOP | edge_labels::BACK));
+    assert!(
+        g.node(n(0))
+            .outs
+            .iter()
+            .all(|e| e.label == edge_labels::LOOP | edge_labels::BACK)
+    );
     // More outputs than asked: nothing happens (release behaviour).
     g.force_output_num(n(0), 1).unwrap();
     assert_eq!(outs(&g, 0).len(), 2);
@@ -102,9 +111,15 @@ fn force_false_edge_swaps_or_fails() {
     let mut g = graph(3, &[(0, 1), (0, 2)]);
     g.force_false_edge(n(0), Some(n(2))).unwrap();
     assert_eq!(outs(&g, 0), [2, 1]);
-    assert_eq!(g.force_false_edge(n(0), Some(n(0))), Err(CfgError::PreserveCondition));
+    assert_eq!(
+        g.force_false_edge(n(0), Some(n(0))),
+        Err(CfgError::PreserveCondition)
+    );
     let mut g = graph(2, &[(0, 1)]);
-    assert_eq!(g.force_false_edge(n(0), Some(n(1))), Err(CfgError::BinaryCondition));
+    assert_eq!(
+        g.force_false_edge(n(0), Some(n(1))),
+        Err(CfgError::BinaryCondition)
+    );
 }
 
 #[test]
@@ -114,9 +129,17 @@ fn identify_appends_and_redirects_in_order() {
     let mut scratch = Vec::new();
     let s = g.new_block_list(&[n(1), n(2)], &mut scratch).unwrap();
     assert_eq!(g.list, [n(0), n(3), s]);
-    assert_eq!(outs(&g, 0), [s.get(), 3], "the slot on the outside node is kept");
+    assert_eq!(
+        outs(&g, 0),
+        [s.get(), 3],
+        "the slot on the outside node is kept"
+    );
     assert_eq!(outs(&g, s.get()), [3]);
-    assert_eq!(ins(&g, 3), [s.get(), 0], "the target keeps the slot (replaceInEdge)");
+    assert_eq!(
+        ins(&g, 3),
+        [s.get(), 0],
+        "the target keeps the slot (replaceInEdge)"
+    );
     assert_eq!(g.node(s).index, 1);
     assert_eq!(g.node(s).leaf_count, 2);
     assert_eq!(g.node(s).depth, 1);
@@ -129,7 +152,10 @@ fn identify_rejects_a_nested_node() {
     let mut g = graph(3, &[(0, 1), (1, 2)]);
     let mut scratch = Vec::new();
     g.new_block_list(&[n(0), n(1)], &mut scratch).unwrap();
-    assert_eq!(g.new_block_list(&[n(1)], &mut scratch), Err(CfgError::BlockIdentify));
+    assert_eq!(
+        g.new_block_list(&[n(1)], &mut scratch),
+        Err(CfgError::BlockIdentify)
+    );
 }
 
 #[test]
@@ -147,10 +173,12 @@ fn condition_opcode_sequence() {
     let facts = BlockFacts::neutral(4);
     let mut flips = Vec::new();
     let mut stack = Vec::new();
-    g.negate_condition(c, &facts, &mut flips, &mut stack).unwrap();
+    g.negate_condition(c, &facts, &mut flips, &mut stack)
+        .unwrap();
     assert_eq!(op(&g), CondOp::BoolAnd);
     assert_eq!(flips, [n(0), n(1)], "component 0 first");
-    g.negate_condition(c, &facts, &mut flips, &mut stack).unwrap();
+    g.negate_condition(c, &facts, &mut flips, &mut stack)
+        .unwrap();
     assert_eq!(op(&g), CondOp::BoolOr);
     assert_eq!(CondOp::BoolOr.symbol(), "||");
     assert_eq!(CondOp::BoolAnd.symbol(), "&&");
@@ -162,9 +190,18 @@ fn negation_result_is_the_or_of_the_leaves() {
     let mut scratch = Vec::new();
     let c = g.new_block_condition(n(0), n(1), &mut scratch).unwrap();
     let mut facts = BlockFacts::neutral(4);
-    facts.set(1, Fact { negation_changes_dataflow: true, ..Fact::NEUTRAL });
+    facts.set(
+        1,
+        Fact {
+            negation_changes_dataflow: true,
+            ..Fact::NEUTRAL
+        },
+    );
     let (mut flips, mut stack) = (Vec::new(), Vec::new());
-    assert!(g.negate_condition(c, &facts, &mut flips, &mut stack).unwrap());
+    assert!(
+        g.negate_condition(c, &facts, &mut flips, &mut stack)
+            .unwrap()
+    );
 }
 
 #[test]
@@ -175,9 +212,13 @@ fn list_negates_its_last_component() {
     let facts = BlockFacts::neutral(4);
     let (mut flips, mut stack) = (Vec::new(), Vec::new());
     let before = outs(&g, l.get());
-    g.negate_condition(l, &facts, &mut flips, &mut stack).unwrap();
+    g.negate_condition(l, &facts, &mut flips, &mut stack)
+        .unwrap();
     assert_eq!(flips, [n(1)]);
-    assert_eq!(outs(&g, l.get()), before.into_iter().rev().collect::<Vec<_>>());
+    assert_eq!(
+        outs(&g, l.get()),
+        before.into_iter().rev().collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -194,7 +235,10 @@ fn goto_factory_removes_the_edge() {
 fn if_goto_requires_a_goto_true_branch() {
     let mut g = graph(3, &[(0, 1), (0, 2)]);
     let mut scratch = Vec::new();
-    assert_eq!(g.new_block_if_goto(n(0), &mut scratch), Err(CfgError::IfGotoTrueBranch));
+    assert_eq!(
+        g.new_block_if_goto(n(0), &mut scratch),
+        Err(CfgError::IfGotoTrueBranch)
+    );
     g.set_goto_branch(n(0), 1).unwrap();
     let s = g.new_block_if_goto(n(0), &mut scratch).unwrap();
     assert_eq!(outs(&g, s.get()), [1]);
@@ -221,6 +265,9 @@ fn switch_needs_a_copy_leaf() {
     let w = g.new_block_while_do(n(1), n(2), &mut scratch);
     // A while-do has no exit leaf.
     if let Ok(w) = w {
-        assert_eq!(g.new_block_switch(&orig, &[w], false, &mut scratch), Err(CfgError::SwitchLeaf));
+        assert_eq!(
+            g.new_block_switch(&orig, &[w], false, &mut scratch),
+            Err(CfgError::SwitchLeaf)
+        );
     }
 }
