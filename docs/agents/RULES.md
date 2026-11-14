@@ -33,6 +33,15 @@ rules so merges are clean and the result is shippable.
   other agents' worktrees.
 - Commit locally, often. Never push, never add remotes, never rebase or
   merge other branches.
+- **Change files with the Edit and Write tools, not through the shell**
+  (owner, 2026-11-14). No `sed -i`, `perl -pi`, `python` or heredoc
+  rewrites of source, tests or docs: the file tools show the owner each
+  change as a diff, and a pattern replacement can change text you have
+  not looked at. To replace a long passage, read it first, then replace
+  it. The shell is for git, cargo, the build host and other commands
+  that do not edit tracked files; generated files (snapshots a test
+  tool writes, tables an oracle generator writes, `cargo fmt`) are
+  written by their tools as before.
 
 ## Ownership (avoid merge conflicts)
 
