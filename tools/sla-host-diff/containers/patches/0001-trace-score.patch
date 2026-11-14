@@ -1,0 +1,159 @@
+diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
+--- a/cpp/slghsymbol.cc	2026-11-14 11:01:12
++++ b/cpp/slghsymbol.cc	2026-11-14 11:02:39
+@@ -16,6 +16,9 @@
+ #include "slghsymbol.hh"
+ #include "sleighbase.hh"
+ #include <cmath>
++#include <cstdio>
++#include <cstdlib>
++namespace ghidra { static std::string trace_table_name; } // sla-host-diff instrumentation
+ 
+ namespace ghidra {
+ 
+@@ -1977,6 +1980,7 @@
+   if (pattern == (TokenPattern *)0) return; // Pattern not fully formed
+   Pattern *pat;
+   decisiontree = new DecisionNode((DecisionNode *)0);
++  trace_table_name = getName();
+   for(int4 i=0;i<construct.size();++i) {
+     pat = construct[i]->getPattern()->getPattern();
+     if (pat->numDisjoint() == 0)
+@@ -2137,6 +2141,116 @@
+   return ( sc / log(2.0) );
+ }
+ 
++
++// ---- sla-host-diff instrumentation (not Ghidra code) ----
++// With SLEIGH_TRACE_SCORE set, every decision node runs the field choice
++// twice more with explicit arithmetic: mode 0 computes sc -= p*log(p) as
++// one fused multiply-subtract (std::fma, what AArch64 compilers emit),
++// mode 1 rounds the product first (what x86-64 without FMA does). Where
++// the two choices differ, the node, both choices and the scores of the
++// competing fields are printed as hexadecimal floats on stderr.
++
++double DecisionNode::traceScore(int4 low,int4 size,bool context,int4 mode)
++
++{
++  int4 numBins = 1 << size;
++  uintm m = (((uintm)1)<<size) - 1;
++  int4 total = 0;
++  vector<int4> count(numBins,0);
++  for(int4 i=0;i<list.size();++i) {
++    uintm mask = list[i].first->getMask(low,size,context);
++    if ((mask&m)!=m) continue;
++    uintm val = list[i].first->getValue(low,size,context);
++    total += 1;
++    count[val] += 1;
++  }
++  if (total <= 0) return -1.0;
++  double sc = 0.0;
++  for(int4 i=0;i<numBins;++i) {
++    if (count[i] <= 0) continue;
++    if (count[i] >= list.size()) return -1.0;
++    double p = ((double)count[i])/total;
++    double lp = log(p);
++    if (mode == 0)
++      sc = std::fma(-p, lp, sc);
++    else {
++      volatile double prod = p * lp;
++      sc = sc - prod;
++    }
++  }
++  return ( sc / log(2.0) );
++}
++
++void DecisionNode::traceChoose(int4 mode,int4 &sbitout,int4 &sizeout,bool &ctxout,double &scoreout)
++
++{				// chooseOptimalField with explicit arithmetic
++  double score = 0.0;
++  int4 sbit,size;
++  bool context;
++  double sc;
++  int4 maxlength,numfixed,maxfixed;
++  int4 bsbit = 0, bsize = 0; bool bctx = false;
++  maxfixed = 1;
++  context = true;
++  do {
++    maxlength = 8*getMaximumLength(context);
++    for(sbit=0;sbit<maxlength;++sbit) {
++      numfixed = getNumFixed(sbit,1,context);
++      if (numfixed < maxfixed) continue;
++      sc = traceScore(sbit,1,context,mode);
++      if ((numfixed > maxfixed)&&(sc > 0.0)) {
++	score = sc; maxfixed = numfixed; bsbit = sbit; bsize = 1; bctx = context;
++	continue;
++      }
++      if (sc > score) { score = sc; bsbit = sbit; bsize = 1; bctx = context; }
++    }
++    context = !context;
++  } while(!context);
++  context = true;
++  do {
++    maxlength = 8*getMaximumLength(context);
++    for(size=2;size <= 8;++size) {
++      for(sbit=0;sbit<maxlength-size+1;++sbit) {
++	if (getNumFixed(sbit,size,context) < maxfixed) continue;
++	sc = traceScore(sbit,size,context,mode);
++	if (sc > score) { score = sc; bsbit = sbit; bsize = size; bctx = context; }
++      }
++    }
++    context = !context;
++  } while(!context);
++  if (score <= 0.0) bsize = 0;
++  sbitout = bsbit; sizeout = bsize; ctxout = bctx; scoreout = score;
++}
++
++void DecisionNode::traceCompare(void)
++
++{
++  if (getenv("SLEIGH_TRACE_SCORE") == (char *)0) return;
++  int4 s0,z0,s1,z1; bool c0,c1; double sc0,sc1;
++  traceChoose(0,s0,z0,c0,sc0);
++  traceChoose(1,s1,z1,c1,sc1);
++  if (s0 == s1 && z0 == z1 && c0 == c1) return;
++  string path;
++  for(const DecisionNode *n = this; n->parent != (DecisionNode *)0; n = n->parent) {
++    const vector<DecisionNode *> &sib(n->parent->children);
++    int4 idx = -1;
++    for(int4 i=0;i<sib.size();++i) if (sib[i] == n) idx = i;
++    path = "/" + std::to_string(idx) + path;
++  }
++  const char *own = (startbit==s0 && bitsize==z0 && contextdecision==c0) ? "fused" :
++    ((startbit==s1 && bitsize==z1 && contextdecision==c1) ? "unfused" : "neither");
++  fprintf(stderr,"TIE table=%s node=root%s patterns=%d build=%s\n",trace_table_name.c_str(),path.c_str(),(int)list.size(),own);
++  fprintf(stderr,"  fused   picks %s[%d..+%d] score %a (%.17g)\n",c0?"ctx":"ins",s0,z0,sc0,sc0);
++  fprintf(stderr,"  unfused picks %s[%d..+%d] score %a (%.17g)\n",c1?"ctx":"ins",s1,z1,sc1,sc1);
++  // The scores of both fields under both arithmetics.
++  for(int4 k=0;k<2;++k) {
++    int4 s = k ? s1 : s0, z = k ? z1 : z0; bool c = k ? c1 : c0;
++    fprintf(stderr,"  field %s[%d..+%d]: fused %a unfused %a\n",c?"ctx":"ins",s,z,
++	    traceScore(s,z,c,0),traceScore(s,z,c,1));
++  }
++}
++// ---- end of instrumentation ----
++
+ void DecisionNode::chooseOptimalField(void)
+ 
+ {
+@@ -2198,6 +2312,7 @@
+   } while(!context);
+   if (score <= 0.0)		// If we failed to get a positive score
+     bitsize = 0;		// treat the node as terminal
++  traceCompare();
+ }
+ 
+ void DecisionNode::consistentValues(vector<uint4> &bins,DisjointPattern *pat)
+diff --color -ru a/cpp/slghsymbol.hh b/cpp/slghsymbol.hh
+--- a/cpp/slghsymbol.hh	2026-11-14 11:01:12
++++ b/cpp/slghsymbol.hh	2026-11-14 11:01:35
+@@ -560,6 +560,9 @@
+   int4 startbit,bitsize;        // Bits in the stream on which to base the decision
+   DecisionNode *parent;
+   void chooseOptimalField(void);
++  double traceScore(int4 low,int4 size,bool context,int4 mode);
++  void traceChoose(int4 mode,int4 &sbit,int4 &size,bool &ctx,double &score);
++  void traceCompare(void);
+   double getScore(int4 low,int4 size,bool context);
+   int4 getNumFixed(int4 low,int4 size,bool context);
+   int4 getMaximumLength(bool context);

@@ -1,0 +1,12 @@
+[package]
+name = "sla-host-diff"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "Investigation tool: compare two builds of Ghidra's .sla files structurally (docs/research/sla-host-dependence.md)"
+
+# Not a member of the basilisk workspace: own lock file, not in the gate.
+[workspace]
+
+[dependencies]
+bk-sla = { path = "../../crates/bk-sla" }
