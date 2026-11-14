@@ -25,6 +25,7 @@ bk-binutils-sys = { path = "crates/bk-binutils-sys" }
 bk-gnu-disasm = { path = "crates/bk-gnu-disasm" }
 bk-ui = { path = "crates/bk-ui" }
 bk-sla = { path = "crates/bk-sla" }
+bk-decomp-types = { path = "crates/bk-decomp-types" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"

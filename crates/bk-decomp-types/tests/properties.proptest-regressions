@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9d5781dbf36c237d061da29c0318798503ed794b08e0f5d73da98b5409c66bda # shrinks to base_ops = [Base(0, 0), Struct(6, [9961564005345706205])], ops = [Base(0, 0), Struct(6, [349606341032502])]
+cc 4a1e8df8458f1d3cbac5d3e02b429f4ef479bd1230864db5e831f5bd52ec0128 # shrinks to base_ops = [Pointer(11182561311926091480)], ops = [Pointer(18158423328887742391), Pointer(6962836349588142721)]

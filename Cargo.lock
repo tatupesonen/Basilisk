@@ -536,6 +536,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-decomp-types"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.13.2",
+ "bk-core",
+ "bk-marshal",
+ "bk-testkit",
+ "flate2",
+ "proptest",
+ "rstest",
+ "rustc-hash 2.1.3",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "bk-elf"
 version = "0.0.1"
 dependencies = [

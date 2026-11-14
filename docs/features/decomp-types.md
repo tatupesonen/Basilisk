@@ -535,6 +535,103 @@ live reference tools (`decomp-plan.md` 4.5).
 
 (The implementing agent appends further differences here.)
 
+Appended by the implementing track (D02):
+
+- **Indexes are hash maps, not ordered sets.** Ghidra's name set is only
+  searched, never walked; its identity set is walked only by
+  `dependentOrder`, `encodeCoreTypes` and `cacheCoreTypes`, which sort on
+  demand here (`sorted_ids`, same order: `compareDependency`, then id).
+  Exact look-ups hash exactly what the comparator compares and confirm
+  through the arena, so a look-up allocates no throw-away type. Names are
+  owned strings per entry, not interned: a forked factory would need a
+  layered interner, and no ordered walk needs interner order.
+  `recalcPointerSubmeta` uses a pointee → pointers index instead of a range
+  of the set (same pointers).
+- **Undefined casts get a defined order.** Where two kinds share a
+  sub-metatype (Ghidra never creates this, hostile XML can, e.g.
+  `getBase(8, TYPE_PTR)`), Ghidra casts to the wrong class; here
+  `compareDependency` orders by kind family and `compare` returns 0 when one
+  side is a plain base type.
+- `compare`'s `level` is clamped to 64 (Ghidra always passes 10).
+- `destroyType` keeps the slot as a tombstone; a stale `TypeId` never names
+  a new type.
+- **Forks.** A fork that changes a parent entry (completes a stub, renames
+  it, raises its provenance, destroys it) copies the entry into its own
+  layer under the **same `TypeId`** and masks the parent's index entries for
+  it (copy on write), so it answers exactly as a flat factory would, where
+  Ghidra changes the one entry in place; the parent is never changed
+  (`shadowed_ids` lists such entries, `overlay_ids` the new ones). A fork
+  of a fork is refused. New entries get `Provenance::Analysis` unless
+  the caller sets another. Provenance is set through the factory's current
+  provenance (`set_provenance`); a type found again keeps the more trusted
+  of the two.
+- **Function types.** The signature is the declared parameters. Ghidra's
+  `TypeCode` comparison reads `FuncProto` after the model has assigned
+  storage, which can add a hidden-return parameter or, when assignment
+  fails (8051 in the oracle table), leave no parameters at all; those
+  comparisons need `bk-cspec` (11 oracle records, listed by the replay).
+  Without a `PrototypeCodec` the `<prototype>` written is reduced (model,
+  `extrapop="unknown"`, flags, `<returnsym>` and `<internallist>` with empty
+  `<addr/>`), so `encode` of a function type is not Ghidra's text (48
+  oracle records). Ghidra's `FunctionModifier::modType` looks for a varargs
+  marker that `newFunc` already removed, so function *types* built by the
+  parser never have `...` (reproduced; `parse_prototype` does report it).
+- `parse_declaration` returns an `extern` prototype to the caller (Ghidra's
+  `parse_C` calls `Architecture::setPrototype`, which fails with "Unknown
+  function name" when no function of that name exists).
+- **Lexer.** A token ended by a newline: Ghidra's `bumpLine` clears the
+  buffer before the token's text is taken (reading out of bounds); here the
+  text is kept. Integer constants saturate as C++11 `num_get` does; a
+  token of type 0 at end of input is end of input, as bison treats it.
+  Input over 1 MiB, declarators nested over 128 deep and type definitions
+  nested over 200 deep are errors, not truncations or stack overflows.
+- `decodeTypeWithCodeFlags` opens the function type's own element; Ghidra
+  reads its attributes from the pointer element again and fails with "Bad
+  size for type".
+- **Reproduced Ghidra quirks** (tested): `<bitfield>` is written without
+  the `id` its decoder requires, so a structure with bitfields does not
+  survive encode → decode; `partenum` is written but not read
+  (`string2metatype`); `struct name` and `enum name` for an existing name
+  is a syntax error (the lexer returns a type name); character constants
+  take their value from wherever the line buffer's token start is; `int4
+  int4` parses as `int4`.
+- `getBase` above `max_basetype_size` creates `xunknown1` when no core
+  types are cached (Ghidra dereferences null); `getAlignment` on an empty
+  map gives 1 (Ghidra throws; never reached after `setup_sizes`).
+- `TypeSpacebase` look-ups go through the `SpacebaseScopes` hook (D06);
+  without it the scope id is 0, `getSubType` finds nothing, and the frame
+  address is written as `<addr/>`.
+- `<data_organization>` and `<enum>` are read from a `.cspec` by
+  `DataOrganization::from_cspec` in this crate (no `bk-cspec` yet).
+
 ## 9. Status
 
-Not started.
+Built (track D02, 2026-11-14): crate `bk-decomp-types` — metatypes, every
+kind of `type.hh` as `TypeKind`, the factory (interning, base types and
+caches, core types, pointers of every form, arrays, structures with
+bitfield layout, unions, enumerations with `getMatches`, typedefs, rename,
+partial types, `getExactPiece`, `concretize`, `resizeInteger`, function
+types from a signature, `destroyType`, `clear`, `clearNoncore`, warnings,
+incomplete typedefs, `dependentOrder`), the IR-free queries (`getSubType`,
+`getHoleSize`, nearest arrayed components, `findSmallestContainer`,
+bitfield collection, `downChain`, `isPtrsubMatching`, `isOffsetValid`,
+`printRaw`), both orderings, data organisation, XML encode/decode of types,
+the factory and core types (with `TypeSource`, `SpacebaseScopes`,
+`PrototypeCodec` hooks), the C declaration parser, provenance and the
+forked factory.
+
+Evidence: the three `testtypes.cc` tests (S); the oracle table of 197,330
+records over six languages replays with only the listed differences
+(prototype encoding 48, function-signature storage 11, `<typegrp>` order
+1) (S); 1,000 `hashName` values (S); data organisation of all 294
+language/compiler pairs (106 `.cspec` files referenced by `.ldefs`) equal
+(G); all 232 `parse line` declarations of the data tests parse (G); 9
+property tests at 1,024 cases; both fuzz targets ran 60 s without a
+finding; benchmarks in `PERF.md`.
+
+Gaps: the storage half of function prototypes (D03, through
+`PrototypeCodec`); spacebase look-ups (D06, through `SpacebaseScopes`);
+the `testtypes.cc` checklist line stays open for the five `cast_*` tests
+(D08); the oracle tables were generated on macOS AArch64 only (the
+reference build's `-fsigned-char` makes `hashName` x86-64's; only the
+heap-address order of `<typegrp>` can differ on another host).
