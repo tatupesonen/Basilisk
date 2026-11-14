@@ -367,3 +367,16 @@ agents' builds and the differential test running).
 | decode + text (`decode` + `mnemonic` + `body` / `printAssembly`) | **2.41 M/s** (415 ns) | 1.50 M/s | ≥ reference — met |
 | allocations per instruction, steady state (`dhat`, 100,000 instructions) | **0** (x86-64 and the `bkfix` fixture; the only blocks counted are the context database's, built once) | — | 0 — met |
 | 8 threads sharing one `Language`, decode only | 2 threads 1.98×, 4 threads 3.60×, **8 threads 4.78×** | — | ≥ 6× on an idle 8-core machine — not met on this loaded machine (load average 14 with three agents' work); recorded, see the track report |
+
+### `bk-cspec`
+
+Command: `BASILISK_GHIDRA_DIR=../ghidra CARGO_BUILD_JOBS=2 cargo test -p
+bk-cspec --release --test bench -- --ignored --nocapture --test-threads=1`
+(kind G: reads the real `.cspec` files; spaces and registers from the
+checked-in oracle table). 2026-11-15, M1 Pro, Rust 1.100.0, other agents'
+builds running.
+
+| Benchmark | Result |
+|---|---:|
+| Read the largest `.cspec` (`x86-64-golang.cspec`, 15,994 bytes, 3 models with 100+ entries and rules each) into a `CompilerSpec` | **160 µs** per read (2,000 reads) |
+| Storage assignment, x86-64 gcc `__stdcall`, four signatures in turn (2–8 parameters, a hidden return, a `join_dual_class` structure) | **1,000,000 assignments in 460 ms (460 ns each)**; the status array is inline (no allocation per call beyond the output vector, which is reused) |
