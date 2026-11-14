@@ -4,7 +4,7 @@ hosts where `perf annotate` cannot read Rust's debug information.
 
     hot.py PERF_DATA BINARY SYMBOL [MIN_PERCENT]
 
-Counts the samples per offset in SYMBOL (`perf script -F sym,symoff`),
+Counts the samples per offset in SYMBOL (`perf script -F ip,sym,symoff`),
 disassembles SYMBOL with `llvm-objdump` (with source lines, `-l`), and
 prints each instruction holding at least MIN_PERCENT (default 0.5) of the
 symbol's samples, with the source line before it. Development tooling only.
@@ -21,11 +21,11 @@ def main():
     data, binary, symbol = sys.argv[1:4]
     minimum = float(sys.argv[4]) if len(sys.argv) > 4 else 0.5
     script = subprocess.run(
-        ["perf", "script", "--no-demangle", "-i", data, "-F", "sym,symoff"],
+        ["perf", "script", "--no-demangle", "-i", data, "-F", "ip,sym,symoff"],
         capture_output=True, text=True, check=True).stdout
     counts = collections.Counter()
     for line in script.splitlines():
-        line = line.strip()
+        line = line.split()[-1] if line.split() else ""
         if line.startswith(symbol + "+0x"):
             counts[int(line[len(symbol) + 1:], 16)] += 1
     total = sum(counts.values())
