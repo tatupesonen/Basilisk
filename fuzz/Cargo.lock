@@ -28,6 +28,7 @@ dependencies = [
  "bk-binutils-sys",
  "bk-core",
  "bk-cspec",
+ "bk-decomp-cfg",
  "bk-decomp-range",
  "bk-decomp-types",
  "bk-elf",
@@ -96,6 +97,14 @@ dependencies = [
  "serde",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "bk-decomp-cfg"
+version = "0.0.1"
+dependencies = [
+ "bk-marshal",
+ "thiserror",
 ]
 
 [[package]]
