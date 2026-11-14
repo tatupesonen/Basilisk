@@ -11,13 +11,15 @@ license.workspace = true
 bk-core.workspace = true
 bk-lang.workspace = true
 bk-sleigh.workspace = true
+bk-sleigh-compiler.workspace = true
+bk-sleigh-syntax.workspace = true
+tempfile.workspace = true
 bk-ui.workspace = true
 
 [dev-dependencies]
 bk-pcode.workspace = true
 bk-sla.workspace = true
 bk-testkit.workspace = true
-tempfile.workspace = true
 
 [lints]
 workspace = true

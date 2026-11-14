@@ -1,0 +1,11 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+warning (line 14, located): token field 'reg' defined but never used
+warning (line 15, located): token field 'imm' defined but never used
+warning (line 16, located): token field 'simm' defined but never used
+warning (line 17, located): token field 'low4' defined but never used
+=> elaborated

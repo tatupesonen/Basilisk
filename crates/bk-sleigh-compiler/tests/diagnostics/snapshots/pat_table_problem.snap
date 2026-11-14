@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 3 NOP constructors found
+warning: Use -n switch to list each individually
+error (line 2, located): Problem in table 'sub':Error: Impossible pattern: for table "sub" constructor starting at line 2
+Error: Equal constraint is impossible to match: for table "sub" constructor starting at line 3
+=> no output

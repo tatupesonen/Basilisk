@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+error: Error: Less than or equal constraint is impossible to match: for table "instruction" constructor starting at line 2
+=> no output

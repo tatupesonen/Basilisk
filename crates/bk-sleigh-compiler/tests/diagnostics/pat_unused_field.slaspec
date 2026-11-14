@@ -1,0 +1,3 @@
+#! -f
+@include "prelude.sinc"
+:a is op=1 { }

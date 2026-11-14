@@ -1,0 +1,2 @@
+@include "prelude.sinc"
+:a imm is op=1 & imm & reg=imm { }

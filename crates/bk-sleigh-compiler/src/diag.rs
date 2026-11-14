@@ -6,7 +6,7 @@
 //! (`SleighCompile::formatStatusMessage`). Rendering as Ghidra prints them
 //! (`FILE:LINE - ERROR TEXT`, `WARN  TEXT`) belongs to the command line.
 
-use bk_sleigh_syntax::Span;
+use bk_sleigh_syntax::{SourceMap, Span};
 
 /// How serious a diagnostic is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -66,6 +66,21 @@ impl Diagnostic {
     /// Whether this is an error.
     pub fn is_error(&self) -> bool {
         self.severity == Severity::Error
+    }
+
+    /// The source file's base name and the line of the span, if any.
+    pub fn location<'s>(&self, sources: &'s SourceMap) -> Option<(&'s str, u32)> {
+        let loc = sources.locate(self.span?.start)?;
+        Some((sources.file(loc.file)?.name(), loc.line))
+    }
+
+    /// The text as Ghidra builds it: the message, with `FILE:LINE: ` in
+    /// front when Ghidra puts the location there.
+    pub fn ghidra_text(&self, sources: &SourceMap) -> String {
+        match (self.located, self.location(sources)) {
+            (true, Some((file, line))) => format!("{file}:{line}: {}", self.message),
+            _ => self.message.clone(),
+        }
     }
 }
 

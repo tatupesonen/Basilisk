@@ -25,6 +25,9 @@ pub struct Options {
     /// `-s` clears this: register names that differ only in case are
     /// errors.
     pub case_insensitive_duplicates: bool,
+    /// `-f` (Java's compiler): warn about each token field that is defined
+    /// but never used.
+    pub warn_unused_fields: bool,
 }
 
 impl Default for Options {
@@ -37,13 +40,14 @@ impl Default for Options {
             warn_dead_temps: false,
             enforce_local_key: false,
             case_insensitive_duplicates: true,
+            warn_unused_fields: false,
         }
     }
 }
 
 impl Options {
     /// Applies Ghidra's command-line switches (`-u`, `-l`, `-c`, `-n`,
-    /// `-t`, `-e`, `-s`); other arguments are ignored. Only the second
+    /// `-t`, `-e`, `-s`, and Java's `-f`); other arguments are ignored. Only the second
     /// character of each argument is examined, as Ghidra does.
     pub fn from_switches<'a>(switches: impl IntoIterator<Item = &'a str>) -> Self {
         let mut options = Self::default();
@@ -60,6 +64,7 @@ impl Options {
                 Some('t') => options.warn_dead_temps = true,
                 Some('e') => options.enforce_local_key = true,
                 Some('s') => options.case_insensitive_duplicates = false,
+                Some('f') => options.warn_unused_fields = true,
                 _ => {}
             }
         }

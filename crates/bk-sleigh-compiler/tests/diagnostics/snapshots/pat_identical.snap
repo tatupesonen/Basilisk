@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 2 NOP constructors found
+warning: Use -n switch to list each individually
+error (line 3, located): Constructor has identical pattern to constructor at pat_identical.slaspec:2
+error (line 2, located): Constructor has identical pattern to constructor at pat_identical.slaspec:3
+=> no output

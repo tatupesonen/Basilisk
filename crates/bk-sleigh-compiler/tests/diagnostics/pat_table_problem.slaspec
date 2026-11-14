@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+sub: "s" is op=1 & op=2 { }
+sub: "t" is reg=7 { }
+:a sub is op=3 ; sub { }

@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 5 NOP constructors found
+warning: Use -n switch to list each individually
+error (line 3, located): Problem in table 'tB':Error: Illegal recursion: for table "tB" constructor starting at line 5
+=> no output

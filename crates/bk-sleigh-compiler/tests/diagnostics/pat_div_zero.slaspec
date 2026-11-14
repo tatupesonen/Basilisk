@@ -1,0 +1,2 @@
+@include "prelude.sinc"
+:a is reg=(1/0) { }
