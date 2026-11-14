@@ -107,6 +107,25 @@ spec text** (the README and code are right):
 **Should `decomp-cfg.md` 6.3 item 2 take D00's proposed text?** Yes
 (appended to spec section 10 as item 9, with the final-hierarchy causes).
 
+### Verification of the second part
+
+- Mac: `cargo clippy -p bk-decomp-cfg --all-targets --target
+  x86_64-pc-windows-msvc -- -D warnings` clean; `scripts/check-dep-age.py
+  master`: 0 new packages (the lock file only loses the
+  `bk-decomp-cfg → wait-timeout` edge).
+- Build host: `scripts/remote.sh wine -- -p bk-decomp-cfg`: 105 passed, 0
+  failed, 8 ignored; `scripts/remote.sh arm64 -- -p bk-decomp-cfg`: 105
+  passed, 0 failed, 8 ignored, 0 skipped; `scripts/remote.sh gate; echo $?`
+  → `0` (tests: 2421 passed, 0 failed); `scripts/remote.sh gate --no-ref;
+  echo $?` → `0` (tests: 2421 passed, 0 failed).
+- Checked-in data and line ends (RULES.md): every data file the tests read
+  exactly is gzip-compressed (`tests/data/structure_blocks.txt.gz`,
+  `cfg_oracle.{libcxx,libstdcxx}.txt.gz`,
+  `structure_corpus.{libcxx,libstdcxx}.txt.gz`), so a CRLF checkout cannot
+  touch them and no `.gitattributes` line is needed. The only other text
+  file the tests read is `tests/properties.proptest-regressions`, which
+  proptest parses line by line regardless of line ends.
+
 ## Built
 
 Crate `crates/bk-decomp-cfg` (about 5,000 lines of source, every file
