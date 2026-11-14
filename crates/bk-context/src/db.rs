@@ -31,6 +31,7 @@ impl Blob {
         Self { words }
     }
 
+    #[inline]
     fn values(&self) -> &[u32] {
         let size = self.words.len() / 2;
         self.words.get(..size).unwrap_or_default()
@@ -111,12 +112,14 @@ impl ContextDb {
     }
 
     /// The words in force at `addr` (Ghidra `getContext`).
+    #[inline]
     pub fn get(&self, addr: Address) -> &[u32] {
         self.blobs.get(addr).values()
     }
 
     /// The words in force at `addr` and the offsets around it over which they
     /// are constant (Ghidra `getContext(addr, first, last)`).
+    #[inline]
     pub fn get_with_range(&self, addr: Address) -> (&[u32], OffsetRange) {
         let (blob, bounds) = self.blobs.bounds(addr);
         let first = match bounds.before {
@@ -130,6 +133,7 @@ impl ContextDb {
         (blob.values(), OffsetRange { first, last })
     }
 
+    #[inline]
     fn highest_of(&self, space: Option<SpaceId>) -> u64 {
         space
             .and_then(|space| self.highest.get(space.index() as usize).copied())
@@ -137,6 +141,7 @@ impl ContextDb {
     }
 
     /// The value of a variable at `addr` (Ghidra `getVariable`).
+    #[inline]
     pub fn variable(&self, var: &ContextVar, addr: Address) -> u32 {
         var.get(self.get(addr))
     }
@@ -242,6 +247,7 @@ impl ContextDb {
 }
 
 impl ContextSource for ContextDb {
+    #[inline]
     fn context_at(&self, addr: Address, out: &mut [u32]) -> OffsetRange {
         let (words, range) = self.get_with_range(addr);
         for (slot, word) in out

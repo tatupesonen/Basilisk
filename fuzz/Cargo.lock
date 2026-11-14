@@ -78,6 +78,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-context"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+]
+
+[[package]]
 name = "bk-core"
 version = "0.0.1"
 dependencies = [
@@ -180,6 +187,7 @@ dependencies = [
 name = "bk-sleigh"
 version = "0.0.1"
 dependencies = [
+ "bk-context",
  "bk-core",
  "bk-lang",
  "bk-pcode",

@@ -22,7 +22,8 @@
 //! - [`dump`]: `pcodedump`'s sweep and record format (`basilisk disasm`).
 //! - [`Translate`]: the translator interface; [`Translator`] implements it.
 
-pub mod context;
+/// The context store, re-exported from `bk-context` (ADR-043).
+pub use bk_context as context;
 pub mod decode;
 pub mod dump;
 pub mod emit;

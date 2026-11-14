@@ -534,6 +534,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-context"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+]
+
+[[package]]
 name = "bk-core"
 version = "0.0.1"
 dependencies = [
@@ -690,6 +697,7 @@ name = "bk-sleigh"
 version = "0.0.1"
 dependencies = [
  "bk-bin",
+ "bk-context",
  "bk-core",
  "bk-elf",
  "bk-lang",
