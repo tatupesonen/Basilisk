@@ -11,12 +11,21 @@ started through `scripts/remote.sh`, which stays a thin dispatcher.
 
 ## Done / in progress / next
 
-- Done: `remote.sh` plumbing (results copied back, `clean --target`,
-  informative `cargo fetch`), `wine` (whole workspace passes), `long miri`,
-  `long sanitizers`, `long fuzz` script.
-- In progress: first runs of `long fuzz`, `long differential`,
-  `long proptest`, `ubuntu`; nightly install and first run.
-- Next: measurements into this file, final gates.
+- Done and run on `master`'s content: `wine` (whole workspace passes),
+  `long miri`, `long sanitizers`, `long fuzz`, `long differential`;
+  `remote.sh` plumbing (results copied back, `log` reattach for testbed
+  jobs, `clean --target`, `publish`, `nightly`, `report`, `cargo fetch`
+  inside the job with its reason in the log).
+- Written, committed, **not yet run**: `ubuntu` (Ubuntu 26.04 / GCC 15),
+  `nightly install|run` and the nightly driver (`nightly-boot.sh`,
+  `nightly.sh`), `wine --msvc`.
+- Was running when the track stopped: `long proptest` (8 suites at
+  1,000,000 cases, started 19:24Z; `scripts/remote.sh log` from this
+  worktree reattaches and fetches the results).
+- Next: proptest caps from that run (`caps` in `proptest.sh`); `ubuntu`;
+  `wine --msvc`; `nightly install`, `nightly run`, `report`; re-run the
+  `remote-build.md` checks (sync/run/log/75/clean); both gates;
+  `scripts/check-dep-age.py master`.
 
 ## Commands
 
