@@ -5,7 +5,9 @@
 // plus oneInstruction into a counting emitter (decode + lift) and with
 // printAssembly plus oneInstruction (decode + text + lift); best of N runs.
 // Built by build.sh in this directory. Usage:
-//   slabench <x86-64.sla> <x86-64.pspec> <code.bin> [runs]
+//   slabench <x86-64.sla> <x86-64.pspec> <code.bin> [runs] [modes]
+// modes: the digits of the sweeps to run (0 decode, 1 text, 2 lift, 3 text +
+// lift; default 0123), for profiling one of them.
 #include "sleigh.hh"
 #include "loadimage.hh"
 #include <chrono>
@@ -47,6 +49,7 @@ static double now(void) {
 int main(int argc,char **argv) {
   if (argc < 4) { fprintf(stderr,"usage: slabench sla pspec code [runs]\n"); return 2; }
   int runs = argc > 4 ? atoi(argv[4]) : 5;
+  std::string modes = argc > 5 ? argv[5] : "0123";
   std::ifstream in(argv[3], std::ios::binary);
   std::vector<uint1> code((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
   AttributeId::initialize();
@@ -74,6 +77,7 @@ int main(int argc,char **argv) {
     double t1 = now();
     if (t1 - t0 < load) load = t1 - t0;
     for(int mode=0;mode<4;++mode) {
+      if (modes.find((char)('0' + mode)) == std::string::npos) continue;
       NullAsm emit;
       CountPcode pcode;
       long n = 0, e = 0;

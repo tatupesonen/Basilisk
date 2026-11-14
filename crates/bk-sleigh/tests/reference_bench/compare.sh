@@ -26,7 +26,7 @@ log=$(mktemp)
 for rep in $(seq "$REPS"); do
   BK_BENCH_SINGLE=1 BASILISK_REFERENCE_DIR=$REF taskset -c "$CORE" "$exe" bench_pcode_x86_64 \
     --exact --ignored --nocapture 2>&1 |
-    sed -n 's/^\(decode[^:]*\): \([0-9.]*\) M instructions\/s.*/bk \1\t\2/p' | tee -a "$log"
+    sed -n -e "s/^\(decode[^:]*\): \([0-9.]*\) M instructions\/s.*/bk \1\t\2/p" -e "s/^x86-64 code: [0-9]* bytes, \([0-9]*\) instructions, \([0-9]*\) ops/bk instructions\t\1\nbk ops\t\2/p" | tee -a "$log"
   taskset -c "$CORE" "$bench/slabench" "$langs/x86-64.sla" "$langs/x86-64.pspec" "$bench/x86-64-code.bin" 5 |
     awk -F'\t' '$1 == "decode_mips" { print "ref decode only\t" $2 }
       $1 == "text_mips" { print "ref decode + text\t" $2 }

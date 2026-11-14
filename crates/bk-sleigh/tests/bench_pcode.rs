@@ -285,7 +285,8 @@ fn bench_pcode_x86_64() {
 }
 
 /// Lifts the x86-64 code over and over for `BK_PROFILE_SECONDS` (default
-/// 8): a steady load for a sampling profiler.
+/// 8): a steady load for a sampling profiler. `BK_PROFILE_MODE=decode`
+/// (or `text`) sweeps with that mode instead.
 #[test]
 #[ignore = "profiling aid"]
 fn profile_lift_x86_64() {
@@ -307,8 +308,13 @@ fn profile_lift_x86_64() {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(8.0);
+    let mode = match std::env::var("BK_PROFILE_MODE").as_deref() {
+        Ok("decode") => Mode::Decode,
+        Ok("text") => Mode::Text,
+        _ => Mode::Lift,
+    };
     let start = Instant::now();
     while start.elapsed().as_secs_f64() < seconds {
-        sweep(&mut decoder, &db, &code, Mode::Lift);
+        sweep(&mut decoder, &db, &code, mode);
     }
 }
