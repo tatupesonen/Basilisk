@@ -13,11 +13,11 @@
 # Optimised build with debug assertions and overflow checks on (an overflow
 # is a panic, as in the gate), in target/testbed/proptest. A failure's
 # proptest-regressions file is copied to BK_OUT/regressions/.
-# Environment: BK_PROPTEST_TIMEOUT (seconds per suite, default 3600).
+# Environment: BK_PROPTEST_TIMEOUT (seconds per suite, default 1500).
 . "$(dirname "$0")/lib.sh"
 
 cases=${1:-1000000}
-per=${BK_PROPTEST_TIMEOUT:-3600}
+per=${BK_PROPTEST_TIMEOUT:-1500}
 # Suites that cannot bear the full count in the time bound, measured on the
 # build host: "<crate> <target> <cases>".
 caps="
