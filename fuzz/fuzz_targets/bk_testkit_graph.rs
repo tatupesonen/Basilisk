@@ -4,19 +4,25 @@
 
 #![no_main]
 
+mod bk_testkit_shared;
+
 use bk_testkit::oracle::{CfgDump, GraphFile};
 use libfuzzer_sys::fuzz_target;
 
+const GRAPH: &str = include_str!("../../crates/bk-testkit/tests/data/oracle/elseif.blocks.bkg");
+const CFG: &str = include_str!("../../crates/bk-testkit/tests/data/oracle/elseif.cfg");
+
 fuzz_target!(|data: &[u8]| {
-    let Ok(text) = std::str::from_utf8(data) else {
+    let pick = data.get(1).copied().unwrap_or(0) % 2;
+    let Some(text) = bk_testkit_shared::text(data, if pick == 0 { GRAPH } else { CFG }) else {
         return;
     };
-    if let Ok(graph) = GraphFile::parse(text) {
+    if let Ok(graph) = GraphFile::parse(&text) {
         assert_eq!(graph.write(), text);
         let _ = graph.out_edges();
         let _ = graph.to_ghidra_xml();
     }
-    if let Ok(dump) = CfgDump::parse(text) {
+    if let Ok(dump) = CfgDump::parse(&text) {
         assert_eq!(dump.write(), text);
     }
 });

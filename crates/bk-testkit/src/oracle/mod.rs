@@ -72,6 +72,17 @@ pub fn read_text(path: &std::path::Path) -> std::io::Result<String> {
     String::from_utf8(bytes).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
 }
 
+/// Decompress gzip bytes into text (at most [`MAX_FILE_BYTES`]).
+pub fn gunzip(bytes: &[u8]) -> std::io::Result<String> {
+    use std::io::Read as _;
+    let limit = u64::try_from(MAX_FILE_BYTES).unwrap_or(u64::MAX);
+    let mut text = String::new();
+    flate2::read::GzDecoder::new(bytes)
+        .take(limit)
+        .read_to_string(&mut text)?;
+    Ok(text)
+}
+
 /// Write a text file, compressing it when its name ends in `.gz`
 /// (deterministically: no file name or time stamp in the gzip header).
 pub fn write_text(path: &std::path::Path, text: &str) -> std::io::Result<()> {

@@ -4,14 +4,19 @@
 
 #![no_main]
 
-use bk_testkit::oracle::{RecordedPcode, Recording};
+mod bk_testkit_shared;
+
+use bk_testkit::oracle::{RecordedPcode, Recording, gunzip};
 use libfuzzer_sys::fuzz_target;
 
+const SAMPLE: &[u8] = include_bytes!("../../crates/bk-testkit/tests/data/oracle/elseif.pcoderec.gz");
+
 fuzz_target!(|data: &[u8]| {
-    let Ok(text) = std::str::from_utf8(data) else {
+    let sample = gunzip(SAMPLE).unwrap_or_default();
+    let Some(text) = bk_testkit_shared::text(data, &sample) else {
         return;
     };
-    if let Ok(recording) = Recording::parse(text) {
+    if let Ok(recording) = Recording::parse(&text) {
         assert_eq!(recording.write(), text);
         let addrs: Vec<_> = recording.events.iter().map(|e| e.addr().clone()).collect();
         let replay = RecordedPcode::new(recording);
