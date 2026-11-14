@@ -139,8 +139,8 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate running on the build host (started
-21:25):** `sleigh-fixups` (`a729d10fd3ad89e8d`) on branch `integration`
+**Finished, integration gate green (2,095 tests, 0 new packages,
+advisories ok), in CI as run 43632387623 since 21:29:** `sleigh-fixups` (`a729d10fd3ad89e8d`) on branch `integration`
 (worktree `../basilisk-wt/sleigh-fixups`, `aa8b136`). (a) Bit-range
 arithmetic wraps at 32 bits as in Ghidra (`pcode/bitrange.rs`, and
 `defineBitrange` in `compiler/define.rs`, which overflowed in debug
