@@ -66,7 +66,10 @@ fn normalize(message: &str) -> String {
     let marker = "Mismatched tokens when combining patterns -- ";
     while let Some(at) = text.find(marker) {
         let start = at + marker.len();
-        let end = text[start..].find(':').map_or(text.len(), |e| start + e);
+        let end = text
+            .get(start..)
+            .and_then(|t| t.find(':'))
+            .map_or(text.len(), |e| start + e);
         text.replace_range(at..end, "Mismatched tokens <normalized>");
     }
     text
