@@ -428,7 +428,7 @@ impl ParamActive {
 
     /// Sorts in formal parameter order (Ghidra `sortTrials`). Trials that
     /// compare equal keep their current order, where Ghidra's `std::sort`
-    /// leaves them in an order chosen by the C++ library (ADR-038): two
+    /// leaves them in an order chosen by the C++ library (ADR-040): two
     /// trials of one entry at one address and size, and trials without an
     /// entry, which therefore stay in registration (slot) order.
     pub fn sort_trials(&mut self, list: &ParamList) {

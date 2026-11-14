@@ -1,5 +1,5 @@
 //! The rows where Ghidra's answer depends on the C++ standard library it
-//! was built with (ADR-038). The oracle exists twice, from libc++ (macOS)
+//! was built with (ADR-040). The oracle exists twice, from libc++ (macOS)
 //! and libstdc++ (x86-64 Linux); a row where the two disagree passes only
 //! when it is one of the counted causes below and Basilisk gives the
 //! result the ADR defines. Each recogniser checks both: that the two

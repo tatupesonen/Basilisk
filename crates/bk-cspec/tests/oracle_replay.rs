@@ -4,7 +4,7 @@
 //! and registers Ghidra had, and every record is produced again and
 //! compared with both tables. A row where the tables agree passes only if
 //! Basilisk agrees; a row where they disagree passes only if it is one of
-//! the counted causes of ADR-038 and Basilisk gives the result the ADR
+//! the counted causes of ADR-040 and Basilisk gives the result the ADR
 //! defines (`oracle_common::host`). Needs the spec root (kind G); skipped
 //! with a printed reason without it.
 
@@ -38,7 +38,7 @@ use oracle_common::{Lib, Pair, addr, b, desc, parse_vn, vn};
 
 const SIGNATURES: &str = include_str!("oracle/signatures.txt");
 
-/// Rows per cause where the two tables differ (README, ADR-038). A
+/// Rows per cause where the two tables differ (README, ADR-040). A
 /// regenerated table that changes these fails here until they are updated.
 const EXPECTED: [(Cause, usize); 4] = [
     (Cause::EffectOrder, 56),

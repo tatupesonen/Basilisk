@@ -9,7 +9,7 @@ find why row by row, define Basilisk's result, test against both tables.
 - [x] 1. Generator deterministic and robust (commit dc1e325).
 - [x] 2. Both tables generated, diffed, checked in (73a7505).
 - [x] 3. Every differing row traced (below).
-- [x] 4. ADR text (below, for the coordinator to record as ADR-038).
+- [x] 4. ADR text (below, for the coordinator to record as ADR-040).
 - [x] 5. Two-table strict replay; stable, non-panicking trial sort.
 - [x] 6. `cargo test -p bk-cspec` on the Mac (both env vars set): all pass.
 - [x] 6b. Same on the build host; valgrind (below).
@@ -133,9 +133,9 @@ undefined behaviour (libstdc++'s unguarded insertion can run past the
 range). Not reached by any shipped file in the table; Rust's `sort_by` may
 panic on it, which was a latent ADR-009 violation in `bk-cspec`.
 
-## 4. Proposed ADR (record as ADR-038)
+## 4. Proposed ADR (record as ADR-040)
 
-> ### ADR-038: Ghidra answers that depend on the C++ library's sort
+> ### ADR-040: Ghidra answers that depend on the C++ library's sort
 >
 > **Context.** Ghidra's decompiler sorts effect lists and parameter trials
 > with `std::sort`, which leaves elements that compare equal in an order the
@@ -283,7 +283,7 @@ generators built with `-g` against the x86-64 reference objects
 
 ## Follow-ups
 
-- Coordinator: record the ADR text above as ADR-038 (the code and README
+- Coordinator: record the ADR text above as ADR-040 (the code and README
   already cite that number).
 - Nothing needed in `bk-decomp-types` or `bk-lang`.
 - `docs/agents/decomp-cspec.md` and `docs/agents/remote-build.md` still

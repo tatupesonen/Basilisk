@@ -26,7 +26,7 @@ model's parameter list before using it (see `cspec_oracle.cc`,
 What remains is Ghidra's own use of `std::sort` on elements that compare
 equal, whose order the C++ standard leaves to the library. The two tables
 differ in exactly these rows, each recognised by `../oracle_common/host.rs`
-and counted by `../oracle_replay.rs` (ADR-038):
+and counted by `../oracle_replay.rs` (ADR-040):
 
 | Cause | Ghidra | Rows | Basilisk |
 |---|---|---|---|

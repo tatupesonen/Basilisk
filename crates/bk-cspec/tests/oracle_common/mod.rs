@@ -19,7 +19,7 @@ use crate::common::TableRegisters;
 use crate::common::testtypes::{CSizes, TestTypes};
 
 /// The C++ standard library an oracle table was generated with; Ghidra's
-/// answers depend on it in counted rows (`tests/data/README.md`, ADR-038).
+/// answers depend on it in counted rows (`tests/data/README.md`, ADR-040).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Lib {
     /// LLVM libc++ (macOS, Apple clang).

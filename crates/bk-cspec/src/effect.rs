@@ -69,7 +69,7 @@ impl EffectRecord {
 
 /// Sorts an effect list by address, keeping records with equal addresses in
 /// their original (document) order, the default return address last
-/// (ADR-038). Ghidra's `std::sort` leaves their order to the C++ library:
+/// (ADR-040). Ghidra's `std::sort` leaves their order to the C++ library:
 /// libstdc++ reorders 28 of the corpus's lists, libc++ none; a stable order
 /// makes the result the same on every host.
 pub fn sort_effects(list: &mut [EffectRecord]) {
@@ -80,7 +80,7 @@ pub fn sort_effects(list: &mut [EffectRecord]) {
 /// [`EffectKind::Unknown`] (Ghidra `ProtoModel::lookupEffect`). The unique
 /// space is always [`EffectKind::Unaffected`]. Where several records start
 /// at one address, the last of them decides, as in Ghidra; with
-/// [`sort_effects`] that is the last in document order (ADR-038).
+/// [`sort_effects`] that is the last in document order (ADR-040).
 pub fn lookup_effect(
     list: &[EffectRecord],
     manager: &SpaceManager,
