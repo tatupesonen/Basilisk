@@ -150,6 +150,7 @@ public:
   virtual void registerCommands(IfaceStatus *status) {
     registerCapabilityCommands(status);
     registerCfgCommands(status);
+    registerStateCommands(status);
   }
 };
 

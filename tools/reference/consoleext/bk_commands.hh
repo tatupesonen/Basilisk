@@ -33,6 +33,7 @@ void collectActions(Action *root, std::vector<ActionEntry> &out);
 
 void registerCapabilityCommands(IfaceStatus *status);
 void registerCfgCommands(IfaceStatus *status);
+void registerStateCommands(IfaceStatus *status);
 
 } // namespace bk
 

@@ -408,7 +408,7 @@ fi
 
 # The Makefile's variables as make evaluates them with the overrides above.
 make_var() { sed -n "s/^$1=//p" "$STATE/consoleext.vars"; }
-EXT_FP=$( { echo "tools: $TOOLS_FP"; echo "decomp_dbg: $DBG_FP"; echo "extension: $EXT_HASH"; } | hash_stdin)
+EXT_FP=$( { echo "tools: $TOOLS_FP"; echo "decomp_dbg: $DBG_FP"; echo "extension: $EXT_HASH"; echo "commit: $GHIDRA_COMMIT"; } | hash_stdin)
 if [ "$(cat "$STATE/consoleext.fp" 2>/dev/null || true)" = "$EXT_FP" ] \
     && [ -x "$REF/bin/decomp_bk" ] && [ -x "$REF/bin/decomp_bk_dbg" ]; then
   say "  decomp_bk, decomp_bk_dbg up to date"
@@ -427,7 +427,7 @@ else
       obj=$EXT_OUT/$variant/$(basename "$src" .cc).o
       # shellcheck disable=SC2086
       (cd "$REF/src/cpp" && $(make_var BK_CXX) $(make_var BK_ARCH_TYPE) $flags $(make_var BK_ADDITIONAL_FLAGS) \
-          $defines -fno-access-control -I "$REF/src/cpp" -c "$src" -o "$obj") >> "$LOGS/consoleext.log" 2>&1 \
+          $defines "-DBK_GHIDRA_COMMIT=\"$GHIDRA_COMMIT\"" -fno-access-control -I "$REF/src/cpp" -c "$src" -o "$obj") >> "$LOGS/consoleext.log" 2>&1 \
         || { cat "$LOGS/consoleext.log" >&2; die "compiling $(basename "$src") ($variant) failed"; }
     done
   }
