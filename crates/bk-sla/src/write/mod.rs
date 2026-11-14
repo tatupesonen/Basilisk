@@ -10,7 +10,17 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 
 use crate::error::SlaError;
-use crate::ids::*;
+use crate::ids::{
+    ATTRIB_ALIGN, ATTRIB_BIGENDIAN, ATTRIB_DEFAULTSPACE, ATTRIB_DELAY, ATTRIB_ID, ATTRIB_INDEX,
+    ATTRIB_MAXDELAY, ATTRIB_NAME, ATTRIB_NUMSECTIONS, ATTRIB_PARENT, ATTRIB_PHYSICAL, ATTRIB_SCOPE,
+    ATTRIB_SCOPESIZE, ATTRIB_SIZE, ATTRIB_SYMBOLSIZE, ATTRIB_UNIQBASE, ATTRIB_UNIQMASK,
+    ATTRIB_VERSION, ATTRIB_WORDSIZE, ELEM_CONTEXT_SYM_HEAD, ELEM_END_SYM_HEAD,
+    ELEM_EPSILON_SYM_HEAD, ELEM_NAME_SYM_HEAD, ELEM_NEXT2_SYM_HEAD, ELEM_OPERAND_SYM_HEAD,
+    ELEM_SCOPE, ELEM_SLEIGH, ELEM_SOURCEFILE, ELEM_SOURCEFILES, ELEM_SPACE, ELEM_SPACE_OTHER,
+    ELEM_SPACE_UNIQUE, ELEM_SPACES, ELEM_START_SYM_HEAD, ELEM_SUBTABLE_SYM_HEAD, ELEM_SYMBOL_TABLE,
+    ELEM_USEROP_HEAD, ELEM_VALUE_SYM_HEAD, ELEM_VALUEMAP_SYM_HEAD, ELEM_VARLIST_SYM_HEAD,
+    ELEM_VARNODE_SYM_HEAD, FORMAT_VERSION, HEADER,
+};
 use crate::model::Sla;
 use crate::model::handles::SymbolId;
 use crate::model::symbol::{SpaceKind, SymbolKind};
@@ -20,18 +30,18 @@ pub(crate) mod template;
 
 /// Turns a space index into the reference an encoder writes.
 pub(crate) trait SpaceNames {
-    fn name(&self, index: u32) -> &str;
+    fn space_text(&self, index: u32) -> &str;
 }
 
 impl SpaceNames for Sla {
-    fn name(&self, index: u32) -> &str {
+    fn space_text(&self, index: u32) -> &str {
         self.space_name(index).unwrap_or("")
     }
 }
 
 pub(crate) fn space_ref<N: SpaceNames + ?Sized>(names: &N, index: u32) -> SpaceRef<'_> {
     SpaceRef {
-        name: names.name(index),
+        name: names.space_text(index),
         packed: PackedSpace::Index(index),
     }
 }
@@ -110,7 +120,7 @@ impl Sla {
         }
         enc.close_element(ELEM_SOURCEFILES);
         enc.open_element(ELEM_SPACES);
-        enc.write_string(ATTRIB_DEFAULTSPACE, self.name(self.default_space))?;
+        enc.write_string(ATTRIB_DEFAULTSPACE, self.space_text(self.default_space))?;
         let mut spaces: Vec<_> = self.space_records().iter().collect();
         spaces.sort_by_key(|space| space.index);
         for space in spaces {

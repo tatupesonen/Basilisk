@@ -168,7 +168,7 @@ pub struct DecisionDef {
     /// A leaf's pairs, in the order they are tried.
     pub pairs: Vec<PairDef>,
     /// An inner node's `2^size` children.
-    pub children: Vec<DecisionDef>,
+    pub children: Vec<Self>,
 }
 
 /// A constructor reached at a leaf with its pattern.

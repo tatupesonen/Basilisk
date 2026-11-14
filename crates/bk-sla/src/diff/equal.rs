@@ -1,6 +1,11 @@
 //! Fast structural equality of model values that live in arenas, used
 //! before rendering a difference.
 
+#![expect(
+    clippy::many_single_char_names,
+    reason = "left/right pairs throughout: a/b models, x/y and p/q values"
+)]
+
 use crate::model::Sla;
 use crate::model::constructor::{Constructor, ContextChange, DisjointPattern, PrintPiece};
 use crate::model::expr::Expr;

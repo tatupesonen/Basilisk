@@ -64,6 +64,10 @@ impl Differ<'_> {
 
     /// Records a difference when the values differ; returns whether the
     /// walk should go on.
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "callers pass values built for the comparison"
+    )]
     fn check<T: PartialEq + Display>(&mut self, path: impl FnOnce() -> String, x: T, y: T) -> bool {
         if x != y && !self.full() {
             self.out.push(Difference {
@@ -229,7 +233,7 @@ impl Differ<'_> {
             return false;
         }
         match (x.kind, y.kind) {
-            (SymbolKind::Subtable(ta), SymbolKind::Subtable(tb)) => self.subtable(id, ta, tb),
+            (SymbolKind::Subtable(ta), SymbolKind::Subtable(tb)) => self.subtable(id, &ta, &tb),
             (kx, ky) => {
                 let equal = equal::kind_eq(a, &kx, b, &ky);
                 self.check_lazy(
@@ -241,7 +245,7 @@ impl Differ<'_> {
         }
     }
 
-    fn subtable(&mut self, id: SymbolId, ta: crate::Subtable, tb: crate::Subtable) -> bool {
+    fn subtable(&mut self, id: SymbolId, ta: &crate::Subtable, tb: &crate::Subtable) -> bool {
         let (a, b) = (self.a, self.b);
         let name = a.symbol_name(id).to_owned();
         if !self.check(

@@ -21,12 +21,17 @@ use bk_sla::{
 };
 use proptest::prelude::*;
 
+/// Opcode, whether there is an output, and (constant kind, value) inputs.
+type OpSpec = (u8, bool, Vec<(u8, u64)>);
+/// Constructor, pattern kind, mask/value words, offset.
+type PairSpec = (u32, u8, Vec<(u32, u32)>, i32);
+
 /// What a generated constructor holds.
 #[derive(Clone, Debug)]
 struct CtorSpec {
     operands: usize,
     print: Vec<(bool, String)>,
-    ops: Vec<(u8, bool, Vec<(u8, u64)>)>,
+    ops: Vec<OpSpec>,
     labels: i32,
 }
 
@@ -41,8 +46,8 @@ struct ModelSpec {
 
 #[derive(Clone, Debug)]
 enum TreeSpec {
-    Leaf(Vec<(u32, u8, Vec<(u32, u32)>, i32)>),
-    Node(u8, i32, Vec<TreeSpec>),
+    Leaf(Vec<PairSpec>),
+    Node(u8, i32, Vec<Self>),
 }
 
 fn text() -> impl Strategy<Value = String> {
@@ -346,7 +351,8 @@ proptest! {
         while !xml.is_char_boundary(at) {
             at -= 1;
         }
-        let damaged = format!("{}{insert}{}", &xml[..at], &xml[at..]);
+        let (head, tail) = xml.split_at(at);
+        let damaged = format!("{head}{insert}{tail}");
         let _ = Sla::decode_xml(&damaged, &Limits::default());
     }
 }

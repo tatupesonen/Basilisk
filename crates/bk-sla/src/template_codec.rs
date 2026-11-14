@@ -58,7 +58,7 @@ impl SpaceTable {
 }
 
 impl SpaceNames for SpaceTable {
-    fn name(&self, index: u32) -> &str {
+    fn space_text(&self, index: u32) -> &str {
         Self::name(self, index).unwrap_or("")
     }
 }
@@ -77,17 +77,17 @@ impl Sla {
 
 impl Template {
     /// Writes the template as a lone `construct_tpl` in the XML form.
-    pub fn encode_xml(&self, spaces: &SpaceTable) -> Result<String, SlaError> {
+    pub fn encode_xml(&self, spaces: &SpaceTable) -> String {
         let mut encoder = XmlEncoder::new(true);
-        encode_template(&mut encoder, spaces, &self.as_ref())?;
-        Ok(encoder.into_string())
+        encode_template(&mut encoder, spaces, &self.as_ref());
+        encoder.into_string()
     }
 
     /// Writes the template as a lone `construct_tpl` in the packed form.
-    pub fn encode_packed(&self, spaces: &SpaceTable) -> Result<Vec<u8>, SlaError> {
+    pub fn encode_packed(&self, spaces: &SpaceTable) -> Vec<u8> {
         let mut encoder = PackedEncoder::new();
-        encode_template(&mut encoder, spaces, &self.as_ref())?;
-        Ok(encoder.into_bytes())
+        encode_template(&mut encoder, spaces, &self.as_ref());
+        encoder.into_bytes()
     }
 
     /// Reads a lone `construct_tpl` in the packed form and validates it.
@@ -148,7 +148,7 @@ impl Template {
         crate::validate::check_template(
             limits,
             &|index| spaces.name(index).is_some(),
-            "construct_tpl",
+            &"construct_tpl",
             &self.as_ref(),
             u32::MAX,
         )

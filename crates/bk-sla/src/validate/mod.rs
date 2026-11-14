@@ -8,6 +8,7 @@ mod tables;
 pub(crate) use tables::check_template;
 
 use std::collections::HashSet;
+use std::fmt::{self, Display};
 
 use crate::error::SlaError;
 use crate::limits::Limits;
@@ -53,6 +54,24 @@ pub(crate) fn validate(sla: &Sla, limits: &Limits) -> Result<SymbolId, SlaError>
     Ok(root)
 }
 
+/// The path of a symbol, rendered only for an error.
+#[derive(Clone, Copy)]
+pub(crate) struct SymbolPath<'s> {
+    sla: &'s Sla,
+    id: SymbolId,
+}
+
+impl Display for SymbolPath<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "sleigh/symbol_table/symbol {} \"{}\"",
+            self.id,
+            self.sla.symbol_name(self.id)
+        )
+    }
+}
+
 pub(crate) struct Validator<'s> {
     pub(crate) sla: &'s Sla,
     pub(crate) limits: &'s Limits,
@@ -66,7 +85,7 @@ pub(crate) struct Validator<'s> {
 /// A byte quantity: not negative and within the limit.
 pub(crate) fn byte_quantity(
     limits: &Limits,
-    path: &str,
+    path: &dyn Display,
     what: &str,
     value: i32,
 ) -> Result<(), SlaError> {
@@ -87,8 +106,8 @@ pub(crate) fn byte_quantity(
     Ok(())
 }
 
-pub(crate) fn fail<T>(path: impl Into<String>, message: impl Into<String>) -> Result<T, SlaError> {
-    Err(SlaError::structure(path, message))
+pub(crate) fn fail<T>(path: impl Display, message: impl Into<String>) -> Result<T, SlaError> {
+    Err(SlaError::structure(path.to_string(), message))
 }
 
 impl<'s> Validator<'s> {
@@ -102,11 +121,8 @@ impl<'s> Validator<'s> {
         }
     }
 
-    pub(crate) fn symbol_path(&self, id: SymbolId) -> String {
-        format!(
-            "sleigh/symbol_table/symbol {id} \"{}\"",
-            self.sla.symbol_name(id)
-        )
+    pub(crate) fn symbol_path(&self, id: SymbolId) -> SymbolPath<'s> {
+        SymbolPath { sla: self.sla, id }
     }
 
     pub(crate) fn space_known(&self, index: u32) -> bool {
@@ -116,7 +132,12 @@ impl<'s> Validator<'s> {
             .unwrap_or(false)
     }
 
-    pub(crate) fn byte_quantity(&self, path: &str, what: &str, value: i32) -> Result<(), SlaError> {
+    pub(crate) fn byte_quantity(
+        &self,
+        path: &dyn Display,
+        what: &str,
+        value: i32,
+    ) -> Result<(), SlaError> {
         byte_quantity(self.limits, path, what, value)
     }
 
@@ -167,7 +188,7 @@ impl<'s> Validator<'s> {
             return fail(path, "the default space is not declared");
         }
         let max_delay = i32::try_from(self.sla.header.max_delay).unwrap_or(i32::MAX);
-        self.byte_quantity("sleigh", "maxdelay", max_delay)?;
+        self.byte_quantity(&"sleigh", "maxdelay", max_delay)?;
         if self.context_words > self.limits.context_words {
             return Err(SlaError::Limit {
                 location: crate::error::Location::default(),
@@ -259,13 +280,13 @@ impl<'s> Validator<'s> {
         Ok(())
     }
 
-    pub(crate) fn expr_ok(&self, path: &str, expr: ExprId) -> Result<&'s Expr, SlaError> {
+    pub(crate) fn expr_ok(&self, path: &dyn Display, expr: ExprId) -> Result<&'s Expr, SlaError> {
         self.sla
             .expr(expr)
             .map_or_else(|| fail(path, format!("dangling expression {expr}")), Ok)
     }
 
-    fn value_expr(&self, path: &str, expr: ExprId) -> Result<(), SlaError> {
+    fn value_expr(&self, path: &dyn Display, expr: ExprId) -> Result<(), SlaError> {
         if !self.expr_ok(path, expr)?.is_value() {
             return fail(
                 path,
@@ -380,7 +401,7 @@ impl<'s> Validator<'s> {
         )
     }
 
-    fn require_varnode(&self, path: &str, id: SymbolId) -> Result<(), SlaError> {
+    fn require_varnode(&self, path: &dyn Display, id: SymbolId) -> Result<(), SlaError> {
         match self.sla.symbol(id).map(|symbol| &symbol.kind) {
             Some(SymbolKind::Varnode { .. }) => Ok(()),
             _ => fail(path, format!("symbol {id} is not a varnode symbol")),

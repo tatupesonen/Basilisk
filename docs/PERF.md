@@ -18,6 +18,38 @@ here, newest first under the crate's heading. Sizes use SI prefixes.
 
 ## Measurements
 
+### `bk-sla`
+
+2026-11-14, Apple M1 Pro (8 cores), macOS, rustc 1.97.1, release profile
+(thin LTO, one codegen unit), best of 20 runs (3 for the 150-file rows);
+load average 8–11 (other agents building). Commands:
+
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 cargo test --release -p bk-sla \
+        --test bench --test bench_heap -- --ignored --nocapture --skip profile
+
+Reference loader, same session: `crates/bk-sla/tests/reference_loader/slaload.cc`
+(build command in the file; `Sleigh::initialize` = file read, inflate,
+decode, cross references), best of 20.
+
+| Measurement | basilisk | Ghidra C++ |
+|---|---:|---:|
+| `read_file("x86-64.sla")` (read, inflate, decode, validate) | **17.9 ms** (inflate 2.5, decode+validate 15.4) | 30.8 ms |
+| `read_file("AARCH64BE.sla")` | 16.1 ms | 28.0 ms |
+| `read_file` of all 150 files in sequence, one thread | 415 ms | — |
+| `encode_packed`, x86-64 / AARCH64BE | 5.9 / 5.2 ms | — |
+| `encode_packed`, all 150 | 128 ms | — |
+| `write` (encode + zlib default level), x86-64 | 35.4 ms | — |
+| `encode_xml`, x86-64 | 31.2 ms | — |
+| x86-64 model heap (`dhat`) | 13.4 MB = 2.99x the 4.47 MB stream; peak 15.6 MB during decode; 4,634 allocations | — |
+
+Budget (`features/sla.md` acceptance 3): x86-64 at most 25 ms and not
+slower than the reference loader — met (17.9 vs 30.8 ms); all 150 under
+1 s — met; heap at most 8x the stream — met (3.0x). Validation is about
+1–2 ms of the decode time. One finding while tuning: building an error
+value eagerly (`Option::ok_or(error)`) on every attribute cost a third of
+the decode time through the error type's drop glue; the hot path now
+builds errors only on failure.
+
 ### `bk-marshal`
 
 2026-11-12, Apple M1 Pro (8 cores), macOS, rustc 1.97.1, release profile

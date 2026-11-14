@@ -152,7 +152,7 @@ fn check_xml(
             .bytes()
             .zip(text.bytes())
             .position(|(a, b)| a != b)
-            .unwrap_or(ours.len().min(text.len()));
+            .unwrap_or_else(|| ours.len().min(text.len()));
         let lo = at.saturating_sub(200);
         return Err(format!(
             "XML differs at byte {at}:\n--- ours\n{}\n--- sleigh -y\n{}",

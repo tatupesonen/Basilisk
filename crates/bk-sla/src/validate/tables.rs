@@ -1,6 +1,8 @@
 //! Validation of subtables: constructors, templates, decision trees, and the
 //! operand-expression dependency check (rules 2–4 of `features/sla.md` 4.3).
 
+use std::fmt::{self, Display};
+
 use bk_pcode::OpCode;
 
 use super::{Validator, fail};
@@ -11,7 +13,28 @@ use crate::model::handles::{BlockId, ExprId, SymbolId};
 use crate::model::symbol::{Subtable, SymbolKind};
 use crate::model::template::{ConstTpl, HandleSelect, TemplateRef, VarnodeTpl};
 
-impl Validator<'_> {
+/// The path of a constructor, rendered only for an error.
+pub(crate) struct CtorPath<'s, 'c> {
+    sla: &'s crate::Sla,
+    table: SymbolId,
+    ct: u32,
+    ctor: &'c Constructor,
+}
+
+impl Display for CtorPath<'_, '_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let file = self.sla.source_file(self.ctor.source).unwrap_or("?");
+        write!(
+            f,
+            "table \"{}\" constructor {} ({file}:{})",
+            self.sla.symbol_name(self.table),
+            self.ct,
+            self.ctor.line
+        )
+    }
+}
+
+impl<'s> Validator<'s> {
     pub(super) fn tables(&mut self) -> Result<(), SlaError> {
         let sla = self.sla;
         for (index, symbol) in sla.a.symbols.iter().enumerate() {
@@ -45,18 +68,23 @@ impl Validator<'_> {
         Ok(())
     }
 
-    pub(crate) fn constructor_path(&self, table: SymbolId, ct: u32, ctor: &Constructor) -> String {
-        let file = self.sla.source_file(ctor.source).unwrap_or("?");
-        format!(
-            "table \"{}\" constructor {ct} ({file}:{})",
-            self.sla.symbol_name(table),
-            ctor.line
-        )
+    pub(crate) fn constructor_path<'c>(
+        &self,
+        table: SymbolId,
+        ct: u32,
+        ctor: &'c Constructor,
+    ) -> CtorPath<'s, 'c> {
+        CtorPath {
+            sla: self.sla,
+            table,
+            ct,
+            ctor,
+        }
     }
 
     fn constructor(
         &mut self,
-        path: &str,
+        path: &dyn Display,
         table: SymbolId,
         ct: u32,
         ctor: &Constructor,
@@ -75,7 +103,7 @@ impl Validator<'_> {
         if operands.len() > self.limits.operands as usize {
             return Err(SlaError::Limit {
                 location: crate::error::Location {
-                    path: path.to_owned(),
+                    path: path.to_string(),
                     offset: None,
                 },
                 what: "operands of one constructor",
@@ -177,7 +205,7 @@ impl Validator<'_> {
         Ok(())
     }
 
-    fn context_word(&self, path: &str, word: i32) -> Result<(), SlaError> {
+    fn context_word(&self, path: &dyn Display, word: i32) -> Result<(), SlaError> {
         if word < 0 || word as u32 >= self.context_words {
             return fail(
                 path,
@@ -193,7 +221,7 @@ impl Validator<'_> {
     /// Checks one template against the constructor's operand count.
     pub(crate) fn template(
         &self,
-        path: &str,
+        path: &dyn Display,
         template: &TemplateRef<'_>,
         num_operands: u32,
     ) -> Result<(), SlaError> {
@@ -206,7 +234,7 @@ impl Validator<'_> {
         )
     }
 
-    fn decision_tree(&self, path: &str, table: &Subtable) -> Result<(), SlaError> {
+    fn decision_tree(&self, path: &dyn Display, table: &Subtable) -> Result<(), SlaError> {
         let sla = self.sla;
         let mut stack = vec![(table.decision, 1u32)];
         let mut visited = 0usize;
@@ -218,7 +246,7 @@ impl Validator<'_> {
             if depth > self.limits.decision_depth {
                 return Err(SlaError::Limit {
                     location: crate::error::Location {
-                        path: path.to_owned(),
+                        path: path.to_string(),
                         offset: None,
                     },
                     what: "decision-tree depth",
@@ -274,7 +302,7 @@ impl Validator<'_> {
         Ok(())
     }
 
-    fn block(&self, path: &str, id: BlockId) -> Result<(), SlaError> {
+    fn block(&self, path: &dyn Display, id: BlockId) -> Result<(), SlaError> {
         let Some(block) = self.sla.block(id) else {
             return fail(path, format!("dangling pattern block {id}"));
         };
@@ -379,7 +407,7 @@ impl Validator<'_> {
 pub(crate) fn check_template(
     limits: &crate::Limits,
     space_known: &dyn Fn(u32) -> bool,
-    path: &str,
+    path: &dyn Display,
     template: &TemplateRef<'_>,
     num_operands: u32,
 ) -> Result<(), SlaError> {

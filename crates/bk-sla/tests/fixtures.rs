@@ -155,7 +155,7 @@ fn a_lone_template_round_trips() {
     let sla = common::full_model();
     let spaces = sla.space_table();
     let limits = Limits::default();
-    let packed = template.encode_packed(&spaces).unwrap();
+    let packed = template.encode_packed(&spaces);
     assert_eq!(
         Template::decode_packed(&packed, &spaces, &limits).unwrap(),
         template
@@ -164,7 +164,7 @@ fn a_lone_template_round_trips() {
         Template::decode_packed_marshal(&packed, &spaces, &limits).unwrap(),
         template
     );
-    let xml = template.encode_xml(&spaces).unwrap();
+    let xml = template.encode_xml(&spaces);
     assert!(
         xml.starts_with("\n<construct_tpl delay=\"1\" labels=\"1\">"),
         "{xml}"

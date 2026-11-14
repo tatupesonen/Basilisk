@@ -1,10 +1,17 @@
 //! Writing p-code templates (Ghidra `ConstructTpl::encode` and the template
 //! classes' `encode`).
 
-use bk_marshal::{EncodeError, Encoder};
+use bk_marshal::Encoder;
 
 use super::{SpaceNames, space_ref};
-use crate::ids::*;
+use crate::ids::{
+    ATTRIB_CODE, ATTRIB_DELAY, ATTRIB_LABELS, ATTRIB_PLUS, ATTRIB_S, ATTRIB_SECTION, ATTRIB_SPACE,
+    ATTRIB_VAL, ELEM_CONST_CURSPACE, ELEM_CONST_CURSPACE_SIZE, ELEM_CONST_FLOWDEST,
+    ELEM_CONST_FLOWDEST_SIZE, ELEM_CONST_FLOWREF, ELEM_CONST_FLOWREF_SIZE, ELEM_CONST_HANDLE,
+    ELEM_CONST_NEXT, ELEM_CONST_NEXT2, ELEM_CONST_REAL, ELEM_CONST_RELATIVE, ELEM_CONST_SPACEID,
+    ELEM_CONST_START, ELEM_CONSTRUCT_TPL, ELEM_HANDLE_TPL, ELEM_NULL, ELEM_OP_TPL,
+    ELEM_VARNODE_TPL,
+};
 use crate::model::template::{ConstTpl, HandleSelect, TemplateRef, VarnodeTpl};
 
 fn encode_const<E: Encoder, N: SpaceNames + ?Sized>(enc: &mut E, names: &N, value: &ConstTpl) {
@@ -70,7 +77,7 @@ pub(crate) fn encode_template<E: Encoder, N: SpaceNames + ?Sized>(
     enc: &mut E,
     names: &N,
     template: &TemplateRef<'_>,
-) -> Result<(), EncodeError> {
+) {
     let header = template.header();
     enc.open_element(ELEM_CONSTRUCT_TPL);
     if let Some(section) = header.section {
@@ -107,5 +114,4 @@ pub(crate) fn encode_template<E: Encoder, N: SpaceNames + ?Sized>(
         enc.close_element(ELEM_OP_TPL);
     }
     enc.close_element(ELEM_CONSTRUCT_TPL);
-    Ok(())
 }

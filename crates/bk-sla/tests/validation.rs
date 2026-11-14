@@ -44,6 +44,9 @@ fn expect_error(name: &str, result: Result<Sla, SlaError>, needle: &str) {
     }
 }
 
+/// Name, text edits, expected message.
+type Case<'a> = (&'a str, Vec<(&'a str, &'a str)>, &'a str);
+
 const SUB_DECISION: &str = "      <decision number=\"1\" context=\"false\" startbit=\"0\" size=\"0\">\n        <pair id=\"0\">\n          <instruct_pat>\n            <pat_block off=\"0\" nonzero=\"0\"/>\n          </instruct_pat>\n        </pair>\n      </decision>\n";
 const SUB_HANDLE: &str = "<handle_tpl>\n            <const_handle val=\"0\" s=\"0\"/>\n            <const_handle val=\"0\" s=\"2\"/>\n            <const_real";
 const NOT_OPERAND: &str =
@@ -57,7 +60,7 @@ fn the_unedited_fixture_is_valid() {
 #[test]
 fn each_xml_violation_is_rejected() {
     let sub_decision_twice = format!("{SUB_DECISION}{SUB_DECISION}");
-    let cases: Vec<(&str, Vec<(&str, &str)>, &str)> = vec![
+    let cases: Vec<Case<'_>> = vec![
         // Rule 1: ids refer to existing objects of the right kind.
         (
             "scope parent",

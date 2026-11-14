@@ -231,6 +231,10 @@ impl Sla {
 
     /// The ids of a constructor's templates: main first, then sections by
     /// number.
+    #[expect(
+        clippy::unused_self,
+        reason = "an accessor of the model like the others"
+    )]
     pub fn template_ids(&self, ctor: &Constructor) -> impl ExactSizeIterator<Item = TemplateId> {
         ctor.templates
             .range()
@@ -268,11 +272,19 @@ impl Sla {
     }
 
     /// The child of a decision node for field value `value`.
+    #[expect(
+        clippy::unused_self,
+        reason = "an accessor of the model like the others"
+    )]
     pub fn decision_child(&self, node: &DecisionNode, value: u32) -> Option<DecisionId> {
         (value < node.num_children()).then(|| DecisionId::new(node.first_child.wrapping_add(value)))
     }
 
     /// The children of a decision node, in field-value order.
+    #[expect(
+        clippy::unused_self,
+        reason = "an accessor of the model like the others"
+    )]
     pub fn children(&self, node: &DecisionNode) -> impl ExactSizeIterator<Item = DecisionId> {
         let first = node.first_child;
         (0..node.num_children()).map(move |value| DecisionId::new(first.wrapping_add(value)))

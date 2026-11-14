@@ -57,6 +57,10 @@ pub(crate) trait Source<'a> {
     fn trailing(&self) -> Option<usize>;
 }
 
+fn eof() -> StreamError {
+    StreamError::UnexpectedEof
+}
+
 /// A string with a NUL character, which the packed form cannot hold.
 fn nul() -> Fail {
     Fail::invalid("string attribute contains a NUL character")
@@ -107,7 +111,7 @@ impl<'a> PackedCursor<'a> {
 
     #[inline]
     fn byte(&mut self) -> Result<u8, Fail> {
-        let byte = *self.bytes.get(self.pos).ok_or(StreamError::UnexpectedEof)?;
+        let byte = *self.bytes.get(self.pos).ok_or_else(eof)?;
         self.pos += 1;
         Ok(byte)
     }
@@ -124,10 +128,7 @@ impl<'a> PackedCursor<'a> {
     #[inline]
     fn integer(&mut self, length: u8) -> Result<u64, Fail> {
         let end = self.pos + usize::from(length);
-        let groups = self
-            .bytes
-            .get(self.pos..end)
-            .ok_or(StreamError::UnexpectedEof)?;
+        let groups = self.bytes.get(self.pos..end).ok_or_else(eof)?;
         self.pos = end;
         Ok(groups
             .iter()
@@ -152,11 +153,12 @@ impl<'a> PackedCursor<'a> {
             .ok()
             .and_then(|count| self.pos.checked_add(count))
             .filter(|&target| target <= self.bytes.len())
-            .ok_or(StreamError::UnexpectedEof)?;
+            .ok_or_else(eof)?;
         self.pos = target;
         Ok(())
     }
 
+    #[inline]
     fn skip_attrs(&mut self) -> Result<(), Fail> {
         while self.in_attrs {
             self.next_attr()?;
@@ -317,7 +319,7 @@ impl<'a> Source<'a> for PackedCursor<'a> {
         if bytes.contains(&0) {
             return Err(nul());
         }
-        std::str::from_utf8(bytes).map_err(|_| StreamError::InvalidUtf8.into())
+        std::str::from_utf8(bytes).map_err(|_invalid| StreamError::InvalidUtf8.into())
     }
 
     fn space(&mut self) -> Result<SpaceAttr<'a>, Fail> {
@@ -412,10 +414,7 @@ impl<'a, D: Decoder<'a>> Source<'a> for MarshalSource<D> {
                 self.stack.len() as u64 + 1,
             ));
         }
-        let code = self
-            .decoder
-            .open_element()?
-            .ok_or(StreamError::UnexpectedEof)?;
+        let code = self.decoder.open_element()?.ok_or_else(eof)?;
         self.stack.push(code.get());
         Ok(code.get())
     }

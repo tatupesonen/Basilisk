@@ -4,7 +4,23 @@ use bk_marshal::{EncodeError, Encoder};
 
 use super::space_ref;
 use super::template::encode_template;
-use crate::ids::*;
+use crate::ids::{
+    ATTRIB_BASE, ATTRIB_BIGENDIAN, ATTRIB_CODE, ATTRIB_CONTEXT, ATTRIB_CT, ATTRIB_ENDBIT,
+    ATTRIB_ENDBYTE, ATTRIB_FIRST, ATTRIB_FLOW, ATTRIB_HIGH, ATTRIB_I, ATTRIB_ID, ATTRIB_INDEX,
+    ATTRIB_LENGTH, ATTRIB_LINE, ATTRIB_LOW, ATTRIB_MASK, ATTRIB_MINLEN, ATTRIB_NAME,
+    ATTRIB_NONZERO, ATTRIB_NUMBER, ATTRIB_NUMCT, ATTRIB_OFF, ATTRIB_PARENT, ATTRIB_PIECE,
+    ATTRIB_SHIFT, ATTRIB_SIGNBIT, ATTRIB_SIZE, ATTRIB_SOURCE, ATTRIB_SPACE, ATTRIB_STARTBIT,
+    ATTRIB_STARTBYTE, ATTRIB_SUBSYM, ATTRIB_TABLE, ATTRIB_VAL, ATTRIB_VARNODE, ELEM_AND_EXP,
+    ELEM_COMBINE_PAT, ELEM_COMMIT, ELEM_CONSTRUCTOR, ELEM_CONTEXT_OP, ELEM_CONTEXT_PAT,
+    ELEM_CONTEXT_SYM, ELEM_CONTEXTFIELD, ELEM_DECISION, ELEM_DIV_EXP, ELEM_END_EXP, ELEM_END_SYM,
+    ELEM_EPSILON_SYM, ELEM_INSTRUCT_PAT, ELEM_INTB, ELEM_LSHIFT_EXP, ELEM_MASK_WORD,
+    ELEM_MINUS_EXP, ELEM_MULT_EXP, ELEM_NAME_SYM, ELEM_NAMETAB, ELEM_NEXT2_EXP, ELEM_NEXT2_SYM,
+    ELEM_NOT_EXP, ELEM_NULL, ELEM_OPER, ELEM_OPERAND_EXP, ELEM_OPERAND_SYM, ELEM_OPPRINT,
+    ELEM_OR_EXP, ELEM_PAIR, ELEM_PAT_BLOCK, ELEM_PLUS_EXP, ELEM_PRINT, ELEM_RSHIFT_EXP,
+    ELEM_START_EXP, ELEM_START_SYM, ELEM_SUB_EXP, ELEM_SUBTABLE_SYM, ELEM_TOKENFIELD, ELEM_USEROP,
+    ELEM_VALUE_SYM, ELEM_VALUEMAP_SYM, ELEM_VALUETAB, ELEM_VAR, ELEM_VARLIST_SYM, ELEM_VARNODE_SYM,
+    ELEM_XOR_EXP,
+};
 use crate::model::Sla;
 use crate::model::constructor::{
     Constructor, ContextChange, DecisionNode, DisjointPattern, PrintPiece,
@@ -214,7 +230,7 @@ impl Sla {
         }
         for id in self.template_ids(ctor) {
             if let Some(template) = self.template(id) {
-                encode_template(enc, self, &template)?;
+                encode_template(enc, self, &template);
             }
         }
         enc.close_element(ELEM_CONSTRUCTOR);
@@ -235,7 +251,7 @@ impl Sla {
                     self.encode_wrapped(enc, ELEM_INSTRUCT_PAT, block);
                 }
                 DisjointPattern::Context(block) => {
-                    self.encode_wrapped(enc, ELEM_CONTEXT_PAT, block)
+                    self.encode_wrapped(enc, ELEM_CONTEXT_PAT, block);
                 }
                 DisjointPattern::Combine {
                     context,

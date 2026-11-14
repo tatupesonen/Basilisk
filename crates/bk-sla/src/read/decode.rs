@@ -2,6 +2,7 @@
 //! files, spaces and the symbol table (Ghidra `SleighBase::decode`,
 //! `SymbolTable::decode` and the symbols' `decode`).
 
+use std::fmt::Write as _;
 use std::marker::PhantomData;
 
 use bk_pcode::OpCode;
@@ -116,7 +117,7 @@ pub(crate) struct Reader<'a, 'l, S> {
 
 /// Converts a read value to `i32`, as Ghidra stores it.
 pub(crate) fn to_i32(value: i64, attribute: &'static str) -> Result<i32, Fail> {
-    i32::try_from(value).map_err(|_| {
+    i32::try_from(value).map_err(|_overflow| {
         StreamError::OutOfRange {
             attribute,
             value: i128::from(value),
@@ -127,7 +128,7 @@ pub(crate) fn to_i32(value: i64, attribute: &'static str) -> Result<i32, Fail> {
 
 /// Converts a read value to `u32`, as Ghidra stores it.
 pub(crate) fn to_u32(value: u64, attribute: &'static str) -> Result<u32, Fail> {
-    u32::try_from(value).map_err(|_| {
+    u32::try_from(value).map_err(|_overflow| {
         StreamError::OutOfRange {
             attribute,
             value: i128::from(value),
@@ -138,7 +139,7 @@ pub(crate) fn to_u32(value: u64, attribute: &'static str) -> Result<u32, Fail> {
 
 /// Converts a signed value that must not be negative to `u32`.
 pub(crate) fn to_index(value: i64, attribute: &'static str) -> Result<u32, Fail> {
-    u32::try_from(value).map_err(|_| {
+    u32::try_from(value).map_err(|_overflow| {
         StreamError::OutOfRange {
             attribute,
             value: i128::from(value),
@@ -147,9 +148,13 @@ pub(crate) fn to_index(value: i64, attribute: &'static str) -> Result<u32, Fail>
     })
 }
 
+fn missing(attribute: &'static str) -> Fail {
+    Fail::Stream(StreamError::MissingAttribute(attribute))
+}
+
 /// A required attribute.
 pub(crate) fn need<T>(value: Option<T>, attribute: &'static str) -> Result<T, Fail> {
-    value.ok_or(Fail::Stream(StreamError::MissingAttribute(attribute)))
+    value.ok_or_else(|| missing(attribute))
 }
 
 impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
@@ -181,12 +186,12 @@ impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
                     .names
                     .get(symbol.slot())
                     .map_or("", |&name| self.a.strings.get(name));
-                path.push_str(&format!("/symbol {symbol} \"{name}\""));
+                let _ = write!(path, "/symbol {symbol} \"{name}\"");
             }
             if id == e::CONSTRUCTOR
                 && let Some(index) = self.ctx.constructor
             {
-                path.push_str(&format!(" {index}"));
+                let _ = write!(path, " {index}");
             }
         }
         Location {
@@ -210,6 +215,10 @@ impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
         }
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "called like the reader's other error helpers"
+    )]
     pub(crate) fn unexpected(&self, found: u32, expected: &'static str) -> Fail {
         StreamError::UnexpectedElement {
             expected,
