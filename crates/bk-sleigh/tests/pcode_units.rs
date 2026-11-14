@@ -474,3 +474,54 @@ fn pcodedump_crash_reproducers_lift_without_a_crash() {
         );
     }
 }
+
+/// The ARM v8-m instructions that crash `pcodedump` (recorded by the
+/// differential harness): their templates read the handle of a subtable
+/// operand that exports nothing. basilisk reads the constant 0 and reports
+/// it; Ghidra reads an uninitialised `FixedHandle` (a null space in a fresh
+/// parse slot, hence the crash; stale data in a reused one).
+#[test]
+fn arm_v8m_oracle_crashes_read_unset_handles() {
+    #[derive(Default)]
+    struct Unset(bool);
+    impl bk_sleigh::BuildObserver for Unset {
+        fn feature(&mut self, f: bk_sleigh::BuildFeature) {
+            self.0 |= f == bk_sleigh::BuildFeature::UnsetHandle;
+        }
+    }
+    let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::Pcodedump) else {
+        return;
+    };
+    let registry = bk_lang::LanguageRegistry::builder()
+        .include_hidden(true)
+        .module(reference.root().join("Ghidra/Processors/ARM"))
+        .build()
+        .unwrap();
+    for (id, hex) in [
+        ("ARM:LE:32:v8-m", "79ee01df"),
+        ("ARM:LE:32:v8-m", "35fe0c2f"),
+        ("ARM:LE:32:v8-m", "71fe4def"),
+        ("ARM:LE:32:v8-m", "45fe095f"),
+        ("ARM:LE:32:v8-m", "73fe457f"),
+        ("ARM:BE:32:v8-m", "fe4baf03"),
+    ] {
+        let lang =
+            Arc::new(Language::load(&registry, &bk_lang::LanguageId::new(id).unwrap()).unwrap());
+        let mut db = lang.initial_context();
+        assert!(lang.set_context_everywhere(&mut db, "itmode", 1));
+        assert!(lang.set_context_everywhere(&mut db, "cond_mask", 8));
+        let data = bytes(hex);
+        let mut decoder = Decoder::new(Arc::clone(&lang));
+        let mut unset = Unset::default();
+        decoder
+            .lift_observed(
+                ram(&lang, 0),
+                &SliceBytes::new(0, &data),
+                &mut db,
+                &mut PcodeCounter::default(),
+                &mut unset,
+            )
+            .unwrap();
+        assert!(unset.0, "{id} {hex}");
+    }
+}
