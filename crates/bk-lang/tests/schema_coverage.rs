@@ -257,7 +257,7 @@ fn every_shipped_file_reads() {
     };
     for kind in &KINDS {
         let files = common::files_with_extension(&ghidra.join("Ghidra"), kind.extension);
-        assert!(!files.is_empty());
+        assert_ne!(files, Vec::<std::path::PathBuf>::new());
         for file in files
             .iter()
             .filter(|f| !f.components().any(|c| c.as_os_str() == "test"))

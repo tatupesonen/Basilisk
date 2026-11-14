@@ -191,7 +191,7 @@ mod tests {
         assert!(k.is_changed(ActionId::Rename));
         // Taking G from Go To unbinds it there.
         k.bind(ActionId::Rename, chord(Key::G, false, false, false));
-        assert!(k.bindings(ActionId::GoTo).is_empty());
+        assert_eq!(k.bindings(ActionId::GoTo), []);
         assert_eq!(
             k.conflict(ActionId::SetComment, chord(Key::G, false, false, false)),
             Some(ActionId::Rename)

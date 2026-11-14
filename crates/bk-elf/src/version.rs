@@ -269,12 +269,10 @@ impl Iterator for VersionNeedIter<'_> {
 /// The version indexes of `.gnu.version`: one 16-bit value per dynamic
 /// symbol, in the bytes of the section.
 pub fn symbol_versions(data: &[u8], endian: Endian) -> impl Iterator<Item = u16> + '_ {
-    data.chunks_exact(2).map(move |pair| match pair {
-        [a, b] => match endian {
-            Endian::Little => u16::from_le_bytes([*a, *b]),
-            Endian::Big => u16::from_be_bytes([*a, *b]),
-        },
-        _ => 0,
+    let (pairs, _odd_byte) = data.as_chunks::<2>();
+    pairs.iter().map(move |&pair| match endian {
+        Endian::Little => u16::from_le_bytes(pair),
+        Endian::Big => u16::from_be_bytes(pair),
     })
 }
 

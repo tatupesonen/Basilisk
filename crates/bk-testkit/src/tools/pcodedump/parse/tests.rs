@@ -74,7 +74,7 @@ fn sample_parses_into_the_model() {
 
     let weird = instructions[2];
     assert_eq!(weird.body, "a\tb\\c", "escapes are undone");
-    assert!(weird.pcode.is_empty());
+    assert_eq!(weird.pcode, []);
     let lift_error = weird.lift_error.as_ref().unwrap();
     assert_eq!(lift_error.kind, LiftErrorKind::Unimplemented);
     assert_eq!(
@@ -101,7 +101,7 @@ fn sample_parses_into_the_model() {
 #[test]
 fn empty_input_is_a_valid_listing() {
     let dump = parse_dump("H\t1\tToy:BE:32:default\tram\t0x0\t0\nT\t0\t0\n").unwrap();
-    assert!(dump.records.is_empty());
+    assert_eq!(dump.records, []);
 }
 
 #[test]

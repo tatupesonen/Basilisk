@@ -326,11 +326,9 @@ mod tests {
         assert!(v.value, "an undefined name is unequal to everything");
         assert_eq!(v.undefined, ["NOPE", "NADA"]);
         // `defined` does not report.
-        assert!(
-            evaluate("defined(NOPE)", &defs)
-                .unwrap()
-                .undefined
-                .is_empty()
+        assert_eq!(
+            evaluate("defined(NOPE)", &defs).unwrap().undefined,
+            Vec::<String>::new()
         );
         // Both sides of || are evaluated even when the left is true.
         assert_eq!(

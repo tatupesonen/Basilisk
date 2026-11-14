@@ -245,7 +245,7 @@ fn pcodedump_marks_unimplemented_instructions() {
     assert_eq!(instructions.len(), 2);
 
     assert_eq!(instructions[0].mnemonic, "unimpl");
-    assert!(instructions[0].pcode.is_empty());
+    assert_eq!(instructions[0].pcode, []);
     let error = instructions[0].lift_error.as_ref().unwrap();
     assert_eq!(error.kind, LiftErrorKind::Unimplemented);
     assert!(
@@ -296,7 +296,7 @@ fn pcodedump_handles_empty_and_large_input() {
         .pcodedump()
         .dump("x86:LE:64:default", 0, &[])
         .unwrap();
-    assert!(empty.records.is_empty());
+    assert_eq!(empty.records, []);
 
     // Enough output to fill the pipes many times over: 64 kB of nops.
     let nops = vec![0x90u8; 64_000];

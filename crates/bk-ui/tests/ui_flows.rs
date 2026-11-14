@@ -148,7 +148,7 @@ fn decompiler_and_listing_cross_highlight() {
         let ws = tool.ws.as_ref().unwrap();
         (ws.shared.related.clone(), ws.shared.nav.current().address)
     };
-    assert!(!related.ranges.is_empty());
+    assert_ne!(related.ranges, []);
     assert!(related.contains(at));
     let f = bk_ui::demo::DemoProgram::licd().unwrap();
     assert_eq!(

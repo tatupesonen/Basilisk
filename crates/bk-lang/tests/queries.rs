@@ -44,7 +44,7 @@ fn lookups_by_id_processor_and_compiler() {
     assert_eq!(zeta.description(), "Zeta:BE:32:default");
     assert_eq!(zeta.external_names("gnu").collect::<Vec<_>>(), ["Zeta-gnu"]);
     assert_eq!(zeta.all_external_names().len(), 1);
-    assert!(zeta.truncated_spaces().is_empty());
+    assert_eq!(zeta.truncated_spaces(), []);
     assert_eq!(zeta.truncated_space_size("ram"), None);
 
     // The default compiler spec is the first listed; there is no fallback
@@ -323,7 +323,7 @@ fn opinion_queries_inherit_override_and_match_like_ghidra() {
         results(&registry, Some("8, 9"), None).len() == 3,
         "the attribute text itself also matches"
     );
-    assert!(results(&registry, Some("89"), None).is_empty());
+    assert_eq!(results(&registry, Some("89"), None), Vec::<String>::new());
 
     // secondary: exact text first …
     assert_eq!(
@@ -353,12 +353,11 @@ fn opinion_queries_inherit_override_and_match_like_ghidra() {
     // constraint holds every language under no keys at all.
     assert_eq!(results(&registry, None, None).len(), 6);
     assert_eq!(results(&registry, None, Some("5")).len(), 6);
-    assert!(
-        registry
-            .query_opinions("Other Loader", Some("7"), None)
-            .is_empty()
+    assert_eq!(
+        registry.query_opinions("Other Loader", Some("7"), None),
+        Vec::<opinion::QueryResult>::new()
     );
-    assert!(results(&registry, Some("1"), None).is_empty());
+    assert_eq!(results(&registry, Some("1"), None), Vec::<String>::new());
 }
 
 #[test]
