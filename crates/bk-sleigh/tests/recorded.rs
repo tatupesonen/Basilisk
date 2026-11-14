@@ -190,7 +190,8 @@ fn real_languages_match_recorded_oracle() {
     }
 }
 
-/// basilisk decodes the `AltiVec` constructors with more than 20 operands.
+/// basilisk decodes and lifts the `AltiVec` constructors with more than 20
+/// operands (p-code checked by this snapshot alone; `features/sleigh-pcode.md`).
 #[test]
 fn altivec_beyond_ghidras_operand_limit() {
     let Some(reference) = common::reference() else {
@@ -211,6 +212,10 @@ fn altivec_beyond_ghidras_operand_limit() {
         line.push(' ');
         decoder.body(&mut line).unwrap();
         let _ = writeln!(text, "{word:08x}\t{line}\tlargest operand count {max}");
+        // Its p-code (basilisk only: the oracle cannot decode it).
+        let mut ctx = db.clone();
+        let mut records = bk_sleigh::PcodeRecords::new(&lang, &mut text);
+        decoder.lift(addr, &source, &mut ctx, &mut records).unwrap();
         decoder.set_operand_limit(Some(20));
         let err = decoder.decode(addr, &source, &db).unwrap_err();
         assert_eq!(err.to_string(), "SLEIGH parser out of state space");

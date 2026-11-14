@@ -3,6 +3,38 @@ source: crates/bk-sleigh/tests/recorded.rs
 expression: text
 ---
 10221840	vadduhm v1,v2,v3	largest operand count 27
+P	INT_ADD	(register,0x4210,2,vr1_16_0)	(register,0x4220,2,vr2_16_0)	(register,0x4230,2,vr3_16_0)
+P	INT_ADD	(register,0x4212,2,vr1_16_1)	(register,0x4222,2,vr2_16_1)	(register,0x4232,2,vr3_16_1)
+P	INT_ADD	(register,0x4214,2,vr1_16_2)	(register,0x4224,2,vr2_16_2)	(register,0x4234,2,vr3_16_2)
+P	INT_ADD	(register,0x4216,2,vr1_16_3)	(register,0x4226,2,vr2_16_3)	(register,0x4236,2,vr3_16_3)
+P	INT_ADD	(register,0x4218,2,vr1_16_4)	(register,0x4228,2,vr2_16_4)	(register,0x4238,2,vr3_16_4)
+P	INT_ADD	(register,0x421a,2,vr1_16_5)	(register,0x422a,2,vr2_16_5)	(register,0x423a,2,vr3_16_5)
+P	INT_ADD	(register,0x421c,2,vr1_16_6)	(register,0x422c,2,vr2_16_6)	(register,0x423c,2,vr3_16_6)
+P	INT_ADD	(register,0x421e,2,vr1_16_7)	(register,0x422e,2,vr2_16_7)	(register,0x423e,2,vr3_16_7)
 10221c40	vsubuhm v1,v2,v3	largest operand count 27
+P	INT_SUB	(register,0x4210,2,vr1_16_0)	(register,0x4220,2,vr2_16_0)	(register,0x4230,2,vr3_16_0)
+P	INT_SUB	(register,0x4212,2,vr1_16_1)	(register,0x4222,2,vr2_16_1)	(register,0x4232,2,vr3_16_1)
+P	INT_SUB	(register,0x4214,2,vr1_16_2)	(register,0x4224,2,vr2_16_2)	(register,0x4234,2,vr3_16_2)
+P	INT_SUB	(register,0x4216,2,vr1_16_3)	(register,0x4226,2,vr2_16_3)	(register,0x4236,2,vr3_16_3)
+P	INT_SUB	(register,0x4218,2,vr1_16_4)	(register,0x4228,2,vr2_16_4)	(register,0x4238,2,vr3_16_4)
+P	INT_SUB	(register,0x421a,2,vr1_16_5)	(register,0x422a,2,vr2_16_5)	(register,0x423a,2,vr3_16_5)
+P	INT_SUB	(register,0x421c,2,vr1_16_6)	(register,0x422c,2,vr2_16_6)	(register,0x423c,2,vr3_16_6)
+P	INT_SUB	(register,0x421e,2,vr1_16_7)	(register,0x422e,2,vr2_16_7)	(register,0x423e,2,vr3_16_7)
 13fff840	vadduhm v31,v31,v31	largest operand count 27
+P	INT_ADD	(register,0x43f0,2,vr31_16_0)	(register,0x43f0,2,vr31_16_0)	(register,0x43f0,2,vr31_16_0)
+P	INT_ADD	(register,0x43f2,2,vr31_16_1)	(register,0x43f2,2,vr31_16_1)	(register,0x43f2,2,vr31_16_1)
+P	INT_ADD	(register,0x43f4,2,vr31_16_2)	(register,0x43f4,2,vr31_16_2)	(register,0x43f4,2,vr31_16_2)
+P	INT_ADD	(register,0x43f6,2,vr31_16_3)	(register,0x43f6,2,vr31_16_3)	(register,0x43f6,2,vr31_16_3)
+P	INT_ADD	(register,0x43f8,2,vr31_16_4)	(register,0x43f8,2,vr31_16_4)	(register,0x43f8,2,vr31_16_4)
+P	INT_ADD	(register,0x43fa,2,vr31_16_5)	(register,0x43fa,2,vr31_16_5)	(register,0x43fa,2,vr31_16_5)
+P	INT_ADD	(register,0x43fc,2,vr31_16_6)	(register,0x43fc,2,vr31_16_6)	(register,0x43fc,2,vr31_16_6)
+P	INT_ADD	(register,0x43fe,2,vr31_16_7)	(register,0x43fe,2,vr31_16_7)	(register,0x43fe,2,vr31_16_7)
 10000440	vsubuhm v0,v0,v0	largest operand count 27
+P	INT_SUB	(register,0x4200,2,vr0_16_0)	(register,0x4200,2,vr0_16_0)	(register,0x4200,2,vr0_16_0)
+P	INT_SUB	(register,0x4202,2,vr0_16_1)	(register,0x4202,2,vr0_16_1)	(register,0x4202,2,vr0_16_1)
+P	INT_SUB	(register,0x4204,2,vr0_16_2)	(register,0x4204,2,vr0_16_2)	(register,0x4204,2,vr0_16_2)
+P	INT_SUB	(register,0x4206,2,vr0_16_3)	(register,0x4206,2,vr0_16_3)	(register,0x4206,2,vr0_16_3)
+P	INT_SUB	(register,0x4208,2,vr0_16_4)	(register,0x4208,2,vr0_16_4)	(register,0x4208,2,vr0_16_4)
+P	INT_SUB	(register,0x420a,2,vr0_16_5)	(register,0x420a,2,vr0_16_5)	(register,0x420a,2,vr0_16_5)
+P	INT_SUB	(register,0x420c,2,vr0_16_6)	(register,0x420c,2,vr0_16_6)	(register,0x420c,2,vr0_16_6)
+P	INT_SUB	(register,0x420e,2,vr0_16_7)	(register,0x420e,2,vr0_16_7)	(register,0x420e,2,vr0_16_7)
