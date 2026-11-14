@@ -1071,8 +1071,7 @@ so where plugins are installed and enabled.
   Python: its Rust tests that need an interpreter skip with a printed
   reason when `PYO3_PYTHON` cannot be found, as reference-tool tests do
   (ADR-007's rule). CI provides Python 3.10 and 3.14.
-- Lints: the workspace set, including `unsafe_code = "forbid"` (5.1 note
-  in section 3).
+- Lints: the workspace set, including `unsafe_code = "forbid"` (section 3).
 
 ### 5.2 `bk-plugin` modules
 
@@ -1154,7 +1153,7 @@ this to be written as shown.
 | `ghidra.framework.plugintool.PluginManagerTest` (test-integrationtest), `ghidra.framework.plugintool.dialog.ManagePluginsTest`, `ManagePlugins2Test` (features-base) | 26 | P1, P6 | enable, disable, dependencies, failure (host in P1, the window in P6) |
 | `ghidra.util.classfinder.ClassSearcherTest` (framework-generic) | 2 | P1 | its intent (only declared extensions are found) through entry-point and directory discovery |
 | `ghidra.framework.plugintool.AutoServiceTest` (debug-proposedutils) | 5 | — | not applicable: service framework (ADR-001) (proposed mark) |
-| `ghidra.util.task.TimeoutTaskMonitorTest`, `UnknownProgressWrappingTaskMonitorTest` (framework-gui), `TaskMonitorSplitterTest` (framework-docking) | 6 | owner of the monitor type (constraints item 7); Python side in P1 | |
+| `ghidra.util.task.TimeoutTaskMonitorTest`, `UnknownProgressWrappingTaskMonitorTest` (framework-gui), `TaskMonitorSplitterTest` (framework-docking) | 6 | the crate that owns the monitor type (constraints item 7); P1 for the Python side | time-outs, unknown-progress wrapping and splitting of the shared monitor |
 | `help.screenshot.GhidraScriptMgrPluginScreenShots` (test-integrationtest) | 12 | P6 | kittest snapshots of the Script Manager |
 
 ### 6.2 PyGhidra's pytest suite
