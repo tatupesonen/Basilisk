@@ -31,13 +31,13 @@ pub(crate) enum Handles<'p> {
     Params(&'p [(u32, VarnodeData)]),
 }
 
-/// The state a template is built in (Ghidra's `ParserWalker` with its
-/// cross context): handles, the addresses constants refer to and the
-/// unique-space bits. It is a value: a nested build makes a new one and an
-/// early return cannot leave a stale one behind.
+/// What every template of one build reads besides handles (Ghidra's
+/// `ParserWalker` cross context): the addresses constants refer to and the
+/// unique-space bits. It is made once per instruction (and per delay-slot
+/// or crossbuild target) and walks refer to it, so that a nested `BUILD`
+/// copies a handle source, not all of this.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct Walk<'p> {
-    pub(crate) handles: Handles<'p>,
+pub(crate) struct Consts<'p> {
     /// `inst_start`.
     pub(crate) start: Address,
     /// `inst_next`.
@@ -55,14 +55,10 @@ pub(crate) struct Walk<'p> {
     pub(crate) unique: u64,
 }
 
-impl<'p> Walk<'p> {
-    /// The walk of `node` of `parse`, with constants from `parse` itself.
-    pub(crate) fn of(parse: &'p Parse, node: u32, unique: u64) -> Self {
+impl<'p> Consts<'p> {
+    /// The constants of `parse` itself.
+    pub(crate) fn of(parse: &'p Parse, unique: u64) -> Self {
         Self {
-            handles: Handles::Node {
-                parse,
-                node: node as usize,
-            },
             start: parse.addr,
             next: parse.naddr,
             next2: parse.next2,
@@ -70,6 +66,29 @@ impl<'p> Walk<'p> {
             flow: None,
             cur_space: parse.addr.space().map_or(CONST, SpaceId::index),
             unique,
+        }
+    }
+}
+
+/// The state a template is built in (Ghidra's `ParserWalker`): where its
+/// operand handles come from, and the build's constants. It is a value: a
+/// nested build makes a new one and an early return cannot leave a stale
+/// one behind.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Walk<'p> {
+    pub(crate) handles: Handles<'p>,
+    pub(crate) k: &'p Consts<'p>,
+}
+
+impl<'p> Walk<'p> {
+    /// The walk of `node` of `parse` with the constants `k`.
+    pub(crate) fn of(parse: &'p Parse, node: u32, k: &'p Consts<'p>) -> Self {
+        Self {
+            handles: Handles::Node {
+                parse,
+                node: node as usize,
+            },
+            k,
         }
     }
 
@@ -125,23 +144,25 @@ fn space_size(lang: &Language, space: u32) -> u64 {
 pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, DecodeError> {
     Ok(match *c {
         ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
-        ConstTpl::Start => w.start.offset(),
-        ConstTpl::Next => w.next.offset(),
-        ConstTpl::Next2 => w
-            .next2
-            .ok_or_else(|| {
-                w.next2_error
-                    .cloned()
-                    .unwrap_or(DecodeError::Next2Unavailable { address: w.start })
-            })?
-            .offset(),
-        ConstTpl::FlowRef | ConstTpl::FlowDest => w.flow.map_or(0, Address::offset),
-        ConstTpl::FlowRefSize | ConstTpl::FlowDestSize => w
-            .flow
-            .and_then(Address::space)
-            .map_or(0, |s| space_size(lang, s.index())),
-        ConstTpl::CurSpace => u64::from(w.cur_space),
-        ConstTpl::CurSpaceSize => space_size(lang, w.cur_space),
+        ConstTpl::Start => w.k.start.offset(),
+        ConstTpl::Next => w.k.next.offset(),
+        ConstTpl::Next2 => {
+            w.k.next2
+                .ok_or_else(|| {
+                    w.k.next2_error
+                        .cloned()
+                        .unwrap_or(DecodeError::Next2Unavailable { address: w.k.start })
+                })?
+                .offset()
+        }
+        ConstTpl::FlowRef | ConstTpl::FlowDest => w.k.flow.map_or(0, Address::offset),
+        ConstTpl::FlowRefSize | ConstTpl::FlowDestSize => {
+            w.k.flow
+                .and_then(Address::space)
+                .map_or(0, |s| space_size(lang, s.index()))
+        }
+        ConstTpl::CurSpace => u64::from(w.k.cur_space),
+        ConstTpl::CurSpaceSize => space_size(lang, w.k.cur_space),
         ConstTpl::Space(space) => u64::from(space),
         ConstTpl::Handle {
             index,
@@ -178,7 +199,7 @@ pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, De
 #[inline]
 pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> {
     match *c {
-        ConstTpl::CurSpace => Ok(w.cur_space),
+        ConstTpl::CurSpace => Ok(w.k.cur_space),
         ConstTpl::Space(space) => Ok(space),
         ConstTpl::Handle {
             index,
@@ -192,7 +213,7 @@ pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> 
                 hand.space
             })
         }
-        _ => Err(DecodeError::NotASpace { address: w.start }),
+        _ => Err(DecodeError::NotASpace { address: w.k.start }),
     }
 }
 
@@ -247,7 +268,7 @@ pub(crate) fn locate(
         return Ok((
             VarnodeData::new(
                 SpaceId::new(space),
-                place(lang, space, offset, hand.size, w.unique),
+                place(lang, space, offset, hand.size, w.k.unique),
                 hand.size,
             ),
             dynamic,
@@ -265,7 +286,7 @@ pub(crate) fn locate(
         return Ok((
             VarnodeData::new(
                 SpaceId::new(space),
-                place(lang, space, offset, size, w.unique),
+                place(lang, space, offset, size, w.k.unique),
                 size,
             ),
             false,
@@ -277,7 +298,7 @@ pub(crate) fn locate(
     Ok((
         VarnodeData::new(
             SpaceId::new(space),
-            place(lang, space, offset, size, w.unique),
+            place(lang, space, offset, size, w.k.unique),
             size,
         ),
         is_dynamic(vn, w),
@@ -298,7 +319,7 @@ pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (Varnod
         hand.offset_space,
         hand.offset_offset,
         hand.offset_size,
-        w.unique,
+        w.k.unique,
     );
     (
         VarnodeData::new(SpaceId::new(hand.offset_space), offset, hand.offset_size),

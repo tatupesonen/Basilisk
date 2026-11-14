@@ -24,7 +24,7 @@ use crate::context::{ContextDb, ContextSink, ContextSource};
 use crate::decode::{ByteSource, Decoder, Parse, SliceBytes};
 use crate::emit::PcodeEmit;
 use build::{Builder, template_of};
-use location::{Handles, Walk};
+use location::{Consts, Handles, Walk};
 
 /// The most crossbuild targets decoded on demand that can be alive at once
 /// (crossbuild inside a crossbuilt section's delay slot, …).
@@ -219,7 +219,8 @@ impl Decoder {
             label_base: 0,
             depth: 0,
         };
-        let walk = Walk::of(main, 0, builder.unique_bits(addr));
+        let consts = Consts::of(main, builder.unique_bits(addr));
+        let walk = Walk::of(main, 0, &consts);
         let tpl = main
             .nodes
             .first()
@@ -280,8 +281,7 @@ impl Decoder {
             label_base: 0,
             depth: 0,
         };
-        let walk = Walk {
-            handles: Handles::Params(&ctx.params),
+        let consts = Consts {
             start: addr,
             next: ctx.inst_next,
             next2: None,
@@ -289,6 +289,10 @@ impl Decoder {
             flow: ctx.call_addr,
             cur_space: addr.space().map_or(0, bk_core::SpaceId::index),
             unique: 0,
+        };
+        let walk = Walk {
+            handles: Handles::Params(&ctx.params),
+            k: &consts,
         };
         builder.build(Some(template), None, walk, &mut [])?;
         self.buf.resolve_relatives(addr)?;
