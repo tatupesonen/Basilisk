@@ -38,8 +38,58 @@ Reference build with `-ffp-contract=off` (ADR-032).
   (`e750467579a2`, the arm64 `gcc:14`, 1.49 GB) is still listed as
   `gcc:<none>`; it was not on the list, so it was left alone.
 
-## In progress
-- Gate, final report.
+## Final report
+
+**Done.** Gate: `CARGO_BUILD_JOBS=2 scripts/gate.sh` exit 0, last line
+`tests: 1747 passed, 0 failed`.
+
+**What the flag changed:** exactly the 14 `.sla` of ADR-029, which now
+equal the x86-64 Linux files (all 150 compressed files `cmp`-identical to
+`../reference-x86_64/x86_64-linux`). **What it did not change:** Ghidra's
+unit and data-test logs (byte-identical; 204/205 and 758/760, the same
+three failures: `double_decimal_precision`, `Float print #6`, `#13`);
+`pcodedump` output on 1 MB of random bytes in 10 languages; `decomp`
+console output (stdout, stderr, exit status) on all 93 data-test scripts;
+basilisk's workspace tests (1,747 passed before and after the swap, same
+per-test list).
+
+**Spec edits** (`sleigh-compiler-back.md`): 4.3 floating point now
+specifies unfused `f64` arithmetic in Ghidra's order (never `mul_add`)
+and a glibc-equal `log` (FMA variant) on `k/n`, 1 ≤ k < n ≤ 16,384, a
+port of Arm optimized-routines' MIT-licensed `log`, with the ADR-011
+evaluation left to the implementing track; 6.2's oracle is x86-64 byte
+equality via `REF` with no tolerated differences, the admitted-tie class
+and its tie file removed (the AArch64 comparison kept as a diagnostic);
+6.4 gains a hand-made fused/unfused tie test and the oracle-free `log`
+table test loading
+`docs/research/sla-host-dependence/logtable-glibc.txt.gz` from the
+repository; acceptance 1 and section 8 rewritten as research 6.3 says.
+`inventory/01-sleigh.md` 10(e)1 names contraction. The front half's
+terms (`Elaborated`, handle remapping after reordering) do not clash with
+the spec, so nothing else was changed.
+
+**Crashes:** one Ghidra bug for SPARC and the `mips32le` random input.
+`SleighBuilder::delaySlot` points the builder at a walker on its own
+stack (`sleigh.cc:364–365`). An `UnimplError` from the delay-slot
+instruction (`semantics.cc:1045`) skips the restore at `:371`, so the
+handler in `oneInstruction` dereferences the dangling walker
+(`sleigh.cc:756–758`; confirmed in `lldb`). Reproducers:
+`sparc:BE:32:default --hex 1080000081b80000`,
+`MIPS:LE:32:default --hex 080000106ecac546`. ARM v8-m is not reproduced
+and cannot be this mechanism (ARM has no `delayslot`). MIPS micro is
+likely the same bug, not verified. Details in
+`docs/research/pcodedump-crashes.md`.
+
+**Follow-ups:**
+- `tools/reference/README.md`'s table of Makefile overrides still lists
+  `ADDITIONAL_FLAGS` without `-ffp-contract=off`. That file is not owned
+  by this track.
+- The 5 ARM v8-m crash cases need their bytes and configuration from
+  `sleigh-decode`'s harness.
+- ADR-032's "until it is rebuilt" clause and ADR-029's split oracle can
+  now be closed: `../reference` gives the x86-64 bytes for all 150.
+- `PERF.md` figures were not re-measured. The rebuild took 88 s clean
+  with 3 jobs.
 
 ## State of `/Users/tatu/slop/reference`
 SWAP COMPLETE (2026-11-14). The live tree is the `-ffp-contract=off`
