@@ -163,12 +163,12 @@ impl<'a> Printer<'a, '_> {
             OpDef::Subtable(_) => self.all(child)?,
             OpDef::Expr(expr) | OpDef::Value(expr) => hex(
                 self.out,
-                self.env.eval(expr, point, 0).map_err(|f| self.fault(f))?,
+                self.env.value(expr, point).map_err(|f| self.fault(f))?,
             ),
             OpDef::Table {
                 symbol, expr, kind, ..
             } => {
-                let value = self.env.eval(expr, point, 0).map_err(|f| self.fault(f))?;
+                let value = self.env.value(expr, point).map_err(|f| self.fault(f))?;
                 let slot = value as u32 as usize;
                 let missing = || DecodeError::NoTableEntry {
                     address: self.env.parse.addr,

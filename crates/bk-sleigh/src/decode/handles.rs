@@ -30,12 +30,16 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
             what: "handles of an unresolved parse",
         });
     }
-    parse.handles.clear();
+    // `resolve_backwards` writes every node (an operand's handle, a
+    // constructor's export or `UNSET`), so the vector is only grown here,
+    // not refilled; the walk in Ghidra's order starts from all `UNSET`.
     parse.handles.resize(parse.nodes.len(), FixedHandle::UNSET);
     if resolve_backwards(lang, parse).is_ok() {
         parse.state = ParseState::Handles;
         return Ok(());
     }
+    parse.handles.clear();
+    parse.handles.resize(parse.nodes.len(), FixedHandle::UNSET);
     resolve_in_order(lang, parse).map_err(|fault| fault.at(lang, parse.addr))
 }
 
@@ -70,11 +74,12 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
                 *slot = handle;
             }
         }
-        if let Some(export) = lang.tables.export(&info) {
-            let handle = fix(&env(lang, parse, naddr), export, cur)?;
-            if let Some(slot) = parse.handles.get_mut(cur as usize) {
-                *slot = handle;
-            }
+        let handle = match lang.tables.export(&info) {
+            Some(export) => fix(&env(lang, parse, naddr), export, cur)?,
+            None => FixedHandle::UNSET,
+        };
+        if let Some(slot) = parse.handles.get_mut(cur as usize) {
+            *slot = handle;
         }
     }
     Ok(())
@@ -345,12 +350,12 @@ pub(crate) fn operand_handle(env: &Env<'_>, def: OpDef, n: u32) -> Result<FixedH
     let point = Point::Node(n);
     Ok(match def {
         OpDef::Expr(expr) | OpDef::Value(expr) => {
-            FixedHandle::fixed(CONST, env.eval(expr, point, 0)? as u64, 0)
+            FixedHandle::fixed(CONST, env.value(expr, point)? as u64, 0)
         }
         OpDef::Table {
             symbol, expr, kind, ..
         } => {
-            let value = env.eval(expr, point, 0)?;
+            let value = env.value(expr, point)?;
             let missing = || Fault::NoTableEntry(kind);
             match (kind, env.sla.symbol(symbol).map(|s| &s.kind)) {
                 (TableKind::ValueTable, Some(SymbolKind::ValueMap { table, .. })) => {

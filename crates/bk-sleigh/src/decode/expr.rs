@@ -154,6 +154,21 @@ impl Env<'_> {
         extend(res.wrapping_shr(field.shift as u32), field)
     }
 
+    /// The value of an expression at `point` ([`Env::eval`] from the top),
+    /// with the leaves most operands are, a field or a constant, read here
+    /// without the recursive call.
+    #[inline]
+    pub(crate) fn value(&self, id: ExprId, point: Point) -> Result<i64, Fault> {
+        match self.sla.expr(id) {
+            Some(Expr::TokenField(field)) => {
+                let field = self.sla.field(*field).ok_or(Fault::Model(What::Field))?;
+                self.token_field(field, self.offset_of(point))
+            }
+            Some(Expr::Constant(value)) => Ok(*value),
+            _ => self.eval(id, point, 0),
+        }
+    }
+
     /// The value of an expression at `point`.
     pub(crate) fn eval(&self, id: ExprId, point: Point, depth: u32) -> Result<i64, Fault> {
         if depth > MAX_EXPR_DEPTH {

@@ -212,7 +212,7 @@ fn set_constructor(
                 mask,
                 expr,
             } => {
-                let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)? as u32;
+                let value = env(lang, parse, None).value(expr, Point::Node(n))? as u32;
                 let value = value.wrapping_shl(shift as u32);
                 if let Some(slot) = usize::try_from(word)
                     .ok()
@@ -268,7 +268,7 @@ fn check_entry(
     expr: bk_sla::ExprId,
     kind: TableKind,
 ) -> Result<(), Fault> {
-    let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)?;
+    let value = env(lang, parse, None).value(expr, Point::Node(n))?;
     if entry_usable(lang, symbol, value) {
         Ok(())
     } else {
