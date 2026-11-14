@@ -179,6 +179,9 @@ and a sane architecture in mind.
     two as soon as track `remote-build` is merged: one running worker,
     counting helpers. Agents build, test and run their gates on kassini
     through `scripts/remote.sh`; the Mac is for editing.
+  - *Two agents again* (owner, 2026-11-14, evening: "You can start two
+    agents"). The cap is two running workers, counting helpers; the rule
+    that every agent builds on kassini stands.
   - *The remote setup may be improved without asking* (owner,
     2026-11-14: "You can also autonomously make improvements to the
     remote setup"): what is installed on kassini, how it is laid out,

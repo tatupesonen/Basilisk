@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 20:14)
+## Now — RESUME HERE (2026-11-14 20:17)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -16,8 +16,8 @@ Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
 
-**Working rules in force** (all in `DIRECTION.md`): **one running
-worker** (owner, 2026-11-14; `remote-build` is merged), counting helpers
+**Working rules in force** (all in `DIRECTION.md`): **two running
+workers** (owner, evening of 2026-11-14), counting helpers
 (agents start none); every agent builds, tests and gates on kassini
 through `scripts/remote.sh`; new agents are Opus 5.5 at
 medium effort; the coordinator does no hands-on work; existing work is
@@ -105,12 +105,14 @@ rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-14 20:14)
 
-**The cap is one agent** (owner, 2026-11-14), and every agent builds,
+**The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
+start two agents", "That's the limit for now"), and every agent builds,
 tests and gates on kassini through `scripts/remote.sh`.
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:05 with its work committed (`8731612`: findings and plan, the `snippetdump` oracle source, lexer, scope, parser and driver; test support half written), **resumed 20:14**. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. Told to `git merge master` once and to use the build host for everything from then on; it is the first agent to use `scripts/remote.sh` from a worktree other than its author's. Its findings (the spec is wrong in seven places: snippets have their own lexer and grammar, a leading `0` is octal, only the first error is reported, many errors do not fail the compile, no label check, no `_size` constants for `inst_dest`/`inst_ref`, `<truncate_space>` is an input) are accepted: the oracle decides. Corpus: 139 elements (132 `<pcode>` plus 7 jump-table `*_pcode`). |
+| `cspec-host` (worktree `../basilisk-wt/cspec-host`, cut from `master` `3e43909`) | Opus | `a85106d421cedbda2` | started 20:17. Queue item 1 below: make the `bk-cspec` oracle generator deterministic and crash-free, generate the libc++ (Mac) and libstdc++ (build host) tables, trace every differing row to its cause in Ghidra's source, propose per cause the result Basilisk gives (ADR text comes back in its report; the coordinator records it), implement it and make the replay strict against both tables. |
 
 **Merged: `remote-build`** (`add42668f53ed4fa3`, `7b0cfa6`; worktree and
 branch removed, its checkout on the host cleaned). `scripts/remote.sh`
@@ -260,9 +262,9 @@ start a fresh agent briefed from the branch's files.
   (Microsoft's licence terms accepted on the machine's behalf); the owner
   was told on 2026-11-13.
 
-### Queue (one agent at a time; in this order)
+### Queue (two agents at a time; in this order)
 
-1. **`cspec-host` (Opus)** — `bk-cspec`'s oracle table depends on the
+1. **`cspec-host` (Opus; running)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
    where Ghidra's `hasEffect` answers 1 or 2 instead of 3 (so a lookup
