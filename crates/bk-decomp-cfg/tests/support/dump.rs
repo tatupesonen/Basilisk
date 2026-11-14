@@ -84,7 +84,7 @@ pub(crate) fn asgiven(cfg: &Cfg, facts: &BlockFacts) -> (Cfg, BlockFacts, String
             cfg.index(n).unwrap(),
             cfg.flags(n).unwrap(),
             facts_letters(f),
-            idom.map_or("-".to_owned(), |d| d.to_string()),
+            idom.map_or_else(|| "-".to_owned(), |d| d.to_string()),
             cfg.numdesc(n).unwrap()
         );
         let ins = ins
@@ -123,7 +123,8 @@ pub(crate) fn cfg_dump(cfg: &Cfg, facts: &BlockFacts) -> String {
             "N\t{}\t{}\t{}\t{}\t{}",
             n.get(),
             c.index(n).unwrap(),
-            c.idom(n).map_or("-".to_owned(), |d| d.get().to_string()),
+            c.idom(n)
+                .map_or_else(|| "-".to_owned(), |d| d.get().to_string()),
             c.numdesc(n).unwrap(),
             depth.get(i).copied().unwrap_or(0)
         );
@@ -140,7 +141,8 @@ pub(crate) fn cfg_dump(cfg: &Cfg, facts: &BlockFacts) -> String {
             "L\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             l.head.get(),
             l.depth,
-            l.exit.map_or("-".to_owned(), |e| e.get().to_string()),
+            l.exit
+                .map_or_else(|| "-".to_owned(), |e| e.get().to_string()),
             l.uniquecount,
             list(l.tails.iter().map(|t| t.get())),
             list(
@@ -149,7 +151,7 @@ pub(crate) fn cfg_dump(cfg: &Cfg, facts: &BlockFacts) -> String {
                     .map(|(a, b)| format!("{}>{}", a.get(), b.get()))
             ),
             l.immed_container
-                .map_or("-".to_owned(), |h| h.get().to_string())
+                .map_or_else(|| "-".to_owned(), |h| h.get().to_string())
         );
     }
     s.push_str("T\n");
@@ -256,7 +258,7 @@ pub(crate) fn struct_dump(res: &Result<Structured, CfgError>) -> String {
             h.flags(*n),
             h.structure_depth(*n),
             h.leaf_count(*n),
-            h.parent(*n).map_or("-".to_owned(), |p| name(&p)),
+            h.parent(*n).map_or_else(|| "-".to_owned(), |p| name(&p)),
             list(h.components(*n).iter().map(name)),
             data,
             edges(h.in_edges(*n)),

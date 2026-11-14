@@ -134,14 +134,15 @@ impl GenGraph {
     /// The graph in the XML `structure blocks` reads (labels and facts are
     /// not representable there).
     pub(crate) fn to_xml(&self) -> String {
+        use std::fmt::Write as _;
         let mut s = String::from("<block index=\"0\">\n");
         for i in 0..self.outs.len() {
-            s.push_str(&format!("<bhead index=\"{i}\" type=\"plain\"/>\n"));
+            let _ = writeln!(s, "<bhead index=\"{i}\" type=\"plain\"/>");
         }
         for (i, list) in self.ins.iter().enumerate() {
-            s.push_str(&format!("<block index=\"{i}\">"));
+            let _ = write!(s, "<block index=\"{i}\">");
             for &(src, slot) in list {
-                s.push_str(&format!("<edge end=\"{src}\" rev=\"{slot}\"/>"));
+                let _ = write!(s, "<edge end=\"{src}\" rev=\"{slot}\"/>");
             }
             s.push_str("</block>\n");
         }
@@ -169,9 +170,9 @@ fn degree(rng: &mut ChaCha8Rng) -> usize {
 
 fn gen_arb(rng: &mut ChaCha8Rng, n: usize) -> GenGraph {
     let mut g = GenGraph::with_nodes(n);
-    for i in 0..n {
+    for out in &mut g.outs {
         let k = degree(rng);
-        g.outs[i] = (0..k).map(|_| below(rng, n)).collect();
+        *out = (0..k).map(|_| below(rng, n)).collect();
     }
     g.finish(Some(rng));
     g
@@ -191,20 +192,20 @@ fn gen_func(rng: &mut ChaCha8Rng, n: usize) -> GenGraph {
         g.outs[p].push(v);
         placed.push(v);
     }
-    for i in 0..n {
+    for out in &mut g.outs {
         let want = degree(rng);
         let mut tries = 0;
-        while g.outs[i].len() < want && tries < 4 * n + 8 {
+        while out.len() < want && tries < 4 * n + 8 {
             tries += 1;
             let t = below(rng, n);
-            if t == 0 || g.outs[i].contains(&t) {
+            if t == 0 || out.contains(&t) {
                 continue;
             }
-            g.outs[i].push(t);
+            out.push(t);
         }
-        for a in (1..g.outs[i].len()).rev() {
+        for a in (1..out.len()).rev() {
             let b = below(rng, a + 1);
-            g.outs[i].swap(a, b);
+            out.swap(a, b);
         }
     }
     g.finish(Some(rng));
@@ -214,12 +215,12 @@ fn gen_func(rng: &mut ChaCha8Rng, n: usize) -> GenGraph {
 /// A statement of the structured generator.
 enum Stmt {
     Basic,
-    Seq(Vec<Stmt>),
-    If(Box<Stmt>),
-    IfElse(Box<Stmt>, Box<Stmt>),
-    While(Box<Stmt>),
-    DoWhile(Box<Stmt>),
-    Switch(Vec<(Stmt, bool)>),
+    Seq(Vec<Self>),
+    If(Box<Self>),
+    IfElse(Box<Self>, Box<Self>),
+    While(Box<Self>),
+    DoWhile(Box<Self>),
+    Switch(Vec<(Self, bool)>),
     Break,
     Continue,
     Return,

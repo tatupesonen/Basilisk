@@ -169,7 +169,7 @@ fn proper_if_with_false_clause_negates() {
 #[test]
 fn proper_if_with_true_clause_does_not_negate() {
     let s = run("2,1|2|").unwrap();
-    assert!(s.flips.is_empty());
+    assert_eq!(s.flips, [] as [NodeId; 0]);
     assert_eq!(s.dataflow_changes, 0);
 }
 
@@ -356,7 +356,7 @@ fn as_given_equals_recompute_after_analysis() {
 fn empty_graph_structures_to_nothing() {
     let c = Cfg::new();
     let s = run_with(&c, &BlockFacts::neutral(0)).unwrap();
-    assert!(s.hierarchy.top_level().is_empty());
+    assert_eq!(s.hierarchy.top_level(), []);
 }
 
 #[test]

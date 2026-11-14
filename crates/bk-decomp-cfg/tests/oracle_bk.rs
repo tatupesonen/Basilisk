@@ -25,8 +25,9 @@ mod support {
     pub(crate) mod table;
 }
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bk_decomp_cfg::{
     Analyse, BlockFacts, Cfg, GhidraGotoSelector, Record, StructureOptions, finish, structure,
@@ -34,6 +35,7 @@ use bk_decomp_cfg::{
 use support::dump::{asgiven, cfg_dump, graph_file, struct_dump};
 use support::graphgen::{Class, GenGraph, generate};
 use support::table::{data_dir, escape, read_gz, unescape, write_gz};
+use wait_timeout::ChildExt as _;
 
 const TABLE: &str = "cfg_oracle.txt.gz";
 const MAX_NODES: usize = 64;
@@ -185,18 +187,12 @@ fn run_console(
         .stderr(std::process::Stdio::null())
         .spawn()
         .unwrap();
-    let start = Instant::now();
-    loop {
-        if child.try_wait().unwrap().is_some() {
-            return Some(std::fs::read_to_string(&out_path).unwrap_or_default());
-        }
-        if start.elapsed() > limit {
-            let _ = child.kill();
-            let _ = child.wait();
-            return None;
-        }
-        std::thread::sleep(Duration::from_millis(20));
+    if child.wait_timeout(limit).unwrap().is_some() {
+        return Some(std::fs::read_to_string(&out_path).unwrap_or_default());
     }
+    let _ = child.kill();
+    let _ = child.wait();
+    None
 }
 
 #[test]
@@ -253,20 +249,20 @@ fn regen() {
         if class == Class::Func {
             let cfg = g.to_cfg();
             let mut analysed = cfg.clone();
-            if let Ok(roots) = analysed.structure_loops() {
-                if analysed.forward_dominators(&roots).is_ok() {
-                    let (_, _, text) = asgiven(&analysed, &g.block_facts());
-                    let ag = base.with_extension("asgiven.graph");
-                    std::fs::write(&ag, text).unwrap();
-                    cmds.push((
-                        "asgiven",
-                        format!(
-                            "bk structure {} {}.ag asgiven",
-                            ag.display(),
-                            base.display()
-                        ),
-                    ));
-                }
+            if let Ok(roots) = analysed.structure_loops()
+                && analysed.forward_dominators(&roots).is_ok()
+            {
+                let (_, _, text) = asgiven(&analysed, &g.block_facts());
+                let ag = base.with_extension("asgiven.graph");
+                std::fs::write(&ag, text).unwrap();
+                cmds.push((
+                    "asgiven",
+                    format!(
+                        "bk structure {} {}.ag asgiven",
+                        ag.display(),
+                        base.display()
+                    ),
+                ));
             }
         }
         for (mode, cmd) in cmds {
@@ -310,7 +306,7 @@ fn regen() {
     let mut text = String::from(HEADER);
     text.push('\n');
     for ((class, seed, mode), row) in &rows {
-        text.push_str(&format!("{class}\t{seed}\t{mode}\t{row}\n"));
+        let _ = writeln!(text, "{class}\t{seed}\t{mode}\t{row}");
     }
     let out =
         std::env::var_os("BK_CFG_TABLE_OUT").map_or_else(|| data_dir().join(TABLE), PathBuf::from);

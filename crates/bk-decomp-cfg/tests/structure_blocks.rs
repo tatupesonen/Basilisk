@@ -23,6 +23,7 @@ mod support {
     pub(crate) mod table;
 }
 
+use std::fmt::Write as _;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -105,7 +106,7 @@ fn regen_rows(reference: &bk_testkit::ReferenceDir, ghidra: &bk_testkit::GhidraD
     body.extend(hangs);
     for (class, seed) in cases() {
         let field = &body[&(class.name(), seed)];
-        rows.push_str(&format!("{}\t{seed}\t{field}\n", class.name()));
+        let _ = writeln!(rows, "{}\t{seed}\t{field}", class.name());
     }
     let _ = std::fs::remove_dir_all(&dir);
     rows

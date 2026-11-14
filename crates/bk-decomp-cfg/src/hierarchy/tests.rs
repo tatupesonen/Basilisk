@@ -49,7 +49,7 @@ fn half_delete_shifts_and_fixes_reverse_indices() {
     g.remove_in_edge(n(3), 0).unwrap();
     assert_eq!(ins(&g, 3), [1, 2]);
     assert!(consistent(&g));
-    assert!(outs(&g, 0).is_empty());
+    assert_eq!(outs(&g, 0), [] as [u32; 0]);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn replace_keeps_slot_and_appends_on_new_end() {
     g.replace_out_edge(n(0), 0, n(3)).unwrap();
     assert_eq!(outs(&g, 0), [3, 2]);
     assert_eq!(ins(&g, 3), [0]);
-    assert!(ins(&g, 1).is_empty());
+    assert_eq!(ins(&g, 1), [] as [u32; 0]);
     assert!(consistent(&g));
 }
 
@@ -222,8 +222,8 @@ fn goto_factory_removes_the_edge() {
     let mut g = graph(2, &[(0, 1)]);
     let mut scratch = Vec::new();
     let s = g.new_block_goto(n(0), &mut scratch).unwrap();
-    assert!(outs(&g, s.get()).is_empty());
-    assert!(ins(&g, 1).is_empty());
+    assert_eq!(outs(&g, s.get()), [] as [u32; 0]);
+    assert_eq!(ins(&g, 1), [] as [u32; 0]);
     assert!(matches!(g.node(s).data, KindData::Goto { target, goto_type: 1 } if target == n(1)));
 }
 

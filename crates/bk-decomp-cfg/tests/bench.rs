@@ -69,11 +69,8 @@ fn structure_bench(label: &str, g: &GenGraph) {
     let (t, r) = best_of(3, || {
         structure(&c, &facts, &options, &mut GhidraGotoSelector::new())
     });
-    let steps = r.as_ref().map(|s| s.measure.steps).unwrap_or(0);
-    let gotos = r
-        .as_ref()
-        .map(|s| s.measure.goto_marks.total())
-        .unwrap_or(0);
+    let steps = r.as_ref().map_or(0, |s| s.measure.steps);
+    let gotos = r.as_ref().map_or(0, |s| s.measure.goto_marks.total());
     let size = (c.len() + c.edge_count()) as u64;
     eprintln!(
         "bench structure {label}: {} nodes {} edges: {:.3} ms, {steps} steps ({:.2} x (n+e)^2, default limit {}), {gotos} gotos, {}",

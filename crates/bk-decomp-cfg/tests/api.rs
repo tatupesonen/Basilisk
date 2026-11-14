@@ -18,6 +18,7 @@ use bk_decomp_cfg::{
 };
 use bk_marshal::XmlEncoder;
 use rstest::rstest;
+use std::fmt::Write as _;
 
 fn n(i: u32) -> NodeId {
     NodeId::new(i)
@@ -205,7 +206,7 @@ fn foreign_ids_are_rejected() {
     assert_eq!(c.add_edge(n(0), n(7)), Err(CfgError::EdgeCreate));
     assert_eq!(c.set_goto_branch(n(0), 3), Err(CfgError::GotoBranch));
     assert_eq!(c.start(), Err(CfgError::NoStart));
-    assert!(c.out_edges(n(9)).is_empty());
+    assert_eq!(c.out_edges(n(9)), [] as [bk_decomp_cfg::EdgeView; 0]);
     assert_eq!(c.set_start(n(9)), Err(CfgError::SetStart));
 }
 
@@ -437,7 +438,7 @@ fn print_tree_matches_ghidra_shape() {
     let mut out = String::new();
     s.hierarchy.print_tree(&mut out, &|o, leaf, level| {
         o.push_str(&"  ".repeat(level));
-        o.push_str(&format!("Basic Block {}\n", leaf.get()));
+        let _ = writeln!(o, "Basic Block {}", leaf.get());
     });
     assert_eq!(
         out,
