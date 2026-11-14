@@ -12,7 +12,6 @@ bk-pcode.workspace = true
 bk-sla.workspace = true
 bk-sleigh-syntax.workspace = true
 rustc-hash.workspace = true
-thiserror.workspace = true
 
 [dev-dependencies]
 bk-testkit.workspace = true

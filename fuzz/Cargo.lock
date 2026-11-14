@@ -137,7 +137,6 @@ dependencies = [
  "bk-sla",
  "bk-sleigh-syntax",
  "rustc-hash",
- "thiserror",
 ]
 
 [[package]]
