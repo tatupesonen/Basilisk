@@ -239,7 +239,8 @@ impl TypeFactory {
 
     /// Number of live types.
     pub fn len(&self) -> usize {
-        self.ids().len()
+        let own = self.slots.iter().filter(|s| s.live).count();
+        own + self.parent.as_ref().map_or(0, |p| p.len())
     }
 
     /// Whether the factory holds no types.

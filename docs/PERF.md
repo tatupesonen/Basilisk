@@ -272,3 +272,20 @@ C debug info is off by default (`CFLAGS=-g` to have it). Size added to a
 stripped `dist`-profile binary (fat LTO) by using `bk-gnu-disasm`:
 13.4 MB (13.7 MB against 0.3 MB for the same program without it) — the
 tables of every libopcodes target.
+
+### `bk-decomp-types`
+
+2026-11-14, Apple M1 Pro, macOS, `--release` (thin LTO), one test thread,
+other agents' builds running on the machine (indicative). Command:
+
+    CARGO_BUILD_JOBS=2 cargo test -p bk-decomp-types --release --test bench -- --ignored --nocapture --test-threads=1
+
+| Benchmark | Result |
+|---|---:|
+| Intern 1,000,000 base/pointer/array requests, about 90 % repeats (28,791 types at the end) | 33.5 ms, 33 ns/request |
+| Decode a `<typegrp>` of 10,003 types (1.87 MB of XML: structures, named pointers, arrays, typedefs, enumerations), factory with core types | 16.1 ms, 1.6 µs/type |
+
+`base` of a cached size/metatype is an array read; `pointer` and `array`
+are one hash lookup of a candidate built on the stack (no allocation when
+the type exists). Forking a factory for a function copies only the
+environment and the base-type cache.
