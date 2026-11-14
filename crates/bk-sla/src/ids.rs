@@ -482,7 +482,6 @@ pub fn attribute_name(id: u32) -> Option<&'static str> {
         .map(AttributeId::name)
 }
 
-
 /// Attribute ids as plain numbers, for `match` patterns.
 #[expect(dead_code, reason = "the complete table; not every id is matched on")]
 pub(crate) mod a {
@@ -659,7 +658,10 @@ mod tests {
     #[test]
     fn table_maps_names_both_ways() {
         let table = id_table().unwrap();
-        assert_eq!(table.element("const_flowdest_size"), ELEM_CONST_FLOWDEST_SIZE.code());
+        assert_eq!(
+            table.element("const_flowdest_size"),
+            ELEM_CONST_FLOWDEST_SIZE.code()
+        );
         assert_eq!(table.attribute("labels"), ATTRIB_LABELS.code());
         assert_eq!(table.attribute("bogus"), UNKNOWN_ATTRIBUTE);
         assert_eq!(table.element("bogus"), UNKNOWN_ELEMENT);

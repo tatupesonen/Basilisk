@@ -16,12 +16,25 @@ pub(super) fn expr_eq(a: &Sla, x: ExprId, b: &Sla, y: ExprId) -> bool {
         let same = match (*ex, *ey) {
             (Expr::TokenField(fx), Expr::TokenField(fy))
             | (Expr::ContextField(fx), Expr::ContextField(fy)) => a.field(fx) == b.field(fy),
-            (Expr::Binary { op, left, right }, Expr::Binary { op: oy, left: ly, right: ry }) => {
+            (
+                Expr::Binary { op, left, right },
+                Expr::Binary {
+                    op: oy,
+                    left: ly,
+                    right: ry,
+                },
+            ) => {
                 work.push((left, ly));
                 work.push((right, ry));
                 op == oy
             }
-            (Expr::Unary { op, operand }, Expr::Unary { op: oy, operand: py }) => {
+            (
+                Expr::Unary { op, operand },
+                Expr::Unary {
+                    op: oy,
+                    operand: py,
+                },
+            ) => {
                 work.push((operand, py));
                 op == oy
             }
@@ -37,10 +50,20 @@ pub(super) fn expr_eq(a: &Sla, x: ExprId, b: &Sla, y: ExprId) -> bool {
 pub(super) fn kind_eq(a: &Sla, x: &SymbolKind, b: &Sla, y: &SymbolKind) -> bool {
     match (*x, *y) {
         (SymbolKind::Value { expr }, SymbolKind::Value { expr: ey }) => expr_eq(a, expr, b, ey),
-        (SymbolKind::ValueMap { expr, table }, SymbolKind::ValueMap { expr: ey, table: ty }) => {
-            expr_eq(a, expr, b, ey) && a.value_table(table) == b.value_table(ty)
-        }
-        (SymbolKind::Name { expr, table }, SymbolKind::Name { expr: ey, table: ty }) => {
+        (
+            SymbolKind::ValueMap { expr, table },
+            SymbolKind::ValueMap {
+                expr: ey,
+                table: ty,
+            },
+        ) => expr_eq(a, expr, b, ey) && a.value_table(table) == b.value_table(ty),
+        (
+            SymbolKind::Name { expr, table },
+            SymbolKind::Name {
+                expr: ey,
+                table: ty,
+            },
+        ) => {
             let (nx, ny) = (a.name_table(table), b.name_table(ty));
             expr_eq(a, expr, b, ey)
                 && nx.len() == ny.len()
@@ -52,11 +75,26 @@ pub(super) fn kind_eq(a: &Sla, x: &SymbolKind, b: &Sla, y: &SymbolKind) -> bool 
         }
         (
             SymbolKind::VarnodeList { expr, table },
-            SymbolKind::VarnodeList { expr: ey, table: ty },
+            SymbolKind::VarnodeList {
+                expr: ey,
+                table: ty,
+            },
         ) => expr_eq(a, expr, b, ey) && a.varnode_table(table) == b.varnode_table(ty),
         (
-            SymbolKind::Context { varnode, low, high, flow, expr },
-            SymbolKind::Context { varnode: v2, low: l2, high: h2, flow: f2, expr: e2 },
+            SymbolKind::Context {
+                varnode,
+                low,
+                high,
+                flow,
+                expr,
+            },
+            SymbolKind::Context {
+                varnode: v2,
+                low: l2,
+                high: h2,
+                flow: f2,
+                expr: e2,
+            },
         ) => varnode == v2 && low == l2 && high == h2 && flow == f2 && expr_eq(a, expr, b, e2),
         (SymbolKind::Operand(p), SymbolKind::Operand(q)) => {
             p.index == q.index
@@ -90,8 +128,18 @@ pub(super) fn context_eq(a: &Sla, x: &Constructor, b: &Sla, y: &Constructor) -> 
     cx.len() == cy.len()
         && cx.iter().zip(cy).all(|(p, q)| match (*p, *q) {
             (
-                ContextChange::Op { word, shift, mask, expr },
-                ContextChange::Op { word: w, shift: s, mask: m, expr: e },
+                ContextChange::Op {
+                    word,
+                    shift,
+                    mask,
+                    expr,
+                },
+                ContextChange::Op {
+                    word: w,
+                    shift: s,
+                    mask: m,
+                    expr: e,
+                },
             ) => word == w && shift == s && mask == m && expr_eq(a, expr, b, e),
             (p, q) => p == q,
         })
@@ -111,8 +159,14 @@ pub(super) fn pattern_eq(a: &Sla, x: &DisjointPattern, b: &Sla, y: &DisjointPatt
         (DisjointPattern::Instruction(p), DisjointPattern::Instruction(q))
         | (DisjointPattern::Context(p), DisjointPattern::Context(q)) => block_eq(a, p, b, q),
         (
-            DisjointPattern::Combine { context, instruction },
-            DisjointPattern::Combine { context: c2, instruction: i2 },
+            DisjointPattern::Combine {
+                context,
+                instruction,
+            },
+            DisjointPattern::Combine {
+                context: c2,
+                instruction: i2,
+            },
         ) => block_eq(a, context, b, c2) && block_eq(a, instruction, b, i2),
         _ => false,
     }

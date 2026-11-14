@@ -136,7 +136,11 @@ impl Sla {
                 enc.open_element(ELEM_SUBTABLE_SYM);
                 enc.write_unsigned(ATTRIB_ID, id_value);
                 enc.write_signed(ATTRIB_NUMCT, i64::from(table.num_constructors()));
-                for ctor in self.constructors().get(table.constructors.range()).unwrap_or_default() {
+                for ctor in self
+                    .constructors()
+                    .get(table.constructors.range())
+                    .unwrap_or_default()
+                {
                     self.encode_constructor(enc, ctor)?;
                 }
                 if let Some(root) = self.decision(table.decision) {
@@ -230,7 +234,9 @@ impl Sla {
                 DisjointPattern::Instruction(block) => {
                     self.encode_wrapped(enc, ELEM_INSTRUCT_PAT, block);
                 }
-                DisjointPattern::Context(block) => self.encode_wrapped(enc, ELEM_CONTEXT_PAT, block),
+                DisjointPattern::Context(block) => {
+                    self.encode_wrapped(enc, ELEM_CONTEXT_PAT, block)
+                }
                 DisjointPattern::Combine {
                     context,
                     instruction,
@@ -276,7 +282,11 @@ impl Sla {
             Expr::TokenField(field) | Expr::ContextField(field) => {
                 let token = matches!(expr, Expr::TokenField(_));
                 let field = self.field(field).copied().unwrap_or_default();
-                let element = if token { ELEM_TOKENFIELD } else { ELEM_CONTEXTFIELD };
+                let element = if token {
+                    ELEM_TOKENFIELD
+                } else {
+                    ELEM_CONTEXTFIELD
+                };
                 enc.open_element(element);
                 if token {
                     enc.write_bool(ATTRIB_BIGENDIAN, field.big_endian);

@@ -5,6 +5,8 @@
 
 mod tables;
 
+pub(crate) use tables::check_template;
+
 use std::collections::HashSet;
 
 use crate::error::SlaError;
@@ -61,6 +63,30 @@ pub(crate) struct Validator<'s> {
     pub(crate) owners: Vec<u8>,
 }
 
+/// A byte quantity: not negative and within the limit.
+pub(crate) fn byte_quantity(
+    limits: &Limits,
+    path: &str,
+    what: &str,
+    value: i32,
+) -> Result<(), SlaError> {
+    if value < 0 {
+        return fail(path, format!("{what} {value} is negative"));
+    }
+    if value as u32 > limits.byte_quantity {
+        return Err(SlaError::Limit {
+            location: crate::error::Location {
+                path: format!("{path} ({what})"),
+                offset: None,
+            },
+            what: "byte quantity",
+            limit: u64::from(limits.byte_quantity),
+            found: value as u64,
+        });
+    }
+    Ok(())
+}
+
 pub(crate) fn fail<T>(path: impl Into<String>, message: impl Into<String>) -> Result<T, SlaError> {
     Err(SlaError::structure(path, message))
 }
@@ -77,29 +103,21 @@ impl<'s> Validator<'s> {
     }
 
     pub(crate) fn symbol_path(&self, id: SymbolId) -> String {
-        format!("sleigh/symbol_table/symbol {id} \"{}\"", self.sla.symbol_name(id))
+        format!(
+            "sleigh/symbol_table/symbol {id} \"{}\"",
+            self.sla.symbol_name(id)
+        )
     }
 
     pub(crate) fn space_known(&self, index: u32) -> bool {
-        self.known_spaces.get(index as usize).copied().unwrap_or(false)
+        self.known_spaces
+            .get(index as usize)
+            .copied()
+            .unwrap_or(false)
     }
 
     pub(crate) fn byte_quantity(&self, path: &str, what: &str, value: i32) -> Result<(), SlaError> {
-        if value < 0 {
-            return fail(path, format!("{what} {value} is negative"));
-        }
-        if value as u32 > self.limits.byte_quantity {
-            return Err(SlaError::Limit {
-                location: crate::error::Location {
-                    path: format!("{path} ({what})"),
-                    offset: None,
-                },
-                what: "byte quantity",
-                limit: u64::from(self.limits.byte_quantity),
-                found: value as u64,
-            });
-        }
-        Ok(())
+        byte_quantity(self.limits, path, what, value)
     }
 
     fn spaces(&mut self) -> Result<(), SlaError> {
@@ -130,13 +148,22 @@ impl<'s> Validator<'s> {
                 }
             }
             if space.word_size < 1 {
-                return fail(path, format!("space \"{name}\" has word size {}", space.word_size));
+                return fail(
+                    path,
+                    format!("space \"{name}\" has word size {}", space.word_size),
+                );
             }
         }
         if unique > 1 || other > 1 {
             return fail(path, "more than one space_unique or space_other");
         }
-        if !self.sla.a.spaces.iter().any(|space| space.index == self.sla.default_space) {
+        if !self
+            .sla
+            .a
+            .spaces
+            .iter()
+            .any(|space| space.index == self.sla.default_space)
+        {
             return fail(path, "the default space is not declared");
         }
         if self.sla.header.max_delay > self.limits.byte_quantity {
@@ -167,9 +194,7 @@ impl<'s> Validator<'s> {
                 Ok(depth.get(child.slot()).copied().unwrap_or(0))
             };
             let mine = match *expr {
-                Expr::Binary { left, right, .. } => {
-                    1 + child_depth(left)?.max(child_depth(right)?)
-                }
+                Expr::Binary { left, right, .. } => 1 + child_depth(left)?.max(child_depth(right)?),
                 Expr::Unary { operand, .. } => 1 + child_depth(operand)?,
                 Expr::TokenField(field) | Expr::ContextField(field) => {
                     let token = matches!(expr, Expr::TokenField(_));
@@ -195,11 +220,20 @@ impl<'s> Validator<'s> {
                     }
                     1
                 }
-                Expr::Operand { index: op, table, ct } => {
+                Expr::Operand {
+                    index: op,
+                    table,
+                    ct,
+                } => {
                     let Some(subtable) = self.sla.subtable(table) else {
-                        return fail(path(), format!("operand_exp table {table} is not a subtable"));
+                        return fail(
+                            path(),
+                            format!("operand_exp table {table} is not a subtable"),
+                        );
                     };
-                    let Some(ctor) = subtable.constructor(ct).and_then(|id| self.sla.constructor(id))
+                    let Some(ctor) = subtable
+                        .constructor(ct)
+                        .and_then(|id| self.sla.constructor(id))
                     else {
                         return fail(path(), format!("operand_exp ct {ct} is out of range"));
                     };
@@ -234,7 +268,10 @@ impl<'s> Validator<'s> {
 
     fn value_expr(&self, path: &str, expr: ExprId) -> Result<(), SlaError> {
         if !self.expr_ok(path, expr)?.is_value() {
-            return fail(path, "the field of a value symbol is not a value expression");
+            return fail(
+                path,
+                "the field of a value symbol is not a value expression",
+            );
         }
         Ok(())
     }
@@ -245,7 +282,10 @@ impl<'s> Validator<'s> {
             if let Some(parent) = scope.parent
                 && parent.slot() >= sla.a.scopes.len()
             {
-                return fail(format!("sleigh/symbol_table/scope {index}"), "dangling parent");
+                return fail(
+                    format!("sleigh/symbol_table/scope {index}"),
+                    "dangling parent",
+                );
             }
         }
         let mut globals: HashSet<&str> = HashSet::new();
@@ -322,14 +362,20 @@ impl<'s> Validator<'s> {
                     if operand.base < -1 || operand.base >= operand.index {
                         return fail(
                             path,
-                            format!("base {} is not -1 or below index {}", operand.base, operand.index),
+                            format!(
+                                "base {} is not -1 or below index {}",
+                                operand.base, operand.index
+                            ),
                         );
                     }
                 }
                 _ => {}
             }
         }
-        root.map_or_else(|| fail("sleigh/symbol_table", "no global subtable `instruction`"), Ok)
+        root.map_or_else(
+            || fail("sleigh/symbol_table", "no global subtable `instruction`"),
+            Ok,
+        )
     }
 
     fn require_varnode(&self, path: &str, id: SymbolId) -> Result<(), SlaError> {

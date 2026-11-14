@@ -86,7 +86,10 @@ impl Sla {
         let table = ids::id_table().map_err(|error| SlaError::structure("", error.to_string()))?;
         let spaces = AnySpace;
         let decoder = XmlDecoder::new(&document, &table, &spaces);
-        let decoded = decode_with(MarshalSource::new(decoder, true, limits.element_depth), limits)?;
+        let decoded = decode_with(
+            MarshalSource::new(decoder, true, limits.element_depth),
+            limits,
+        )?;
         crate::validate::finish(decoded, limits)
     }
 }
@@ -105,7 +108,9 @@ fn check_size(len: usize, limits: &Limits) -> Result<(), SlaError> {
 
 fn decode_with<'a, S: Source<'a>>(src: S, limits: &Limits) -> Result<Decoded, SlaError> {
     let reader = Reader::new(src, limits);
-    let (decoded, trailing) = reader.sleigh().map_err(|(fail, location)| fail.at(location))?;
+    let (decoded, trailing) = reader
+        .sleigh()
+        .map_err(|(fail, location)| fail.at(location))?;
     if let Some(offset) = trailing {
         return Err(SlaError::TrailingData { offset });
     }
@@ -163,4 +168,42 @@ pub fn inflate(bytes: &[u8], limits: &Limits) -> Result<Vec<u8>, SlaError> {
         return Err(SlaError::TrailingBytes { count: trailing });
     }
     Ok(out)
+}
+
+/// Decodes one lone `construct_tpl` element into a [`Template`].
+pub(crate) fn decode_template<'a, S: Source<'a>>(
+    src: S,
+    limits: &Limits,
+    spaces: &crate::template_codec::SpaceTable,
+) -> Result<crate::Template, SlaError> {
+    let mut reader = Reader::new(src, limits);
+    for (name, index) in spaces.entries() {
+        let name = reader.a.strings.add(name);
+        reader.a.spaces.push(crate::SpaceRecord {
+            kind: crate::SpaceKind::Processor,
+            name,
+            index,
+            big_endian: false,
+            delay: 0,
+            size: 0,
+            word_size: 1,
+            physical: false,
+        });
+    }
+    let header = match expr::read_template(&mut reader) {
+        Ok(header) => header,
+        Err(fail) => {
+            let location = reader.location();
+            return Err(fail.at(location));
+        }
+    };
+    if let Some(offset) = reader.src.trailing() {
+        return Err(SlaError::TrailingData { offset });
+    }
+    let mut template = crate::Template::new();
+    template.header = header;
+    template.ops = std::mem::take(&mut reader.a.ops);
+    template.varnodes = std::mem::take(&mut reader.a.varnodes);
+    template.handles = std::mem::take(&mut reader.a.handles);
+    Ok(template)
 }

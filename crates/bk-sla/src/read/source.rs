@@ -222,7 +222,10 @@ impl<'a> Source<'a> for PackedCursor<'a> {
 
     fn close(&mut self) -> Result<(), Fail> {
         self.skip_attrs()?;
-        let expected = *self.stack.last().ok_or_else(|| Fail::invalid("no element open"))?;
+        let expected = *self
+            .stack
+            .last()
+            .ok_or_else(|| Fail::invalid("no element open"))?;
         let header = self.byte()?;
         match header & HEADER_MASK {
             ELEMENT_END => {}
@@ -410,7 +413,10 @@ impl<'a, D: Decoder<'a>> Source<'a> for MarshalSource<D> {
     }
 
     fn close(&mut self) -> Result<(), Fail> {
-        let id = *self.stack.last().ok_or_else(|| Fail::invalid("no element open"))?;
+        let id = *self
+            .stack
+            .last()
+            .ok_or_else(|| Fail::invalid("no element open"))?;
         if let Some(found) = self.decoder.peek_element() {
             return Err(StreamError::UnexpectedChild {
                 found: element_text(found.get()),
@@ -423,7 +429,10 @@ impl<'a, D: Decoder<'a>> Source<'a> for MarshalSource<D> {
     }
 
     fn next_attr(&mut self) -> Result<Option<u32>, Fail> {
-        Ok(self.decoder.next_attribute()?.map(bk_marshal::AttrCode::get))
+        Ok(self
+            .decoder
+            .next_attribute()?
+            .map(bk_marshal::AttrCode::get))
     }
 
     fn bool(&mut self) -> Result<bool, Fail> {
@@ -446,7 +455,9 @@ impl<'a, D: Decoder<'a>> Source<'a> for MarshalSource<D> {
         if self.xml {
             Ok(SpaceAttr::Name(self.decoder.read_string()?))
         } else {
-            Ok(SpaceAttr::Index(u64::from(self.decoder.read_space()?.index())))
+            Ok(SpaceAttr::Index(u64::from(
+                self.decoder.read_space()?.index(),
+            )))
         }
     }
 

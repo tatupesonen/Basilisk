@@ -63,7 +63,10 @@ impl Validator<'_> {
     ) -> Result<(), SlaError> {
         let sla = self.sla;
         if ctor.parent != table {
-            return fail(path, format!("parent {} is not the enclosing subtable", ctor.parent));
+            return fail(
+                path,
+                format!("parent {} is not the enclosing subtable", ctor.parent),
+            );
         }
         let operands = sla.operands(ctor);
         if operands.len() != ctor.operands.len() as usize {
@@ -91,7 +94,10 @@ impl Validator<'_> {
             if operand.index != position as i32 {
                 return fail(
                     path,
-                    format!("operand {operand_id} has index {} at position {position}", operand.index),
+                    format!(
+                        "operand {operand_id} has index {} at position {position}",
+                        operand.index
+                    ),
                 );
             }
             let names_itself = matches!(
@@ -100,7 +106,10 @@ impl Validator<'_> {
                     if index == operand.index && t == table && c == ct
             );
             if !names_itself {
-                return fail(path, format!("operand {operand_id}'s first expression does not name it"));
+                return fail(
+                    path,
+                    format!("operand {operand_id}'s first expression does not name it"),
+                );
             }
         }
         let pieces = sla.print_pieces(ctor);
@@ -120,7 +129,9 @@ impl Validator<'_> {
         self.byte_quantity(path, "length", ctor.length)?;
         for change in sla.context_changes(ctor) {
             match *change {
-                ContextChange::Op { word, shift, expr, .. } => {
+                ContextChange::Op {
+                    word, shift, expr, ..
+                } => {
                     self.context_word(path, word)?;
                     if !(0..=31).contains(&shift) {
                         return fail(path, format!("context_op shift {shift} is out of range"));
@@ -129,7 +140,10 @@ impl Validator<'_> {
                 }
                 ContextChange::Commit { symbol, word, .. } => {
                     self.context_word(path, word)?;
-                    if !sla.symbol(symbol).is_some_and(|s| s.kind.has_fixed_handle()) {
+                    if !sla
+                        .symbol(symbol)
+                        .is_some_and(|s| s.kind.has_fixed_handle())
+                    {
                         return fail(path, format!("commit symbol {symbol} has no fixed handle"));
                     }
                 }
@@ -167,7 +181,10 @@ impl Validator<'_> {
         if word < 0 || word as u32 >= self.context_words {
             return fail(
                 path,
-                format!("context word {word} is outside the {} words the context fields address", self.context_words),
+                format!(
+                    "context word {word} is outside the {} words the context fields address",
+                    self.context_words
+                ),
             );
         }
         Ok(())
@@ -180,88 +197,13 @@ impl Validator<'_> {
         template: &TemplateRef<'_>,
         num_operands: u32,
     ) -> Result<(), SlaError> {
-        let header = template.header();
-        self.byte_quantity(path, "delay", header.delay)?;
-        if header.labels < 0 {
-            return fail(path, "negative label count");
-        }
-        if template.ops().len() != header.ops.len() as usize {
-            return fail(path, "dangling ops");
-        }
-        let labels = header.labels as u64;
-        let check = |c: &ConstTpl| -> Result<(), SlaError> {
-            match *c {
-                ConstTpl::Handle { index, select, plus } => {
-                    if index >= num_operands {
-                        return fail(path, format!("const_handle {index} is out of range"));
-                    }
-                    if select != HandleSelect::OffsetPlus && plus != 0 {
-                        return fail(path, "const_handle plus without selector 3");
-                    }
-                }
-                ConstTpl::Space(space) if !self.space_known(space) => {
-                    return fail(path, format!("unknown space index {space}"));
-                }
-                ConstTpl::Relative(label) if label >= labels => {
-                    return fail(path, format!("label {label} is not below {labels}"));
-                }
-                _ => {}
-            }
-            Ok(())
-        };
-        let check_varnode = |v: &VarnodeTpl| -> Result<(), SlaError> {
-            check(&v.space)?;
-            check(&v.offset)?;
-            check(&v.size)
-        };
-        if let Some(result) = template.result() {
-            for part in &result.parts() {
-                check(part)?;
-            }
-        }
-        for (number, op) in template.ops().iter().enumerate() {
-            let inputs = template.inputs(op);
-            if inputs.len() != op.num_inputs() as usize {
-                return fail(path, "dangling op varnodes");
-            }
-            if inputs.len() > self.limits.op_inputs as usize {
-                return Err(SlaError::Limit {
-                    location: crate::error::Location {
-                        path: format!("{path} op {number}"),
-                        offset: None,
-                    },
-                    what: "inputs of one op template",
-                    limit: u64::from(self.limits.op_inputs),
-                    found: inputs.len() as u64,
-                });
-            }
-            if let Some(output) = template.output(op) {
-                check_varnode(output)?;
-            }
-            for input in inputs {
-                check_varnode(input)?;
-            }
-            let constant = |slot: usize| match inputs.get(slot).map(|v| v.offset) {
-                Some(ConstTpl::Real(value)) => Some(value),
-                _ => None,
-            };
-            let directive_ok = match op.opcode {
-                OpCode::MultiEqual => {
-                    inputs.len() == 1 && constant(0).is_some_and(|v| v < u64::from(num_operands))
-                }
-                OpCode::Indirect => inputs.len() == 1 && constant(0).is_some(),
-                OpCode::PtrAdd => inputs.len() == 1 && constant(0).is_some_and(|v| v < labels),
-                OpCode::PtrSub => inputs.len() == 2 && constant(1).is_some(),
-                _ => true,
-            };
-            if !directive_ok {
-                return fail(
-                    format!("{path} op {number}"),
-                    format!("directive {} has malformed inputs", op.opcode.name()),
-                );
-            }
-        }
-        Ok(())
+        check_template(
+            self.limits,
+            &|index| self.space_known(index),
+            path,
+            template,
+            num_operands,
+        )
     }
 
     fn decision_tree(&self, path: &str, table: &Subtable) -> Result<(), SlaError> {
@@ -288,7 +230,10 @@ impl Validator<'_> {
                 return fail(path, format!("dangling decision node {id}"));
             };
             if node.size > 8 {
-                return fail(path, format!("decision node size {} is not in 0..=8", node.size));
+                return fail(
+                    path,
+                    format!("decision node size {} is not in 0..=8", node.size),
+                );
             }
             if node.is_leaf() {
                 let pairs = sla.pairs(node);
@@ -297,13 +242,19 @@ impl Validator<'_> {
                 }
                 for pair in pairs {
                     if pair.constructor >= table.num_constructors() {
-                        return fail(path, format!("pair id {} is not below numct", pair.constructor));
+                        return fail(
+                            path,
+                            format!("pair id {} is not below numct", pair.constructor),
+                        );
                     }
                     match pair.pattern {
                         DisjointPattern::Instruction(block) | DisjointPattern::Context(block) => {
                             self.block(path, block)?;
                         }
-                        DisjointPattern::Combine { context, instruction } => {
+                        DisjointPattern::Combine {
+                            context,
+                            instruction,
+                        } => {
                             self.block(path, context)?;
                             self.block(path, instruction)?;
                         }
@@ -313,7 +264,8 @@ impl Validator<'_> {
                 if !node.pairs.is_empty() {
                     return fail(path, "a decision node with children has pairs");
                 }
-                if node.first_child as usize + node.num_children() as usize > sla.a.decisions.len() {
+                if node.first_child as usize + node.num_children() as usize > sla.a.decisions.len()
+                {
                     return fail(path, "dangling decision children");
                 }
                 stack.extend(sla.children(node).map(|child| (child, depth + 1)));
@@ -344,7 +296,9 @@ impl Validator<'_> {
         let mut state = vec![0u8; count];
         let mut refs: Vec<SymbolId> = Vec::new();
         for start in 0..count {
-            if state.get(start) != Some(&0) || self.defining_expr(SymbolId::new(start as u32)).is_none() {
+            if state.get(start) != Some(&0)
+                || self.defining_expr(SymbolId::new(start as u32)).is_none()
+            {
                 continue;
             }
             // Iterative depth-first search: (symbol, its references, next).
@@ -418,4 +372,101 @@ impl Validator<'_> {
             }
         }
     }
+}
+
+/// Checks one template: ranges, labels, spaces, handle indices below
+/// `num_operands`, directive shapes.
+pub(crate) fn check_template(
+    limits: &crate::Limits,
+    space_known: &dyn Fn(u32) -> bool,
+    path: &str,
+    template: &TemplateRef<'_>,
+    num_operands: u32,
+) -> Result<(), SlaError> {
+    let header = template.header();
+    super::byte_quantity(limits, path, "delay", header.delay)?;
+    if header.labels < 0 {
+        return fail(path, "negative label count");
+    }
+    if template.ops().len() != header.ops.len() as usize {
+        return fail(path, "dangling ops");
+    }
+    let labels = header.labels as u64;
+    let check = |c: &ConstTpl| -> Result<(), SlaError> {
+        match *c {
+            ConstTpl::Handle {
+                index,
+                select,
+                plus,
+            } => {
+                if index >= num_operands {
+                    return fail(path, format!("const_handle {index} is out of range"));
+                }
+                if select != HandleSelect::OffsetPlus && plus != 0 {
+                    return fail(path, "const_handle plus without selector 3");
+                }
+            }
+            ConstTpl::Space(space) if !space_known(space) => {
+                return fail(path, format!("unknown space index {space}"));
+            }
+            ConstTpl::Relative(label) if label >= labels => {
+                return fail(path, format!("label {label} is not below {labels}"));
+            }
+            _ => {}
+        }
+        Ok(())
+    };
+    let check_varnode = |v: &VarnodeTpl| -> Result<(), SlaError> {
+        check(&v.space)?;
+        check(&v.offset)?;
+        check(&v.size)
+    };
+    if let Some(result) = template.result() {
+        for part in &result.parts() {
+            check(part)?;
+        }
+    }
+    for (number, op) in template.ops().iter().enumerate() {
+        let inputs = template.inputs(op);
+        if inputs.len() != op.num_inputs() as usize {
+            return fail(path, "dangling op varnodes");
+        }
+        if inputs.len() > limits.op_inputs as usize {
+            return Err(SlaError::Limit {
+                location: crate::error::Location {
+                    path: format!("{path} op {number}"),
+                    offset: None,
+                },
+                what: "inputs of one op template",
+                limit: u64::from(limits.op_inputs),
+                found: inputs.len() as u64,
+            });
+        }
+        if let Some(output) = template.output(op) {
+            check_varnode(output)?;
+        }
+        for input in inputs {
+            check_varnode(input)?;
+        }
+        let constant = |slot: usize| match inputs.get(slot).map(|v| v.offset) {
+            Some(ConstTpl::Real(value)) => Some(value),
+            _ => None,
+        };
+        let directive_ok = match op.opcode {
+            OpCode::MultiEqual => {
+                inputs.len() == 1 && constant(0).is_some_and(|v| v < u64::from(num_operands))
+            }
+            OpCode::Indirect => inputs.len() == 1 && constant(0).is_some(),
+            OpCode::PtrAdd => inputs.len() == 1 && constant(0).is_some_and(|v| v < labels),
+            OpCode::PtrSub => inputs.len() == 2 && constant(1).is_some(),
+            _ => true,
+        };
+        if !directive_ok {
+            return fail(
+                format!("{path} op {number}"),
+                format!("directive {} has malformed inputs", op.opcode.name()),
+            );
+        }
+    }
+    Ok(())
 }

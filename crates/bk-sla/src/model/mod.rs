@@ -207,12 +207,18 @@ impl Sla {
 
     /// A constructor's operand symbols in order.
     pub fn operands(&self, ctor: &Constructor) -> &[SymbolId] {
-        self.a.operand_lists.get(ctor.operands.range()).unwrap_or_default()
+        self.a
+            .operand_lists
+            .get(ctor.operands.range())
+            .unwrap_or_default()
     }
 
     /// A constructor's print pieces in order.
     pub fn print_pieces(&self, ctor: &Constructor) -> &[PrintPiece] {
-        self.a.print_pieces.get(ctor.print.range()).unwrap_or_default()
+        self.a
+            .print_pieces
+            .get(ctor.print.range())
+            .unwrap_or_default()
     }
 
     /// A constructor's context changes in order.
@@ -226,7 +232,9 @@ impl Sla {
     /// The ids of a constructor's templates: main first, then sections by
     /// number.
     pub fn template_ids(&self, ctor: &Constructor) -> impl ExactSizeIterator<Item = TemplateId> {
-        ctor.templates.range().map(|slot| TemplateId::new(slot as u32))
+        ctor.templates
+            .range()
+            .map(|slot| TemplateId::new(slot as u32))
     }
 
     /// A constructor's main template, if its body is not `unimpl`.
@@ -325,7 +333,11 @@ mod tests {
         assert!(size_of::<ConstTpl>() <= 16, "{}", size_of::<ConstTpl>());
         assert!(size_of::<VarnodeTpl>() <= 48);
         assert!(size_of::<Expr>() <= 16, "{}", size_of::<Expr>());
-        assert!(size_of::<DecisionNode>() <= 24, "{}", size_of::<DecisionNode>());
+        assert!(
+            size_of::<DecisionNode>() <= 24,
+            "{}",
+            size_of::<DecisionNode>()
+        );
         assert!(size_of::<PatternBlock>() <= 16);
     }
 

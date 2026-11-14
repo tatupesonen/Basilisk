@@ -36,7 +36,9 @@ pub(crate) fn read_expr<'a, S: Source<'a>>(
         ));
     }
     let Some(id) = r.src.peek()? else {
-        return Err(Fail::invalid("Invalid pattern expression element: none present"));
+        return Err(Fail::invalid(
+            "Invalid pattern expression element: none present",
+        ));
     };
     let expr = match id {
         e::TOKENFIELD | e::CONTEXTFIELD => {
@@ -92,7 +94,11 @@ pub(crate) fn read_expr<'a, S: Source<'a>>(
         e::MINUS_EXP | e::NOT_EXP => {
             r.src.open()?;
             let operand = read_expr(r, depth + 1)?;
-            let op = if id == e::MINUS_EXP { UnaryOp::Minus } else { UnaryOp::Not };
+            let op = if id == e::MINUS_EXP {
+                UnaryOp::Minus
+            } else {
+                UnaryOp::Not
+            };
             Expr::Unary { op, operand }
         }
         _ => {
@@ -142,7 +148,11 @@ fn read_field<'a, S: Source<'a>>(r: &mut Reader<'a, '_, S>, token: bool) -> Resu
     }
     let [start_bit, end_bit, start_byte, end_byte, shift] = values;
     Ok(Field {
-        big_endian: if token { need(big_endian, "bigendian")? } else { false },
+        big_endian: if token {
+            need(big_endian, "bigendian")?
+        } else {
+            false
+        },
         sign_bit: need(sign_bit, "signbit")?,
         start_bit: need(start_bit, "startbit")?,
         end_bit: need(end_bit, "endbit")?,
@@ -248,10 +258,12 @@ fn read_const<'a, S: Source<'a>>(r: &mut Reader<'a, '_, S>) -> Result<ConstTpl, 
         e::CONST_FLOWREF_SIZE => ConstTpl::FlowRefSize,
         e::CONST_FLOWDEST => ConstTpl::FlowDest,
         e::CONST_FLOWDEST_SIZE => ConstTpl::FlowDestSize,
-        _ => return Err(Fail::invalid(format!(
-            "Bad constant type: {}",
-            super::source::element_text(id)
-        ))),
+        _ => {
+            return Err(Fail::invalid(format!(
+                "Bad constant type: {}",
+                super::source::element_text(id)
+            )));
+        }
     };
     r.src.close()?;
     Ok(value)
@@ -263,7 +275,11 @@ fn read_varnode<'a, S: Source<'a>>(r: &mut Reader<'a, '_, S>) -> Result<VarnodeT
     let offset = read_const(r)?;
     let size = read_const(r)?;
     r.src.close()?;
-    Ok(VarnodeTpl { space, offset, size })
+    Ok(VarnodeTpl {
+        space,
+        offset,
+        size,
+    })
 }
 
 /// Reads one `construct_tpl` (already peeked) into the template arenas and

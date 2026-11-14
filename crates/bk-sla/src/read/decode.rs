@@ -242,9 +242,8 @@ impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
                 .ok()
                 .and_then(OpCode::from_u8)
                 .ok_or_else(|| StreamError::UnknownOpcode(value.to_string()).into()),
-            OpcodeAttr::Name(name) => {
-                OpCode::from_name(name).ok_or_else(|| StreamError::UnknownOpcode(name.to_owned()).into())
-            }
+            OpcodeAttr::Name(name) => OpCode::from_name(name)
+                .ok_or_else(|| StreamError::UnknownOpcode(name.to_owned()).into()),
         }
     }
 
@@ -416,7 +415,8 @@ impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
         }
         let scope_size = need(scope_size, "scopesize")?;
         let symbol_size = need(symbol_size, "symbolsize")?;
-        let (Ok(scope_size), Ok(symbol_size)) = (u64::try_from(scope_size), u64::try_from(symbol_size))
+        let (Ok(scope_size), Ok(symbol_size)) =
+            (u64::try_from(scope_size), u64::try_from(symbol_size))
         else {
             return Err(Fail::invalid("Bad symbol table size"));
         };
@@ -442,7 +442,9 @@ impl<'a, 'l, S: Source<'a>> Reader<'a, 'l, S> {
             let id = need(id, "id")?;
             let parent = need(parent, "parent")?;
             if id >= scope_size {
-                return Err(Fail::invalid("Bad symbol scope id: exceeds symbol scope table size"));
+                return Err(Fail::invalid(
+                    "Bad symbol scope id: exceeds symbol scope table size",
+                ));
             }
             if parent >= scope_size {
                 return Err(Fail::invalid(

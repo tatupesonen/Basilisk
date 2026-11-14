@@ -57,7 +57,8 @@ impl<'a, S: Source<'a>> Reader<'a, '_, S> {
 
     fn constructor(&mut self) -> Result<Constructor, Fail> {
         self.src.open()?;
-        let (mut parent, mut first, mut length, mut source, mut line) = (None, None, None, None, None);
+        let (mut parent, mut first, mut length, mut source, mut line) =
+            (None, None, None, None, None);
         while let Some(attr) = self.src.next_attr()? {
             match attr {
                 a::PARENT => parent = Some(to_u32(self.src.unsigned()?, "parent")?),
@@ -90,7 +91,9 @@ impl<'a, S: Source<'a>> Reader<'a, '_, S> {
                             count as u64 + 1,
                         ));
                     }
-                    self.a.operand_lists.push(SymbolId::new(need(operand, "id")?));
+                    self.a
+                        .operand_lists
+                        .push(SymbolId::new(need(operand, "id")?));
                     self.src.close()?;
                 }
                 e::PRINT => {
@@ -132,7 +135,9 @@ impl<'a, S: Source<'a>> Reader<'a, '_, S> {
         self.src.close()?;
         let templates = Span::since(templates_start, &self.a.templates);
         if let Some(run) = self.a.templates.get_mut(templates.range()) {
-            run.sort_by_key(|template| template.section.map_or(0, |section| u64::from(section) + 1));
+            run.sort_by_key(|template| {
+                template.section.map_or(0, |section| u64::from(section) + 1)
+            });
             if run
                 .windows(2)
                 .any(|pair| matches!(pair, [x, y] if x.section == y.section))

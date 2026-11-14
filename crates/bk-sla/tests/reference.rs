@@ -1,7 +1,16 @@
 //! Differential tests against Ghidra's reference build (`features/sla.md`
 //! section 6, tests 1–3). They need `BASILISK_REFERENCE_DIR` (default
 //! `../reference`) and skip with a printed reason when it is absent.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 use bk_sla::{Limits, PackedReader, Sla, inflate};
 
@@ -41,10 +50,18 @@ fn packed_round_trip_is_byte_exact() {
         }
         let other = Sla::decode_packed_using(&stream, &limits, PackedReader::Marshal).unwrap();
         if other != sla {
-            failures.push(format!("{}/{}: the two packed decoders disagree", file.module, file.name));
+            failures.push(format!(
+                "{}/{}: the two packed decoders disagree",
+                file.module, file.name
+            ));
         }
     }
-    assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 /// The options the reference build compiled a module's specifications with
@@ -71,9 +88,12 @@ fn xml_text_equals_sleigh_y_and_reads_back() {
     let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::Sleigh) else {
         return;
     };
-    let specs =
-        bk_testkit::corpus::language_files(&reference.processors_dir(), "slaspec").unwrap();
-    assert_eq!(specs.len(), 150, "expected the 150 reference specifications");
+    let specs = bk_testkit::corpus::language_files(&reference.processors_dir(), "slaspec").unwrap();
+    assert_eq!(
+        specs.len(),
+        150,
+        "expected the 150 reference specifications"
+    );
     let out = tempfile::tempdir().unwrap();
     let next = std::sync::atomic::AtomicUsize::new(0);
     let failures = std::sync::Mutex::new(Vec::new());
@@ -95,7 +115,12 @@ fn xml_text_equals_sleigh_y_and_reads_back() {
         }
     });
     let failures = failures.into_inner().unwrap();
-    assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 fn check_xml(
@@ -114,7 +139,9 @@ fn check_xml(
     }
     sleigh = sleigh.define("BaseDir", &reference.root().display().to_string());
     let target = out.join(format!("{}-{}.sla", spec.module, spec.name));
-    sleigh.compile(&spec.path, &target).map_err(|e| e.to_string())?;
+    sleigh
+        .compile(&spec.path, &target)
+        .map_err(|e| e.to_string())?;
     let text = std::fs::read_to_string(&target).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_file(&target);
     let sla_path = reference.sla_file(&spec.module, &spec.name);

@@ -53,7 +53,11 @@ fn encode_const<E: Encoder, N: SpaceNames + ?Sized>(enc: &mut E, names: &N, valu
     }
 }
 
-fn encode_varnode<E: Encoder, N: SpaceNames + ?Sized>(enc: &mut E, names: &N, varnode: &VarnodeTpl) {
+fn encode_varnode<E: Encoder, N: SpaceNames + ?Sized>(
+    enc: &mut E,
+    names: &N,
+    varnode: &VarnodeTpl,
+) {
     enc.open_element(ELEM_VARNODE_TPL);
     encode_const(enc, names, &varnode.space);
     encode_const(enc, names, &varnode.offset);

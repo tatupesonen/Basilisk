@@ -15,7 +15,11 @@ pub struct Location {
 
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(if self.path.is_empty() { "<document>" } else { &self.path })?;
+        f.write_str(if self.path.is_empty() {
+            "<document>"
+        } else {
+            &self.path
+        })?;
         if let Some(offset) = self.offset {
             write!(f, " (at byte {offset})")?;
         }

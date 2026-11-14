@@ -144,7 +144,10 @@ impl DisjointPattern {
     /// The instruction block, if any.
     pub const fn instruction_block(&self) -> Option<BlockId> {
         match *self {
-            Self::Instruction(block) | Self::Combine { instruction: block, .. } => Some(block),
+            Self::Instruction(block)
+            | Self::Combine {
+                instruction: block, ..
+            } => Some(block),
             Self::Context(_) => None,
         }
     }
@@ -261,7 +264,11 @@ mod tests {
         );
         // A shift across words.
         assert_eq!(
-            norm(1, 8, &[(0x00ff_ffff, 0x0012_3456), (0xff00_0000, 0x7800_0000)]),
+            norm(
+                1,
+                8,
+                &[(0x00ff_ffff, 0x0012_3456), (0xff00_0000, 0x7800_0000)]
+            ),
             (2, 4, vec![(0xffff_ffff, 0x1234_5678)])
         );
         // Trailing zero words dropped; all-zero mask becomes always true.

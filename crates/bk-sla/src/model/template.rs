@@ -144,7 +144,15 @@ impl HandleTpl {
 
     /// Builds a handle from the seven constants in file order.
     pub const fn from_parts(parts: [ConstTpl; 7]) -> Self {
-        let [space, size, ptr_space, ptr_offset, ptr_size, temp_space, temp_offset] = parts;
+        let [
+            space,
+            size,
+            ptr_space,
+            ptr_offset,
+            ptr_size,
+            temp_space,
+            temp_offset,
+        ] = parts;
         Self {
             space,
             size,

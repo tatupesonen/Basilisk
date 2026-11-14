@@ -144,7 +144,10 @@ impl Sla {
         for (id, scope) in self.scopes().iter().enumerate() {
             enc.open_element(ELEM_SCOPE);
             enc.write_unsigned(ATTRIB_ID, id as u64);
-            enc.write_unsigned(ATTRIB_PARENT, scope.parent.map_or(0, |p| u64::from(p.index())));
+            enc.write_unsigned(
+                ATTRIB_PARENT,
+                scope.parent.map_or(0, |p| u64::from(p.index())),
+            );
             enc.close_element(ELEM_SCOPE);
         }
         for (id, symbol) in self.symbols().iter().enumerate() {

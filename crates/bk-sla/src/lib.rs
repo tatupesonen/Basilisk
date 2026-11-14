@@ -30,7 +30,6 @@ mod template_codec;
 mod validate;
 mod write;
 
-
 pub use builder::{
     BlockDef, ConstructorDef, DecisionDef, PairDef, PatternDef, PrintDef, SlaBuilder, SpaceDef,
     SymbolDef, TableDef,
@@ -56,3 +55,4 @@ pub use model::template::{
 };
 pub use read::{PackedReader, inflate};
 pub use spaces::CONSTANT_SPACE_NAME;
+pub use template_codec::SpaceTable;

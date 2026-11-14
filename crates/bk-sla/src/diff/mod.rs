@@ -98,12 +98,32 @@ impl Differ<'_> {
         let (a, b) = (self.a, self.b);
         let (ha, hb) = (a.header(), b.header());
         let fields: [(&str, String, String); 6] = [
-            ("bigendian", ha.big_endian.to_string(), hb.big_endian.to_string()),
+            (
+                "bigendian",
+                ha.big_endian.to_string(),
+                hb.big_endian.to_string(),
+            ),
             ("align", ha.align.to_string(), hb.align.to_string()),
-            ("uniqbase", ha.unique_base.to_string(), hb.unique_base.to_string()),
-            ("maxdelay", ha.max_delay.to_string(), hb.max_delay.to_string()),
-            ("uniqmask", ha.unique_mask.to_string(), hb.unique_mask.to_string()),
-            ("numsections", ha.num_sections.to_string(), hb.num_sections.to_string()),
+            (
+                "uniqbase",
+                ha.unique_base.to_string(),
+                hb.unique_base.to_string(),
+            ),
+            (
+                "maxdelay",
+                ha.max_delay.to_string(),
+                hb.max_delay.to_string(),
+            ),
+            (
+                "uniqmask",
+                ha.unique_mask.to_string(),
+                hb.unique_mask.to_string(),
+            ),
+            (
+                "numsections",
+                ha.num_sections.to_string(),
+                hb.num_sections.to_string(),
+            ),
         ];
         for (name, x, y) in fields {
             if !self.check(|| format!("sleigh {name}"), x, y) {
@@ -112,7 +132,11 @@ impl Differ<'_> {
         }
         let files_a: Vec<&str> = a.source_files().collect();
         let files_b: Vec<&str> = b.source_files().collect();
-        if !self.check(|| "sourcefiles".to_owned(), files_a.join(", "), files_b.join(", ")) {
+        if !self.check(
+            || "sourcefiles".to_owned(),
+            files_a.join(", "),
+            files_b.join(", "),
+        ) {
             return;
         }
         if !self.spaces() || !self.scopes() {
@@ -164,12 +188,21 @@ impl Differ<'_> {
 
     fn scopes(&mut self) -> bool {
         let (a, b) = (self.a, self.b);
-        if !self.check(|| "symbol_table scopesize".to_owned(), a.scopes().len(), b.scopes().len()) {
+        if !self.check(
+            || "symbol_table scopesize".to_owned(),
+            a.scopes().len(),
+            b.scopes().len(),
+        ) {
             return false;
         }
         for (index, (x, y)) in a.scopes().iter().zip(b.scopes()).enumerate() {
-            let parent = |p: Option<crate::ScopeId>| p.map_or_else(|| "none".to_owned(), |p| p.to_string());
-            if !self.check(|| format!("scope {index} parent"), parent(x.parent), parent(y.parent)) {
+            let parent =
+                |p: Option<crate::ScopeId>| p.map_or_else(|| "none".to_owned(), |p| p.to_string());
+            if !self.check(
+                || format!("scope {index} parent"),
+                parent(x.parent),
+                parent(y.parent),
+            ) {
                 return false;
             }
         }
@@ -182,8 +215,11 @@ impl Differ<'_> {
             return true;
         };
         let path = || format!("symbol {id} \"{}\"", a.symbol_name(id));
-        if !self.check(|| format!("{} name", path()), a.text(x.name), b.text(y.name))
-            || !self.check(|| format!("{} scope", path()), x.scope, y.scope)
+        if !self.check(
+            || format!("{} name", path()),
+            a.text(x.name),
+            b.text(y.name),
+        ) || !self.check(|| format!("{} scope", path()), x.scope, y.scope)
             || !self.check(
                 || format!("{} kind", path()),
                 x.kind.element_name(),
@@ -225,7 +261,11 @@ impl Differ<'_> {
             let file = a.source_file(ca.source).unwrap_or("?");
             let prefix = format!("table \"{name}\" constructor {ct} ({file}:{})", ca.line);
             let scalars = [
-                ("parent", ca.parent.index().to_string(), cb.parent.index().to_string()),
+                (
+                    "parent",
+                    ca.parent.index().to_string(),
+                    cb.parent.index().to_string(),
+                ),
                 ("first", ca.first.to_string(), cb.first.to_string()),
                 ("length", ca.length.to_string(), cb.length.to_string()),
                 ("source", ca.source.to_string(), cb.source.to_string()),
@@ -263,14 +303,19 @@ impl Differ<'_> {
             let same_ops = a.operands(ca) == b.operands(cb);
             let same_print = equal::print_eq(a, ca, b, cb);
             let same_context = equal::context_eq(a, ca, b, cb);
-            if !self.check_lazy(|| format!("{prefix} operands"), same_ops, || (ops(a, ca), ops(b, cb)))
-                || !self.check_lazy(|| format!("{prefix} print"), same_print, || {
-                    (print(a, ca), print(b, cb))
-                })
-                || !self.check_lazy(|| format!("{prefix} context"), same_context, || {
-                    (context(a, ca), context(b, cb))
-                })
-            {
+            if !self.check_lazy(
+                || format!("{prefix} operands"),
+                same_ops,
+                || (ops(a, ca), ops(b, cb)),
+            ) || !self.check_lazy(
+                || format!("{prefix} print"),
+                same_print,
+                || (print(a, ca), print(b, cb)),
+            ) || !self.check_lazy(
+                || format!("{prefix} context"),
+                same_context,
+                || (context(a, ca), context(b, cb)),
+            ) {
                 return false;
             }
             let ta_ids: Vec<_> = a.template_ids(ca).filter_map(|t| a.template(t)).collect();
@@ -310,8 +355,11 @@ impl Differ<'_> {
                 },
             )
         };
-        if !self.check(|| format!("{prefix} section"), section(hx.section), section(hy.section))
-            || !self.check(|| format!("{prefix} delay"), hx.delay, hy.delay)
+        if !self.check(
+            || format!("{prefix} section"),
+            section(hx.section),
+            section(hy.section),
+        ) || !self.check(|| format!("{prefix} delay"), hx.delay, hy.delay)
             || !self.check(|| format!("{prefix} labels"), hx.labels, hy.labels)
             || !self.check_lazy(
                 || format!("{prefix} export"),
@@ -324,26 +372,26 @@ impl Differ<'_> {
         }
         for (number, (ox, oy)) in x.ops().iter().zip(y.ops()).enumerate() {
             let at = format!("{prefix} op {number}");
-            if !self.check(|| format!("{at} opcode"), ox.opcode.name(), oy.opcode.name()) {
+            if !self.check(
+                || format!("{at} opcode"),
+                ox.opcode.name(),
+                oy.opcode.name(),
+            ) {
                 return false;
             }
             let output = |sla: &Sla, t: &TemplateRef<'_>, op| {
-                t.output(op).map_or_else(
-                    || "null".to_owned(),
-                    |v| render::render_varnode(sla, v),
-                )
+                t.output(op)
+                    .map_or_else(|| "null".to_owned(), |v| render::render_varnode(sla, v))
             };
             if !self.check_lazy(
                 || format!("{at} output"),
                 x.output(ox) == y.output(oy),
                 || (output(a, x, ox), output(b, y, oy)),
-            )
-                || !self.check(
-                    || format!("{at} inputs"),
-                    x.inputs(ox).len(),
-                    y.inputs(oy).len(),
-                )
-            {
+            ) || !self.check(
+                || format!("{at} inputs"),
+                x.inputs(ox).len(),
+                y.inputs(oy).len(),
+            ) {
                 return false;
             }
             for (slot, (vx, vy)) in x.inputs(ox).iter().zip(y.inputs(oy)).enumerate() {

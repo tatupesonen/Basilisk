@@ -12,7 +12,11 @@ use crate::model::template::{ConstTpl, VarnodeTpl};
 pub(super) fn render_const(sla: &Sla, value: &ConstTpl) -> String {
     match *value {
         ConstTpl::Real(v) => format!("const_real {v:#x}"),
-        ConstTpl::Handle { index, select, plus } => {
+        ConstTpl::Handle {
+            index,
+            select,
+            plus,
+        } => {
             format!("const_handle {index} s={} plus={plus:#x}", select.number())
         }
         ConstTpl::Space(index) => format!("const_spaceid {}", sla.space_name(index).unwrap_or("?")),
@@ -48,7 +52,11 @@ fn write_expr(sla: &Sla, id: ExprId, out: &mut String, depth: u32) {
     match *expr {
         Expr::TokenField(field) | Expr::ContextField(field) => {
             let f = sla.field(field).copied().unwrap_or_default();
-            let kind = if matches!(expr, Expr::TokenField(_)) { "token" } else { "context" };
+            let kind = if matches!(expr, Expr::TokenField(_)) {
+                "token"
+            } else {
+                "context"
+            };
             let _ = write!(
                 out,
                 "{kind}(be={} sign={} bits {}..{} bytes {}..{} shift {})",
@@ -103,7 +111,11 @@ pub(super) fn render_kind(sla: &Sla, kind: &SymbolKind) -> String {
                 .collect();
             format!("{} {names:?}", render_expr(sla, expr))
         }
-        SymbolKind::Varnode { space, offset, size } => format!(
+        SymbolKind::Varnode {
+            space,
+            offset,
+            size,
+        } => format!(
             "{}:{offset:#x}:{size}",
             sla.space_name(space).unwrap_or("?")
         ),
@@ -171,7 +183,12 @@ fn render_block(sla: &Sla, id: BlockId) -> String {
         .iter()
         .map(|w| format!("{:08x}/{:08x}", w.mask, w.value))
         .collect();
-    format!("off={} nonzero={} [{}]", block.offset, block.nonzero, words.join(" "))
+    format!(
+        "off={} nonzero={} [{}]",
+        block.offset,
+        block.nonzero,
+        words.join(" ")
+    )
 }
 
 pub(super) fn render_pattern(sla: &Sla, pattern: &DisjointPattern) -> String {

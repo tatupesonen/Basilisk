@@ -306,7 +306,10 @@ impl SlaBuilder {
             .find(|space| space.name == self.default_space)
             .map(|space| space.index)
             .ok_or_else(|| {
-                SlaError::structure("sleigh/spaces", format!("Bad 'defaultspace' attribute: {}", self.default_space))
+                SlaError::structure(
+                    "sleigh/spaces",
+                    format!("Bad 'defaultspace' attribute: {}", self.default_space),
+                )
             })?;
         a.scopes = self.scopes.iter().map(|&parent| Scope { parent }).collect();
         let mut layout = Layout { a, limits };
