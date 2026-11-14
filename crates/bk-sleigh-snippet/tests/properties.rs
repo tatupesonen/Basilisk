@@ -18,7 +18,7 @@ mod common;
 
 use std::sync::OnceLock;
 
-use bk_sla::{Limits, Template};
+use bk_sla::{ConstTpl, Limits, Template};
 use bk_sleigh_snippet::{Options, Parameter, SnippetCompiler, TempAllocator};
 use proptest::prelude::*;
 
@@ -131,6 +131,19 @@ fn check(text: &str) {
         Ok(compiled) => {
             assert_eq!((temps.next - start) % temps.step, 0);
             let xml = compiled.template.encode_xml(c.space_table());
+            // Ghidra compiles a branch to a label that is never placed (no
+            // label check in snippets); `bk_sla` refuses to read such a
+            // template, and the runtime fails on it when it is expanded.
+            let t = compiled.template.as_ref();
+            let labels = u64::from(t.header().labels.unsigned_abs());
+            let dangling = t.ops().iter().any(|op| {
+                t.inputs(op)
+                    .iter()
+                    .any(|v| matches!(v.offset, ConstTpl::Relative(l) if l >= labels))
+            });
+            if dangling {
+                return;
+            }
             let back = Template::decode_xml(&xml, c.space_table(), &Limits::default())
                 .unwrap_or_else(|e| panic!("{text:?}: {e}\n{xml}"));
             assert_eq!(back, compiled.template, "{text:?}");

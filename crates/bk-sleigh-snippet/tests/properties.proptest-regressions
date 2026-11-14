@@ -4,3 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
+cc 5b18f392b8515d5e4f3b5b241df401bd3184477651b30a346b7e3c63fa58ae74 # shrinks to parts = ["goto <L>;"]

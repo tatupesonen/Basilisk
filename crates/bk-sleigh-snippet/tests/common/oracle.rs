@@ -2,6 +2,7 @@
 //! format version 1 in `tools/reference/README.md`) and the same records
 //! run through Basilisk.
 
+use std::fmt::Write as _;
 use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -92,8 +93,8 @@ pub(crate) fn run_oracle(tool: &Path, root: &Path, id: &str, records: &[Record])
         input.push('\t');
         match r.base {
             Base::Continue => input.push_str("continue"),
-            Base::Start(b) => input.push_str(&format!("{b:#x}")),
-            Base::Fixed(b) => input.push_str(&format!("fixed:{b:#x}")),
+            Base::Start(b) => write!(input, "{b:#x}").unwrap(),
+            Base::Fixed(b) => write!(input, "fixed:{b:#x}").unwrap(),
         }
         input.push('\t');
         input.push_str(&escape(&r.body));

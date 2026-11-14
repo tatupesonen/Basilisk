@@ -21,6 +21,14 @@ impl Parser<'_> {
                     self.bump();
                     self.expect(b'(')?;
                     let args = self.param_list()?;
+                    // The arguments have been reduced: if the `;` is
+                    // missing, their errors still come first.
+                    let call = self.nodes.add_expr(Expr::Apply {
+                        name,
+                        args,
+                        span: start,
+                    });
+                    self.complete(call);
                     let end = self.expect(b';')?;
                     Ok(Some(Statement::Apply {
                         name,

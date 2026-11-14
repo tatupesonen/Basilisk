@@ -20,7 +20,7 @@ mod common;
 use bk_sleigh_snippet::{Options, Parameter, SnippetCompiler};
 use common::oracle::{Base, Record, escape, run_basilisk, run_oracle};
 
-/// A small deterministic generator (SplitMix64).
+/// A small deterministic generator (`SplitMix64`).
 struct Rng(u64);
 
 impl Rng {
@@ -262,7 +262,7 @@ impl Gen {
                         let t = tokens[i].clone();
                         tokens.insert(i, t);
                     }
-                    _ => tokens[i] = self.rng.pick(PUNCT).to_owned(),
+                    _ => self.rng.pick(PUNCT).clone_into(&mut tokens[i]),
                 }
                 if tokens.is_empty() {
                     break;
@@ -296,24 +296,19 @@ fn number(text: &str) -> Option<u64> {
 /// `bk_sleigh_compiler`'s builder computes them without wrapping (a
 /// follow-up for that crate).
 fn wraps_32_bits(body: &str) -> bool {
-    let mut rest = body;
-    while let Some(open) = rest.find('[') {
-        rest = &rest[open + 1..];
-        let Some(close) = rest.find(']') else { break };
-        let inside = &rest[..close];
-        if let Some((a, b)) = inside.split_once(',') {
-            if let (Some(low), Some(width)) = (number(a.trim()), number(b.trim())) {
-                let (low, width) = (low as u32, width as u32);
-                if low.checked_add(width).is_none()
-                    || width.checked_add(7).is_none()
-                    || (low / 8).checked_add(width / 8).is_none()
-                {
-                    return true;
-                }
-            }
-        }
-    }
-    false
+    body.split('[').skip(1).any(|part| {
+        let inside = part.split(']').next().unwrap_or("");
+        let Some((a, b)) = inside.split_once(',') else {
+            return false;
+        };
+        let (Some(low), Some(width)) = (number(a.trim()), number(b.trim())) else {
+            return false;
+        };
+        let (low, width) = (low as u32, width as u32);
+        low.checked_add(width).is_none()
+            || width.checked_add(7).is_none()
+            || (low / 8).checked_add(width / 8).is_none()
+    })
 }
 
 #[test]
