@@ -19,7 +19,9 @@ name = "basilisk-fuzz"
 version = "0.0.0"
 dependencies = [
  "bk-bin",
+ "bk-binutils-sys",
  "bk-core",
+ "bk-decomp-types",
  "bk-elf",
  "bk-lang",
  "bk-marshal",
@@ -42,11 +44,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-binutils-sys"
+version = "0.0.1"
+dependencies = [
+ "cc",
+ "thiserror",
+]
+
+[[package]]
 name = "bk-core"
 version = "0.0.1"
 dependencies = [
  "bitflags",
  "bk-marshal",
+ "thiserror",
+]
+
+[[package]]
+name = "bk-decomp-types"
+version = "0.0.1"
+dependencies = [
+ "bitflags",
+ "bk-core",
+ "bk-marshal",
+ "rustc-hash",
  "thiserror",
 ]
 
