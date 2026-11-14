@@ -1,0 +1,54 @@
+---
+title: The interface
+description: basilisk's desktop interface — Ghidra's CodeBrowser, made to look and feel good.
+sidebar:
+  order: 1
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+
+basilisk's interface is designed to feel like Ghidra to someone who knows Ghidra: the same windows in the
+same places, Ghidra's window and action names, its menus, its right-click menus and its default key bindings.
+What changes is how it looks and feels — type, colour, spacing, legibility, responsiveness — plus additions
+that sit beside the Ghidra way, never instead of it.
+
+:::note[Today]
+The interface runs on a **built-in demo program**. Opening real binaries needs the program model, planned
+for milestone M4.
+:::
+
+<Screenshot
+  name="main"
+  alt="The main window: Program Trees and Symbol Tree on the left, Listing in the centre, Decompiler on the right, Console and tables below."
+  caption="The default arrangement, as in Ghidra's CodeBrowser."
+  sizes="(min-width: 72rem) 46rem, 100vw"
+/>
+
+## The default arrangement
+
+Program Trees above the Symbol Tree on the left, the Listing in the centre, the Decompiler on the right and
+the Console at the bottom — Ghidra's places. Functions, Defined Strings and References open as tabs beside
+the Console. Every pane can be dragged to stack or split, resized, closed and reopened from the Window menu,
+or popped out into its own window; the layout is saved between runs.
+
+## Views
+
+Each view will have its own page in this section.
+
+| View | Today |
+|---|---|
+| Listing | On demo data |
+| Decompiler | On demo data |
+| Symbol Tree, Program Trees | On demo data |
+| Functions, Defined Strings, References | On demo data |
+| Console | Yes |
+| Search, Go To, command palette | On demo data |
+| Data Type Manager, Function Graph, Bookmarks, Memory Map, Byte Viewer | Planned (M7) |
+
+## Additions to Ghidra's interface
+
+- **Command palette** (Ctrl+Shift+P): every action and every location in one fuzzy-matched list.
+- **Go To is fuzzy and live**: matches appear as you type.
+- **Enter follows the reference** under the cursor; double-click still does.
+- **Hover preview** of a name's target in both the Listing and the Decompiler.
+- **Native pop-out windows** for any pane, and a first-class light theme.

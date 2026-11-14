@@ -1,0 +1,36 @@
+---
+// In place of Starlight's social icons: links back to the product pages and
+// the source, as text (no third-party brand marks).
+import Icon from '../Icon.astro';
+import { repo } from '../../lib/site-config.mjs';
+const base = import.meta.env.BASE_URL;
+---
+
+<nav class="bk-sl-nav" aria-label="Site">
+  <a href={`${base}status/`}>Status</a>
+  <a href={`${base}roadmap/`}>Roadmap</a>
+  <a href={repo}><Icon name="git-branch" size="15" /><span>Source</span></a>
+</nav>
+
+<style>
+  .bk-sl-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--sl-text-sm);
+  }
+  .bk-sl-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--bk-radius-2);
+    color: var(--bk-text-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .bk-sl-nav a:hover {
+    color: var(--bk-text);
+    background: var(--bk-cursor-line);
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+// A real screenshot of the interface, rendered by bk-ui's screenshot test
+// (docs/features/ui-screenshots/, copied by scripts/prepare.sh), never a
+// mock-up. Shows the dark or light rendering to match the page's theme,
+// served as responsive WebP; the frame links to a large copy, which the
+// viewer script opens in a dialog (without scripts the link just opens it).
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+import Icon from './Icon.astro';
+import { screenshots } from '../lib/screenshots';
+
+interface Props {
+  /** Base name in ui-screenshots/, e.g. "palette" or "main" (→ main-dark-normal). */
+  name: string;
+  alt: string;
+  caption?: string;
+  tag?: string;
+  sizes?: string;
+  widths?: number[];
+  eager?: boolean;
+  class?: string;
+}
+const { name, alt, caption, tag, sizes = '100vw', widths = [640, 960, 1440], eager = false, class: cls } = Astro.props;
+
+async function load(theme: 'dark' | 'light'): Promise<ImageMetadata> {
+  for (const candidate of [`${name}-${theme}`, `${name}-${theme}-normal`]) {
+    if (screenshots[candidate]) return screenshots[candidate];
+  }
+  throw new Error(`Screenshot "${name}" (${theme}) not found in docs/features/ui-screenshots/`);
+}
+
+async function variant(theme: 'dark' | 'light') {
+  const src = await load(theme);
+  const ws = widths.filter((w) => w <= src.width);
+  const imgs = await Promise.all(ws.map((width) => getImage({ src, width, format: 'webp', quality: 80 })));
+  const full = await getImage({ src, width: Math.min(src.width, 2400), format: 'webp', quality: 84 });
+  return {
+    srcset: imgs.map((im, i) => `${im.src} ${ws[i]}w`).join(', '),
+    src: imgs[imgs.length - 1].src,
+    width: src.width,
+    height: src.height,
+    full: full.src,
+  };
+}
+const dark = await variant('dark');
+const light = await variant('light');
+const loading = eager ? 'eager' : 'lazy';
+---
+
+<figure class:list={['bk-shot', cls]}>
+  <a class="bk-shot-frame bk-only-dark" href={dark.full} data-bk-viewer data-caption={caption ?? alt}>
+    <img src={dark.src} srcset={dark.srcset} sizes={sizes} width={dark.width} height={dark.height} alt={alt} loading={loading} decoding="async" fetchpriority={eager ? 'high' : undefined} />
+  </a>
+  <a class="bk-shot-frame bk-only-light" href={light.full} data-bk-viewer data-caption={caption ?? alt}>
+    <img src={light.src} srcset={light.srcset} sizes={sizes} width={light.width} height={light.height} alt={alt} loading="lazy" decoding="async" />
+  </a>
+  {
+    (caption || tag) && (
+      <figcaption>
+        {caption && <span>{caption}</span>}
+        {tag && <span class="bk-tag">{tag}</span>}
+      </figcaption>
+    )
+  }
+</figure>
+
+<template id="bk-viewer-close-icon"><Icon name="x" size="18" /></template>
+
+<script>
+  // Opens the large screenshot in a dialog; Escape, the close button or a
+  // click outside closes it. Without scripts the link opens the image.
+  let dialog: HTMLDialogElement | undefined;
+  function ensure(): HTMLDialogElement {
+    if (dialog) return dialog;
+    dialog = document.createElement('dialog');
+    dialog.className = 'bk-viewer';
+    const icon = (document.getElementById('bk-viewer-close-icon') as HTMLTemplateElement | null)?.innerHTML ?? '×';
+    dialog.innerHTML = `<div class="bk-viewer-bar"><span></span><button type="button" aria-label="Close">${icon}</button></div><img alt="">`;
+    dialog.querySelector('button')!.addEventListener('click', () => dialog!.close());
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog!.close();
+    });
+    document.body.append(dialog);
+    return dialog;
+  }
+  document.querySelectorAll<HTMLAnchorElement>('a[data-bk-viewer]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || typeof HTMLDialogElement === 'undefined') return;
+      e.preventDefault();
+      const d = ensure();
+      const img = d.querySelector('img')!;
+      img.src = a.href;
+      img.alt = a.querySelector('img')?.alt ?? '';
+      d.querySelector('.bk-viewer-bar span')!.textContent = a.dataset.caption ?? '';
+      d.showModal();
+    });
+  });
+</script>

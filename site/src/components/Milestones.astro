@@ -1,0 +1,23 @@
+---
+// The milestones of docs/PLAN.md as a strip: complete (filled), current
+// (ember: "you are here"), planned (hollow).
+import { loadMilestones } from '../lib/plan';
+import Icon from './Icon.astro';
+const ms = loadMilestones();
+const short = (t: string) => t.replace(/,.*$/, '').replace(/^Decompiler core$/, 'Decompiler');
+---
+
+<ol class="bk-milestones" aria-label="Milestones">
+  {
+    ms.map((m) => (
+      <li class={`ms-${m.state}`} aria-current={m.state === 'current' ? 'step' : undefined}>
+        <span class="bk-ms-node">
+          {m.state === 'done' && <Icon name="check" weight="bold" size="12" />}
+          {m.state === 'current' && <span class="bk-pupil" style="width:0.3rem;height:0.65rem" />}
+        </span>
+        <span class="bk-ms-id">{m.id}</span>
+        <span class="bk-ms-title">{short(m.title)}</span>
+      </li>
+    ))
+  }
+</ol>
