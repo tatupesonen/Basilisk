@@ -10,36 +10,42 @@
 )]
 //! The full oracle on generated graphs (`docs/features/decomp-cfg.md` 6.3.1,
 //! 6.3.3, 6.4): every graph through D00's `bk cfg analyze` and `bk
-//! structure` (modes `bare trace`, `bare finish`, and `asgiven` for the
-//! function-like ones), compared with Basilisk's dumps in the same formats.
+//! structure` (modes `bare trace`, `bare finish`, and `asgiven trace` for
+//! the function-like ones, on a graph file written from the analysis),
+//! compared with Basilisk's dumps written by `bk-testkit`'s writers.
 //!
-//! The table stores per graph and mode the dump's header line and a 128-bit
-//! hash of the whole dump (about 12,000 graphs times four dumps would not
-//! fit the repository as text). `replay` (S) needs the table; `regen` (L,
-//! ignored) needs the reference build's extended console `decomp_bk`. Both
-//! skip with a printed reason until D00 has delivered them.
+//! One table per reference build (`cfg_oracle.libcxx.txt.gz`,
+//! `cfg_oracle.libstdcxx.txt.gz`) stores per graph and mode the dump's
+//! header line and a 64-bit FNV-1a digest of the whole dump (about 12,000
+//! graphs times four dumps would not fit the repository as text). `replay`
+//! (S) requires every row to equal Basilisk's dump and the two builds'
+//! tables to agree, or each disagreement to be recognised by cause
+//! (ADR-040). `regen` (L, ignored) runs `decomp_bk`; `tests/oracle/regen.sh`
+//! drives it twice per build.
 
 mod support {
-    pub(crate) mod dump;
     pub(crate) mod graphgen;
+    pub(crate) mod oracle;
     pub(crate) mod table;
 }
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
 use bk_decomp_cfg::{
-    Analyse, BlockFacts, Cfg, GhidraGotoSelector, Record, StructureOptions, finish, structure,
+    Analyse, BlockFacts, GhidraGotoSelector, Kind, Record, StructureOptions, finish, structure,
 };
-use support::dump::{asgiven, cfg_dump, graph_file, struct_dump};
+use bk_testkit::oracle::host::{Library, digest};
 use support::graphgen::{Class, GenGraph, generate};
+use support::oracle::{asgiven_of, cfg_dump, cfg_of, graph_of, struct_dump};
 use support::table::{data_dir, escape, read_gz, unescape, write_gz};
-use wait_timeout::ChildExt as _;
 
-const TABLE: &str = "cfg_oracle.txt.gz";
 const MAX_NODES: usize = 64;
-const HEADER: &str = "# bk-decomp-cfg oracle table v1: class seed mode header-line fnv128-of-dump";
+const HEADER: &str = "# bk-decomp-cfg oracle table v2: class seed mode header-line fnv64-of-dump (bkcfg 1, bkstruct 1)";
+/// The header Basilisk's dump has where Ghidra's console never finishes.
+const HANG: &str = "hang";
 
 fn per_class(c: Class) -> u64 {
     match c {
@@ -54,23 +60,26 @@ fn cases() -> impl Iterator<Item = (Class, u64)> {
         .flat_map(|c| (0..per_class(c)).map(move |s| (c, s)))
 }
 
-/// Two FNV-1a hashes with different offsets: a 128-bit fingerprint.
-fn fnv128(text: &str) -> String {
-    let mut a: u64 = 0xcbf2_9ce4_8422_2325;
-    let mut b: u64 = 0x6c62_272e_07bb_0142;
-    for &byte in text.as_bytes() {
-        a = (a ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3);
-        b = (b ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3);
-    }
-    format!("{a:016x}{b:016x}")
+fn table_path(lib: Library) -> PathBuf {
+    data_dir().join(format!("cfg_oracle.{}.txt.gz", lib.name()))
 }
 
-/// Basilisk's four dumps of one graph: `cfg`, `bare-trace`, `bare-finish`
-/// and (function-like graphs) `asgiven`.
+/// The analysed graph of a function-like case in `asgiven` form, if the
+/// analyses succeed.
+fn asgiven_file(g: &GenGraph) -> Option<bk_testkit::oracle::GraphFile> {
+    let file = graph_of(g);
+    let (cfg, facts) = cfg_of(&file);
+    let mut analysed = cfg;
+    let roots = analysed.structure_loops().ok()?;
+    analysed.forward_dominators(&roots).ok()?;
+    Some(asgiven_of(&analysed, &facts))
+}
+
+/// Basilisk's dumps of one case, by mode.
 fn basilisk_dumps(class: Class, g: &GenGraph) -> Vec<(&'static str, String)> {
-    let cfg = g.to_cfg();
-    let facts = g.block_facts();
-    let mut out = vec![("cfg", cfg_dump(&cfg, &facts))];
+    let file = graph_of(g);
+    let (cfg, facts) = cfg_of(&file);
+    let mut out = vec![("cfg", cfg_dump(&file).write())];
     let bare = |record| StructureOptions {
         analyse: Analyse::Recompute,
         record,
@@ -83,7 +92,8 @@ fn basilisk_dumps(class: Class, g: &GenGraph) -> Vec<(&'static str, String)> {
             &facts,
             &bare(Record::Trace),
             &mut GhidraGotoSelector::new(),
-        )),
+        ))
+        .write(),
     ));
     let mut fin = structure(
         &cfg,
@@ -94,121 +104,169 @@ fn basilisk_dumps(class: Class, g: &GenGraph) -> Vec<(&'static str, String)> {
     if let Ok(s) = &mut fin {
         finish(&mut s.hierarchy, &facts, None);
     }
-    out.push(("bare-finish", struct_dump(&fin)));
-    if class == Class::Func {
-        let mut analysed = cfg.clone();
-        let ok = analysed
-            .structure_loops()
-            .and_then(|roots| analysed.forward_dominators(&roots));
-        if ok.is_ok() {
-            let (given, gfacts, _) = asgiven(&analysed, &facts);
-            out.push((
-                "asgiven",
-                struct_dump(&structure(
-                    &given,
-                    &gfacts,
-                    &StructureOptions::default(),
-                    &mut GhidraGotoSelector::new(),
-                )),
-            ));
-        }
+    out.push(("bare-finish", struct_dump(&fin).write()));
+    if class == Class::Func
+        && let Some(given) = asgiven_file(g)
+    {
+        let (gcfg, gfacts) = cfg_of(&given);
+        let options = StructureOptions {
+            record: Record::Trace,
+            ..StructureOptions::default()
+        };
+        out.push((
+            "asgiven-trace",
+            struct_dump(&structure(
+                &gcfg,
+                &gfacts,
+                &options,
+                &mut GhidraGotoSelector::new(),
+            ))
+            .write(),
+        ));
     }
     out
 }
 
-fn row_of(dump: &str) -> String {
-    let header = dump.lines().next().unwrap_or("");
-    format!("{}\t{}", escape(header), fnv128(dump))
+fn header_of(dump: &str) -> &str {
+    dump.lines().next().unwrap_or("")
 }
 
-#[test]
-fn replay() {
-    let path = data_dir().join(TABLE);
-    let Some(text) = read_gz(&path) else {
-        eprintln!(
-            "skipped: {} not generated yet (needs D00's decomp_bk; tests/oracle/regen.sh)",
-            path.display()
-        );
-        return;
-    };
-    let mut expected = std::collections::HashMap::new();
+fn row_of(dump: &str) -> String {
+    format!(
+        "{}\t{:016x}",
+        escape(header_of(dump)),
+        digest(dump.as_bytes())
+    )
+}
+
+type Table = BTreeMap<(String, u64, String), (String, String)>;
+
+fn read_table(lib: Library) -> Option<Table> {
+    let text = read_gz(&table_path(lib))?;
+    let mut t = Table::new();
     for line in text.lines().filter(|l| !l.starts_with('#')) {
         let f: Vec<&str> = line.splitn(5, '\t').collect();
-        expected.insert(
-            (
-                f[0].to_owned(),
-                f[1].parse::<u64>().unwrap(),
-                f[2].to_owned(),
-            ),
+        t.insert(
+            (f[0].to_owned(), f[1].parse().unwrap(), f[2].to_owned()),
             (unescape(f[3]), f[4].to_owned()),
         );
     }
-    let (mut same, mut differ) = (0, Vec::new());
+    Some(t)
+}
+
+/// Whether Basilisk's dump matches a table row.
+fn matches(dump: &str, row: &(String, String)) -> bool {
+    if row.0 == HANG {
+        return header_of(dump).contains("does not terminate");
+    }
+    row.1 == format!("{:016x}", digest(dump.as_bytes()))
+}
+
+/// Why the two builds' rows differ, if a known cause explains it: the
+/// top level of the finished hierarchy has two or more nodes ending in
+/// `RETURN`, which `compareFinalOrder` calls equal, so `std::sort` leaves
+/// their order to the library (`decomp-cfg.md` 4.9, ADR-040).
+fn return_tie(class: Class, seed: u64, mode: &str) -> bool {
+    if mode != "bare-finish" {
+        return false;
+    }
+    let g = generate(class, seed, MAX_NODES, true);
+    let file = graph_of(&g);
+    let (cfg, facts) = cfg_of(&file);
+    let options = StructureOptions {
+        analyse: Analyse::Recompute,
+        ..StructureOptions::default()
+    };
+    let Ok(s) = structure(&cfg, &facts, &options, &mut GhidraGotoSelector::new()) else {
+        return false;
+    };
+    let h = &s.hierarchy;
+    h.top_level().len() >= 4
+        && h.top_level()
+            .iter()
+            .filter(|&&n| ends_in_return(h, n, &facts))
+            .count()
+            >= 2
+}
+
+/// Rows where a build's `orderBlocks` breaks a RETURN tie differently from
+/// Basilisk's stable sort (ADR-040), per library: pinned, measured.
+const RETURN_TIE_ROWS: [(Library, usize); 2] = [
+    (Library::Libcxx, LIBCXX_TIES),
+    (Library::Libstdcxx, LIBSTDCXX_TIES),
+];
+const LIBCXX_TIES: usize = 1;
+const LIBSTDCXX_TIES: usize = 15;
+
+#[test]
+fn replay() {
+    let tables: Vec<(Library, Table)> = [Library::Libcxx, Library::Libstdcxx]
+        .into_iter()
+        .filter_map(|lib| read_table(lib).map(|t| (lib, t)))
+        .collect();
+    if tables.is_empty() {
+        eprintln!("skipped: no cfg_oracle table (tests/oracle/regen.sh)");
+        return;
+    }
+    let mut equal = vec![0usize; tables.len()];
+    let mut ties = vec![0usize; tables.len()];
+    let mut builds_differ = 0usize;
+    let mut differ = Vec::new();
     for (class, seed) in cases() {
         let g = generate(class, seed, MAX_NODES, true);
         for (mode, dump) in basilisk_dumps(class, &g) {
-            let Some((header, hash)) =
-                expected.get(&(class.name().to_owned(), seed, mode.to_owned()))
-            else {
-                continue;
-            };
-            let ours_header = dump.lines().next().unwrap_or("");
-            if fnv128(&dump) == *hash
-                || (header == "hang" && ours_header.contains("does not terminate"))
-            {
-                same += 1;
-            } else {
-                differ.push(format!(
-                    "{} {seed} {mode}: ours {ours_header:?}, Ghidra {header:?}",
-                    class.name()
-                ));
+            let key = (class.name().to_owned(), seed, mode.to_owned());
+            let rows: Vec<&(String, String)> = tables.iter().map(|(_, t)| &t[&key]).collect();
+            if rows.windows(2).any(|w| w[0] != w[1]) {
+                builds_differ += 1;
+            }
+            for (i, row) in rows.iter().enumerate() {
+                if matches(&dump, row) {
+                    equal[i] += 1;
+                } else if return_tie(class, seed, mode) {
+                    ties[i] += 1;
+                } else {
+                    differ.push(format!(
+                        "{} {} {seed} {mode}: ours {:?}, Ghidra {:?}",
+                        tables[i].0.name(),
+                        class.name(),
+                        header_of(&dump),
+                        row.0
+                    ));
+                }
             }
         }
     }
-    eprintln!("oracle replay: {same} dumps equal, {} differ", differ.len());
-    assert!(differ.is_empty(), "{:#?}", &differ[..differ.len().min(20)]);
-}
-
-/// Runs `decomp_bk` on a script with a time limit; `None` on timeout.
-fn run_console(
-    console: &Path,
-    sleighhome: &Path,
-    script: &Path,
-    limit: Duration,
-) -> Option<String> {
-    let out_path = script.with_extension("stdout");
-    let mut child = std::process::Command::new(console)
-        .arg("-i")
-        .arg(script)
-        .env("SLEIGHHOME", sleighhome)
-        .env("LC_ALL", "C")
-        .stdin(std::process::Stdio::null())
-        .stdout(std::fs::File::create(&out_path).unwrap())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .unwrap();
-    if child.wait_timeout(limit).unwrap().is_some() {
-        return Some(std::fs::read_to_string(&out_path).unwrap_or_default());
+    for (i, (lib, _)) in tables.iter().enumerate() {
+        eprintln!(
+            "oracle replay {}: {} dumps equal, {} recognised as orderBlocks RETURN ties",
+            lib.name(),
+            equal[i],
+            ties[i]
+        );
+        let pinned = RETURN_TIE_ROWS
+            .iter()
+            .find(|(l, _)| l == lib)
+            .map_or(0, |(_, n)| *n);
+        assert_eq!(ties[i], pinned, "{}: tie count moved", lib.name());
     }
-    let _ = child.kill();
-    let _ = child.wait();
-    None
+    eprintln!(
+        "rows where the two builds differ: {builds_differ}; unexplained: {}",
+        differ.len()
+    );
+    assert!(differ.is_empty(), "{:#?}", &differ[..differ.len().min(20)]);
 }
 
 #[test]
 #[ignore = "runs the reference console decomp_bk (D00); tests/oracle/regen.sh"]
 fn regen() {
-    let Some(reference) = bk_testkit::require_reference() else {
+    let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::DecompBk) else {
         return;
     };
     let Some(ghidra) = bk_testkit::require_ghidra() else {
         return;
     };
-    let console = reference.root().join("bin").join("decomp_bk");
-    if !console.is_file() {
-        eprintln!("skipped: {} not built (D00)", console.display());
-        return;
-    }
+    let lib = Library::of_reference(&reference).expect("reference STAMP names its host");
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
         .join(format!("bk-cfg-oracle-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -219,100 +277,103 @@ fn regen() {
     );
     let mut script = vec![load.clone()];
     let mut jobs = Vec::new();
-    let mut rows = std::collections::BTreeMap::new();
+    let mut rows = BTreeMap::new();
     for (class, seed) in cases() {
         let g = generate(class, seed, MAX_NODES, true);
         let ours = basilisk_dumps(class, &g);
-        let base = dir.join(format!("{}{seed}", class.name()));
-        let gf = base.with_extension("graph");
-        std::fs::write(&gf, graph_file(&g)).unwrap();
-        let mut cmds = vec![(
-            "cfg",
-            format!("bk cfg analyze {} {}.cfg", gf.display(), base.display()),
-        )];
-        cmds.push((
-            "bare-trace",
-            format!(
-                "bk structure {} {}.bt bare trace",
-                gf.display(),
-                base.display()
+        let base = format!("{}{seed}", class.name());
+        std::fs::write(dir.join(format!("{base}.bkg")), graph_of(&g).write()).unwrap();
+        let mut cmds = vec![
+            (
+                "cfg",
+                format!("bk cfg analyze {base}.bkg {base}.cfg"),
+                format!("{base}.cfg"),
             ),
-        ));
-        cmds.push((
-            "bare-finish",
-            format!(
-                "bk structure {} {}.bf bare finish",
-                gf.display(),
-                base.display()
+            (
+                "bare-trace",
+                format!("bk structure {base}.bkg {base}.bt bare trace"),
+                format!("{base}.bt"),
             ),
-        ));
-        if class == Class::Func {
-            let cfg = g.to_cfg();
-            let mut analysed = cfg.clone();
-            if let Ok(roots) = analysed.structure_loops()
-                && analysed.forward_dominators(&roots).is_ok()
-            {
-                let (_, _, text) = asgiven(&analysed, &g.block_facts());
-                let ag = base.with_extension("asgiven.graph");
-                std::fs::write(&ag, text).unwrap();
-                cmds.push((
-                    "asgiven",
-                    format!(
-                        "bk structure {} {}.ag asgiven",
-                        ag.display(),
-                        base.display()
-                    ),
-                ));
-            }
+            (
+                "bare-finish",
+                format!("bk structure {base}.bkg {base}.bf bare finish"),
+                format!("{base}.bf"),
+            ),
+        ];
+        if class == Class::Func
+            && let Some(given) = asgiven_file(&g)
+        {
+            std::fs::write(dir.join(format!("{base}.ag.bkg")), given.write()).unwrap();
+            cmds.push((
+                "asgiven-trace",
+                format!("bk structure {base}.ag.bkg {base}.ag asgiven trace"),
+                format!("{base}.ag"),
+            ));
         }
-        for (mode, cmd) in cmds {
-            let out_file = PathBuf::from(
-                cmd.split(' ')
-                    .nth(if mode == "cfg" { 4 } else { 3 })
-                    .unwrap(),
-            );
-            let hang = ours.iter().any(|(m, d)| {
-                *m == mode
-                    && d.lines()
-                        .next()
-                        .unwrap_or("")
-                        .contains("does not terminate")
-            });
+        for (mode, cmd, out) in cmds {
+            let hang = ours
+                .iter()
+                .any(|(m, d)| *m == mode && header_of(d).contains("does not terminate"));
             if hang {
-                let s = base.with_extension(format!("{mode}.script"));
-                std::fs::write(&s, format!("{load}\n{cmd}\nquit\n")).unwrap();
-                let r = run_console(&console, reference.root(), &s, Duration::from_secs(10));
-                let row = match r {
-                    None => "hang\t-".to_owned(),
-                    Some(_) => row_of(&std::fs::read_to_string(&out_file).unwrap_or_default()),
+                let alone = reference
+                    .decomp_bk()
+                    .current_dir(&dir)
+                    .timeout(Duration::from_secs(10))
+                    .run_script([load.as_str(), cmd.as_str()]);
+                let row = match alone {
+                    Err(bk_testkit::ToolError::Timeout { .. }) => format!("{HANG}\t-"),
+                    _ => row_of(&std::fs::read_to_string(dir.join(&out)).unwrap_or_default()),
                 };
                 rows.insert((class.name(), seed, mode), row);
             } else {
                 script.push(cmd);
-                jobs.push((class.name(), seed, mode, out_file));
+                jobs.push((class.name(), seed, mode, out));
             }
         }
     }
-    script.push("quit".to_owned());
-    let s = dir.join("all.script");
-    std::fs::write(&s, script.join("\n") + "\n").unwrap();
-    run_console(&console, reference.root(), &s, Duration::from_mins(30))
-        .expect("decomp_bk timed out");
-    for (class, seed, mode, out_file) in jobs {
-        let dump = std::fs::read_to_string(&out_file)
-            .unwrap_or_else(|_| panic!("no output {}", out_file.display()));
+    reference
+        .decomp_bk()
+        .current_dir(&dir)
+        .timeout(Duration::from_mins(30))
+        .run_script(&script)
+        .expect("decomp_bk session");
+    let mut cfg_mismatch = Vec::new();
+    for (class, seed, mode, out) in jobs {
+        let dump =
+            std::fs::read_to_string(dir.join(&out)).unwrap_or_else(|_| panic!("no output {out}"));
+        // The asgiven input was written from Basilisk's analysis: it is
+        // Ghidra's only if the two analyses agree.
+        if mode == "cfg" && class == "func" {
+            let g = generate(Class::Func, seed, MAX_NODES, true);
+            if cfg_dump(&graph_of(&g)).write() != dump {
+                cfg_mismatch.push(seed);
+            }
+        }
         rows.insert((class, seed, mode), row_of(&dump));
     }
+    assert!(
+        cfg_mismatch.is_empty(),
+        "analysis differs (asgiven input not Ghidra's) for func {cfg_mismatch:?}"
+    );
     let mut text = String::from(HEADER);
     text.push('\n');
     for ((class, seed, mode), row) in &rows {
         let _ = writeln!(text, "{class}\t{seed}\t{mode}\t{row}");
     }
-    let out =
-        std::env::var_os("BK_CFG_TABLE_OUT").map_or_else(|| data_dir().join(TABLE), PathBuf::from);
+    let out = match std::env::var("BK_CFG_TABLE_OUT") {
+        Ok(dir) if !dir.is_empty() => {
+            PathBuf::from(dir).join(format!("cfg_oracle.{}.txt.gz", lib.name()))
+        }
+        _ => table_path(lib),
+    };
     write_gz(&out, &text);
     let _ = std::fs::remove_dir_all(&dir);
-    eprintln!("wrote {} ({} rows)", out.display(), rows.len());
+    eprintln!(
+        "wrote {} ({} rows, {})",
+        out.display(),
+        rows.len(),
+        lib.name()
+    );
 }
 
 #[test]
@@ -324,25 +385,34 @@ fn basilisk_dumps_are_deterministic() {
         (Class::Irr, 13),
     ] {
         let g = generate(class, seed, MAX_NODES, true);
-        assert_eq!(basilisk_dumps(class, &g), basilisk_dumps(class, &g));
+        let a = basilisk_dumps(class, &g);
+        assert_eq!(a, basilisk_dumps(class, &g));
+        // Every dump is accepted by bk-testkit's readers, and written back
+        // byte for byte.
+        for (mode, d) in &a {
+            if *mode == "cfg" {
+                assert_eq!(bk_testkit::oracle::CfgDump::parse(d).unwrap().write(), *d);
+            } else {
+                assert_eq!(
+                    bk_testkit::oracle::StructureDump::parse(d).unwrap().write(),
+                    *d
+                );
+            }
+        }
     }
-    let _ = Cfg::new();
-    let _ = BlockFacts::neutral(0);
 }
 
 /// `orderBlocks` ties (`docs/features/decomp-cfg.md` 4.9, 10 item 1): how
 /// many finished runs of the oracle's graphs have two or more top-level
 /// nodes ending in `RETURN`, by top-level list length — the rows where the
 /// C++ libraries may order differently (libc++ for four or more elements,
-/// libstdc++ for 17 or more). The counts are printed for the report and
-/// pinned so that a generator change shows.
+/// libstdc++ for 17 or more). Pinned so that a generator change shows.
 #[test]
 fn return_ties() {
     let (mut runs, mut tied, mut tied4, mut tied17) = (0, 0, 0, 0);
     for (class, seed) in cases() {
         let g = generate(class, seed, MAX_NODES, true);
-        let cfg = g.to_cfg();
-        let facts = g.block_facts();
+        let (cfg, facts) = cfg_of(&graph_of(&g));
         let options = StructureOptions {
             analyse: Analyse::Recompute,
             ..StructureOptions::default()
@@ -355,7 +425,7 @@ fn return_ties() {
         let top = h.top_level();
         let returns = top
             .iter()
-            .filter(|&&n| h.front_leaf(n).is_some() && ends_in_return(h, n, &facts))
+            .filter(|&&n| ends_in_return(h, n, &facts))
             .count();
         if top.len() > 1 && returns >= 2 {
             tied += 1;
@@ -372,7 +442,7 @@ fn return_ties() {
     );
     assert_eq!(
         (tied, tied4, tied17),
-        (TIES.0, TIES.1, TIES.2),
+        TIES,
         "counts moved; update TIES after checking"
     );
 }
@@ -386,7 +456,6 @@ fn ends_in_return(
     n: bk_decomp_cfg::NodeId,
     facts: &BlockFacts,
 ) -> bool {
-    use bk_decomp_cfg::Kind;
     let mut x = n;
     loop {
         let c = h.components(x);

@@ -574,7 +574,6 @@ dependencies = [
  "rand_chacha",
  "rstest",
  "thiserror 2.0.21",
- "wait-timeout",
 ]
 
 [[package]]
