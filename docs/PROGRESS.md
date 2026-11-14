@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 20:17)
+## Now — RESUME HERE (2026-11-14 20:39)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -103,15 +103,42 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 20:14)
+### Running (state at 2026-11-14 20:39)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
-tests and gates on kassini through `scripts/remote.sh`.
+tests and gates on kassini through `scripts/remote.sh`. **Both slots
+are kept filled; the coordinator picks the order; defects found in
+Ghidra go into `docs/GHIDRA-BUGS.md`** (owner, 20:35, before leaving the
+coordinator to work alone). The Mac must stay awake: `caffeinate` runs,
+but a closed lid needs `sudo pmset -a disablesleep 1`, which only the
+owner can run (told at 20:38).
+
+**Finished, integration gate running on the build host:**
+`sleigh-snippet` (`af1bd08864645b02b`) on branch `integration` (worktree
+`../basilisk-wt/sleigh-snippet`, `12f1dec`). New crate
+`bk-sleigh-snippet`: all 137 shipped snippet elements (130 `<pcode>`
+outside XML comments plus 7 jump-table `*_pcode`) compiled for every
+language that uses each file — 116 languages, 588 compilations, no
+difference from Ghidra's template; 236 hand-written cases and 200,000
+generated ones against the new oracle `snippetdump` (456 counted
+bit-range cases, 4 octal cases on the Mac only); `PcodeParserTest`
+ported; both gates on the build host 2,053 tests. `scripts/remote.sh`
+worked from its worktree. Follow-ups: **a bug in `bk-sleigh-compiler`'s
+shared builder** (`pcode/bitrange.rs`: Ghidra does the bit-range
+arithmetic in 32 bits and wraps; ours does not; then remove
+`wraps_32_bits` from the snippet crate's `tests/oracle_random.rs`) — a
+small track; `bk-testkit` should own `Tool::Snippetdump`; `bk-sla`'s
+template reader refuses a branch to a label that is never placed, which
+Ghidra compiles; the decompiler uses one compiler per program and
+carries the temporary allocator in payload order. On the Mac it added
+`bin/snippetdump` to `../reference` (the script also rebuilt
+`bin/pcodedump` from the same source and rewrote `STAMP`). Gate green →
+push, CI, merge, PLAN (`sleigh-snippet` ✔; M2 complete) and PARITY.
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:05 with its work committed (`8731612`: findings and plan, the `snippetdump` oracle source, lexer, scope, parser and driver; test support half written), **resumed 20:14**. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. Told to `git merge master` once and to use the build host for everything from then on; it is the first agent to use `scripts/remote.sh` from a worktree other than its author's. Its findings (the spec is wrong in seven places: snippets have their own lexer and grammar, a leading `0` is octal, only the first error is reported, many errors do not fail the compile, no label check, no `_size` constants for `inst_dest`/`inst_ref`, `<truncate_space>` is an input) are accepted: the oracle decides. Corpus: 139 elements (132 `<pcode>` plus 7 jump-table `*_pcode`). |
+| `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33. The build host as testbed, on top of `scripts/remote.sh`: the Windows GNU target under Wine natively, the GCC 15 container for the C-binding crates, Miri, sanitizers, fuzzing and property tests at length, the full differential runs, a nightly scheduled run with a report (`remote.sh report`), `clean --target`. Findings in crates are reported, not fixed. |
 | `cspec-host` (worktree `../basilisk-wt/cspec-host`, cut from `master` `3e43909`) | Opus | `a85106d421cedbda2` | started 20:17. Queue item 1 below: make the `bk-cspec` oracle generator deterministic and crash-free, generate the libc++ (Mac) and libstdc++ (build host) tables, trace every differing row to its cause in Ghidra's source, propose per cause the result Basilisk gives (ADR text comes back in its report; the coordinator records it), implement it and make the replay strict against both tables. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
@@ -304,7 +331,7 @@ start a fresh agent briefed from the branch's files.
    not — `../reference` is the oracle and equals x86-64 Linux for the
    SLEIGH compiler. This is a new case: Ghidra's own answer differs
    between its platforms.)
-2. **`testbed`** — the item below (-2), now that `remote-build` is
+2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
 3. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
