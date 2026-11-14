@@ -631,6 +631,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-sleigh"
+version = "0.0.1"
+dependencies = [
+ "bk-bin",
+ "bk-core",
+ "bk-elf",
+ "bk-lang",
+ "bk-pcode",
+ "bk-sla",
+ "bk-testkit",
+ "dhat",
+ "insta",
+ "proptest",
+ "tempfile",
+ "thiserror 2.0.21",
+ "wait-timeout",
+]
+
+[[package]]
 name = "bk-sleigh-syntax"
 version = "0.0.1"
 dependencies = [

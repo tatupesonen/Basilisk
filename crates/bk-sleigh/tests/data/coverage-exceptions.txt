@@ -1,0 +1,7 @@
+# Languages allowed below the coverage thresholds of the differential test
+# (features/sleigh-decode.md 6.2): language<TAB>metric (pairs|constructors)<TAB>cause.
+# Reviewed by the coordinator at merge.
+DATA:BE:64:default	pairs	The language's only constructor (`nop is test=1 unimpl`) has length 0: both sides report "instruction has no length" (E records, equal), so no I record can confirm it.
+DATA:BE:64:default	constructors	As for pairs: the only constructor has length 0 and never yields an I record.
+DATA:LE:64:default	pairs	As DATA:BE:64:default.
+DATA:LE:64:default	constructors	As DATA:BE:64:default.

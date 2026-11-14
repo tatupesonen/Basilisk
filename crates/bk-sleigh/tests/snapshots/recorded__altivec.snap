@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh/tests/recorded.rs
+expression: text
+---
+10221840	vadduhm v1,v2,v3	largest operand count 27
+10221c40	vsubuhm v1,v2,v3	largest operand count 27
+13fff840	vadduhm v31,v31,v31	largest operand count 27
+10000440	vsubuhm v0,v0,v0	largest operand count 27
