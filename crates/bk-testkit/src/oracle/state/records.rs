@@ -290,8 +290,9 @@ record! {
     ProtoRecord = "M" {
         /// The model's name, or `-`.
         model: String = Text,
-        /// `extrapop`.
-        extrapop: i32 = Dec<i32>,
+        /// `extrapop`; absent without a model (Ghidra leaves it
+        /// uninitialised until `setModel`).
+        extrapop: Option<i32> = Opt<Dec<i32>>,
         /// `flags`.
         flags: u32 = Hex<u32>,
         /// `injectid`.

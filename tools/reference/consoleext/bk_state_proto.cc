@@ -29,8 +29,14 @@ static std::string paramRecord(StateDump &d, const char *dir, int4 i, ProtoParam
 static void writeProto(StateDump &d, const FuncProto &proto)
 {
   const ProtoModel *model = proto.model;
-  d.w.add(record({"M", model == (const ProtoModel *)0 ? std::string("-") : escape(model->getName()),
-                  num(proto.extrapop), hx(proto.flags), num(proto.injectid), num(proto.returnBytesConsumed)}));
+  // FuncProto's constructor leaves extrapop uninitialised; setModel sets it.
+  // A call spec has no model between flow and ActionDefaultParams (queryCall
+  // postpones the copy of the callee's prototype), so extrapop is written
+  // only with a model.
+  bool hasModel = (model != (const ProtoModel *)0);
+  d.w.add(record({"M", hasModel ? escape(model->getName()) : std::string("-"),
+                  hasModel ? num(proto.extrapop) : std::string("-"), hx(proto.flags), num(proto.injectid),
+                  num(proto.returnBytesConsumed)}));
   ProtoStore *store = proto.store;
   if (store != (ProtoStore *)0) {
     for (int4 i = 0; i < store->getNumInputs(); ++i) {
