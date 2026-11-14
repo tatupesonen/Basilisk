@@ -535,3 +535,40 @@ Command:
 
 Every method is a handful of branches on a 32-byte `Copy` value and
 allocates nothing (`tests/no_allocation.rs`).
+
+### `bk-decomp-cfg`
+
+2026-11-15, the Linux build host (a 20-vCPU x86-64 Linux VM, AMD Ryzen
+Threadripper 7970X), rustc 1.100.0, `--release` (thin LTO), one test
+thread, best of 3–5 runs. Generated graphs (`tests/support/graphgen.rs`):
+"function-like" are random graphs with every node reachable from node 0
+(about two edges per node, many cross edges); "reducible" are lowered from
+nested structured statements. Command:
+
+    cargo test -p bk-decomp-cfg --release --test bench -- --ignored --nocapture --test-threads=1
+
+| Benchmark | Nodes | Edges | Time |
+|---|---:|---:|---:|
+| `structure_loops` + `forward_dominators`, function-like | 1,000 | 2,016 | 0.35 ms |
+| the same | 10,000 | 20,242 | 32 ms |
+| the same | 100,000 | 201,937 | 4.3 s |
+| `structure` (bare: analyses + collapse), reducible | 616 | 875 | 0.27 ms |
+| the same | 7,177 | 10,588 | 21 ms |
+| the same, function-like (768 gotos) | 1,000 | 2,036 | 22 ms |
+| the same, function-like (2,502 gotos) | 3,000 | 6,193 | 224 ms |
+| reference console `structure blocks` (run minus load; includes its XML I/O), reducible | 7,177 | 10,588 | 51 ms |
+| the same, function-like | 1,000 | 2,036 | 23 ms |
+
+Memory: 160 bytes per node without its lists, 24 bytes per edge (two
+12-byte halves), 4 bytes per component.
+
+Both costs that grow faster than linearly are Ghidra's algorithms, kept
+because their order is behaviour: `findIrreducible` rebuilds a reach-under
+set per loop head with a one-level `FIND` (`copymap`), which is quadratic on
+random graphs with many back edges; and every goto chosen by `selectGoto`
+is followed by a full sweep of the rules over the top level, so structuring
+costs about (nodes + edges)² rule attempts when most edges become gotos.
+The work counter (`Limits::max_steps`, default `2·(n+e)² + 10⁶`) measured
+at most 0.97·(n+e)² steps on 1,200 generated graphs of up to 1,000 nodes
+and 0.85·(n+e)² on the 3,000-node graph above; reducible graphs take
+0.02·(n+e)².
