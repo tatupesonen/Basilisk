@@ -18,7 +18,7 @@ impl std::fmt::Display for SizeMismatch {
 
 /// Forces `size` on `vn` if its size is unknown; if `vn` is a temporary,
 /// every other occurrence of the same temporary in `ops` gets it too.
-/// `vn` must not be one of the varnodes of `ops`; use [`force_size_at`] for
+/// `vn` must not be one of the varnodes of `ops`; use `force_size_at` for
 /// those.
 pub fn force_size(vn: &mut Vn, size: ConstTpl, ops: &mut [Op]) -> Result<(), SizeMismatch> {
     if !is_zero(&vn.size) {
