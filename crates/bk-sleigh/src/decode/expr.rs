@@ -324,6 +324,10 @@ pub(crate) fn binary(op: BinaryOp, a: i64, b: i64) -> Option<i64> {
 
 /// Ghidra `byte_swap(intb&, size)`: reverses the low `size` bytes.
 fn byte_swap(value: i64, size: i32) -> i64 {
+    // One instruction for the sizes fields have (1 to 8 bytes).
+    if (1..=8).contains(&size) {
+        return (value.cast_unsigned().swap_bytes() >> (64 - 8 * size as u32)).cast_signed();
+    }
     let mut value = value;
     let mut res: i64 = 0;
     let mut left = size;
@@ -374,5 +378,21 @@ mod tests {
         assert_eq!(byte_swap(0x1122, 2), 0x2211);
         assert_eq!(byte_swap(0x1122, 0), 0);
         assert_eq!(byte_swap(0x0102_0304_0506_0708, 8), 0x0807_0605_0403_0201);
+        assert_eq!(byte_swap(-2, 1), 0xfe);
+        assert_eq!(byte_swap(-2, 3), 0xfe_ffff);
+        assert_eq!(byte_swap(i64::MIN, 8), 0x80);
+        // The fast form equals Ghidra's loop for every size, and beyond 8
+        // bytes the loop itself runs.
+        for size in 0..=10 {
+            for value in [0i64, -1, 0x0102_0304_0506_0708, i64::MIN, 0x7f, -0x81] {
+                let mut v = value;
+                let mut slow: i64 = 0;
+                for _ in 0..size {
+                    slow = slow.wrapping_shl(8) | (v & 0xff);
+                    v = v.wrapping_shr(8);
+                }
+                assert_eq!(byte_swap(value, size), slow, "{value:#x} {size}");
+            }
+        }
     }
 }
