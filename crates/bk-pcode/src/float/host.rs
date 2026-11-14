@@ -451,13 +451,17 @@ impl FloatFormat {
     }
 
     /// `ceil(a)` (`opCeil`).
+    ///
+    /// `libm::ceil`, not `f64::ceil`: on targets without a rounding
+    /// instruction (baseline x86-64) `f64::ceil` calls the C library, and
+    /// this crate does not depend on the host's C library (see `op_round`).
     pub fn op_ceil(&self, a: u64) -> u64 {
-        self.unary(a, f64::ceil)
+        self.unary(a, libm::ceil)
     }
 
-    /// `floor(a)` (`opFloor`).
+    /// `floor(a)` (`opFloor`). `libm::floor`, as in [`Self::op_ceil`].
     pub fn op_floor(&self, a: u64) -> u64 {
-        self.unary(a, f64::floor)
+        self.unary(a, libm::floor)
     }
 
     /// `round(a)`: to the nearest integer, halfway cases away from zero
