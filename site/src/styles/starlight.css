@@ -314,6 +314,9 @@ site-search dialog {
   text-align: center;
 }
 .bk-diagram svg {
+  /* Text was measured without the page's stylistic sets; keep it so. */
+  font-feature-settings: normal;
+  line-height: 1.5;
   max-width: 100%;
   height: auto;
   margin-inline: auto;

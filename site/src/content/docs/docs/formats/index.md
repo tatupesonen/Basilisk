@@ -3,6 +3,7 @@ title: Formats and processors
 description: The binary formats and processor languages basilisk reads — today and planned.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 ## Processors

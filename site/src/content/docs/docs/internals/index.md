@@ -3,6 +3,7 @@ title: How it works
 description: basilisk's architecture — the headless data flow, the crate map, SLEIGH, p-code, the decompiler pipeline and the program database.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 basilisk is a workspace of focused Rust crates. Dependencies point one way: format parsers know nothing about

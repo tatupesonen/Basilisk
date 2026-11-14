@@ -3,6 +3,7 @@ title: Analysis
 description: Disassembly and auto-analysis in basilisk — planned for milestone M5.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 :::caution[Planned]

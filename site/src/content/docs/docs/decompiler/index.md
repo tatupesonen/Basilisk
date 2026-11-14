@@ -3,6 +3,7 @@ title: The decompiler
 description: basilisk's decompiler, a port of Ghidra's C++ decompiler — planned for milestone M3.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 :::caution[Planned]

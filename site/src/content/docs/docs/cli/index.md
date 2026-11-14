@@ -3,6 +3,7 @@ title: The command line
 description: The basilisk command and its subcommands — what exists today and what is planned.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 basilisk ships as one binary, `basilisk`. With no arguments it opens the desktop interface; subcommands for

@@ -67,7 +67,8 @@ function theme(t) {
       .flowchart-link, .edgePath .path { stroke-width: 1.25px; }
       marker path, .arrowheadPath { fill: ${t.muted}; stroke: ${t.muted}; }
     `,
-    flowchart: { htmlLabels: false, curve: 'basis', padding: 14, nodeSpacing: 34, rankSpacing: 46, diagramPadding: 8 },
+    flowchart: { htmlLabels: false, curve: 'basis', padding: 10, nodeSpacing: 22, rankSpacing: 30, diagramPadding: 4 },
+    block: { padding: 6 },
     sequence: { mirrorActors: false },
   };
 }

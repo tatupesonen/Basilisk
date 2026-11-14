@@ -2,9 +2,18 @@
 // interface screenshots, cropped (never retouched) so the feature each one
 // shows is legible at thumbnail size. Runs from prepare.sh after the full
 // screenshots are copied; writes <name>-detail-<theme>.png beside them.
+import { readdirSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
 
 const dir = 'src/generated/screenshots';
+
+// The renderer leaves a black margin around the window; trim it so the
+// site's own frame is the only border.
+for (const file of readdirSync(dir).filter((f) => f.endsWith('.png'))) {
+  const path = `${dir}/${file}`;
+  const out = await sharp(path).trim({ background: '#000000', threshold: 12 }).png().toBuffer();
+  writeFileSync(path, out);
+}
 // Regions as fractions of the image: [left, top, width, height] (16:10).
 const crops = {
   palette: [0.25, 0.03, 0.5, 0.5],

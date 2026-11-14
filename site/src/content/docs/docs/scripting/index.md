@@ -3,6 +3,7 @@ title: Scripting and plugins
 description: Extending basilisk with Python — scripts, analyzers, loaders, exporters — through PyO3. Designed; planned for milestone M9.
 sidebar:
   order: 1
+  label: Overview
 ---
 
 :::caution[Planned]

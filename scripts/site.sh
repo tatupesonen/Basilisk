@@ -98,11 +98,12 @@ case "$cmd" in
     ;;
   check)
     run "$limit" -- "$deps
+      rm -rf .cache/astro .astro .cache/dist-subpath dist
       echo 'site: build under /basilisk/'
-      SITE_BASE=/basilisk/ SITE_OUT=.cache/dist-subpath $build
+      (export SITE_BASE=/basilisk/ SITE_OUT=.cache/dist-subpath; $build)
       node scripts/check-site.mjs .cache/dist-subpath /basilisk/
       echo 'site: build at /'
-      SITE_BASE=/ $build
+      (export SITE_BASE=/; unset SITE_OUT; $build)
       node scripts/check-site.mjs dist /"
     echo "site: check passed"
     ;;
