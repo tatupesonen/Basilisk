@@ -171,8 +171,10 @@ after every `decompile`.
 
 **Merged: `decomp-oracle`** (`a8eceba`, CI run 43653928732 green on
 all 8 jobs; worktree and branches removed, the host cleaned and
-`master` published at 01:42 on 2026-11-15; `scripts/remote.sh nightly
-run oracle` started once after that — read `scripts/remote.sh report`).
+`master` published at 01:42 on 2026-11-15; the nightly's `oracle` item then ran once on the host's `master`: PASS in 44 s — 167
+scripts, 607 decompiles, 11,005 ops, 18,134 varnodes, 74,836 trace
+records, 767 structuring runs, 0 errors, no drift against the
+fixtures).
 The first CI run (43653108247) had 9 `bk-testkit` tests fail on
 `windows-latest`: the new text samples
 (`crates/bk-testkit/tests/data/oracle/*`) were checked out with CRLF
