@@ -62,7 +62,7 @@ impl SpaceInfo {
             addr_size: 8,
             word_size: 1,
             delay: 0,
-            physical: true,
+            physical: false,
         }
     }
 
