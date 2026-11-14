@@ -9,14 +9,23 @@
 #   scripts/remote.sh run [--no-ref] -- CMD...  sync, run CMD in the remote checkout
 #   scripts/remote.sh log                       reattach to (or fetch) this branch's latest job
 #   scripts/remote.sh status                    disk, load, checkouts and their sizes
-#   scripts/remote.sh clean BRANCH|--merged|--all
+#   scripts/remote.sh clean BRANCH|--merged|--all|--target BRANCH
+# Testbed (docs/agents/testbed.md; the work is in tools/testbed/):
+#   scripts/remote.sh wine [--no-ref] [--msvc] [-- CARGO-TEST-ARGS]   Windows tests under Wine
+#   scripts/remote.sh ubuntu [--no-ref]          C crates + reference tools, Ubuntu 26.04, GCC 15
+#   scripts/remote.sh long [--no-ref] miri|fuzz [SECONDS [TARGET...]]|proptest [CASES]|sanitizers|differential|all
+#   scripts/remote.sh publish                    send local master to the host (what the nightly run tests)
+#   scripts/remote.sh nightly install|remove|run|status
+#   scripts/remote.sh report [--all|DATE]        the nightly report (latest, list, or one day)
 #
 # Configuration: BK_REMOTE (ssh destination) and BK_REMOTE_KEY (identity file)
 # from the environment, else from $BK_REMOTE_CONFIG (default
 # ~/.config/basilisk/remote, lines KEY=VALUE). Without a destination the
 # script exits 2: run scripts/gate.sh locally instead.
 # Also: BK_REMOTE_JOBS (CARGO_BUILD_JOBS there, default 20), BK_REMOTE_TIMEOUT
-# (seconds for gate/run, default 5400).
+# (seconds for gate/run, default 5400), BK_TESTBED_CORES (core budget of the
+# testbed commands, default 12), BK_TESTBED_TIMEOUT (their bound; default
+# 5400 for wine/ubuntu, 14400 for long).
 set -euo pipefail
 
 die() { printf 'remote: %s\n' "$*" >&2; exit 1; }
@@ -27,7 +36,7 @@ bounded() { local s=$1; shift; perl -e 'alarm shift; exec @ARGV or die "exec: $!
 conf="${BK_REMOTE_CONFIG:-$HOME/.config/basilisk/remote}"
 if [ -r "$conf" ]; then
   while IFS='=' read -r k v; do
-    case "$k" in BK_REMOTE|BK_REMOTE_KEY|BK_REMOTE_JOBS|BK_REMOTE_TIMEOUT) ;; *) continue ;; esac
+    case "$k" in BK_REMOTE|BK_REMOTE_KEY|BK_REMOTE_JOBS|BK_REMOTE_TIMEOUT|BK_TESTBED_CORES|BK_TESTBED_TIMEOUT) ;; *) continue ;; esac
     v="${v/#\~/$HOME}"
     [ -n "${!k:-}" ] || printf -v "$k" '%s' "$v"
   done < "$conf"
@@ -38,6 +47,7 @@ if [ -z "${BK_REMOTE:-}" ]; then
 fi
 JOBS="${BK_REMOTE_JOBS:-20}"
 TMO="${BK_REMOTE_TIMEOUT:-5400}"
+TB_JOBS="${BK_TESTBED_CORES:-12}"
 
 ssh_opts=(-o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
 [ -z "${BK_REMOTE_KEY:-}" ] || ssh_opts+=(-i "$BK_REMOTE_KEY" -o IdentitiesOnly=yes)
@@ -106,14 +116,25 @@ start)  # slug sha mode timeout jobs ref|noref cmd...
     unset BASILISK_GHIDRA_DIR BASILISK_REFERENCE_DIR
   fi
   cd "$wt"
-  # Every platform's crates: the gate's `cargo deny --offline` reads the
-  # metadata of all of them, and a build downloads only the host's.
-  timeout 600 cargo fetch --locked -q >/dev/null 2>&1 || echo "remote: cargo fetch failed; continuing" >&2
+  # Results a job wants copied back (the testbed checks) go to BK_OUT.
+  export BK_OUT="${log%.log}.out"
+  mkdir -p "$BK_OUT"
+  # The testbed's checks run below normal priority so that the gates of
+  # agents working at the same time keep the machine's attention.
+  nice=0; case "$mode" in gate|run|reference) ;; *) nice=10 ;; esac
   # Detached from the ssh session and bounded: a dropped connection neither
   # stops the job nor leaves it running for ever. timeout signals the whole
-  # process group.
-  setsid nohup bash -c 'echo "$$" > "$2.pid"; timeout -k 60 "$1" "${@:3}"; echo $? > "$2.exit"' \
-    bk-job "$tmo" "$log" "$@" </dev/null >"$log" 2>&1 &
+  # process group. First, inside the job so its reason lands in the log:
+  # every platform's crates (the gate's `cargo deny --offline` reads the
+  # metadata of all of them, and a build downloads only the host's).
+  setsid nohup bash -c '
+    echo "$$" > "$2.pid"
+    if ! out=$(timeout 600 cargo fetch --locked 2>&1); then
+      echo "remote: cargo fetch --locked failed (the job goes on; offline steps such as cargo deny may then fail):"
+      printf "%s\n" "$out" | grep -v "^ *\(Downloaded\|Downloading\|Updating\|Locking\) " | tail -n 8 | sed "s/^/remote:   /"
+    fi
+    timeout -k 60 "$1" nice -n "$3" "${@:4}"; echo $? > "$2.exit"' \
+    bk-job "$tmo" "$log" "$nice" "$@" </dev/null >"$log" 2>&1 &
   echo "$log"
   ;;
 wait)  # log timeout: stream the log until the job ends, then print its exit code last
@@ -136,6 +157,43 @@ status)
   [ ! -f "$BK/reference/STAMP" ] || echo "reference: $BK/reference ($(sed -n 's/^generated: //p' "$BK/reference/STAMP"))"
   ;;
 heads) for d in "$BK"/wt/*/; do [ -d "$d" ] && echo "$(basename "$d") $(git -C "$d" rev-parse HEAD)"; done; true ;;
+pack)  # a job's results directory as a tar stream on stdout (nothing when empty)
+  case "$1" in "$BK"/logs/*.out) ;; *) exit 2 ;; esac
+  [ -d "$1" ] && [ -n "$(ls -A "$1")" ] && tar -C "$1" -czf - . || true
+  ;;
+clean-target)  # slug: build output only, the checkout stays
+  lock "$1"; rm -rf "${BK:?}/wt/$1/target" "$BK/tmp/$1"; echo "remote: removed the build output of $1"
+  ;;
+nightly-install)  # slug schedule: the branch's tools/testbed becomes the installed copy
+  [ -d "$BK/wt/$1/tools/testbed" ] || { echo "remote: $1 has no tools/testbed" >&2; exit 1; }
+  mkdir -p "$BK/testbed" "$BK/reports"
+  rm -rf "$BK/testbed/tools.new"; cp -r "$BK/wt/$1/tools/testbed" "$BK/testbed/tools.new"
+  rm -rf "$BK/testbed/tools"; mv "$BK/testbed/tools.new" "$BK/testbed/tools"
+  { crontab -l 2>/dev/null | grep -v '# basilisk-testbed$' || true
+    echo "$2 $BK/testbed/tools/nightly-boot.sh >/dev/null 2>&1 # basilisk-testbed"; } | crontab -
+  echo "remote: installed the nightly run from $1 ($(git -C "$BK/wt/$1" log -1 --format=%h)): $2 (host time, $(date +%Z))"
+  ;;
+nightly-remove)
+  { crontab -l 2>/dev/null | grep -v '# basilisk-testbed$' || true; } | crontab -
+  echo "remote: the nightly run is no longer scheduled (reports kept in $BK/reports)"
+  ;;
+nightly-run)
+  [ -x "$BK/testbed/tools/nightly-boot.sh" ] || { echo "remote: not installed (scripts/remote.sh nightly install)" >&2; exit 1; }
+  setsid nohup "$BK/testbed/tools/nightly-boot.sh" </dev/null >/dev/null 2>&1 &
+  echo "remote: nightly run started; scripts/remote.sh report shows its report when it ends"
+  ;;
+nightly-status)
+  crontab -l 2>/dev/null | grep '# basilisk-testbed$' || echo "not scheduled"
+  (flock -n 9 || exit 1) 9>"$BK/locks/@nightly.lock" && echo "idle" || echo "running: $(cat "$BK/reports/current" 2>/dev/null)"
+  ls "$BK/reports"/*.txt 2>/dev/null | tail -1 | sed 's/^/latest report: /'
+  ;;
+report)  # [--all|DATE]
+  case "${1:-}" in
+    --all) for f in "$BK"/reports/*.txt; do [ -f "$f" ] && echo "$(basename "$f" .txt)  $(sed -n 's/^overall: //p' "$f")"; done; true ;;
+    "") f=$(ls "$BK"/reports/*.txt 2>/dev/null | tail -1); [ -n "$f" ] || { echo "remote: no report yet" >&2; exit 1; }; cat "$f" ;;
+    *) cat "$BK/reports/$1.txt" ;;
+  esac
+  ;;
 clean)  # slug...
   for s in "$@"; do
     ( lock "$s"; rm -rf "${BK:?}/wt/$s" "$BK/logs/$s" "$BK/tmp/$s"
@@ -193,6 +251,34 @@ start_job() {  # mode ref cmd...
   printf '%s' "$log"
 }
 
+# Copies a job's results directory (BK_OUT there) to target/testbed/<job>/.
+fetch_out() {
+  local dest
+  dest="target/testbed/$(basename "${1%.log}")"
+  mkdir -p "$dest"
+  rcall 600 pack "${1%.log}.out" | tar -xzf - -C "$dest" 2>/dev/null || true
+  if [ -n "$(ls -A "$dest")" ]; then
+    echo "remote: results in $dest"
+    [ ! -f "$dest/summary.txt" ] || sed 's/^/remote: /' "$dest/summary.txt"
+  else
+    rmdir "$dest"
+  fi
+}
+
+# A testbed job: testbed_job MODE REF CMD... (log in MODE-remote.log).
+testbed_job() {
+  local mode=$1 r=$2 log code; shift 2
+  JOBS=$TB_JOBS
+  log=$(start_job "$mode" "$r" "$@")
+  echo "remote: $mode of $branch running on the build host ($JOBS cores, ${TMO} s bound, reference: $r); log: $mode-remote.log"
+  set +e; follow "$log" > "$mode-remote.log"; code=$?; set -e
+  tail -n 25 "$mode-remote.log"
+  [ "$code" -ne 255 ] || lost
+  [ "$code" -eq 255 ] || fetch_out "$log"
+  echo "remote: $mode exit $code"
+  exit "$code"
+}
+
 ref=ref
 cmd=${1:-}
 [ $# -eq 0 ] || shift
@@ -237,17 +323,22 @@ log)
   [ -n "$log" ] || die "no job of $branch on the build host"
   echo "remote: $log" >&2
   set +e
-  case "$log" in
-    *-gate.log) follow "$log" > gate-remote.log; code=$?; tail -n 25 gate-remote.log ;;
-    *) follow "$log"; code=$? ;;
+  mode=$(basename "$log" .log); mode=${mode#*-*-}
+  case "$mode" in
+    run|reference) follow "$log"; code=$? ;;
+    *) follow "$log" > "$mode-remote.log"; code=$?; tail -n 25 "$mode-remote.log" ;;
   esac
+  [ "$code" -eq 255 ] || [ "$mode" = gate ] || fetch_out "$log"
   echo "remote: exit $code" >&2
   exit "$code"
   ;;
 status) rcall 300 status ;;
 clean)
   case "${1:-}" in
-    "") die "usage: scripts/remote.sh clean BRANCH|--merged|--all" ;;
+    "") die "usage: scripts/remote.sh clean BRANCH|--merged|--all|--target BRANCH" ;;
+    --target)
+      [ -n "${2:-}" ] || die "usage: scripts/remote.sh clean --target BRANCH"
+      rcall 600 clean-target "$(printf '%s' "$2" | tr -c 'A-Za-z0-9._-' '-')"; exit ;;
     --all) victims=$(rcall 60 heads | cut -d' ' -f1) ;;
     --merged)
       victims=$(rcall 60 heads | while read -r s h; do
@@ -258,5 +349,42 @@ clean)
   # shellcheck disable=SC2086
   rcall 600 clean $victims
   ;;
-*) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; [ "$cmd" = help ] || [ "$cmd" = -h ] || exit 2 ;;
+wine)
+  flavour=wine
+  if [ "${1:-}" = --msvc ]; then flavour=wine-msvc; shift; fi
+  [ "${1:-}" != -- ] || shift
+  TMO=${BK_TESTBED_TIMEOUT:-5400}
+  if [ "$flavour" = wine ]; then testbed_job wine "$ref" tools/testbed/wine.sh "$@"
+  else testbed_job wine-msvc "$ref" tools/testbed/wine.sh --msvc "$@"; fi
+  ;;
+ubuntu)
+  [ "${1:-}" != -- ] || shift
+  TMO=${BK_TESTBED_TIMEOUT:-5400}
+  testbed_job ubuntu "$ref" tools/testbed/ubuntu.sh "$@"
+  ;;
+long)
+  what=${1:-}; [ $# -eq 0 ] || shift
+  case "$what" in miri|fuzz|proptest|sanitizers|differential|all) ;;
+    *) die "usage: scripts/remote.sh long [--no-ref] miri|fuzz [SECONDS [TARGET...]]|proptest [CASES]|sanitizers|differential|all" ;; esac
+  TMO=${BK_TESTBED_TIMEOUT:-14400}
+  testbed_job "long-$what" "$ref" tools/testbed/long.sh "$what" "$@"
+  ;;
+publish)  # local master becomes the host's master, which the nightly run tests
+  sha=$(git rev-parse --verify -q master^{commit}) || die "no local master"
+  GIT_SSH_COMMAND="ssh$(printf ' %q' "${ssh_opts[@]}")" \
+    bounded 600 git push -q --force "$BK_REMOTE:bk/repo.git" "$sha:refs/heads/master" \
+    || die "push to the build host failed"
+  echo "remote: master on the build host is now $(git log -1 --format='%h %s' "$sha")"
+  ;;
+nightly)
+  case "${1:-}" in
+    install)
+      sha=$(push_head); rcall 300 checkout "$slug" "$sha" >/dev/null
+      rcall 120 nightly-install "$slug" "${2:-30 1 * * *}" ;;
+    remove|run|status) rcall 120 "nightly-$1" ;;
+    *) die "usage: scripts/remote.sh nightly install [CRON-SCHEDULE]|remove|run|status" ;;
+  esac
+  ;;
+report) rcall 120 report "${1:-}" ;;
+*) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; [ "$cmd" = help ] || [ "$cmd" = -h ] || exit 2 ;;
 esac
