@@ -73,3 +73,21 @@ pointer-only, 0 other. Mac against host after dropping pointer lines,
 fspec varnode lines and the lines naming the data-test path: every file
 equal except `floatprint` (`floatv6 = NAN;` on the Mac, `-NAN` on the
 host — ADR-021's known case).
+
+## R7. Breakpoints, `list action`, statistics, options (elseif.xml)
+
+`list action` prints 243 lines for `decompile` (`0000        !    universal`
+… `0242                  stop`): number (`setw(4)`, zero-filled by the
+command), ` repeat ` or eight spaces, `!` for once-per-function, `S`/`A`
+for start/action breakpoints, then `depth*5+2` spaces and the name
+(`Action::print`, action.cc). `break start heritage` → `Break at
+universal:fullloop:mainloop:heritage start`; `break start finalstructure`
+→ `Break at universal:finalstructure start`. **`break start
+blockstructure` and `break start universal:blockstructure` both fail with
+`Bad action/rule specifier`**: the name occurs twice (`0168` in
+`mainloop`, `0231` at the top level), and `ActionGroup::getSubAction`
+(action.cc:456) returns null on more than one match, searching
+sub-groups with the unconsumed specifier, so the top-level
+`blockstructure` (and every other action whose name also occurs deeper)
+cannot be targeted by name at all. `break start earlyremoval` sets a rule
+breakpoint that the run never stops at here.
