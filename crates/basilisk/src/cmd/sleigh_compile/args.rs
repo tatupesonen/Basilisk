@@ -161,44 +161,40 @@ pub(crate) fn parse(args: &[OsString], root: Option<&Path>) -> Result<Args, Refu
     }
     let options = Options::from_switches(switches.iter().map(String::as_str));
     let job = if let Some(dir) = all {
-        {
-            let dir = match dir {
-                Some(d) => d,
-                None => rest
-                    .pop_front()
-                    .map_or_else(|| PathBuf::from("."), PathBuf::from),
-            };
-            if !rest.is_empty() {
-                return refuse("Too many parameters");
-            }
-            if !dir.is_dir() {
-                return refuse(format!("{} is not a directory", dir.display()));
-            }
-            Job::All(dir)
+        let dir = match dir {
+            Some(d) => d,
+            None => rest
+                .pop_front()
+                .map_or_else(|| PathBuf::from("."), PathBuf::from),
+        };
+        if !rest.is_empty() {
+            return refuse("Too many parameters");
         }
+        if !dir.is_dir() {
+            return refuse(format!("{} is not a directory", dir.display()));
+        }
+        Job::All(dir)
     } else {
-        {
-            let Some(input) = rest.pop_front() else {
-                return refuse("Missing input file name");
-            };
-            let output = rest.pop_front();
-            if !rest.is_empty() {
-                return refuse("Too many parameters");
-            }
-            let input = PathBuf::from(input);
-            let (input, base) = if has_extension(&input, ".slaspec") {
-                let base = input.with_extension("");
-                (input, base)
-            } else {
-                (with_appended(&input, ".slaspec"), input)
-            };
-            let output = match output.map(PathBuf::from) {
-                Some(o) if has_extension(&o, ".sla") => o,
-                Some(o) => with_appended(&o, ".sla"),
-                None => with_appended(&base, ".sla"),
-            };
-            Job::One { input, output }
+        let Some(input) = rest.pop_front() else {
+            return refuse("Missing input file name");
+        };
+        let output = rest.pop_front();
+        if !rest.is_empty() {
+            return refuse("Too many parameters");
         }
+        let input = PathBuf::from(input);
+        let (input, base) = if has_extension(&input, ".slaspec") {
+            let base = input.with_extension("");
+            (input, base)
+        } else {
+            (with_appended(&input, ".slaspec"), input)
+        };
+        let output = match output.map(PathBuf::from) {
+            Some(o) if has_extension(&o, ".sla") => o,
+            Some(o) => with_appended(&o, ".sla"),
+            None => with_appended(&base, ".sla"),
+        };
+        Job::One { input, output }
     };
     Ok(Args {
         job,
