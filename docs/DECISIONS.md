@@ -1029,3 +1029,28 @@ and corrects ADR-029's last bullet.)
 * A table of 188 directed cases with literal expected bits
   (`tests/host_independence.rs`) runs on Linux x86-64, macOS AArch64 and
   Windows in CI, so a host difference fails there.
+
+## ADR-034 — The reference build is unfused; one oracle for the SLEIGH compiler again
+(Coordinator, 2026-11-14, from the `ref-nofma` track. Closes the "until it
+is rebuilt" clause of ADR-032 and the split oracle of ADR-029.)
+
+`scripts/build-reference.sh` passes `-ffp-contract=off` to every compile
+(the decompiler's Makefile, `pcodedump`, the bundled zlib) and records it
+in `STAMP`. Rebuilt on macOS AArch64 that way, all 150 `.sla` are
+byte-identical to x86-64 Linux's; Ghidra's own unit and data tests, the
+`pcodedump` output on ten languages and the `decomp` console's output on
+all 93 data tests are unchanged from the fused build. `../reference` was
+replaced file by file (281 files) on 2026-11-14 and **is the oracle for
+all 150 specifications again**; `../reference-x86_64/x86_64-linux/` stays
+as the independent copy from real x86-64 hardware, and the 14 old
+fused-variant files are kept in `../reference.aarch64-fused/`. The flag
+does not make AArch64 equal x86-64 everywhere: the two `-NAN` checks and
+one decimal-precision unit test still fail on AArch64 (ADR-021, ADR-033).
+
+Ghidra's `pcodedump` crashes when a delay-slot (or crossbuild) instruction
+has no p-code: `SleighBuilder::delaySlot` leaves the builder pointing at a
+walker on its own stack when `UnimplError` unwinds, and the handler in
+`oneInstruction` uses it (`research/pcodedump-crashes.md`). basilisk
+returns "instruction not implemented in p-code" with the full flow length
+there, naming the innermost such instruction, and never leaves stale
+builder state behind an early return (ADR-009).

@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 15:27)
+## Now — RESUME HERE (2026-11-14 15:28)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -67,17 +67,12 @@ is run (`gh workflow run Pages`). It goes live at
 `https://tatupesonen.github.io/basilisk/`, or at a custom domain if one
 is set in the same settings.
 
-### Running (state at 2026-11-14 15:07)
+### Running (updated 15:28; state at 2026-11-14 15:07)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 15:07 (three uncommitted files); D03, `bk-cspec`. |
-| `ref-nofma` | Opus | `a3f0f7e47fd87711a` | resumed 15:07. **The swap of `../reference` is complete and verified** (281 files replaced atomically; all 150 `.sla` equal x86-64 Linux's; Ghidra's tests, `pcodedump` on ten languages and the `decomp` console on all 93 data tests unchanged; old files in `../reference.aarch64-fused/`). Remaining: post-swap workspace test comparison, the edits to `features/sleigh-compiler-back.md`, `research/pcodedump-crashes.md`, Docker leftovers, gate, report. |
-
-**Paused at the owner's cap of two, first to resume**: `sleigh-pcode`
-(`a392a8e6a16d0c340`; worktree kept; one commit, its status file
-`docs/agents/sleigh-pcode.md` with the findings of its reading phase and
-a six-step plan; no code yet).
+| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | resumed 15:28 from its status file (reading done, six-step plan); given the `pcodedump` crash analysis. `bk-sleigh` part 2 from `features/sleigh-pcode.md`. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -144,21 +139,15 @@ start a fresh agent briefed from the branch's files.
    checked-in oracle, fix the 106 rows where basilisk does not follow
    x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
    provenance (ADR-029).
-0c. **`ref-nofma`** (Opus, small; from `sla-host-diff`, ADR-032) — (i) add
-   `-ffp-contract=off` to `scripts/build-reference.sh`, rebuild into a
-   staging directory, check that all 150 `.sla` equal
-   `../reference-x86_64/x86_64-linux/`, rerun the unit and data tests,
-   then replace `../reference/` file by file with atomic renames (other
-   agents are reading it) and update `features/reference-tools.md`; (ii)
-   apply the edits of `research/sla-host-dependence.md` section 6.3 to
-   `features/sleigh-compiler-back.md` (unfused `f64` score, a `log`
-   bit-equal to glibc's checked against
-   `research/sla-host-dependence/logtable-glibc.txt.gz`, byte equality
-   with x86-64 for all 150, no admitted ties); (iii) report the reference
-   `pcodedump` segfault on random `mips32le` bytes with a reproducer.
-   Before `sleigh-compiler-back`; `sleigh-compiler-front` does not need
-   it. Docker leftovers of the investigation to remove then: tag
-   `bk-sla-host-diff/gcc14:arm64`, `alpine:3.22`, untagged `812e99317af7`.
+0c. `ref-nofma` is merged (2026-11-14; ADR-034): `../reference` is the
+   unfused build and the oracle for all 150 specifications;
+   `features/sleigh-compiler-back.md` carries ADR-032's edits. Left over:
+   `tools/reference/README.md` still lists `ADDITIONAL_FLAGS` without the
+   flag (give it to the next tooling track); the five ARM v8-m
+   `pcodedump` crashes are not reproduced (probably a second bug:
+   `sleigh-pcode` is to record their bytes and context); Docker image
+   `e750467579a2` (arm64 `gcc:14`, untagged, 1.5 GB) can be removed when
+   nothing needs it.
 1. `sleigh-compiler-front` (Opus) — can start now (`sleigh-decode` is
    running). Then `sleigh-pcode` (after `sleigh-decode`),
    `sleigh-compiler-back` (after the front half and `ref-nofma`),
@@ -209,10 +198,10 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: resume `sleigh-pcode`,
-   `toolchain-1.100` (above), `docs-content` (the site is merged),
-   `sleigh-compiler-back` (the front half is merged; needs `ref-nofma`'s
-   spec edits), `sleigh-snippet` (needs only the front half), D01
+1. As slots free, in this order: `toolchain-1.100` (above),
+   `sleigh-compiler-back` (unblocked: front half, spec edits and the
+   unfused reference are all on `master`), `docs-content` (the site is
+   merged), `sleigh-snippet` (needs only the front half), D01
    `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
@@ -325,6 +314,12 @@ start a fresh agent briefed from the branch's files.
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`ref-nofma` merged** (ADR-034): the reference tools are built with
+  `-ffp-contract=off`; on this Mac all 150 `.sla` now equal x86-64
+  Linux's, with Ghidra's tests, `pcodedump` and the `decomp` console
+  unchanged. The `pcodedump` crash on SPARC and MIPS is one Ghidra bug (a
+  dangling walker after `UnimplError` in a delay slot), with two 8-byte
+  reproducers.
 * **`bk-sleigh` part 1 merged** (`sleigh-decode`): no `I`/`E`/`T` record
   differs from `pcodedump` over 175 language configurations (99.33 % of
   root pairs, 97.2 % of constructors); decode 3.25 M instructions/s
