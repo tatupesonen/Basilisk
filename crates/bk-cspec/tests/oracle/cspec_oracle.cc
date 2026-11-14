@@ -1,8 +1,8 @@
 // Oracle for bk-cspec: evaluates Ghidra's own compiler-specification reader
 // and prototype models (architecture.cc, fspec.cc, modelrules.cc, linked from
 // the reference build's objects) and prints one record per line. Built and
-// run by regen.sh; the output is tests/data/cspec_oracle.txt.gz, replayed by
-// tests/oracle_replay.rs. Not part of the Rust build. Compiled with
+// run by regen.sh; the output is tests/data/cspec_oracle.<lib>.txt.gz (one per
+// C++ standard library), replayed by tests/oracle_replay.rs. Not part of the Rust build. Compiled with
 // -fno-access-control to read private members, -std=c++11.
 //
 // Usage: cspec_oracle <sleighhome> <signatures.txt> <cspec-list>
