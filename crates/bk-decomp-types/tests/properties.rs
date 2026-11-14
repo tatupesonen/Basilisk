@@ -369,26 +369,109 @@ fn deep_nesting_is_an_error_not_a_crash() {
 }
 
 #[test]
-fn fork_of_fork_and_frozen_parent() {
-    let mut root = x86_64_factory();
-    let s = root.structure_stub("later").unwrap();
+fn fork_of_fork_is_refused_and_new_types_live_in_the_overlay() {
+    let root = x86_64_factory();
     let parent = Arc::new(root);
     let mut child = TypeFactory::fork(&parent).unwrap();
     assert!(TypeFactory::fork(&Arc::new(child.clone())).is_err());
     let int4 = child.find_by_name("int4").unwrap();
-    let fields = vec![Field {
-        ident: 0,
-        offset: -1,
-        name: "x".into(),
-        ty: int4,
-    }];
-    assert!(matches!(
-        child.assign_raw_struct_fields(s, fields, Vec::new()),
-        Err(bk_decomp_types::TypeError::FrozenParent(_))
-    ));
     let p = child.pointer(8, int4, 1).unwrap();
     assert!(p.is_overlay());
     assert_eq!(child.overlay_ids(), vec![p]);
-    // The parent's own pointer, if any, is found instead of a new one.
     assert_eq!(child.pointer(8, int4, 1).unwrap(), p);
+}
+
+/// The case proptest found (`properties.proptest-regressions`): a
+/// structure stub left incomplete in the parent (its field list was
+/// refused) is completed in a fork. Ghidra's single factory completes the
+/// stub in place (`setFields`), keeping its id; the fork must answer the
+/// same, so it copies the parent entry under the same id and the parent
+/// stays as it was.
+#[test]
+fn fork_completes_a_parent_stub_under_the_same_id() {
+    let mut root = x86_64_factory();
+    let void = root.find_by_name("void").unwrap();
+    let int4 = root.find_by_name("int4").unwrap();
+    let stub = root.structure_stub("st").unwrap();
+    let bad = vec![Field {
+        ident: 0,
+        offset: -1,
+        name: "v".into(),
+        ty: void,
+    }];
+    assert_eq!(
+        root.assign_raw_struct_fields(stub, bad, Vec::new())
+            .unwrap_err()
+            .to_string(),
+        "Illegal field void in structure: st"
+    );
+    let ptr = root.pointer(8, stub, 1).unwrap();
+    let mut flat = root.clone();
+    let parent = Arc::new(root);
+    let before = encode(&parent);
+    let mut child = TypeFactory::fork(&parent).unwrap();
+
+    let fields = || {
+        vec![Field {
+            ident: 0,
+            offset: -1,
+            name: "x".into(),
+            ty: int4,
+        }]
+    };
+    for f in [&mut child, &mut flat] {
+        let again = f.structure_stub("st").unwrap();
+        assert_eq!(again, stub);
+        f.assign_raw_struct_fields(again, fields(), Vec::new())
+            .unwrap();
+    }
+    for f in [&child, &flat] {
+        let e = f.get(stub).unwrap();
+        assert!(!e.is_incomplete());
+        assert_eq!(e.size(), 4);
+        assert_eq!(f.find_by_name("st"), Some(stub));
+        // A single field filling the structure makes it need resolution
+        // (Ghidra `setFields`), so recalcPointerSubmeta moves its pointers
+        // from SUB_PTR_STRUCT to SUB_PTR.
+        assert!(e.needs_resolution());
+        assert_eq!(
+            f.get(ptr).unwrap().submeta(),
+            bk_decomp_types::SubMetatype::Ptr
+        );
+    }
+    assert_eq!(encode(&child), encode(&flat));
+    assert_eq!(
+        child.shadowed_ids(),
+        vec![ptr, stub]
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>()
+    );
+    // The parent is unchanged, and a later stub request in the parent still
+    // finds its own incomplete stub.
+    assert!(parent.get(stub).unwrap().is_incomplete());
+    assert_eq!(encode(&parent), before);
+    drop(child);
+    assert_eq!(encode(&parent), before);
+}
+
+/// The second case proptest found: a fork finding a parent pointer raises
+/// its provenance (the fork's `Analysis` over the parent's `Default`),
+/// which copies the entry into the fork; the copy must be found again
+/// rather than a duplicate made.
+#[test]
+fn fork_finds_a_parent_type_whose_provenance_it_raised() {
+    let mut root = x86_64_factory();
+    let uint1 = root.find_by_name("uint1").unwrap();
+    let p = root.pointer(8, uint1, 1).unwrap();
+    let parent = Arc::new(root);
+    let mut child = TypeFactory::fork(&parent).unwrap();
+    assert_eq!(child.pointer(8, uint1, 1).unwrap(), p);
+    assert_eq!(child.get(p).unwrap().provenance(), Provenance::Analysis);
+    assert_eq!(parent.get(p).unwrap().provenance(), Provenance::Default);
+    assert_eq!(child.pointer(8, uint1, 1).unwrap(), p);
+    assert_eq!(child.len(), parent.len());
+    assert!(child.overlay_ids().is_empty());
+    assert_eq!(child.shadowed_ids(), vec![p]);
 }

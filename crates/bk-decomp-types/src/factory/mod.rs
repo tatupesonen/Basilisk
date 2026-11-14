@@ -64,6 +64,10 @@ pub struct TypeFactory {
     pub(crate) org: DataOrganization,
     parent: Option<Arc<Self>>,
     slots: Vec<Slot>,
+    /// Copies of parent entries this fork has changed, by parent index
+    /// (copy on write; the parent stays untouched and the id stays the
+    /// same).
+    shadows: FxHashMap<u32, Slot>,
     identity: HashIndex,
     names: HashIndex,
     pointers_to: FxHashMap<TypeId, Vec<TypeId>>,
@@ -85,6 +89,7 @@ impl TypeFactory {
             org,
             parent: None,
             slots: Vec::new(),
+            shadows: FxHashMap::default(),
             identity: HashIndex::default(),
             names: HashIndex::default(),
             pointers_to: FxHashMap::default(),
@@ -108,7 +113,9 @@ impl TypeFactory {
     /// Forks a frozen factory: the child reads through to `parent` and takes
     /// every new entry itself (one child per function decompilation). New
     /// entries are marked [`Provenance::Analysis`] unless the caller sets
-    /// another provenance. Forking a fork is an error.
+    /// another provenance. A parent entry the child changes (a stub
+    /// completed, a rename) is copied into the child under the same id; the
+    /// parent never changes. Forking a fork is an error.
     pub fn fork(parent: &Arc<Self>) -> Result<Self> {
         if parent.parent.is_some() {
             return Err(TypeError::new("Cannot fork a forked type factory"));
@@ -118,12 +125,13 @@ impl TypeFactory {
             org: parent.org.clone(),
             parent: Some(Arc::clone(parent)),
             slots: Vec::new(),
+            shadows: FxHashMap::default(),
             identity: HashIndex::default(),
             names: HashIndex::default(),
             pointers_to: FxHashMap::default(),
             cache: parent.cache.clone(),
             warnings: BTreeMap::new(),
-            incomplete_typedefs: Vec::new(),
+            incomplete_typedefs: parent.incomplete_typedefs.clone(),
             provenance: Provenance::Analysis,
             hooks: parent.hooks.clone(),
             decode_depth: 0,
@@ -147,6 +155,18 @@ impl TypeFactory {
             return Vec::new();
         }
         self.own_ids().collect()
+    }
+
+    /// The ids of parent entries this fork has changed (copied on write),
+    /// in parent order; empty for a root factory.
+    pub fn shadowed_ids(&self) -> Vec<TypeId> {
+        let mut out: Vec<TypeId> = self
+            .shadows
+            .keys()
+            .map(|&i| TypeId::new(i, false))
+            .collect();
+        out.sort();
+        out
     }
 
     /// The architecture facts.
@@ -185,10 +205,47 @@ impl TypeFactory {
         if id.is_overlay() == self.parent.is_some() {
             self.slots.get(id.index())
         } else if let Some(parent) = &self.parent {
-            parent.slots.get(id.index())
+            self.shadows
+                .get(&(id.index() as u32))
+                .or_else(|| parent.slots.get(id.index()))
         } else {
             None
         }
+    }
+
+    /// Whether a parent id has been copied into this fork.
+    fn is_shadowed(&self, id: TypeId) -> bool {
+        !id.is_overlay() && self.shadows.contains_key(&(id.index() as u32))
+    }
+
+    /// The slot of `id` for changing it: an own slot, or the fork's copy of
+    /// a parent slot (made on first use).
+    fn slot_mut(&mut self, id: TypeId) -> Result<&mut Slot> {
+        if self.is_own(id) {
+            return self
+                .slots
+                .get_mut(id.index())
+                .ok_or(TypeError::InvalidId(id));
+        }
+        let Some(parent) = &self.parent else {
+            return Err(TypeError::InvalidId(id));
+        };
+        let key = id.index() as u32;
+        if !self.shadows.contains_key(&key) {
+            let slot = parent
+                .slots
+                .get(id.index())
+                .ok_or(TypeError::InvalidId(id))?
+                .clone();
+            if let Some(w) = parent.warnings.get(&id) {
+                self.warnings.insert(id, w.clone());
+            }
+            self.shadows.insert(key, slot);
+            // The parent's index entries for this id are masked from now
+            // on, so the copy goes into the fork's own indexes.
+            self.index_entry(id);
+        }
+        self.shadows.get_mut(&key).ok_or(TypeError::InvalidId(id))
     }
 
     /// The entry of `id`, live or destroyed; a void placeholder for an id
@@ -204,17 +261,7 @@ impl TypeFactory {
     }
 
     fn entry_mut(&mut self, id: TypeId) -> Result<&mut TypeEntry> {
-        if !self.is_own(id) {
-            return Err(if self.parent.is_some() {
-                TypeError::FrozenParent(id)
-            } else {
-                TypeError::InvalidId(id)
-            });
-        }
-        self.slots
-            .get_mut(id.index())
-            .map(|s| &mut s.entry)
-            .ok_or(TypeError::InvalidId(id))
+        self.slot_mut(id).map(|s| &mut s.entry)
     }
 
     fn own_ids(&self) -> impl Iterator<Item = TypeId> + '_ {
@@ -228,19 +275,22 @@ impl TypeFactory {
 
     /// Every live type, parent's first, in creation order.
     pub fn ids(&self) -> Vec<TypeId> {
-        let mut out: Vec<TypeId> = self
-            .parent
-            .as_ref()
-            .map(|p| p.own_ids().collect())
-            .unwrap_or_default();
+        let mut out: Vec<TypeId> = self.parent_ids().collect();
         out.extend(self.own_ids());
         out
     }
 
+    /// The parent's types as this fork sees them (shadows included).
+    fn parent_ids(&self) -> impl Iterator<Item = TypeId> + '_ {
+        let count = self.parent.as_ref().map_or(0, |p| p.slots.len());
+        (0..count)
+            .map(|i| TypeId::new(i as u32, false))
+            .filter(|&id| self.slot(id).is_some_and(|s| s.live))
+    }
+
     /// Number of live types.
     pub fn len(&self) -> usize {
-        let own = self.slots.iter().filter(|s| s.live).count();
-        own + self.parent.as_ref().map_or(0, |p| p.len())
+        self.slots.iter().filter(|s| s.live).count() + self.parent_ids().count()
     }
 
     /// Whether the factory holds no types.
@@ -258,8 +308,12 @@ impl TypeFactory {
             .map(|p| &**p)
             .chain(std::iter::once(self));
         for layer in layers {
+            let masked = !std::ptr::eq(layer, self);
             for &id in layer.identity.candidates(hash) {
-                let e = layer.entry(id);
+                if masked && self.is_shadowed(id) {
+                    continue;
+                }
+                let e = self.entry(id);
                 if e.id == cand.id && compare_dependency(e, cand) == 0 {
                     return Some(id);
                 }
@@ -279,8 +333,12 @@ impl TypeFactory {
             .map(|p| &**p)
             .chain(std::iter::once(self));
         for layer in layers {
+            let masked = !std::ptr::eq(layer, self);
             for &tid in layer.names.candidates(hash) {
-                let e = layer.entry(tid);
+                if masked && self.is_shadowed(tid) {
+                    continue;
+                }
+                let e = self.entry(tid);
                 if &*e.name != name {
                     continue;
                 }
@@ -410,8 +468,11 @@ impl TypeFactory {
     /// Keeps the more trusted provenance on a type found again.
     fn merge_provenance(&mut self, id: TypeId) {
         let p = self.provenance;
-        if let Ok(e) = self.entry_mut(id) {
-            e.provenance = e.provenance.or_more_trusted(p);
+        let current = self.entry(id).provenance;
+        if current.or_more_trusted(p) != current {
+            if let Ok(e) = self.entry_mut(id) {
+                e.provenance = p;
+            }
         }
     }
 
@@ -421,20 +482,19 @@ impl TypeFactory {
         if e.is_core() {
             return Err(TypeError::new("Cannot destroy core type"));
         }
-        self.entry_mut(id)?;
+        self.slot_mut(id)?;
         self.warnings.remove(&id);
         self.unindex_entry(id);
-        if let Some(slot) = self.slots.get_mut(id.index()) {
-            slot.live = false;
-        }
+        self.slot_mut(id)?.live = false;
         Ok(())
     }
 
-    /// Ghidra `clear`: removes every type of this factory's own layer.
+    /// Ghidra `clear`: removes every type (in a fork, the parent's types
+    /// are hidden from the fork, not removed from the parent).
     pub fn clear(&mut self) {
-        let ids: Vec<TypeId> = self.own_ids().collect();
+        let ids: Vec<TypeId> = self.ids();
         for id in ids {
-            if let Some(slot) = self.slots.get_mut(id.index()) {
+            if let Ok(slot) = self.slot_mut(id) {
                 slot.live = false;
             }
         }
@@ -450,15 +510,17 @@ impl TypeFactory {
         self.incomplete_typedefs.clear();
     }
 
-    /// Ghidra `clearNoncore`: removes every non-core type of this layer.
+    /// Ghidra `clearNoncore`: removes every non-core type (in a fork, the
+    /// parent's are hidden from the fork).
     pub fn clear_noncore(&mut self) {
         let ids: Vec<TypeId> = self
-            .own_ids()
+            .ids()
+            .into_iter()
             .filter(|&id| !self.entry(id).is_core())
             .collect();
         for id in ids {
             self.unindex_entry(id);
-            if let Some(slot) = self.slots.get_mut(id.index()) {
+            if let Ok(slot) = self.slot_mut(id) {
                 slot.live = false;
             }
         }
@@ -505,9 +567,12 @@ impl TypeFactory {
         if let Some(base) = self.entry(id).partial_base() {
             id = base;
         }
-        self.warnings
-            .get(&id)
-            .or_else(|| self.parent.as_ref().and_then(|p| p.warnings.get(&id)))
+        if self.is_own(id) || self.is_shadowed(id) {
+            return self.warnings.get(&id).map(String::as_str);
+        }
+        self.parent
+            .as_ref()
+            .and_then(|p| p.warnings.get(&id))
             .map(String::as_str)
     }
 
@@ -528,6 +593,8 @@ impl TypeFactory {
             out.extend(own);
         }
         out.retain(|&p| self.slot(p).is_some_and(|s| s.live));
+        out.sort_unstable();
+        out.dedup();
         out
     }
 }

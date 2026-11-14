@@ -28,10 +28,6 @@ pub enum TypeError {
     /// The id does not name a live type of this factory.
     #[error("invalid type id {0:?}")]
     InvalidId(TypeId),
-    /// A forked factory tried to change a type that belongs to its frozen
-    /// parent.
-    #[error("type {0:?} belongs to the frozen parent factory and cannot be changed")]
-    FrozenParent(TypeId),
     /// An input is nested deeper than the limit that keeps recursion bounded
     /// (ADR-009).
     #[error("nesting deeper than {0} levels")]
