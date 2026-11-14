@@ -1,13 +1,13 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14, 11:31)
+## Now — RESUME HERE (2026-11-14 12:51; earlier stamp 11:31)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-the GNU disassembler crates and `bk-sla`
-(gate green, 1,708 tests). M0:
+the GNU disassembler crates, `bk-sla` and `bk-decomp-types`
+(gate green, 1,747 tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
@@ -46,12 +46,6 @@ queue — a one-line fix that unblocks the website and `docs-content`):
 | Branch | Agent id | What |
 |---|---|---|
 | `site-design` (7 commits, worktree kept) | `ad3bb266abb408203` | The site and the documentation's shell are built (ADR-030, ADR-031; screenshots in the branch under `docs/features/site-screenshots/`, shown to the owner). On the integration branch every Rust job was green on all three systems, but **the new `site` CI job failed** (run 43585590683): `docker: Error response from daemon: range of CPUs is from 0.01 to 2.00, as there are only 2 CPUs available` — `scripts/site.sh` asks for `--cpus 3` and the hosted runner has 2. The agent is to cap the CPU and memory limits at what the host has, check nothing else assumes this Mac (image pull time against the job's `timeout-minutes`, running as the calling user on the runner, arm64 versus amd64 image), and report. Then: integration branch, CI, merge; tell the owner the Pages steps (Settings → Pages → Source "GitHub Actions", then the `Pages` workflow). |
-
-**In CI now**: branch `integration` = `master` + `decomp-types` (the fork
-fix is in: a fork now changes parent types copy-on-write under the same
-id; both proptest seeds checked in; properties pass at 1,000,000 cases;
-gate on the branch green), run 43586443227, started 12:41. Green → merge
-to `master`, tick D02 in `PLAN.md`, start D03 `decomp-cspec`.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -184,7 +178,10 @@ start a fresh agent briefed from the branch's files.
 ### Coordinator's next steps
 
 1. As slots free, in this order: the `site-design` fix, D03
-   `decomp-cspec` (after D02 is on `master`),
+   `decomp-cspec` (D02 is on `master`; brief it with D02's follow-ups:
+   implement `PrototypeCodec`, provide `TypeEnv::default_model` and the
+   model names for the parser's callback, parameters are counted after
+   storage assignment including a hidden return parameter),
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
 2. `decomp-types`: in CI (above). Follow-ups it names for D03
@@ -296,6 +293,23 @@ start a fresh agent briefed from the branch's files.
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`bk-decomp-types` merged** (D02, first decompiler crate; CI green on
+  all three systems, gate on `master` 1,747 tests): every type kind, the
+  factory, both orderings, XML, the C declaration parser, provenance and
+  per-function overlays. 197,330 oracle records from Ghidra's compiled
+  `TypeFactory` replay with 60 listed differences (prototype storage is
+  D03's); data organisation of all 294 language/compiler pairs matches.
+  The first merge attempt failed on the integration gate: a property
+  test found that a fork refused to complete a parent's incomplete
+  structure; forks are now copy-on-write under the same id. Lesson, now
+  in the briefs: check in `*.proptest-regressions` and run properties at
+  a high case count once before reporting.
+* **`site-design` finished** (not merged: its CI job asks Docker for 3
+  CPUs and the runner has 2): the website and the documentation's shell
+  as one static Astro/Starlight project built only in a container;
+  status table and milestone marker generated from `PARITY.md` and
+  `PLAN.md`; Mermaid rendered to SVG at build time; no external requests.
+  The owner was sent screenshots.
 * **`sla-host-diff` merged — the cause of the 14 differing `.sla` files
   is floating-point contraction** (ADR-032): `DecisionNode::getScore`
   computes `sc -= p * log(p)`, which AArch64 compilers fuse into one

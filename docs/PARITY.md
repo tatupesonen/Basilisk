@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-14 (`bk-sla` merged; CI green on Linux, macOS and Windows). 2026-11-13: (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
+Last updated: 2026-11-14 (`bk-sla` and `bk-decomp-types` merged; CI green on Linux, macOS and Windows). 2026-11-13: (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -41,7 +41,7 @@ Last updated: 2026-11-14 (`bk-sla` merged; CI green on Linux, macOS and Windows)
 | CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
 | SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | `bk-sla` on `master`: the compiled-language model, validating reader, byte-exact packed and XML writers, builder, structural diff; all 150 reference `.sla` round-trip. Missing: decoding, printing and p-code generation (`bk-sleigh`; tracks `sleigh-decode`, `sleigh-pcode`). |
 | SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
-| Decompiler engine (DECCORE) | `bk-decomp`, `bk-decomp-print` | M3 | Missing | |
+| Decompiler engine (DECCORE) | `bk-decomp-*`, `bk-cspec` (ADR-026) | M3 | Partial | Planned in 31 tracks (`features/decomp-plan.md`). On `master`: `bk-decomp-types` (D02: types, factory, orderings, XML, C declaration parser). Everything else is missing: ranges, `.cspec` and prototype models, block graph, IR, symbols, flow, heritage, rules, actions, merging, structuring, printing. |
 | Ghidra pipe protocol (GHIDRA) | trait in `bk-decomp` | M5 | Replaced | In process (ADR-004) |
 | Console and test runner | `basilisk decompile`, data-test runner | M3 | Missing | |
 | BSim signatures | `bk-bsim` | M10 | Missing | |
