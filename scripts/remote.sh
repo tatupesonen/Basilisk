@@ -187,12 +187,12 @@ nightly-run)  # [items]: a run now, optionally with BK_NIGHTLY_ITEMS
 nightly-status)
   crontab -l 2>/dev/null | grep '# basilisk-testbed$' || echo "not scheduled"
   (flock -n 9 || exit 1) 9>"$BK/locks/@nightly.lock" && echo "idle" || echo "running: $(cat "$BK/reports/current" 2>/dev/null)"
-  { ls "$BK/reports"/*.txt 2>/dev/null || true; } | tail -1 | sed 's/^/latest report: /'
+  { ls -t "$BK/reports"/*.txt 2>/dev/null || true; } | head -1 | sed 's/^/latest report: /'
   ;;
 report)  # [--all|DATE]
   case "${1:-}" in
-    --all) for f in "$BK"/reports/*.txt; do [ -f "$f" ] && echo "$(basename "$f" .txt)  $(sed -n 's/^overall: //p' "$f")"; done; true ;;
-    "") f=$(ls "$BK"/reports/*.txt 2>/dev/null | tail -1); [ -n "$f" ] || { echo "remote: no report yet" >&2; exit 1; }; cat "$f" ;;
+    --all) for f in $(ls -tr "$BK"/reports/*.txt 2>/dev/null); do echo "$(basename "$f" .txt)  $(sed -n 's/^overall: //p' "$f")"; done; true ;;
+    "") f=$( { ls -t "$BK"/reports/*.txt 2>/dev/null || true; } | head -1); [ -n "$f" ] || { echo "remote: no report yet" >&2; exit 1; }; cat "$f" ;;
     *) cat "$BK/reports/$1.txt" ;;
   esac
   ;;

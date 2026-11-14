@@ -24,8 +24,10 @@ min_free=${BK_NIGHTLY_MIN_FREE_GB:-60}
 keep=${BK_NIGHTLY_KEEP_DAYS:-30}
 started=$(date +%s)
 deadline=$((started + hours * 3600))
-name=$(date +%F); n=1
-while [ -e "$R/$name.txt" ] || [ -e "$R/$name" ]; do n=$((n + 1)); name="$(date +%F)-$n"; done
+# One name per run, in an order that sorts chronologically: the date, and
+# for a second run that day the date and time (2026-11-14T1458).
+name=$(date +%F)
+[ ! -e "$R/$name.txt" ] && [ ! -e "$R/$name" ] || name=$(date +%FT%H%M%S)
 dir="$R/$name"; mkdir -p "$dir"
 echo "$name (started $(date -Is))" > "$R/current"
 free_gb() { df -Pk "$BK" | awk 'NR == 2 {print int($4 / 1048576)}'; }
