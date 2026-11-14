@@ -1,0 +1,26 @@
+[package]
+name = "bk-decomp-symbols"
+description = "Basilisk: the decompiler's symbol and scope database and the program services around it (Ghidra's database, comment, stringmanage, cpool, loadimage, globalcontext names, override)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-context.workspace = true
+bk-core.workspace = true
+bk-marshal.workspace = true
+bk-decomp-types.workspace = true
+bk-cspec.workspace = true
+bitflags.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+flate2.workspace = true
+
+[lints]
+workspace = true

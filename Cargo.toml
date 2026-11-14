@@ -32,6 +32,7 @@ bk-sleigh-snippet = { path = "crates/bk-sleigh-snippet" }
 bk-decomp-range = { path = "crates/bk-decomp-range" }
 bk-decomp-cfg = { path = "crates/bk-decomp-cfg" }
 bk-context = { path = "crates/bk-context" }
+bk-decomp-symbols = { path = "crates/bk-decomp-symbols" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"

@@ -598,6 +598,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-decomp-symbols"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.13.2",
+ "bk-context",
+ "bk-core",
+ "bk-cspec",
+ "bk-decomp-types",
+ "bk-marshal",
+ "flate2",
+ "proptest",
+ "rstest",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
 name = "bk-decomp-types"
 version = "0.0.1"
 dependencies = [
