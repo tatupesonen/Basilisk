@@ -16,6 +16,15 @@ rules so merges are clean and the result is shippable.
 5. The Ghidra sources your spec cites, under `../ghidra` (relative to the
    main checkout; the absolute path is in your brief). **Read-only: never
    modify, build inside, or write files into the Ghidra tree.**
+   **Ghidra's source is the reference for everything you build** (owner,
+   2026-11-14): read it before you write the corresponding Rust, not
+   only where the spec cites it — the spec is a summary and has been
+   wrong before; when the spec and the source disagree, the source wins
+   and you report the spec item as wrong. This applies to fixes,
+   performance work and test tooling as well as to new features: when
+   something behaves unexpectedly, look at what Ghidra's code does there
+   first. On the build host the same tree is at `$BASILISK_GHIDRA_DIR`
+   (read-only too).
 
 ## Your worktree
 
