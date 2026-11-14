@@ -87,7 +87,7 @@ impl LanguageResult {
             self.tolerated.next2_and_commit,
             self.tolerated.cross_uncached,
             self.tolerated.cache_clobbered,
-            self.tolerated.unset_handle + self.oracle_crashes.len(),
+            self.tolerated.unset_handle + self.oracle_crashes.len() as u64,
             self.shadowed,
             self.no_hit,
             self.templates.columns(),
