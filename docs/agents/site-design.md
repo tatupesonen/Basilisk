@@ -4,7 +4,57 @@ Spec: `docs/features/site.md`. Decisions: ADR-030, ADR-031.
 
 ## Status
 
-Done. Nothing in progress. Next work belongs to `docs-content`.
+Done, including the CI fix below. Nothing in progress. Next work belongs
+to `docs-content`.
+
+## CI fix (2026-11-14, run 43585590683)
+
+- **Cause**: `scripts/site.sh` passed `--cpus 3 --memory 6g`, sized for
+  this Mac. GitHub's `ubuntu-latest` runner has 2 CPUs, and Docker refuses
+  a CPU limit above what it has (`range of CPUs is from 0.01 to 2.00`).
+  The image itself built fine on the runner in about a minute, pull
+  included (job log: step start 10:30:32, image done 10:31:31).
+- **Fix**: limits come from `docker info` (Docker's own view, which on
+  macOS is its VM): CPUs = min(3, Docker's), memory = min(6 GiB, ¾ of
+  Docker's); `SITE_CPUS` / `SITE_MEMORY` override. Also: `node_modules` is
+  reinstalled when the architecture differs (the stamp now includes
+  `uname -m`), so switching between the arm64 and amd64 images cannot mix
+  native packages; `SITE_PLATFORM=linux/amd64` runs the amd64 image.
+- **Checked for other Mac assumptions**:
+  - Running as the calling user: on the runner that is uid 1001, which is
+    `pwuser` in the image; everything the build writes (`node_modules`,
+    `dist`, `src/generated`, `.cache`) is owned by 1001 — verified on an
+    ext4 volume (below). On macOS uid 501 has no passwd entry and worked.
+  - Pinned digest: it is the multi-arch index; the amd64 manifest
+    (`sha256:ee15712262f0…b1d0`) was pulled and built under emulation.
+  - Pull and build time: about 1 minute on the runner, against
+    `timeout-minutes: 30`; no caching added (not at risk).
+  - Fonts: fontTools from Ubuntu's apt in the image, same on amd64; ran.
+  - Chromium's sandbox: Playwright launches Chromium without the sandbox
+    by default, so no `--privileged` or seccomp change is needed; rendered
+    diagrams as uid 1001 under emulation.
+  - Case-sensitive paths: the build and link check ran on an ext4 volume;
+    no case mismatch.
+  - The lock file holds the linux-x64 native packages (`@img/sharp-linux-x64`,
+    `@bruits/satteri-linux-x64-gnu`, `@rolldown/binding-linux-x64-gnu`,
+    `@astrojs/compiler-binding-linux-x64-gnu`, `lightningcss-linux-x64-gnu`,
+    `@pagefind/linux-x64`); `npm ci` installed them on amd64.
+- **What ran where**:
+  1. `SITE_PLATFORM=linux/amd64 SITE_CPUS=2 SITE_MEMORY=5g scripts/site.sh check`
+     on this Mac (amd64 image under emulation, bind-mounted worktree):
+     passed, 8 min 43 s wall time including building the amd64 image
+     (apt under emulation) and `npm ci` (41 s).
+  2. A runner simulation (scratch script, not committed): the committed
+     tree copied into a Docker volume (ext4), owned by 1001:1001, built and
+     checked by the amd64 image as uid 1001 with `--cpus 2 --memory 5g`:
+     passed in 115 s in the container (`npm ci` 55 s); peak memory sampled
+     1.35 GiB, well inside the 5 GB limit and inside ¾ of any runner's
+     memory the script would grant (the runner's exact memory was not
+     measured); nothing written was owned by anyone
+     but 1001.
+  3. Native, from a clean state (no `node_modules`, `dist`, caches or
+     generated files): `scripts/site.sh check` passed in 1 min 33 s.
+  Nothing failed to fit; the 6 GiB cap could be lower but is harmless.
 
 ## Built
 
@@ -184,7 +234,7 @@ the published pages, compatible with GPL-3.0-or-later); fonts SIL OFL 1.1.
   button.
 - `scripts/site.sh serve`: preview answered 200 on `/` and `/docs/`, 404
   on a missing page; container stopped afterwards.
-- Rust gate: `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`
+- Rust gate (run again after the CI fix): `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`
   → `0` (`tests: 1708 passed, 0 failed`; cargo-deny bans, licences,
   sources ok). The gate's file-size and unsafe checks scan
   only `crates/`, so `site/` needed no exclusion.

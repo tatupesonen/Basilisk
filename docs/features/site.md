@@ -142,7 +142,14 @@ a wide diagram keeps a legible size and scrolls sideways.
 - `scripts/site.sh build|serve|check|shoot|shell` runs the image
   `bk-site/build` (built from `site/container/Dockerfile`, itself
   `FROM` the Playwright image pinned by digest) with the repository
-  mounted, as the calling user, 3 CPUs, a time limit, removed when done.
+  mounted, as the calling user, with a time limit, removed when done.
+  CPU and memory are sized from what Docker reports (`docker info`; on
+  macOS that is Docker's VM, not the host): min(3, Docker's CPUs) and
+  min(6 GiB, ¾ of Docker's memory), overridable with `SITE_CPUS` and
+  `SITE_MEMORY`. A GitHub runner has 2 CPUs. `SITE_PLATFORM=linux/amd64`
+  builds and runs the amd64 image (emulated on an arm64 Mac) to reproduce
+  CI. `node_modules` is reinstalled when the lock file or the machine
+  architecture changes (native packages differ per architecture).
 - `npm ci` installs from the committed `site/package-lock.json` when
   `node_modules` is missing or older than the lock file.
 - `site/scripts/prepare.sh` copies screenshots and brand files and makes
