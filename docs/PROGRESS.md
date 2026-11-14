@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 18:15)
+## Now — RESUME HERE (2026-11-14 18:04)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -101,12 +101,12 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 18:15)
+### Running (state at 2026-11-14 18:04)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`) | Opus | `a41574e3f4a6e75b9` | resumed 17:25 after the full disk. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Its findings: `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` is ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. Cut from the integration branch that is now `master` `a961ff3`. |
-| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:12. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
+| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:02. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
 
 **In CI:** `ui-flake` (`afdc9312b2424f522`, finished) on branch
 `integration` (worktree `../basilisk-wt/ui-flake`, `82ffd0a`), CI run
