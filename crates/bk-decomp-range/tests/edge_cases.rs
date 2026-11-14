@@ -131,3 +131,13 @@ fn translate_2op_codes() {
         }
     );
 }
+
+#[test]
+fn public_types_are_plain_values() {
+    // Plugin binding constraints 1, 2 and 6: no lifetimes, `Send + Sync +
+    // 'static`, owned and copyable.
+    fn plain<T: Send + Sync + Copy + 'static>() {}
+    plain::<CircleRange>();
+    plain::<Combined>();
+    plain::<Translated>();
+}
