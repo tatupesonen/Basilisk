@@ -103,6 +103,26 @@ for s in 16 32;              do resvg -w $s basilisk-icon-small.svg png/basilisk
 for s in 64 128 256 512 1024; do resvg -w $s basilisk-icon.svg       png/basilisk-icon-$s.png; done
 ```
 
+### Generator scripts
+
+`tools/` holds the Python scripts that drew this set on 2026-11-12. They
+were never committed on the `logo` branch; they were recovered verbatim
+from the session transcript of the agent that made the set (its scratch
+directory was gone):
+
+- `word.py`: the wordmark geometry (letters as strokes and polygons).
+- `brand.py`: the first mark, the logo lock-up (mark + wordmark), the icon
+  and file writing; `brand2.py`: the final, centred mark, which reuses
+  `brand.py` and writes the set in the first (green) palette.
+- `sm.py`: the heavier 16/32 px icon of the ember rebuild (variant `s2`).
+- `sheets.py`: the overview and variants preview sheets.
+
+The ember palette was then applied with `sed` over the written SVGs
+(`#B8F03C`→`#FF6A2B`, `#0F1412`→`#150F0D`, `#E9EEE2`→`#F1ECE6`, and
+`#4A8500`→`#E8551A` in `basilisk-mark-light.svg` and `basilisk-logo.svg`).
+As committed here the scripts still carry the absolute paths of the `logo`
+worktree and its scratch directory; do not run them as they are.
+
 ## Variants
 
 ![variants](png/preview-variants.png)
