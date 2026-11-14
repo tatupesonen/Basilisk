@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14, 11:45)
+## Now — RESUME HERE (2026-11-14, 11:31)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -32,11 +32,11 @@ started with `gh workflow run CI --ref integration`; it is merged to
 and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
-### Running (state at 2026-11-14 11:45)
+### Running (state at 2026-11-14 11:31)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sla-host-diff` | Opus | `ad76d2a046de2d2d9` | started 10:55; why 14 `.sla` files differ between hosts (ADR-029): `research/sla-host-dependence.md`, container builds, `bk-sla`'s structural diff. |
+| `site-design` | Opus | `ad3bb266abb408203` | started 11:31; the website and the documentation's shell as one static Astro/Starlight project under `site/`, built only in a container (ADR-030, ADR-031); briefed as a designer. |
 | `sleigh-decode` | Opus | `a07f201f2114ec7f5` | started 11:45; `bk-sleigh` part 1 from `features/sleigh-decode.md`: language loading, context database, decoder, disassembly text, the `pcodedump` harness. |
 | `decomp-types` | Opus | `ae9088c291801e2f1` | resumed 11:15 (nothing was on disk); D02, `features/decomp-types.md`. |
 
@@ -87,32 +87,7 @@ start a fresh agent briefed from the branch's files.
    D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
    9, 11 and 13 (origin and replaced value on model edits, stable
    variable identity, decompiler results `Arc` + `Sync`).
-0a2. **`site-design`** (Opus, briefed as a designer; the owner asked for
-   both the product site and the documentation on 2026-11-14: ADR-030,
-   ADR-031) — one static Astro project under `site/`, **built only in a
-   container (no Node on this Mac, ever)**:
-   (1) a short spec `features/site.md`;
-   (2) `scripts/site.sh build|serve|check` running a pinned image by
-   digest, a frozen lock file, versions at least two weeks old;
-   (3) the design system, **basilisk's own and not a stock theme** ("a
-   basilisk twist"): the mark, Ember on Soot, the interface's fonts and
-   spacing (`assets/brand/`, `features/ui-design.md`), light and dark,
-   code and listing samples in the interface's syntax colours, Mermaid
-   diagrams themed to match and rendered to SVG at build time;
-   (4) the **product site** at `/`: what basilisk is, real screenshots of
-   the interface from `bk-ui`'s renderer, what works today and what is
-   planned (the parity table generated from `docs/PARITY.md`), how to
-   build and run it, links to the documentation and the source, Ghidra
-   credited without suggesting affiliation, licence in the footer;
-   (5) the **documentation's shell** at `/docs/` (Starlight, themed): the
-   structure of ADR-030 with a first page per section, so `docs-content`
-   only writes content;
-   (6) a CI job that builds the site in the same image and checks links
-   and diagrams; deployment to GitHub Pages (**the owner has to enable
-   Pages on the repository**, and says if there is a domain);
-   (7) screenshots of the result, desktop and phone width, light and
-   dark, in its report.
-   Start when a slot frees.
+0a2. (running) `site-design`.
 0a3. **`docs-content`** (Opus; after `site-design` and `spec-plugin`) —
    the documentation itself: Getting started, the interface (one page per
    view, from `features/ui-shell.md`), the command line, analysis, the
@@ -130,14 +105,25 @@ start a fresh agent briefed from the branch's files.
    checked-in oracle, fix the 106 rows where basilisk does not follow
    x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
    provenance (ADR-029).
-0c. **`sla-host-diff`** (Opus, small; needs `bk-sla` merged for its
-   structural diff): find why 14 `.sla` files differ between x86-64 Linux
-   and macOS AArch64 (ADR-029), whether the variants decode identically,
-   and what the compiler's acceptance test must be. Before
-   `sleigh-compiler-back`.
-1. `sleigh-decode` and `sleigh-compiler-front` (Opus) — both start when
-   `sla` is merged, in parallel (ADR-023). Then `sleigh-pcode`,
-   `sleigh-compiler-back`, `sleigh-snippet`.
+0c. **`ref-nofma`** (Opus, small; from `sla-host-diff`, ADR-032) — (i) add
+   `-ffp-contract=off` to `scripts/build-reference.sh`, rebuild into a
+   staging directory, check that all 150 `.sla` equal
+   `../reference-x86_64/x86_64-linux/`, rerun the unit and data tests,
+   then replace `../reference/` file by file with atomic renames (other
+   agents are reading it) and update `features/reference-tools.md`; (ii)
+   apply the edits of `research/sla-host-dependence.md` section 6.3 to
+   `features/sleigh-compiler-back.md` (unfused `f64` score, a `log`
+   bit-equal to glibc's checked against
+   `research/sla-host-dependence/logtable-glibc.txt.gz`, byte equality
+   with x86-64 for all 150, no admitted ties); (iii) report the reference
+   `pcodedump` segfault on random `mips32le` bytes with a reproducer.
+   Before `sleigh-compiler-back`; `sleigh-compiler-front` does not need
+   it. Docker leftovers of the investigation to remove then: tag
+   `bk-sla-host-diff/gcc14:arm64`, `alpine:3.22`, untagged `812e99317af7`.
+1. `sleigh-compiler-front` (Opus) — can start now (`sleigh-decode` is
+   running). Then `sleigh-pcode` (after `sleigh-decode`),
+   `sleigh-compiler-back` (after the front half and `ref-nofma`),
+   `sleigh-snippet`.
 2. Decompiler wave 1 (`features/decomp-plan.md`; ADR-026, 027, 028):
    a. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — resume
       the spec agent `a0c25da932de14a37` (Fable; its worktree
@@ -184,18 +170,20 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `sleigh-decode` and
-   `sleigh-compiler-front` (both can start: `bk-sla` is on `master`),
-   `site-design`, `x86-oracle`, `win-local`, then the rest of the queue.
+1. As slots free, in this order: `sleigh-compiler-front`, `x86-oracle`,
+   `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
+   the rest of the queue.
 2. `decomp-types` reports → review against `features/decomp-types.md`,
    integration branch, merge; with D00 and D04 merged, start D05.
-3. `spec-plugin` reports → read critically, merge the docs, ADRs; give
-   `features/plugin-binding-constraints.md` to the tracks it concerns.
-4. `sla-host-diff` reports → revise ADR-029 and
-   `features/sleigh-compiler-back.md`.
-5. `store-spike` reports → decide ADR-003's engine; then
+3. `sleigh-decode` reports → review against `features/sleigh-decode.md`,
+   integration branch, merge; start `sleigh-pcode`.
+4. `site-design` reports → look at its screenshots, integration branch
+   (it adds a CI job), merge; tell the owner what to enable for Pages;
+   start `docs-content`.
+5. Owner answers the plugin-host Blocker → adopt the ADRs, plan P0–P7.
+6. `store-spike` reports → decide ADR-003's engine; then
    `spec-program-model`.
-6. `features/sleigh-language.md` is a draft with open `[to verify]` items
+7. `features/sleigh-language.md` is a draft with open `[to verify]` items
    (nothing Java was run); complete it before its wave.
 
 ### Working notes
@@ -293,6 +281,18 @@ start a fresh agent briefed from the branch's files.
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`sla-host-diff` merged — the cause of the 14 differing `.sla` files
+  is floating-point contraction** (ADR-032): `DecisionNode::getScore`
+  computes `sc -= p * log(p)`, which AArch64 compilers fuse into one
+  multiply-subtract and x86-64 compilers without FMA do not; at 25
+  decision nodes two fields tie mathematically and the last bit decides.
+  Shown by 14 container builds (macOS with `-ffp-contract=off` gives
+  x86-64's bytes for all 150; x86-64 with `-mfma` gives macOS's) and an
+  instrumented build printing exactly those 25 ties. The variants decode
+  identically (checked exhaustively per node, and by `pcodedump`). The
+  `log` implementation matters too: fdlibm's (the `libm` crate) changes
+  two files, so basilisk needs a `log` bit-equal to glibc's. Ghidra's
+  shipped Java-built files agree with x86-64 at all 25 nodes.
 * **`spec-plugin` merged**: `inventory/05-extension-points.md` (335
   bundled scripts counted and classified), `features/plugin-api.md` (all
   225 public methods of `FlatProgramAPI` and `GhidraScript` mapped; nine

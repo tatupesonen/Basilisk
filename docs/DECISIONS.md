@@ -949,3 +949,47 @@ Pages.
 * **Tracks**: `site-design` builds the project, the container tooling,
   the design system, the product pages and the documentation's shell;
   `docs-content` then fills the documentation (ADR-030's content rules).
+
+## ADR-032 — Ghidra's SLEIGH compiler output depends on floating-point contraction; basilisk computes the score as x86-64 does
+(Coordinator, 2026-11-14, as proposed by the `sla-host-diff` track;
+evidence in `docs/research/sla-host-dependence.md`. Follows ADR-021.
+**Replaces ADR-029's "cause not known" and its conditions, and ADR-024's
+bullet on a host-independent `log` from the `libm` crate**: decision-tree
+scoring follows this record.)
+
+14 of the 150 reference `.sla` files differ between macOS AArch64 and
+x86-64 Linux. Cause, established by experiment: `DecisionNode::getScore`
+computes `sc -= p * log(p)` (`slghsymbol.cc:2135`), which AArch64
+compilers (clang and GCC, any C++ library, any OS) fuse into one
+multiply-subtract while x86-64 compilers without FMA round the product.
+At 25 decision nodes two candidate fields have mathematically equal
+scores (same bin-count multiset); the last-bit difference decides
+`chooseOptimalField`'s strict `>`. macOS with `-ffp-contract=off`
+reproduces x86-64 for all 150; x86-64 with `-mfma` reproduces macOS. Only
+the decision trees below those nodes differ, and they resolve every input
+to the same constructor (checked exhaustively): the two variants decode
+identically. Ghidra's Java compiler never contracts and agrees with
+x86-64 at all 25 nodes, but its `Math.log` is host-dependent (Homebrew's
+12.0 built on Apple silicon differs from the 11.4.2 release in ARM8_le
+and ARM8m_le).
+
+* **basilisk's score** is unfused IEEE `f64` arithmetic in Ghidra's
+  order, with a `log` bit-equal to glibc's (FMA variant) on every `k/n`,
+  1 ≤ k < n ≤ 16,384, verified against a checked-in table. Not
+  `libm::log`: fdlibm's `log` changes ARM8_le and ARM8m_le. The output is
+  then the same on every host and equals x86-64 Linux's.
+* **Oracle**: byte equality with the x86-64 Linux build for all 150
+  specifications, no tolerated ties. The reference build adds
+  `-ffp-contract=off`, after which a build on any host gives those bytes
+  and `../reference` serves again; until it is rebuilt,
+  `../reference-x86_64/x86_64-linux` is the oracle for the 14.
+* `bk-pcode`'s oracle-table item (x86-64 NaN results, queue item
+  `x86-oracle`) is unchanged.
+* The `sleigh-compiler-back` track may start once
+  `features/sleigh-compiler-back.md` carries the edits listed in the
+  research document's section 6.3 and the reference build has the flag
+  (`PROGRESS.md`, queue item `ref-nofma`).
+* Not established: nothing was run on real x86-64 hardware (emulation
+  reproduced the lent box's files exactly; the confirming command is in
+  the research document, section 2); Ghidra's Java compiler was read and
+  its shipped files measured, not run.
