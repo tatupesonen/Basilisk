@@ -329,3 +329,74 @@ fn basilisk_dumps_are_deterministic() {
     let _ = Cfg::new();
     let _ = BlockFacts::neutral(0);
 }
+
+/// `orderBlocks` ties (`docs/features/decomp-cfg.md` 4.9, 10 item 1): how
+/// many finished runs of the oracle's graphs have two or more top-level
+/// nodes ending in `RETURN`, by top-level list length — the rows where the
+/// C++ libraries may order differently (libc++ for four or more elements,
+/// libstdc++ for 17 or more). The counts are printed for the report and
+/// pinned so that a generator change shows.
+#[test]
+fn return_ties() {
+    let (mut runs, mut tied, mut tied4, mut tied17) = (0, 0, 0, 0);
+    for (class, seed) in cases() {
+        let g = generate(class, seed, MAX_NODES, true);
+        let cfg = g.to_cfg();
+        let facts = g.block_facts();
+        let options = StructureOptions {
+            analyse: Analyse::Recompute,
+            ..StructureOptions::default()
+        };
+        let Ok(s) = structure(&cfg, &facts, &options, &mut GhidraGotoSelector::new()) else {
+            continue;
+        };
+        runs += 1;
+        let h = &s.hierarchy;
+        let top = h.top_level();
+        let returns = top
+            .iter()
+            .filter(|&&n| h.front_leaf(n).is_some() && ends_in_return(h, n, &facts))
+            .count();
+        if top.len() > 1 && returns >= 2 {
+            tied += 1;
+            if top.len() >= 4 {
+                tied4 += 1;
+            }
+            if top.len() >= 17 {
+                tied17 += 1;
+            }
+        }
+    }
+    eprintln!(
+        "orderBlocks ties: {runs} finished runs, {tied} with two or more RETURN nodes on a top level of 2+ nodes, {tied4} of 4+, {tied17} of 17+"
+    );
+    assert_eq!(
+        (tied, tied4, tied17),
+        (TIES.0, TIES.1, TIES.2),
+        "counts moved; update TIES after checking"
+    );
+}
+
+/// (ties, ties on 4+ nodes, ties on 17+ nodes), measured.
+const TIES: (usize, usize, usize) = (120, 119, 25);
+
+/// `lastOp()` is a `RETURN`: the leaf the hierarchy delegates to.
+fn ends_in_return(
+    h: &bk_decomp_cfg::Hierarchy,
+    n: bk_decomp_cfg::NodeId,
+    facts: &BlockFacts,
+) -> bool {
+    use bk_decomp_cfg::Kind;
+    let mut x = n;
+    loop {
+        let c = h.components(x);
+        x = match h.kind(x) {
+            Some(Kind::Copy) => return facts.get(x.index()).ends_in_return,
+            Some(Kind::Goto | Kind::MultiGoto | Kind::IfGoto) => c[0],
+            Some(Kind::List) => *c.last().unwrap(),
+            Some(Kind::Condition) => c[1],
+            Some(Kind::IfNoExit) => c[2],
+            _ => return false,
+        };
+    }
+}
