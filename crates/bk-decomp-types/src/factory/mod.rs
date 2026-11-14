@@ -71,6 +71,8 @@ pub struct TypeFactory {
     warnings: BTreeMap<TypeId, String>,
     incomplete_typedefs: Vec<TypeId>,
     provenance: Provenance,
+    pub(crate) hooks: crate::xml::Hooks,
+    pub(crate) decode_depth: usize,
 }
 
 impl TypeFactory {
@@ -90,6 +92,8 @@ impl TypeFactory {
             warnings: BTreeMap::new(),
             incomplete_typedefs: Vec::new(),
             provenance: Provenance::Default,
+            hooks: crate::xml::Hooks::default(),
+            decode_depth: 0,
         }
     }
 
@@ -121,7 +125,14 @@ impl TypeFactory {
             warnings: BTreeMap::new(),
             incomplete_typedefs: Vec::new(),
             provenance: Provenance::Analysis,
+            hooks: parent.hooks.clone(),
+            decode_depth: 0,
         })
+    }
+
+    /// Installs the hooks (type source, prototype codec, scope look-ups).
+    pub fn set_hooks(&mut self, hooks: crate::xml::Hooks) {
+        self.hooks = hooks;
     }
 
     /// Whether this is a fork.

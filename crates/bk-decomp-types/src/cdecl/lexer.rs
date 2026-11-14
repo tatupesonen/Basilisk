@@ -340,7 +340,9 @@ impl<'a> Lexer<'a> {
 
     fn establish(&mut self, out: Out) -> Token {
         let raw = match out {
-            Out::None | Out::Bad => Raw::Bad,
+            // A token of type 0 is end of input to bison.
+            Out::None => Raw::Eof,
+            Out::Bad => Raw::Bad,
             Out::Punct(p) => Raw::Punct(p),
             Out::DotDotDot => Raw::DotDotDot,
             Out::ScopeRes => Raw::ScopeRes,
