@@ -2,4 +2,4 @@
 
 #![allow(dead_code, reason = "each test crate uses part of it")]
 
-pub mod model;
+pub(crate) mod model;

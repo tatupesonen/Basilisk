@@ -15,15 +15,15 @@ const LIMIT: usize = 1 << 20;
 
 /// The elements of a range, as Ghidra's test holds them.
 #[derive(Debug, Clone)]
-pub struct Model {
-    pub elements: Vec<u64>,
-    pub mask: u64,
-    pub bytes: u32,
+pub(crate) struct Model {
+    pub(crate) elements: Vec<u64>,
+    pub(crate) mask: u64,
+    pub(crate) bytes: u32,
 }
 
 impl Model {
     /// An empty set of `bytes`-byte values.
-    pub fn with_bytes(bytes: u32) -> Self {
+    pub(crate) fn with_bytes(bytes: u32) -> Self {
         Self {
             elements: Vec::new(),
             mask: calc_mask(bytes),
@@ -33,7 +33,7 @@ impl Model {
 
     /// Every element of `range`, from its minimum by `getNext`
     /// (`CircleRangeTest(const CircleRange &)`).
-    pub fn of(range: &CircleRange) -> Self {
+    pub(crate) fn of(range: &CircleRange) -> Self {
         let mask = range.mask();
         let mut elements = Vec::new();
         if !range.is_empty() {
@@ -59,7 +59,7 @@ impl Model {
     }
 
     /// `set_intersect`.
-    pub fn intersect(&mut self, other: &Self) {
+    pub(crate) fn intersect(&mut self, other: &Self) {
         let mut a = self.elements.clone();
         let mut b = other.elements.clone();
         a.sort_unstable();
@@ -73,14 +73,14 @@ impl Model {
     }
 
     /// `set_union`.
-    pub fn union(&mut self, other: &Self) {
+    pub(crate) fn union(&mut self, other: &Self) {
         self.elements.extend_from_slice(&other.elements);
         self.elements.sort_unstable();
         self.elements.dedup();
     }
 
     /// `pushUnary`.
-    pub fn push_unary(&mut self, op: OpCode, out_size: u32) {
+    pub(crate) fn push_unary(&mut self, op: OpCode, out_size: u32) {
         for e in &mut self.elements {
             *e = evaluate_unary(op, out_size, self.bytes, *e, &FloatFormats::DEFAULT).unwrap();
         }
@@ -91,7 +91,7 @@ impl Model {
     }
 
     /// `pushBinary`: every pair of elements.
-    pub fn push_binary(&mut self, op: OpCode, out_size: u32, in1: &Self, in2: &Self) {
+    pub(crate) fn push_binary(&mut self, op: OpCode, out_size: u32, in1: &Self, in2: &Self) {
         self.elements.clear();
         for &a in &in1.elements {
             for &b in &in2.elements {
@@ -107,7 +107,7 @@ impl Model {
     }
 
     /// `pullbackUnary`: an element no input produces is dropped.
-    pub fn pull_back_unary(&mut self, op: OpCode, in_size: u32) {
+    pub(crate) fn pull_back_unary(&mut self, op: OpCode, in_size: u32) {
         let bytes = self.bytes;
         self.elements = self
             .elements
@@ -121,7 +121,7 @@ impl Model {
     }
 
     /// `pullbackBinary`.
-    pub fn pull_back_binary(&mut self, op: OpCode, slot: u32, val: u64) {
+    pub(crate) fn pull_back_binary(&mut self, op: OpCode, slot: u32, val: u64) {
         let bytes = self.bytes;
         self.elements = self
             .elements
@@ -133,7 +133,7 @@ impl Model {
     /// `getStartStopStep`: the start, stop and step of the one range
     /// holding exactly these elements, or `None` when there is none. Sorts
     /// and deduplicates the elements, as Ghidra's does.
-    pub fn start_stop_step(&mut self) -> Option<(u64, u64, i32)> {
+    pub(crate) fn start_stop_step(&mut self) -> Option<(u64, u64, i32)> {
         if self.elements.is_empty() {
             return Some((0, 0, 1));
         }
@@ -205,7 +205,7 @@ impl Model {
     }
 
     /// `testEqual`: whether `range` and its validity agree with the model.
-    pub fn agrees(&mut self, valid: bool, range: &CircleRange) -> bool {
+    pub(crate) fn agrees(&mut self, valid: bool, range: &CircleRange) -> bool {
         if self.elements.is_empty() {
             return range.is_empty();
         }
