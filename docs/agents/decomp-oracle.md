@@ -204,4 +204,11 @@ Recorded in the feature doc §8. In short:
 
 ## Gates
 
-(filled in below)
+- `scripts/remote.sh gate; echo $?` → `0`, `tests: 2307 passed, 0 failed`
+- `scripts/remote.sh gate --no-ref; echo $?` → `0`, `tests: 2307 passed, 0 failed`
+
+Two earlier gate runs with the reference failed one test outside this
+track, `bk-ui` `task::tests::a_result_stored_before_the_waker_is_installed_still_wakes`
+(`crates/bk-ui/src/task.rs:485`). Run alone on the host it passed 20 times
+out of 20, so it is a race that shows under load: a follow-up for the
+`bk-ui` owner.
