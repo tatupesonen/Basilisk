@@ -1,6 +1,6 @@
 # Track `testbed`: the build host as the project's testbed
 
-Status: in progress (2026-11-14).
+Status: done (2026-11-14).
 
 The Linux build host (`docs/agents/remote-build.md`) is also where the
 checks that are slow or impossible on the development Mac run: Windows
@@ -9,23 +9,24 @@ property tests at length, the full differential runs, and a nightly run
 with a report. All of it is committed scripts under `tools/testbed/`,
 started through `scripts/remote.sh`, which stays a thin dispatcher.
 
-## Done / in progress / next
+## Summary
 
-- Done and run on `master`'s content: `wine` (whole workspace passes),
-  `long miri`, `long sanitizers`, `long fuzz`, `long differential`;
-  `remote.sh` plumbing (results copied back, `log` reattach for testbed
-  jobs, `clean --target`, `publish`, `nightly`, `report`, `cargo fetch`
-  inside the job with its reason in the log).
-- Written, committed, **not yet run**: `ubuntu` (Ubuntu 26.04 / GCC 15),
-  `nightly install|run` and the nightly driver (`nightly-boot.sh`,
-  `nightly.sh`), `wine --msvc`.
-- Was running when the track stopped: `long proptest` (8 suites at
-  1,000,000 cases, started 19:24Z; `scripts/remote.sh log` from this
-  worktree reattaches and fetches the results).
-- Next: proptest caps from that run (`caps` in `proptest.sh`); `ubuntu`;
-  `wine --msvc`; `nightly install`, `nightly run`, `report`; re-run the
-  `remote-build.md` checks (sync/run/log/75/clean); both gates;
-  `scripts/check-dep-age.py master`.
+Every check of the brief exists as a committed script, was run on
+`master`'s content on the build host, and is reported below:
+
+- Wine, GNU and MSVC targets: the whole workspace passes.
+- Ubuntu 26.04 / GCC 15: passes.
+- Linux AArch64 under qemu-user: passes.
+- Miri: nothing to run (no crate is marked `miri`).
+- ASan and UBSan: pass (the 2 known binutils UBSan sites).
+- 16 fuzz targets × 10 min: no finding.
+- Property tests at 1,000,000 cases: pass.
+- Full differential runs: pass, except one host-dependent row in
+  `every_language`'s snapshot (finding 1).
+
+The nightly run is installed in the host user's crontab, was triggered by
+hand twice, and its report is shown below. Master was merged once (as the
+coordinator asked), and both gates pass after it.
 
 ## Commands
 
@@ -259,6 +260,109 @@ Re-run on this branch (`6e9bb41`) from the checks in `remote-build.md`:
 
 `clean --merged` and `clean --all` were not run, because they would remove
 other agents' checkouts. Their code did not change.
+
+## Nightly run
+
+* **Schedule**: the host user's crontab, `30 1 * * *` in host time
+  (America/New_York), a line ending in `# basilisk-testbed`. Linger is off,
+  so a systemd user timer would not run without a login; cron does.
+  `scripts/remote.sh nightly install [SCHEDULE]` installs or updates it
+  (copying this branch's `tools/testbed` to `~/bk/testbed/tools`), `nightly
+  remove` disables it, `nightly status` shows the schedule, idle or running,
+  and the latest report. `nightly run [ITEM…]` starts one now; items limit
+  that run.
+* **What runs**: `nightly-boot.sh` takes a flock, so two nights never
+  overlap; a second start logs "skipped" to `~/bk/reports/boot.log`. It
+  checks out the host's `master` in `~/bk/nightly/wt` and runs that
+  checkout's `tools/testbed/nightly.sh`, or the installed copy's while
+  master has none. Every night it runs the gate (with the reference) and
+  `wine`. Then one slot by date, in rotation: fuzz (600 s per target);
+  differential; proptest (10^6 cases); or sanitizers + miri + ubuntu +
+  arm64.
+* **Budget**: 12 cores (`BK_NIGHTLY_CORES`), `nice 10`, at most 6 h
+  (`BK_NIGHTLY_HOURS`; each item also has its own bound). An item that would
+  start with less than 10 min left is marked SKIP.
+* **Feeding it**: `scripts/remote.sh sync` from a checkout on `master`
+  pushes `refs/heads/master`, which is what it tests;
+  `scripts/remote.sh publish` sends the local `master` from any worktree.
+* **Disk**:
+  - It refuses to run below 60 GB free; it first removes its own build
+    output and writes a REFUSED report if there is still too little.
+  - It removes its build output on Sundays, or when it passes 80 GB.
+  - It drops the fuzz corpora when they pass 4 GB together.
+  - It prunes `bk-testbed` Docker images older than 14 days.
+  - It deletes reports older than 30 days.
+* **Report**: `~/bk/reports/<date>.txt` (a second run that day:
+  `<date>T<HHMMSS>`), with the logs and results in `~/bk/reports/<date>/`.
+  `scripts/remote.sh report` prints the latest (by time),
+  `report --all` lists them with their overall line, `report DATE` prints
+  one. The report holds each item's result, duration and summary line,
+  disk free before and after, and, per item, the new and fixed entries of
+  its `failures.txt` against the last night in which that item ran.
+* **Expected length** (from the runs below, 12 cores, with others building
+  on the host): about 12 min for the sanitizers/miri/ubuntu/arm64 slot,
+  about 30 min for the fuzz slot (gate 4 + wine 3 + fuzz 22), 10–15 min
+  for differential and proptest; about 3 min more on Sundays (cold build).
+
+First run, triggered by hand (`nightly run`), today's slot:
+
+    Basilisk nightly 2026-11-14, 2026-11-14T14:46:17-05:00 to 2026-11-14T14:58:07-05:00 (host time)
+    master: 12f1705 docs: PARITY — snippets equal Ghidra's with no tolerated difference
+    overall: PASS (6 of 6 items passed; items: gate wine sanitizers miri ubuntu arm64)
+    budget: 12 cores, 6 h; disk free: 378 GB before, 332 GB after; build output 32 GB
+
+    gate         PASS      0h04m07s  tests: 2095 passed, 0 failed
+    wine         PASS      0h02m34s  wine gnu: 2101 passed, 0 failed, 35 ignored (exit 0, 0h02m34s)
+    sanitizers   PASS      0h01m14s  sanitizers: asan 66 passed, …, 2 report sites (0h01m14s)
+    miri         PASS      0h00m00s  miri: crates none marked miri; …
+    ubuntu       PASS      0h01m06s  ubuntu 26.04 GCC 15: test ok, clippy ok, reference ok, sla-identical ok; tests 66 passed, 0 failed, 1 ignored; 150 of 150 .sla identical …
+    arm64        PASS      0h02m48s  arm64 (qemu): 449 passed, 0 failed, 9 ignored, 0 SKIPPED (exit 0, 0h02m48s)
+
+That run stopped after this table: the comparison section failed when
+there was no earlier night. This was fixed (`3a1dbed`). A second, short run
+(`nightly run miri sanitizers`) then ended with
+`sanitizers: 2 failures unchanged since 2026-11-14` and the logs line, as
+intended. Its report was renamed on the host to the new naming
+(`2026-11-14T145836`). The cold build of the nightly checkout took 32 GB.
+
+## Needs root
+
+Nothing. The coordinator installed `qemu-user-static` (binfmt) during the
+track; the `arm64` item does not need it, because qemu-user is in its image.
+
+## Ghidra headless on the host (for the later oracle track; not done)
+
+It would need a JDK 21 (`openjdk-21-jdk-headless` from Debian 13 or an
+Eclipse Temurin image in Docker, no root), Gradle through Ghidra's wrapper
+(downloads about 150 MB plus dependencies into `~/.gradle`), about 10 GB of
+disk for a build of the pinned tree (copied, since `~/basilisk-ref/ghidra`
+is read-only), and a few GB of memory per headless analysis.
+
+## Follow-ups
+
+- bk-sleigh (finding 1): take oracle-crash counts out of the
+  `every_language` coverage snapshot, or allow them per host. Until then
+  the `differential` item fails on Linux in every run.
+- The 11 property-test files that fix their own case count (finding 2)
+  could use `ProptestConfig::default()`-based configs, so the nightly
+  million-case run reaches them too.
+- Wine runs without the reference tools, so 31 tests skip there. Mounting
+  the reference's `.sla` files would let the data-only ones run; the tests
+  that start the Linux tools would then have to skip by themselves on
+  Windows. That is a bk-testkit question, not a script one.
+- After merging, `nightly install` from master keeps the installed copy in
+  step with master. The boot script already prefers master's own
+  `tools/testbed/nightly.sh` once master has it.
+
+## Not done
+
+- `clean --merged` and `clean --all` were not exercised: they would remove
+  other agents' checkouts, and their code did not change.
+- The arm64 Ubuntu image (GCC 15 on AArch64) was not added. The `arm64`
+  item (Debian cross GCC 14) covers the floating-point question that
+  mattered.
+- Timings were taken while other jobs were building on the host (load
+  12–22), so they are upper bounds.
 
 ## Proposed text (not edited by this track)
 
