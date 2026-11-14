@@ -69,11 +69,11 @@ and a sane architecture in mind.
   assets in the repository. Effort: **high for Fable** research agents,
   **medium for Opus** implementation agents. The coordinator (Fable) writes
   the docs and specs itself.
-* **At most four running workers** (owner, 2026-11-13: "cap the running
-  workers to 4"; first "about four", 2026-11-12), counting helper
-  subagents. The coordinator fills the four slots itself, so agents start
-  no helpers. Start the next track when a slot frees; queue the rest in
-  `PROGRESS.md`.
+* **At most three running workers** (owner, 2026-11-14: "limit to 3
+  agents total"; before that four, 2026-11-13, and "about four",
+  2026-11-12), counting helper subagents. The coordinator fills the slots
+  itself, so agents start no helpers. Start the next track when a slot
+  frees; queue the rest in `PROGRESS.md`.
 * **x86-64 Linux results come from Docker emulation on this Mac** (owner,
   2026-11-12): the reference build runs in a `linux/amd64` container into
   `../reference-x86_64/` (ADR-021).

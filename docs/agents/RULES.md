@@ -112,8 +112,8 @@ rules so merges are clean and the result is shippable.
 - **No `timeout` command on the development Mac.** Bound a command with
   the Bash tool's timeout parameter or
   `perl -e 'alarm N; exec @ARGV' <cmd> …` (N in seconds).
-- **Do not fan out.** The owner caps the project at four running workers
-  (2026-11-13), and the coordinator fills all four. Work alone: start no
+- **Do not fan out.** The owner caps the project at three running workers
+  (2026-11-14), and the coordinator fills all three. Work alone: start no
   helper subagents.
 - **A usage limit can stop you at any moment.** Write results to files as
   you go, commit every finished piece, and keep `docs/agents/<track>.md`
