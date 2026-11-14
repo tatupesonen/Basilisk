@@ -197,7 +197,8 @@ decides. What a user can meet:
   `uint4`, `pcodeparse.y` 114, 187); the shared builder of
   `bk-sleigh-compiler` does not wrap, so such a snippet can get a different
   template or error. Not a choice: a bug in that crate's builder, reported
-  as a follow-up; 41 of 20,000 generated snippets hit it, none of the shipped.
+  as a follow-up; 456 of 200,000 generated snippets hit it (the test counts
+  them and checks nothing else differs), none of the shipped.
 * **Host-dependent number reading** (ADR-021): an octal literal holding an 8
   or a 9 (`09`, `0189`) reads as 0 quietly with libstdc++ (x86-64 Linux, the
   reference) and as a `BADINTEGER` ("Parsed integer is too big (overflow)",
@@ -268,6 +269,6 @@ Done (track `sleigh-snippet`, 2026-11-14). Crate `bk-sleigh-snippet`:
   assignment", "Must specify an indirect parameter for return", "syntax
   error".
 * Results: all 588 compilations of the 121 shipped bodies (116 languages)
-  equal Ghidra's XML; 236 hand-written cases and 20,000 generated snippets
+  equal Ghidra's XML; 236 hand-written cases and 200,000 generated snippets
   equal Ghidra's results except the counted cases in §8. Gaps: none against
   §7; the bit-range wrap is a follow-up for `bk-sleigh-compiler`.
