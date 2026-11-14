@@ -127,7 +127,7 @@ fn the_scope_orders_are_consistent() {
     for r in &orders.records {
         match &entry(&r.entry).storage {
             EntryStorage::Address(a) => {
-                assert_eq!((a.space.as_str(), a.offset), (r.space.as_str(), r.first))
+                assert_eq!((a.space.as_str(), a.offset), (r.space.as_str(), r.first));
             }
             other => panic!("map record for {other:?}"),
         }
