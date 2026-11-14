@@ -168,6 +168,10 @@ and a sane architecture in mind.
     be used heavily and anything may be installed on it; use it whenever
     the Mac is short of disk or CPU. Credentials for it are never written
     into the repository.
+  - *No two-job limit on builds; use kassini as much as possible* (owner,
+    2026-11-14: "remove the requirement for two build jobs, use the
+    machine as much as you can" — "the kassini one"). Heavy builds and
+    runs go to kassini at full parallelism.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer

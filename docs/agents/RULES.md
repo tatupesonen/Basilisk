@@ -53,13 +53,21 @@ rules so merges are clean and the result is shippable.
   ADRs you think are needed) in your status report.
 - Write your status report to `docs/agents/<track>.md`.
 
-## Build hygiene (shared 8-core, 16 GB machine; several agents at once)
+## Build hygiene (a shared Mac for editing; a build machine for the heavy work)
 
-- Prefix every cargo command with `CARGO_BUILD_JOBS=2`.
+- **No job limit** (owner, 2026-11-14; the earlier `CARGO_BUILD_JOBS=2`
+  rule is withdrawn). The project has a Linux build machine with 20
+  cores and 32 GB of memory, and the owner wants it used as much as
+  possible: full gates, whole-workspace builds, long test, fuzz and
+  benchmark runs go there, at full parallelism, through
+  `scripts/remote.sh` once your worktree has it (your brief says how
+  until then). On the Mac (8 cores, 16 GB, shared with other agents)
+  cargo's default parallelism is fine for the small builds you do while
+  developing.
 - While developing, build and test only your crates
   (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
 - Before your final commit run the full gate exactly as
-  `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` — never
+  `scripts/gate.sh > gate.log 2>&1; echo $?` — never
   pipe it — and fix everything it reports. `gate.log` is git-ignored.
 - Temporary files go in your worktree's `target/` or a directory you
   create with a unique name; never in the Ghidra tree.
