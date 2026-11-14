@@ -14,7 +14,7 @@
 //!   [`Sla::decode_packed`], [`Sla::decode_xml`]; written with
 //!   [`Sla::write`], [`Sla::encode_packed`], [`Sla::encode_xml`].
 //! - [`SlaBuilder`]: the producer's interface (the SLEIGH compiler).
-//! - [`diff`]: a structural comparison with a path for each difference.
+//! - [`diff()`]: a structural comparison with a path for each difference.
 //! - [`Template`]: a p-code template outside a file (injection snippets).
 //! - [`ids`]: the format scope's element and attribute ids.
 

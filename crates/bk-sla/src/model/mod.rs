@@ -84,7 +84,7 @@ impl Arenas {
 /// out) refers to an existing object of the right kind.
 ///
 /// Equality is structural: two models are equal when they describe the same
-/// file, however their arenas are laid out ([`crate::diff`]).
+/// file, however their arenas are laid out ([`crate::diff()`]).
 #[derive(Clone, Debug)]
 pub struct Sla {
     pub(crate) header: Header,
