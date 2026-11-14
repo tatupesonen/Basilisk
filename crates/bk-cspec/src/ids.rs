@@ -80,6 +80,8 @@ ids! { AttributeId, ATTRIBUTES:
     // op.cc
     ATTRIB_A = "a", 80;
     ATTRIB_B = "b", 81;
+    // basilisk's own (ADR-025 3f); written only in basilisk's encoder mode
+    ATTRIB_PROVENANCE = "bk_provenance", 400;
 }
 
 ids! { ElementId, ELEMENTS:

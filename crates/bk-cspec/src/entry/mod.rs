@@ -10,7 +10,7 @@ use bk_core::{Address, SpaceId, SpaceManager, SpaceType, VarnodeData};
 use crate::error::Result;
 use crate::types::TypeClass;
 
-pub(crate) use decode::{decode_entry, order_within_group};
+pub(crate) use decode::{EntryContext, decode_entry, order_within_group, type_class};
 
 bitflags! {
     /// Boolean properties of an entry (Ghidra's `ParamEntry` flag values).
@@ -263,7 +263,12 @@ impl ParamEntry {
 
     /// The endian-aware offset of the range within the entry, or `None` when
     /// it is not contained (Ghidra `justifiedContain`, which returns -1).
-    pub fn justified_contain(&self, manager: &SpaceManager, addr: Address, size: i32) -> Option<i32> {
+    pub fn justified_contain(
+        &self,
+        manager: &SpaceManager,
+        addr: Address,
+        size: i32,
+    ) -> Option<i32> {
         if let Some(pieces) = &self.join {
             let mut res: i32 = 0;
             for p in pieces.iter().rev() {
@@ -300,14 +305,23 @@ impl ParamEntry {
         let align = self.alignment as u64;
         if !self.is_left_justified() {
             let res = (end.wrapping_add(1) % align) as i32;
-            return Some(if res == 0 { 0 } else { self.alignment.wrapping_sub(res) });
+            return Some(if res == 0 {
+                0
+            } else {
+                self.alignment.wrapping_sub(res)
+            });
         }
         Some((start % align) as i32)
     }
 
     /// The location of the parameter that would contain the range (Ghidra
     /// `getContainer`).
-    pub fn container(&self, manager: &SpaceManager, addr: Address, size: i32) -> Option<VarnodeData> {
+    pub fn container(
+        &self,
+        manager: &SpaceManager,
+        addr: Address,
+        size: i32,
+    ) -> Option<VarnodeData> {
         let endaddr = addr.add(manager, i64::from(size.wrapping_sub(1)));
         if let Some(pieces) = &self.join {
             return pieces.iter().rev().copied().find(|p| {
@@ -372,7 +386,11 @@ impl ParamEntry {
             VarnodeData::new(self.space, self.base, self.size as u32)
         } else {
             let adjust = addr.offset().wrapping_sub(self.base) % self.alignment as u64;
-            VarnodeData::new(self.space, addr.offset().wrapping_sub(adjust), self.alignment as u32)
+            VarnodeData::new(
+                self.space,
+                addr.offset().wrapping_sub(adjust),
+                self.alignment as u32,
+            )
         };
         let ext = if self.flags.contains(EntryFlags::SMALLSIZE_ZEXT) {
             Extension::Zext
@@ -415,7 +433,12 @@ impl ParamEntry {
         size: i32,
         type_align: i32,
     ) -> Result<Address> {
-        self.addr_by_slot_justified(manager, slotnum, (size, type_align), !self.is_left_justified())
+        self.addr_by_slot_justified(
+            manager,
+            slotnum,
+            (size, type_align),
+            !self.is_left_justified(),
+        )
     }
 
     /// [`ParamEntry::addr_by_slot`] with explicit right justification
@@ -449,7 +472,9 @@ impl ParamEntry {
             }
         } else {
             if type_align > self.alignment {
-                let tmp = slotnum.wrapping_mul(self.alignment).wrapping_rem(type_align);
+                let tmp = slotnum
+                    .wrapping_mul(self.alignment)
+                    .wrapping_rem(type_align);
                 if tmp != 0 {
                     *slotnum = slotnum.wrapping_add((type_align - tmp) / self.alignment);
                 }

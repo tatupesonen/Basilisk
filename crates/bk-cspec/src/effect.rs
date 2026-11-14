@@ -137,5 +137,7 @@ pub fn lookup_record(
     if close.address() == addr && close.size() == size {
         return Ok(index);
     }
-    Err(addr.overlap(manager, 0, close.address(), close.size()).is_some())
+    Err(addr
+        .overlap(manager, 0, close.address(), close.size())
+        .is_some())
 }

@@ -230,11 +230,9 @@ pub trait ParamTypes {
     /// `getBase(size, TYPE_UNKNOWN)`).
     fn unknown(&mut self, size: i32) -> TypeHandle;
     /// Writes a reference to the type (Ghidra `Datatype::encodeRef`).
-    fn encode_ref(&self, encoder: &mut dyn Encoder, ty: TypeHandle)
-    -> Result<(), TypeQueryError>;
+    fn encode_ref(&self, encoder: &mut dyn Encoder, ty: TypeHandle) -> Result<(), TypeQueryError>;
     /// Reads a type from the next element (Ghidra `TypeFactory::decodeType`).
-    fn decode_type(&mut self, decoder: &mut dyn Decoder<'_>)
-    -> Result<TypeHandle, TypeQueryError>;
+    fn decode_type(&mut self, decoder: &mut dyn Decoder<'_>) -> Result<TypeHandle, TypeQueryError>;
 }
 
 #[cfg(test)]

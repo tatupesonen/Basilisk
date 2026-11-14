@@ -150,7 +150,11 @@ fn resolve_first(entry: &mut ParamEntry, previous: &[ParamEntry]) {
 
 /// Caches the pieces of a join entry and takes the groups of the earlier
 /// entries it overlaps (Ghidra `resolveJoin`).
-fn resolve_join(entry: &mut ParamEntry, manager: &SpaceManager, previous: &[ParamEntry]) -> Result<()> {
+fn resolve_join(
+    entry: &mut ParamEntry,
+    manager: &SpaceManager,
+    previous: &[ParamEntry],
+) -> Result<()> {
     if entry.space_type != SpaceType::Join {
         return Ok(());
     }
@@ -199,7 +203,9 @@ fn resolve_overlap(entry: &mut ParamEntry, previous: &[ParamEntry]) -> Result<()
             continue;
         }
         if !entry.contains(other) {
-            return Err(CspecError::new("Illegal overlap of <pentry> in compiler spec"));
+            return Err(CspecError::new(
+                "Illegal overlap of <pentry> in compiler spec",
+            ));
         }
         if other.is_overlap() {
             continue;

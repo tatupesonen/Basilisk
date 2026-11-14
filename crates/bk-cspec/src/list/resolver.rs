@@ -55,7 +55,13 @@ impl Resolver {
                     if space == bk_core::space::CONSTANT_SPACE {
                         continue;
                     }
-                    ranges.push((space.index(), piece.offset, piece_last(piece), position, index));
+                    ranges.push((
+                        space.index(),
+                        piece.offset,
+                        piece_last(piece),
+                        position,
+                        index,
+                    ));
                     position += 1;
                 }
             } else {
@@ -156,7 +162,12 @@ impl Resolver {
 
     /// The entries of the parts `from..to` of a space, part by part (an
     /// entry covering several parts appears once per part, as in Ghidra).
-    pub(crate) fn walk(&self, space: u32, from: PartIndex, to: PartIndex) -> impl Iterator<Item = u32> + '_ {
+    pub(crate) fn walk(
+        &self,
+        space: u32,
+        from: PartIndex,
+        to: PartIndex,
+    ) -> impl Iterator<Item = u32> + '_ {
         let parts = self.parts(space).unwrap_or(&[]);
         let to = to.min(parts.len());
         parts
