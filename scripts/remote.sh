@@ -16,7 +16,7 @@
 #   scripts/remote.sh arm64 [--no-ref] [-- CARGO-TEST-ARGS]  Linux AArch64 tests under qemu-user
 #   scripts/remote.sh long [--no-ref] miri|fuzz [SECONDS [TARGET...]]|proptest [CASES]|sanitizers|differential|all
 #   scripts/remote.sh publish                    send local master to the host (what the nightly run tests)
-#   scripts/remote.sh nightly install|remove|run|status
+#   scripts/remote.sh nightly install|remove|run [ITEM...]|status
 #   scripts/remote.sh report [--all|DATE]        the nightly report (latest, list, or one day)
 #
 # Configuration: BK_REMOTE (ssh destination) and BK_REMOTE_KEY (identity file)
@@ -178,8 +178,9 @@ nightly-remove)
   { crontab -l 2>/dev/null | grep -v '# basilisk-testbed$' || true; } | crontab -
   echo "remote: the nightly run is no longer scheduled (reports kept in $BK/reports)"
   ;;
-nightly-run)
+nightly-run)  # [items]: a run now, optionally with BK_NIGHTLY_ITEMS
   [ -x "$BK/testbed/tools/nightly-boot.sh" ] || { echo "remote: not installed (scripts/remote.sh nightly install)" >&2; exit 1; }
+  [ -z "${1:-}" ] || export BK_NIGHTLY_ITEMS="$*"
   setsid nohup "$BK/testbed/tools/nightly-boot.sh" </dev/null >/dev/null 2>&1 &
   echo "remote: nightly run started; scripts/remote.sh report shows its report when it ends"
   ;;
@@ -388,8 +389,9 @@ nightly)
     install)
       sha=$(push_head); rcall 300 checkout "$slug" "$sha" >/dev/null
       rcall 120 nightly-install "$slug" "${2:-30 1 * * *}" ;;
-    remove|run|status) rcall 120 "nightly-$1" ;;
-    *) die "usage: scripts/remote.sh nightly install [CRON-SCHEDULE]|remove|run|status" ;;
+    run) shift; rcall 120 nightly-run "$@" ;;
+    remove|status) rcall 120 "nightly-$1" ;;
+    *) die "usage: scripts/remote.sh nightly install [CRON-SCHEDULE]|remove|run [ITEM...]|status" ;;
   esac
   ;;
 report) rcall 120 report "${1:-}" ;;

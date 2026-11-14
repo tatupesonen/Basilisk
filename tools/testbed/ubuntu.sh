@@ -15,12 +15,12 @@
 
 image=$(tb_image ubuntu)
 mkdir -p "$TB_STATE/cargo-home" "$TB_ROOT/target/testbed/ubuntu"
-args=(-v "$TB_ROOT:/src" -v "$TB_OUT:/out" -v "$TB_STATE/cargo-home:/cargo" -e CARGO_HOME=/cargo)
+args=(-v "$TB_ROOT:/src" -v "$TB_DIR:/testbed:ro" -v "$TB_OUT:/out" -v "$TB_STATE/cargo-home:/cargo" -e CARGO_HOME=/cargo)
 [ -z "${BASILISK_GHIDRA_DIR:-}" ] || [ ! -d "$BASILISK_GHIDRA_DIR" ] || args+=(-v "$BASILISK_GHIDRA_DIR:/ghidra:ro")
 [ -z "${BASILISK_REFERENCE_DIR:-}" ] || [ ! -d "$BASILISK_REFERENCE_DIR" ] || args+=(-v "$BASILISK_REFERENCE_DIR:/hostref:ro")
 start=$(date +%s)
 tb_docker ubuntu "${BK_TESTBED_UBUNTU_TIMEOUT:-5000}" "${args[@]}" "$image" \
-  bash /src/tools/testbed/ubuntu/inside.sh "$@" && code=0 || code=$?
+  bash /testbed/ubuntu/inside.sh "$@" && code=0 || code=$?
 [ -f "$TB_OUT/steps.txt" ] || echo "container $code 0 the container did not run" > "$TB_OUT/steps.txt"
 tests=$(tb_counts "$TB_OUT/test.log" 2>/dev/null || echo "no tests")
 { tb_failed "$TB_OUT/test.log" 2>/dev/null | sed 's/^/ubuntu /'
