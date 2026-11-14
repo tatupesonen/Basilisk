@@ -87,7 +87,7 @@ static Datatype *randType(void)
 
 static Address randData(void)
 {
-  if (r(4) == 0) return Address(stk,0xffffffffffffffe0ULL + r(0x20));
+  if (r(4) == 0) return Address(stk,0xffffffffffffffc0ULL + r(0x20));
   return Address(ram,0x1000 + r(0x80));
 }
 
@@ -167,7 +167,7 @@ static void build(void)
     int4 nr = r(3);
     for(int4 k=0;k<nr;++k) {
       uintb f = 0x1000 + r(0x80);
-      if (r(3)==0) db->addRange(ns,stk,0xffffffffffffffe0ULL + r(0x10),0xffffffffffffffefULL + r(0x10));
+      if (r(3)==0) db->addRange(ns,stk,0xffffffffffffffc0ULL + r(0x10),0xffffffffffffffcfULL + r(0x10));
       else db->addRange(ns,ram,f,f + r(0x30));
     }
     ostringstream s; s << ns->getFullName() << " id=0x" << hex << ns->getId() << ' ';
