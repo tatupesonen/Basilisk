@@ -4,7 +4,6 @@
 //! Numbers are written as `0x…` or `-0x…` in lower-case hexadecimal of the
 //! 64-bit value; nothing depends on a locale or uses floating point.
 
-use std::cell::Cell;
 use std::fmt::Write as _;
 
 use bk_sla::{PrintPiece, SymbolKind};
@@ -20,9 +19,8 @@ impl Language {
     /// Appends the mnemonic of a decoded instruction to `out` (Ghidra
     /// `printMnemonic` of the root constructor).
     pub fn mnemonic(&self, parse: &Parse, out: &mut String) -> Result<(), DecodeError> {
-        let overhang = Cell::new(false);
         Printer {
-            env: env(self, parse, Some(parse.naddr), &overhang),
+            env: env(self, parse, Some(parse.naddr)),
             out,
         }
         .mnemonic(0)
@@ -31,9 +29,8 @@ impl Language {
     /// Appends the operand text of a decoded instruction to `out` (Ghidra
     /// `printBody` of the root constructor).
     pub fn body(&self, parse: &Parse, out: &mut String) -> Result<(), DecodeError> {
-        let overhang = Cell::new(false);
         Printer {
-            env: env(self, parse, Some(parse.naddr), &overhang),
+            env: env(self, parse, Some(parse.naddr)),
             out,
         }
         .body(0)

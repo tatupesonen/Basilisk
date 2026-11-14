@@ -1,8 +1,6 @@
 //! Writing an instruction's pending `globalset`s to the context store
 //! (Ghidra `ParserContext::applyCommits`; inventory section 4.4).
 
-use std::cell::Cell;
-
 use bk_core::Address;
 use bk_sla::SymbolKind;
 
@@ -23,8 +21,7 @@ pub(crate) fn apply_commits<S: ContextSink + ?Sized>(
     if parse.commits.is_empty() {
         return Ok(());
     }
-    let overhang = Cell::new(false);
-    let env = env(lang, parse, Some(parse.naddr), &overhang);
+    let env = env(lang, parse, Some(parse.naddr));
     let sla = lang.sla();
     for commit in &parse.commits {
         let hand = match sla.symbol(commit.symbol).map(|s| s.kind) {

@@ -3,6 +3,8 @@
 //! record-by-record comparison with `pcodedump`.
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
+pub mod coverage;
+pub mod directed;
 pub mod sweep;
 
 use std::collections::HashMap;

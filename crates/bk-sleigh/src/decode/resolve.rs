@@ -2,8 +2,6 @@
 //! operands, applying context changes and computing lengths (Ghidra
 //! `Sleigh::resolve`; inventory section 5).
 
-use std::cell::Cell;
-
 use bk_core::Address;
 use bk_sla::{ConstructorId, ContextChange, SymbolId};
 
@@ -27,7 +25,6 @@ pub(crate) fn env<'a>(
     lang: &'a Language,
     parse: &'a Parse,
     naddr: Option<Address>,
-    overhang: &'a Cell<bool>,
 ) -> Env<'a> {
     Env {
         lang,
@@ -38,7 +35,7 @@ pub(crate) fn env<'a>(
         addr: parse.addr,
         naddr,
         next2: parse.next2,
-        overhang,
+        overhang: &parse.overhang,
     }
 }
 
@@ -70,28 +67,25 @@ where
     parse.delay_slot = 0;
     parse.commits.clear();
     parse.nodes.clear();
-    parse.overhang = false;
+    parse.overhang.set(false);
     parse.max_operands = 0;
     parse.window.fill(bytes, addr);
     parse.context.clear();
     parse.context.resize(lang.context_words(), 0);
     context.context_at(addr, &mut parse.context);
 
-    let overhang = Cell::new(false);
-    let result = walk(lang, parse, &overhang);
-    parse.overhang = overhang.get();
-    result?;
+    walk(lang, parse)?;
     parse.naddr = add(lang, addr, u64::from(parse.length()));
     parse.state = ParseState::Resolved;
     Ok(())
 }
 
-fn walk(lang: &Language, parse: &mut Parse, overhang: &Cell<bool>) -> Result<(), DecodeError> {
+fn walk(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
     parse.nodes.push(Node::new(NONE));
-    let root = env(lang, parse, None, overhang).choose(lang.sla().root(), 0)?;
-    set_constructor(lang, parse, 0, root, overhang)?;
+    let root = env(lang, parse, None).choose(lang.sla().root(), 0)?;
+    set_constructor(lang, parse, 0, root)?;
 
     let mut crumbs = [0u32; MAX_DEPTH];
     let mut depth = 0usize;
@@ -136,8 +130,8 @@ fn walk(lang: &Language, parse: &mut Parse, overhang: &Cell<bool>) -> Result<(),
             }
             match op.def {
                 OpDef::Subtable(table) => {
-                    let ct = env(lang, parse, None, overhang).choose(table, offset)?;
-                    set_constructor(lang, parse, child, ct, overhang)?;
+                    let ct = env(lang, parse, None).choose(table, offset)?;
+                    set_constructor(lang, parse, child, ct)?;
                     cur = child;
                     descended = true;
                     break;
@@ -148,7 +142,7 @@ fn walk(lang: &Language, parse: &mut Parse, overhang: &Cell<bool>) -> Result<(),
                     kind,
                     filled: false,
                     ..
-                } => check_entry(lang, parse, child, symbol, expr, kind, overhang)?,
+                } => check_entry(lang, parse, child, symbol, expr, kind)?,
                 _ => {}
             }
             if let Some(slot) = parse.nodes.get_mut(child as usize) {
@@ -189,7 +183,6 @@ fn set_constructor(
     parse: &mut Parse,
     n: u32,
     ct: ConstructorId,
-    overhang: &Cell<bool>,
 ) -> Result<(), DecodeError> {
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
@@ -207,7 +200,7 @@ fn set_constructor(
                 mask,
                 expr,
             } => {
-                let value = env(lang, parse, None, overhang).eval(expr, Point::Node(n), 0)? as u32;
+                let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)? as u32;
                 let value = value.wrapping_shl(shift as u32);
                 if let Some(slot) = usize::try_from(word).ok().and_then(|w| parse.context.get_mut(w)) {
                     *slot = (*slot & !mask) | (value & mask);
@@ -262,9 +255,8 @@ fn check_entry(
     symbol: SymbolId,
     expr: bk_sla::ExprId,
     kind: TableKind,
-    overhang: &Cell<bool>,
 ) -> Result<(), DecodeError> {
-    let value = env(lang, parse, None, overhang).eval(expr, Point::Node(n), 0)?;
+    let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)?;
     if entry_usable(lang, symbol, value) {
         Ok(())
     } else {

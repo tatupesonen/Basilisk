@@ -3,8 +3,6 @@
 //! `TripleSymbol::getFixedHandle`, `HandleTpl::fix`, `ConstTpl::fix`,
 //! `fixSpace`, `fillinSpace`, `fillinOffset`).
 
-use std::cell::Cell;
-
 use bk_core::Address;
 use bk_sla::{ConstTpl, HandleSelect, HandleTpl, SymbolKind};
 
@@ -28,7 +26,6 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
     }
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
-    let overhang = Cell::new(parse.overhang);
     let naddr = Some(parse.naddr);
     let mut crumbs = [0u32; MAX_DEPTH];
     let mut depth = 0usize;
@@ -60,7 +57,7 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
                 descended = true;
                 break;
             }
-            let handle = operand_handle(&env(lang, parse, naddr, &overhang), op.def, child)?;
+            let handle = operand_handle(&env(lang, parse, naddr), op.def, child)?;
             if let Some(slot) = parse.nodes.get_mut(child as usize) {
                 slot.handle = handle;
             }
@@ -76,7 +73,7 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
             .and_then(|ctor| sla.main_template(ctor))
             .and_then(|template| template.result().copied());
         if let Some(export) = export {
-            let handle = fix(&env(lang, parse, naddr, &overhang), &export, cur)?;
+            let handle = fix(&env(lang, parse, naddr), &export, cur)?;
             if let Some(slot) = parse.nodes.get_mut(cur as usize) {
                 slot.handle = handle;
             }
@@ -87,7 +84,6 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
         cur = node.parent;
         depth = depth.saturating_sub(1);
     }
-    parse.overhang = overhang.get();
     parse.state = ParseState::Handles;
     Ok(())
 }

@@ -174,7 +174,7 @@ pub struct Parse {
     pub(crate) context: Vec<u32>,
     pub(crate) nodes: Vec<Node>,
     pub(crate) commits: Vec<Commit>,
-    pub(crate) overhang: bool,
+    pub(crate) overhang: std::cell::Cell<bool>,
     pub(crate) max_operands: u32,
 }
 
@@ -197,7 +197,7 @@ impl Parse {
             context: Vec::new(),
             nodes: Vec::new(),
             commits: Vec::new(),
-            overhang: false,
+            overhang: std::cell::Cell::new(false),
             max_operands: 0,
         }
     }
@@ -262,7 +262,7 @@ impl Parse {
     /// Whether decoding used instruction bytes past index 15, which read as
     /// zero here and as whatever follows the buffer in Ghidra's C++.
     pub fn reads_past_window(&self) -> bool {
-        self.overhang
+        self.overhang.get()
     }
 
     /// The largest number of operands of a constructor in the parse (Ghidra's
