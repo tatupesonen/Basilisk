@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 16:30)
+## Now — RESUME HERE (2026-11-14 17:00)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -33,31 +33,33 @@ the fuzz crate — check it with `cargo metadata --manifest-path
 fuzz/Cargo.toml`). Branches that touch only docs and development scripts
 may be merged directly.
 
-**`master` is RED on Rust 1.100.0 until `integration` is merged**
-(`144859f`, committed directly at the owner's choice on 2026-11-14; rustc
-1.100.0 is dated 2026-11-09). The fix is done: track `toolchain-1.100`
-reported at 16:24 (rustfmt in `bk-elf`; 52 clippy findings from four new
-lints, `assert_is_empty` 44, `float_cmp_const` 5,
-`chunks_exact_to_as_chunks` 2, `manual_bit_width` 1; no lint weakened, no
-`#[expect]` added, lock files unchanged; gate 0 on macOS with 1,819
-tests; 1,555 tests under Wine; report `docs/agents/toolchain-1.100.md`).
-It is merged into branch `integration` (`e68e890`, in worktree
-`../basilisk-wt/toolchain`), which differs from the gated tree only by
-`docs/PROGRESS.md`, so the local gate was not repeated; advisories ok.
-**CI run 43605009924 on `integration` is in progress** (started 16:28; a
-cold build, the caches are keyed on the rustc version). Green on every
-job → merge `integration` to `master` `--no-ff`, push, delete the branch,
-then message both running agents "master is green on 1.100.0": each
-commits, runs `git merge master` in its worktree (a one-time exception to
-the no-merge rule, already explained to them), `cargo fmt --all`, clippy
-on its own crates, and only then its final gates. Red → back to
-`ae408076ffaacbf39`. **Nothing else is merged to `master` before this.**
+**`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 ~17:00; CI
+run 43605009924 on `integration`, every job green on Linux, macOS and
+Windows). The pin was committed directly at the owner's choice
+(`144859f`) and track `toolchain-1.100` made the workspace pass: rustfmt
+in `bk-elf`; 52 clippy findings from four new lints (`assert_is_empty`
+44, `float_cmp_const` 5, `chunks_exact_to_as_chunks` 2,
+`manual_bit_width` 1); no lint weakened, no `#[expect]` added, lock files
+unchanged; report `docs/agents/toolchain-1.100.md`. Both running agents
+were told at ~17:00 to commit, run `git merge master` in their worktrees
+(a one-time exception to the no-merge rule), `cargo fmt --all`, clippy on
+their own crates, and to run their final gates only after that. Agents
+resumed later (the paused Fable ones write no Rust) and new agents start
+from `master` and need nothing special.
+
+Left over from that track, not urgent: 8 new cargo manifest warnings
+(seven unused `[workspace.dependencies]` entries — `anyhow`,
+`bk-decomp-types`, `bk-gnu-disasm`, `bk-sleigh`, `bk-sleigh-compiler`,
+`memmap2`, `rayon` — and an unused `authors` field), to clean up once the
+running tracks have merged, since they may use some; `rust-version`
+stays 1.97 (raising it turns on 17 `map_unwrap_or` sites); the Wine image
+`bk-gnu-disasm-win` ships Rust 1.97.1 and installs 1.100.0 on every run
+until rebuilt (goes with the `win-local` tooling track).
 
 **On `master`** besides M0: `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1, `bk-sleigh-compiler`
 part 1, `bk-pcode` on the x86-64 oracle, the website and documentation
-shell (`site/`), the unfused reference build. Last green CI on `master`
-before the toolchain change: run 43598927755 (all jobs, all three
+shell (`site/`), the unfused reference build. Last green CI: run 43605009924 (all jobs, all three
 systems; gate 1,819 tests).
 
 **The site is built but not published** (owner: "Not until there is more
@@ -71,9 +73,6 @@ to show"). When the owner says so: GitHub → Settings → Pages → Source
 |---|---|---|---|
 | `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
-
-Finished, waiting for CI: `toolchain-1.100` (`ae408076ffaacbf39`), see
-above.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
