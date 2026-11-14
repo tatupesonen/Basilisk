@@ -205,7 +205,10 @@ CircleRange randomRange(int4 size) {
   return CircleRange(left, right, size, step);
 }
 
+// The byte size whose mask the range has; 8 for an empty range (whose mask
+// is not read: under valgrind it is undefined).
 int4 sizeOf(const CircleRange &r) {
+  if (r.isempty) return 8;
   for (int4 s = 1; s <= 8; ++s)
     if (calc_mask(s) == r.mask) return s;
   return 8;

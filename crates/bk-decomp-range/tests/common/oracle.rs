@@ -98,6 +98,9 @@ fn translated(out: &mut String, t: Translated) {
 
 /// The byte size whose mask is the range's (the oracle's `sizeOf`).
 fn size_of(r: &CircleRange) -> u32 {
+    if r.is_empty() {
+        return 8;
+    }
     (1..=8).find(|&s| bk_core::bits::calc_mask(s) == r.mask()).unwrap_or(8)
 }
 
