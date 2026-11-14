@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="420"></p>
+<p align="center"><img src="assets/brand/basilisk-logo.svg" alt="Basilisk" width="420"></p>
 
 # Basilisk
 

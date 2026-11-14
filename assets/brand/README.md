@@ -68,7 +68,7 @@ For a README that follows the viewer's theme:
 ```html
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/basilisk-logo-dark.svg">
-  <img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="360">
+  <img src="assets/brand/basilisk-logo.svg" alt="Basilisk" width="360">
 </picture>
 ```
 
@@ -102,6 +102,41 @@ cd assets/brand
 for s in 16 32;              do resvg -w $s basilisk-icon-small.svg png/basilisk-icon-$s.png; done
 for s in 64 128 256 512 1024; do resvg -w $s basilisk-icon.svg       png/basilisk-icon-$s.png; done
 ```
+
+### Generator scripts
+
+`tools/` holds the Python scripts that drew this set on 2026-11-12. They
+were never committed on the `logo` branch; they were recovered verbatim
+from the session transcript of the agent that made the set (its scratch
+directory was gone):
+
+- `word.py`: the wordmark geometry (letters as strokes and polygons).
+- `brand.py`: the first mark, the logo lock-up (mark + wordmark), the icon
+  and file writing; `brand2.py`: the final, centred mark, which reuses
+  `brand.py` and writes the set in the first (green) palette.
+- `sm.py`: the heavier 16/32 px icon of the ember rebuild (variant `s2`).
+- `sheets.py`: the overview and variants preview sheets.
+
+The ember palette was then applied with `sed` over the written SVGs
+(`#B8F03C`→`#FF6A2B`, `#0F1412`→`#150F0D`, `#E9EEE2`→`#F1ECE6`, and
+`#4A8500`→`#E8551A` in `basilisk-mark-light.svg` and `basilisk-logo.svg`).
+`tools/build.py` runs that whole chain, palette step included, and
+rewrites the SVGs, the icon PNGs and the previews in place (never
+`variants/` or `concepts/`):
+
+```sh
+python3 assets/brand/tools/build.py             # SVGs, PNGs and preview sheets
+python3 assets/brand/tools/build.py --svg-only  # SVGs only
+git status assets/brand                         # only what the edit changed
+```
+
+It needs Python 3 with Pillow, `resvg` (on `PATH` or in `~/.cargo/bin`) and,
+for the preview sheets, macOS's Helvetica. On an unchanged design every
+output comes out byte-identical to the committed file (checked with resvg
+0.49.0). Edit the drawing in `word.py`, `brand.py` or `brand2.py`, not in
+the SVGs; `brand.py` and `brand2.py` are libraries and refuse to run on
+their own. Then copy the logo paths into `site/src/components/Logo.astro`,
+which inlines the logo.
 
 ## Variants
 
