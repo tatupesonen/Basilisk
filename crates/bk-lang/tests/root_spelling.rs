@@ -58,16 +58,21 @@ fn spellings(root: &Path) -> Vec<PathBuf> {
     let parent = root.parent().unwrap();
     let mut slash = root.as_os_str().to_owned();
     slash.push("/");
-    vec![
+    let mut spellings = vec![
         root.to_owned(),
-        parent
-            .join("..")
-            .join(parent.file_name().unwrap())
-            .join(name),
         root.join("."),
         PathBuf::from(slash),
         root.join("Ghidra").join(".."),
-    ]
+    ];
+    // Up and down again through the parent, unless the parent is the root
+    // of the file system (a tree at `Z:\ghidra` or `/ghidra`), which has
+    // no name to come back down by: `..` at the root stays there.
+    if let Some(parent_name) = parent.file_name() {
+        spellings.push(parent.join("..").join(parent_name).join(name));
+    } else {
+        spellings.push(parent.join("..").join(name));
+    }
+    spellings
 }
 
 fn build(root: &Path, overlay: &Path) -> LanguageRegistry {
