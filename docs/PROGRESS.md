@@ -117,10 +117,9 @@ ok). The SLEIGH compiler is complete: all 150 specifications compile to
 sequences are identical too, no tolerated difference; `basilisk sleigh
 compile`; 2.9× faster than the reference compiler over all 150. ADR-039
 records the `log` finding (every multiply-add GCC fuses in glibc is
-written out as an FMA). Its worktree is kept for the moment: the owner
-resumed that agent from its transcript view at about 18:45, so nothing
-is removed under it; delete the build output and the worktree when it is
-idle. Follow-ups: `bk-sleigh-syntax` should strip a leading byte-order
+written out as an FMA). Worktree and branch removed (its Wine scripts are kept in
+`../basilisk-wt/windows-ci/target/windows-from-sleigh-compiler-back`).
+Follow-ups: `bk-sleigh-syntax` should strip a leading byte-order
 mark (done in the compiler for now); `module_options` is copied in four
 test files (`bk-testkit` should own it); Wine runs need
 `INSTA_WORKSPACE_ROOT`; no cancellation or progress in a compile (plugin
