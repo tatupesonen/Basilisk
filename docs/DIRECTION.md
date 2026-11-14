@@ -179,6 +179,13 @@ and a sane architecture in mind.
     two as soon as track `remote-build` is merged: one running worker,
     counting helpers. Agents build, test and run their gates on kassini
     through `scripts/remote.sh`; the Mac is for editing.
+  - *The remote setup may be improved without asking* (owner,
+    2026-11-14: "You can also autonomously make improvements to the
+    remote setup"): what is installed on kassini, how it is laid out,
+    caches, scheduled runs, the scripts that drive it. What is recorded
+    stays recorded: each change goes into `PROGRESS.md` or the track's
+    report, and resizing the machine itself (cores, memory, disk) remains
+    the owner's.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer
