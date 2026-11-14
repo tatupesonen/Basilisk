@@ -53,11 +53,14 @@ char *stpcpy (char *dst, const char *src);
 # ifndef ALMOST_STDC
 #  define ALMOST_STDC 1
 # endif
-/* In MSVC mode static_assert is a keyword even in C, but
-   opcodes/mips-formats.h names an array static_assert (its compile-time
-   check, one per block); binutils never uses static_assert itself.  */
-# define static_assert bk_static_assert_array
 #endif
+
+/* opcodes/mips-formats.h names an array static_assert (its compile-time
+   check, one typedef per block); binutils never uses static_assert itself.
+   That name is a keyword in C23 (GCC 15's default) and in MSVC mode, and a
+   macro in C11's <assert.h>, so it is renamed for every compiler, whatever
+   language standard is in force (build.rs also pins one).  */
+#define static_assert bk_static_assert_array
 
 #define abort bk_gdis_abort
 #define exit bk_gdis_exit

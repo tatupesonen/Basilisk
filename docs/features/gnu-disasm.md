@@ -251,7 +251,8 @@ Added by the track:
   descriptor cache (13 targets) keyed on instruction byte order and
   updated on a switch back (m16c big-endian after little-endian used the
   wrong descriptor); `0003` xgate and CRIS sequence state reset per
-  `disassemble_info`.
+  `disassemble_info`; `0004` CR16 `storm`/`loadm` (bit 7 set) no longer
+  print an operand left over from an earlier instruction.
 - **binutils' `abort()`/`exit()`/`assert` do not end the process**; the
   call fails and the architecture family is not used again in the process.
 - **`0x18:0x5` (Hexagon) is m9s12x.** Upstream binutils has no Hexagon;
@@ -264,7 +265,7 @@ Implemented (track `gnu-disasm`, 2026-11-12); the full report is
 `docs/agents/gnu-disasm.md`.
 
 - `vendor/binutils-2.41/`: 474 files, 30 MB, produced by
-  `scripts/vendor-binutils.sh` from tag `binutils-2_41` with three patches
+  `scripts/vendor-binutils.sh` from tag `binutils-2_41` with four patches
   (section 8); `--check` reproduces it. Never line-ending-converted
   (`.gitattributes`).
 - `bk-binutils-sys`: every libopcodes disassembler, compiled with `cc`
@@ -277,13 +278,16 @@ Implemented (track `gnu-disasm`, 2026-11-12); the full report is
   `instruction_at`, `block`), `Instruction` with `InstructionInfo`, and
   `gdis_config` (`.gdis` model and reader, `options_for`,
   `display_prefix_for`).
-- Platforms: macOS (arm64) builds and passes; Linux (Debian 13, aarch64,
-  GCC and clang) builds and passes, also under AddressSanitizer and
-  UndefinedBehaviorSanitizer, in a container; Windows x86_64 (ADR-022)
+- Platforms: macOS (arm64) builds and passes; Linux builds and passes on
+  aarch64 (Debian 13 with GCC 14 and clang 19, also under AddressSanitizer
+  and UndefinedBehaviorSanitizer; Ubuntu 26.04 with GCC 15) and on x86-64
+  (Ubuntu 26.04 with GCC 15, as CI's `ubuntu-latest`), in containers; the C
+  standard is pinned (`gnu17`), since GCC 15 defaults to C23; Windows x86_64 (ADR-022)
   builds for real: `x86_64-pc-windows-gnu` with MinGW-w64 GCC and
   `x86_64-pc-windows-msvc` with **clang-cl** (MSVC's `cl.exe` rejects C that
-  binutils uses), both cross-compiled here and all tests passing under Wine;
-  not yet seen on a real Windows machine (CI's `windows-latest`). The stub
+  binutils uses), both cross-compiled here and all tests passing under Wine,
+  and on a real Windows machine (CI's `windows-latest`, clang-cl) both
+  crates built and all their tests passed. The stub
   remains only for targets that are neither Unix-like nor Windows.
 - Every one of the 65 `gnu` names in Ghidra's `.ldefs` resolves and
   decodes; `0x18:0x5` (Hexagon) is m9s12x in binutils 2.41, which has no

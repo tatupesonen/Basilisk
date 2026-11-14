@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 8ffd949e70e281b3f46e4140a9470942e37833b9edbff6094c05135e2f2d362a # shrinks to index = Index(17918436367541258969), big = false, address = 0, bytes = [128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+cc 5b5f52a5b311bdb6ae57953e6d273ef63c19ee9d871c5b4e8c7c5f5de717ab6c # shrinks to index = Index(3432416006939744708), big = false, address = 3302124856684493670, bytes = [179, 0, 85, 223, 140, 250, 203, 71, 175, 44, 140, 191, 208, 235, 4, 47, 198, 69, 2, 128, 100, 219, 162, 207, 63, 240, 111, 21, 39, 117, 105, 118, 150, 115, 62, 187, 22, 139, 188, 61, 247, 173, 143, 110, 25, 178, 100, 75, 241, 42, 204, 202, 200, 1, 223, 243, 10, 185, 200, 229, 97, 205]
