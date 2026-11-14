@@ -133,3 +133,10 @@ path = "fuzz_targets/bk_sleigh_syntax_parse.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "bk_sleigh_compiler_compile"
+path = "fuzz_targets/bk_sleigh_compiler_compile.rs"
+test = false
+doc = false
+bench = false
