@@ -390,6 +390,57 @@ impl Cfg {
             .find_condition(self.live(bl1)?, edge1, self.live(bl2)?, edge2)
     }
 
+    /// `FlowBlock::isJumpTarget` (block.cc:333): an in-edge from a node
+    /// whose index is not one less than `n`'s.
+    pub fn is_jump_target(&self, n: NodeId) -> Result<bool, CfgError> {
+        let n = self.live(n)?;
+        let index = self.g.node(n).index;
+        Ok(self
+            .g
+            .node(n)
+            .ins
+            .iter()
+            .any(|e| self.g.node(e.other).index != index.wrapping_sub(1)))
+    }
+
+    /// `FlowBlock::hasLoopIn` (block.cc:432).
+    pub fn has_loop_in(&self, n: NodeId) -> Result<bool, CfgError> {
+        let n = self.live(n)?;
+        Ok(self
+            .g
+            .node(n)
+            .ins
+            .iter()
+            .any(|e| e.label & crate::edge_labels::LOOP != 0))
+    }
+
+    /// `FlowBlock::hasLoopOut` (block.cc:441).
+    pub fn has_loop_out(&self, n: NodeId) -> Result<bool, CfgError> {
+        let n = self.live(n)?;
+        Ok(self
+            .g
+            .node(n)
+            .outs
+            .iter()
+            .any(|e| e.label & crate::edge_labels::LOOP != 0))
+    }
+
+    /// `FlowBlock::getInIndex` (block.cc:583).
+    pub fn in_index(&self, n: NodeId, from: NodeId) -> Option<usize> {
+        self.live(n).ok().and_then(|n| self.g.in_index(n, from))
+    }
+
+    /// `FlowBlock::getOutIndex` (block.cc:596).
+    pub fn out_index(&self, n: NodeId, to: NodeId) -> Option<usize> {
+        self.live(n).ok().and_then(|n| self.g.out_index(n, to))
+    }
+
+    /// `BlockGraph::clearEdgeFlags` (block.cc:979): clears `labels` on every
+    /// edge.
+    pub fn clear_edge_labels(&mut self, labels: u32) {
+        self.g.clear_edge_flags(labels);
+    }
+
     /// `BlockGraph::orderBlocks` (block.hh:447) on this flat graph, sorted
     /// stably (ADR-040).
     pub fn order_by_final(&mut self, facts: &BlockFacts) {

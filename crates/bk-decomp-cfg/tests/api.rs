@@ -459,3 +459,43 @@ fn plugin_binding_constraints() {
     let other = std::sync::Arc::clone(&shared);
     assert_eq!(other.hierarchy.top_level(), shared.hierarchy.top_level());
 }
+
+#[test]
+fn queries() {
+    let mut c = cfg("1|2|1,3|");
+    c.structure_loops().unwrap();
+    assert!(c.has_loop_in(n(1)).unwrap());
+    assert!(c.has_loop_out(n(2)).unwrap());
+    assert!(!c.has_loop_in(n(3)).unwrap());
+    assert!(
+        c.is_jump_target(n(1)).unwrap(),
+        "1 is entered from 2, index 2"
+    );
+    assert!(!c.is_jump_target(n(3)).unwrap());
+    assert_eq!(c.in_index(n(1), n(2)), Some(1));
+    assert_eq!(c.out_index(n(2), n(3)), Some(1));
+    let back = c.out_edges(n(2))[0];
+    assert!(back.is_back() && back.is_loop() && !back.is_decision() && !back.is_loop_dag());
+    assert!(c.out_edges(n(0))[0].is_tree());
+    c.clear_edge_labels(edge_labels::BACK | edge_labels::LOOP | edge_labels::TREE);
+    assert_eq!(c.out_edges(n(2))[0].label, 0);
+}
+
+#[test]
+fn hierarchy_negation_and_component_swap() {
+    let c = cfg("1,2|3|3|");
+    let facts = BlockFacts::neutral(4);
+    let mut s = bare(&c, &facts);
+    let h = &mut s.hierarchy;
+    let ifelse = (0..h.node_count() as u32)
+        .map(n)
+        .find(|&x| h.kind(x) == Some(Kind::IfElse))
+        .unwrap();
+    let before = h.components(ifelse).to_vec();
+    h.swap_components(ifelse, 1, 2).unwrap();
+    assert_eq!(h.components(ifelse), [before[0], before[2], before[1]]);
+    assert!(h.is_complex(n(0), &facts));
+    let (flips, changed) = h.negate_condition(n(0), &facts).unwrap();
+    assert_eq!(flips, [n(0)]);
+    assert!(!changed);
+}

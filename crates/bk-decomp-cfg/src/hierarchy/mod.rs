@@ -27,6 +27,49 @@ pub struct EdgeView {
     pub label: u32,
 }
 
+impl EdgeView {
+    /// `isDecisionOut`/`isDecisionIn` (block.hh:348): none of irreducible,
+    /// back, goto.
+    pub const fn is_decision(&self) -> bool {
+        self.label & crate::edge_labels::NOT_DECISION == 0
+    }
+
+    /// `isLoopDAGOut`/`isLoopDAGIn` (block.hh:354).
+    pub const fn is_loop_dag(&self) -> bool {
+        self.label & crate::edge_labels::NOT_LOOP_DAG == 0
+    }
+
+    /// `isGotoOut`/`isGotoIn` (block.hh:358): irreducible or goto.
+    pub const fn is_goto(&self) -> bool {
+        self.label & crate::edge_labels::ANY_GOTO != 0
+    }
+
+    /// `isBackEdgeOut`/`isBackEdgeIn`.
+    pub const fn is_back(&self) -> bool {
+        self.label & crate::edge_labels::BACK != 0
+    }
+
+    /// `isLoopOut`/`isLoopIn`.
+    pub const fn is_loop(&self) -> bool {
+        self.label & crate::edge_labels::LOOP != 0
+    }
+
+    /// `isTreeEdgeIn`.
+    pub const fn is_tree(&self) -> bool {
+        self.label & crate::edge_labels::TREE != 0
+    }
+
+    /// `isIrreducibleOut`/`isIrreducibleIn`.
+    pub const fn is_irreducible(&self) -> bool {
+        self.label & crate::edge_labels::IRREDUCIBLE != 0
+    }
+
+    /// `isDefaultBranch`.
+    pub const fn is_default_switch(&self) -> bool {
+        self.label & crate::edge_labels::DEFAULT_SWITCH != 0
+    }
+}
+
 impl From<&Edge> for EdgeView {
     fn from(e: &Edge) -> Self {
         Self {
@@ -253,6 +296,48 @@ impl Hierarchy {
     /// `BlockGoto::gotoPrints`: whether a goto node's goto is printed.
     pub fn goto_prints(&self, n: NodeId) -> bool {
         self.valid(n) && self.g.node(n).kind == Kind::Goto && self.g.goto_prints(n)
+    }
+
+    /// `isComplex()` of node `n` with the input facts.
+    pub fn is_complex(&self, n: NodeId, facts: &crate::BlockFacts) -> bool {
+        !self.valid(n) || self.g.is_complex(n, facts)
+    }
+
+    /// `BlockGraph::swapBlocks` (block.cc:1234): swaps components `i` and
+    /// `j` of `n` (used by `preferComplement`, D15).
+    pub fn swap_components(
+        &mut self,
+        n: NodeId,
+        i: usize,
+        j: usize,
+    ) -> Result<(), crate::CfgError> {
+        if !self.valid(n) {
+            return Err(crate::CfgError::NoSuchNode(n.get()));
+        }
+        let comps = &mut self.g.node_mut(n).comps;
+        if i >= comps.len() || j >= comps.len() {
+            return Err(crate::CfgError::Internal("component slot"));
+        }
+        comps.swap(i, j);
+        Ok(())
+    }
+
+    /// The graph half of `negateCondition(true)` on node `n`
+    /// (`docs/features/decomp-cfg.md` 4.5): swaps `n`'s two out-edges,
+    /// toggles the opcode of every condition reached and returns the flip
+    /// events on leaves, in order, and whether data-flow changed.
+    pub fn negate_condition(
+        &mut self,
+        n: NodeId,
+        facts: &crate::BlockFacts,
+    ) -> Result<(Vec<NodeId>, bool), crate::CfgError> {
+        if !self.valid(n) {
+            return Err(crate::CfgError::NoSuchNode(n.get()));
+        }
+        let mut flips = Vec::new();
+        let mut stack = Vec::new();
+        let changed = self.g.negate_condition(n, facts, &mut flips, &mut stack)?;
+        Ok((flips, changed))
     }
 
     /// Checks `checkEdges` on every node of the arena (both halves of each
