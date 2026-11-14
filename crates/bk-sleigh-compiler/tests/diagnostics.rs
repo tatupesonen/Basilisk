@@ -74,7 +74,10 @@ fn normalize(message: &str) -> String {
 
 /// Cases not compared with Ghidra's C++ compiler, and why.
 const NOT_COMPARED: &[(&str, &str)] = &[
-    ("pat_unused_field", "-f is an option of Ghidra's Java compiler only"),
+    (
+        "pat_unused_field",
+        "-f is an option of Ghidra's Java compiler only",
+    ),
     (
         "pat_div_zero",
         "division by zero in a constraint is undefined behaviour in Ghidra's C++ (SIGFPE on x86-64); Basilisk reports an error",

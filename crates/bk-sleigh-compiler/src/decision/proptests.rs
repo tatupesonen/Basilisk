@@ -15,7 +15,13 @@ fn matches(block: &Block, bytes: &[u8]) -> bool {
     if block.always_false() {
         return false;
     }
-    let byte = |i: i32| usize::try_from(i).ok().and_then(|i| bytes.get(i)).copied().unwrap_or(0);
+    let byte = |i: i32| {
+        usize::try_from(i)
+            .ok()
+            .and_then(|i| bytes.get(i))
+            .copied()
+            .unwrap_or(0)
+    };
     block.words.iter().enumerate().all(|(k, w)| {
         let at = block.offset + 4 * k as i32;
         let data = u32::from_be_bytes([byte(at), byte(at + 1), byte(at + 2), byte(at + 3)]);

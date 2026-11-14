@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use bk_sla::Sla;
-use bk_sleigh_syntax::{Defines, FileLoader, Parsed, parse_file};
+use bk_sleigh_syntax::{Defines, FileLoader, LoadError, Parsed, parse_file};
 
 use crate::diag::Diagnostic;
 use crate::options::Options;
@@ -36,8 +36,27 @@ pub fn compile_parsed(parsed: &Parsed, options: Options) -> Compiled {
     Compiled { sla, diagnostics }
 }
 
+/// A loader that drops a UTF-8 byte-order mark at the start of each file
+/// (spec 4.7; `bk-sleigh-syntax` reads it as a character).
+struct WithoutBom<'l>(&'l mut dyn FileLoader);
+
+impl FileLoader for WithoutBom<'_> {
+    fn load(&mut self, path: &Path) -> Result<String, LoadError> {
+        let text = self.0.load(path)?;
+        Ok(match text.strip_prefix('\u{feff}') {
+            Some(rest) => rest.to_owned(),
+            None => text,
+        })
+    }
+
+    fn identity(&mut self, path: &Path) -> std::path::PathBuf {
+        self.0.identity(path)
+    }
+}
+
 /// Reads, preprocesses (with `defines`), parses and compiles a
-/// specification. Returns the parse too: its diagnostics come first, and
+/// specification; a UTF-8 byte-order mark at the start of a file is
+/// ignored. Returns the parse too: its diagnostics come first, and
 /// its sources locate every diagnostic's span.
 pub fn compile(
     path: &Path,
@@ -45,7 +64,7 @@ pub fn compile(
     options: Options,
     loader: &mut dyn FileLoader,
 ) -> (Parsed, Compiled) {
-    let parsed = parse_file(path, defines, loader);
+    let parsed = parse_file(path, defines, &mut WithoutBom(loader));
     if parsed.has_errors() {
         return (
             parsed,
