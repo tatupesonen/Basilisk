@@ -145,6 +145,15 @@ and a sane architecture in mind.
     do it, set up auto build as well"): the site is published on GitHub
     Pages at `https://tatupesonen.github.io/basilisk/` and is redeployed
     automatically on every push to `master` that changes it.
+  - *The name is written "Basilisk", with a capital B* (owner,
+    2026-11-14: "that is the new name, needs to also update the existing
+    brand material"). Prose, the user interface, the site and the brand
+    material (the drawn wordmark in the logos included) use "Basilisk".
+    Lower case stays only where the name is an identifier: the crate and
+    binary `basilisk`, commands (`basilisk disasm`), the Python module,
+    paths, file names, URLs and the repository name. The mechanical text
+    pass is done by a Haiku agent at the owner's explicit request (an
+    extra agent beside the two-worker cap, for that task only).
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer

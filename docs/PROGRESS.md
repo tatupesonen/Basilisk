@@ -78,6 +78,7 @@ documentation is still a shell; `docs-content` fills it.
 |---|---|---|---|
 | `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
+| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | see the log of this session | started 2026-11-14 ~16:50 at the owner's explicit request, beside the cap: writes the product name as "Basilisk" in prose everywhere on `master` (rules in `DIRECTION.md`), leaving identifiers, commands, paths and URLs lower-case. It does **not** touch files the two running tracks own or append to (`crates/bk-sleigh`, `crates/basilisk`, `fuzz/`, their specs and status files, `docs/PERF.md`, `docs/inventory/tests/`) — a second pass covers those after they merge — and does not redraw artwork. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -111,6 +112,19 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (start as slots free, in this order)
 
+-1. **`brand-name` (Opus), first when a slot frees** — the owner's
+   request of 2026-11-14: the name is "Basilisk" with a capital B, and
+   the brand material follows. Redraw the wordmark (it is drawn as
+   strokes and polygons, no font) with a capital B in
+   `assets/brand/basilisk-logo.svg` and `basilisk-logo-dark.svg` and any
+   variant or concept that carries the wordmark; regenerate the PNGs
+   under `assets/brand/png`; update `assets/brand/README.md`,
+   `site/src/components/Logo.astro` and any site image that shows the
+   wordmark (favicons and the social image if they do), and
+   `crates/bk-ui` if it draws the name. File names stay lower-case.
+   Screenshots of the site and the UI before and after, sent to the
+   owner. Then the second `name-case` pass over the files the first one
+   skipped.
 0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
 0a. **Plugin tracks** (`features/plugin-api.md`; ADR-035, ADR-036,
    ADR-037; unblocked by the owner on 2026-11-14): P0 reference fixtures,
