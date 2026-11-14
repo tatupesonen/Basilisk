@@ -115,7 +115,15 @@ pub(crate) fn windows_spelling(path: &Path) -> Cow<'_, Path> {
         Prefix::Disk(letter) | Prefix::VerbatimDisk(letter) => Some(letter),
         _ => None,
     };
-    if !kind.is_verbatim() && !letter.is_some_and(|l| l.is_ascii_lowercase()) {
+    // `Prefix` reports the drive letter already upper-cased, so whether it
+    // is written in lower case is read from the prefix's own text.
+    let lower_case_drive = letter.is_some()
+        && prefix
+            .as_os_str()
+            .as_encoded_bytes()
+            .iter()
+            .any(u8::is_ascii_lowercase);
+    if !kind.is_verbatim() && !lower_case_drive {
         return Cow::Borrowed(path);
     }
     let mut out = match letter {
