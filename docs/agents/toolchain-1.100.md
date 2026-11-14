@@ -78,7 +78,7 @@ this.
   `bk-ui` and `basilisk`). `bk-binutils-sys`/`bk-gnu-disasm` cannot be
   checked for MSVC here (the build script needs clang-cl for the vendored
   C).
-- Windows under Wine: see "Wine" below.
+- Windows under Wine: 1555 tests of the 11 changed self-contained crates pass (see "Wine").
 - Linux: rests on CI.
 
 ## Other things the toolchain change touches
@@ -144,11 +144,19 @@ expressions. Nothing in this track touched `crates/bk-sleigh`,
 
 ## Wine
 
-(pending)
+`target/windows/dock.sh gnu test --locked -p bk-marshal -p bk-elf -p bk-bin
+-p bk-pcode -p bk-lang -p bk-sla -p bk-sleigh-syntax -p bk-testkit -p
+bk-decomp-types -p bk-binutils-sys -p bk-gnu-disasm` (image
+`bk-gnu-disasm-win`, `x86_64-pc-windows-gnu`, Wine 10, rustc 1.100.0
+installed in the container by my `run.sh`; Ghidra-dependent tests skipped,
+`BASILISK_GHIDRA_DIR` unset): **1555 passed, 0 failed, 21 ignored**.
+`bk-ui` (GUI) was not run under Wine; it was cross-clippied for MSVC.
 
 ## Gate result
 
-(pending)
+`CARGO_BUILD_JOBS=3 scripts/gate.sh > gate.log 2>&1; echo $?` → `0` on
+1.100.0 (macOS arm64); last lines `bans ok, licenses ok, sources ok`,
+`tests: 1819 passed, 0 failed`.
 
 ## Commits
 
