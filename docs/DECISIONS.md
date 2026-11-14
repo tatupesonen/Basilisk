@@ -836,3 +836,48 @@ says how each is read. ADR-025 otherwise stands.)
   of the factory entry and **take no part in type identity, comparison,
   hashing or interning**. Otherwise interning, and so the `ghidra`
   profile's output, would change.
+
+## ADR-029 — Ghidra's SLEIGH compiler output depends on the host; the reference is x86-64 Linux until the cause is known
+(Coordinator, 2026-11-14. Measured; follows ADR-021 and settles the item
+ADR-024 left unverified.)
+
+The reference build was run on x86-64 Linux (GCC 14.4, the lent box) and
+compared with the one on macOS AArch64 (Apple clang 17), same Ghidra
+commit, same build script:
+
+* **x86-64 Linux passes everything**: 205/205 unit tests and 760/760
+  data-test checks. On both AArch64 hosts two `-NAN` checks fail, as
+  ADR-021 expected.
+* **14 of the 150 compiled `.sla` files differ in content** between the
+  two hosts (inflated streams compared, not compressed bytes): `AARCH64`,
+  `AARCH64BE`, `AARCH64_AppleSilicon`, `ARM8_le`, `ARM8m_le`, `mips32le`,
+  `mips32R6le`, `ppc_64_isa_le`, `ppc_64_isa_altivec_le`, `TI_MSP430`,
+  `TI_MSP430X`, `tricore`, `x86`, `x86-64`. Some differ in length, and
+  the differences start late in the file. The other 136 are identical.
+  So "the C++ compiler's bytes" is not one thing.
+* **Decision**: for the SLEIGH compiler's byte-equality acceptance
+  (ADR-023) the oracle is the **x86-64 Linux** build, kept beside the
+  checkout in `../reference-x86_64/x86_64-linux/` (150 `.sla`, `STAMP`,
+  logs). The macOS build in `../reference/` remains the oracle for
+  everything where the two agree and for running the tools locally.
+* **Not known: the cause.** Candidates are a decision-tree score tie
+  decided by the host's `log`, an unstable `std::sort` (libstdc++ and
+  libc++ order equal elements differently), or iteration over a
+  pointer-keyed container. Which it is decides what basilisk must do: a
+  floating-point tie is settled by ADR-024's host-independent `log`; a
+  sort-order dependence means basilisk needs a defined order, and equality
+  with either host's bytes for those 14 files may then be the wrong
+  acceptance test. The `sleigh-compiler-back` track does not start until
+  this is established (`PROGRESS.md`, queue item `sla-host-diff`), using
+  `bk-sla`'s structural diff on the 14 pairs. Whether the two variants
+  decode identically is part of that question.
+* **`bk-pcode`'s oracle table** (`tests/data/opbehavior_cpp.txt.gz`) was
+  generated on AArch64. Regenerated on x86-64 Linux, 161 of the 77,148
+  rows with the same inputs have a different result, all NaN signs in
+  float operations. Replaying the x86-64 table through basilisk's test,
+  the "created NaN sign" class disappears as intended, but **106 rows
+  differ**: basilisk does not yet follow x86-64 where an input is itself
+  a NaN. Under ADR-021 the x86-64 table becomes the checked-in one and
+  those rows are fixed (queue item `x86-oracle`). The generator's inputs
+  also depend on the host (argument evaluation order), so tables are
+  compared by input, not by line.

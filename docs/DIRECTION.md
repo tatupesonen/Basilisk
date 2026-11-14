@@ -83,9 +83,28 @@ and a sane architecture in mind.
   deliberate, documented, and measured against Ghidra's behaviour. Owner
   decisions that cannot be inferred still go to `PROGRESS.md` Blockers.
 * **A throwaway x86-64 Linux box is available** (`kassini` on Tailscale,
-  owner, 2026-11-12) for builds and tests that need x86-64 Linux; details
+  owner, 2026-11-12; reachable again from 2026-11-14 after a tailnet
+  change) for builds and tests that need x86-64 Linux; details
   and access notes in `PROGRESS.md`. Credentials are never written to
   files, commits or notes.
+* **Feature branches may be pushed to GitHub once they have been tested
+  locally** (owner, 2026-11-14), so CI runs on all three systems before a
+  merge: the coordinator pushes the branch and starts the workflow on it,
+  and merges only what is green. Agents still never push.
+* **The usage pace is fine** (owner, 2026-11-14): keep Fable 5.2 at high
+  effort for research and Opus 5.5 at medium for implementation, within
+  the worker cap.
+* **`cargo-xwin` may be used** (owner, 2026-11-14) for local Windows
+  checks; it downloads Microsoft's CRT and SDK under Microsoft's licence
+  terms. Nothing from it is committed.
+* **The UI as merged on 2026-11-13 "looks great"** (owner, 2026-11-14):
+  its design choices stand (dark default theme, fixed-height listing rows
+  with instruction bytes cut at six, Functions/Defined Strings/References
+  open beside the Console, twelve syntax colours).
+* **The plugin system is to be worked on now, not left to M9** (owner,
+  2026-11-14: "remember to work on the plugin system"). What was decided
+  is ADR-014: Python through PyO3. Its design spec is written now so the
+  crates being built are shaped for it.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
   (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each

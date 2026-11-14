@@ -84,6 +84,29 @@ start a fresh agent briefed from the branch's files.
 
 0. Resume the three stopped agents above: `decomp-types` first (critical
    path), then `spec-pe`, then `store-spike`.
+0a. **`spec-plugin`** (Fable; the owner asked for it on 2026-11-14) —
+   `inventory/05-extension-points.md` and `features/plugin-api.md` for
+   ADR-014 (Python through PyO3): Ghidra's extension surface
+   (`GhidraScript`/`FlatProgramAPI`, analyzers, loaders, exporters,
+   plugins and their services, PyGhidra, the bundled scripts), the Python
+   API's shape and versioning, plugin discovery and registration, the
+   embedded and the importable build, GIL and threading rules — and above
+   all **the binding constraints the crates being built now must meet**
+   (handles without lifetimes at the boundary, errors convertible to
+   exceptions, what the program trait and the decompiler's host trait must
+   expose), as a checklist the other specs and reviews can use. Start it
+   as soon as a slot frees, ahead of the resumes of `spec-pe` and
+   `store-spike`.
+0b. **`x86-oracle`** (Opus, small): make the x86-64 table
+   (`../reference-x86_64/opbehavior_cpp.x86_64.txt.gz`) `bk-pcode`'s
+   checked-in oracle, fix the 106 rows where basilisk does not follow
+   x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
+   provenance (ADR-029).
+0c. **`sla-host-diff`** (Fable, small; needs `bk-sla` merged for its
+   structural diff): find why 14 `.sla` files differ between x86-64 Linux
+   and macOS AArch64 (ADR-029), whether the variants decode identically,
+   and what the compiler's acceptance test must be. Before
+   `sleigh-compiler-back`.
 1. `sleigh-decode` and `sleigh-compiler-front` (Opus) — both start when
    `sla` is merged, in parallel (ADR-023). Then `sleigh-pcode`,
    `sleigh-compiler-back`, `sleigh-snippet`.
@@ -145,6 +168,19 @@ start a fresh agent briefed from the branch's files.
 
 ### Working notes
 
+* **`kassini`** (x86-64 Linux, Debian 13, 4 cores, 1.8 GB memory, Docker
+  with `gcc:14`): reachable on the owner's tailnet since 2026-11-14.
+  Login is by password, given in the session and never written to files;
+  `/Users/tatu/slop/reference-x86_64/kssh.exp` takes it from the `KP`
+  environment variable (`KT` is its timeout in seconds; `scp` as first
+  argument copies). On the box everything is under `~/basilisk-ref`
+  (`reference/` is the finished build, `oracle/` the op-behaviour
+  generator). Copied to this Mac: `../reference-x86_64/x86_64-linux/`
+  (150 `.sla`, `STAMP`, logs) and
+  `../reference-x86_64/opbehavior_cpp.x86_64.txt.gz`. `kssh.exp` prints
+  nothing and exits 0 when the host does not resolve: check
+  `tailscale status` first.
+
 * In a worktree `../ghidra` does not resolve; agents set
   `BASILISK_GHIDRA_DIR=/Users/tatu/slop/ghidra` and
   `BASILISK_REFERENCE_DIR=/Users/tatu/slop/reference`, and must also test
@@ -175,26 +211,26 @@ start a fresh agent briefed from the branch's files.
 
 ## Blockers
 
-* **x86-64 Linux reference build (ADR-021) — the box is not reachable.**
-  The build started on the lent box `kassini` on 2026-11-12 at 20:25
-  (`~/remote-build.sh`, output `~/basilisk-ref/reference/`, log
-  `~/basilisk-ref/run.log` ending in `exit=<code>`) has not been read.
-  The owner gave the login again on 2026-11-13 (kept in the session only,
-  never written to files). Tailscale on this Mac was stopped and was
-  brought up again at 17:15, but **no machine named `kassini` is on the
-  tailnet** (`tailscale status` does not list it; the name does not
-  resolve), so it is off, removed, or on another tailnet. Owner: turn it
-  on or re-add it, or give its address. Note that
-  `/Users/tatu/slop/reference-x86_64/kssh.exp` (password from the `KP`
-  environment variable) prints nothing and exits 0 when the host does not
-  resolve — check `tailscale status` first. The emulated Docker build on
-  this Mac was killed for lack of memory (`exit=137`). When access is
-  back: read `reference/STAMP` (the two `-NAN` checks should pass on
-  x86-64), regenerate `bk-pcode`'s C++ oracle table there
-  (`crates/bk-pcode/tests/data/README.md`) and compare it with the
-  checked-in aarch64 one. Nothing else waits on this.
+None. (The x86-64 reference build was read on 2026-11-14: ADR-029.)
 
 ## Log
+
+### 2026-11-14 — x86-64 reference build read; owner decisions
+* **x86-64 Linux reference build** (GCC 14.4): 205/205 unit tests and
+  760/760 data-test checks; the two `-NAN` checks that fail on AArch64
+  pass there (ADR-021 confirmed).
+* **Ghidra's SLEIGH compiler output is host-dependent**: 14 of 150 `.sla`
+  files differ in content between x86-64 Linux and macOS AArch64. Cause
+  not yet known. ADR-029; `sleigh-compiler-back` waits for
+  `sla-host-diff`.
+* **`bk-pcode` against the x86-64 oracle table**: 106 rows differ (NaN
+  inputs). Queue item `x86-oracle`.
+* Owner, 2026-11-14: three workers; feature branches may be pushed for CI
+  after local testing; the usage pace is fine; `cargo-xwin` may be used;
+  the merged UI "looks great"; the plugin system (ADR-014) is to be worked
+  on now — `spec-plugin` queued first.
+* CI on `master` is red on Linux (GCC build of `bk-binutils-sys`) and
+  Windows (three new path tests); two fix agents are running.
 
 ### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH and decompiler specs, decompiler research merged
 * **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
