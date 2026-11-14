@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Builds the reference tools Basilisk is measured against (ADR-007,
 # docs/features/reference-tools.md): Ghidra's SLEIGH compiler, decompiler
-# console and decompiler test runner, Basilisk's pcodedump and snippetdump
-# oracles, and a
-# compiled .sla for every processor language.
+# console (optimised and CPUI_DEBUG) and decompiler test runner, Basilisk's
+# pcodedump and snippetdump oracles, the two consoles with Basilisk's console
+# extension (ADR-042), and a compiled .sla for every processor language.
 #
 # Everything is written under one directory outside both repositories
 # (BASILISK_REFERENCE_DIR, default ../reference). The Ghidra tree
@@ -354,6 +354,102 @@ else
   say "  built bin/sleigh, bin/decomp, bin/decomp_test"
 fi
 
+# ------------------------------- 1b. decomp_dbg and the console extension
+#
+# docs/features/decomp-oracle.md 4.2, ADR-042. Three more consoles, all from
+# the objects of step 1's source copy and none changing what step 1 built:
+#   bin/decomp_dbg     Ghidra's own CPUI_DEBUG console (`make decomp_dbg`)
+#   bin/decomp_bk      decomp_opt's objects + Basilisk's console extension
+#   bin/decomp_bk_dbg  decomp_dbg's objects + the extension
+# The extension (tools/reference/consoleext) is compiled outside Ghidra's
+# Makefile, with the Makefile's own flags plus -fno-access-control, into
+# <reference>/src/consoleext; it registers its commands through a static
+# IfaceCapability, so linking its objects is enough. Each part has its own
+# fingerprint: a change to the extension relinks only the two _bk consoles.
+
+EXT_DIR=$ROOT/tools/reference/consoleext
+[ -f "$EXT_DIR/vars.mk" ] || die "missing $EXT_DIR/vars.mk"
+EXT_SOURCES=()
+for f in "$EXT_DIR"/*.cc "$EXT_DIR"/*.hh; do
+  [ -f "$f" ] && EXT_SOURCES[${#EXT_SOURCES[@]}]=$f
+done
+[ ${#EXT_SOURCES[@]} -gt 0 ] || die "no sources in $EXT_DIR"
+# The hash of the extension's sources, concatenated in byte order of their names.
+EXT_HASH=$(for f in "${EXT_SOURCES[@]}"; do basename "$f"; done | LC_ALL=C sort \
+  | while IFS= read -r f; do cat "$EXT_DIR/$f"; done | hash_stdin)
+
+# make with step 1's overrides (EXTRA unexpanded, as there).
+ref_make() {
+  make -C "$REF/src/cpp" "$@" \
+    "CXX=$CXX_CMD -std=c++11" ARCH_TYPE= "ADDITIONAL_FLAGS=$CXX_EXTRA_FLAGS" BFDLIB= \
+    LNK=../zlib/libz.a \
+    "EXTRA=\$(filter-out $BFD_NAMES \$(CORE) \$(DECCORE) \$(SLEIGH) \$(GHIDRA) \$(SLACOMP) \$(SPECIAL),\$(ALL_NAMES))"
+}
+
+say "[1b/5] decomp_dbg and the console extension"
+DBG_FP=$( { echo "tools: $TOOLS_FP"; echo "target: decomp_dbg"; } | hash_stdin)
+if [ "$(cat "$STATE/decomp_dbg.fp" 2>/dev/null || true)" = "$DBG_FP" ] && [ -x "$REF/bin/decomp_dbg" ]; then
+  say "  decomp_dbg up to date"
+else
+  rm -f "$STATE/decomp_dbg.fp"
+  say "  make -j$JOBS decomp_dbg (log: $LOGS/make-dbg.log)"
+  # Only com_dbg objects and decomp_dbg are made; step 1's outputs are not
+  # targets here, and the generated parsers keep the time stamps step 1 gave them.
+  if ! ref_make -j"$JOBS" decomp_dbg > "$LOGS/make-dbg.log" 2>&1; then
+    grep -n -B2 -A6 'error' "$LOGS/make-dbg.log" | head -80 >&2 || true
+    die "building decomp_dbg failed; full log: $LOGS/make-dbg.log"
+  fi
+  cp "$REF/src/cpp/decomp_dbg" "$REF/bin/decomp_dbg.new"
+  mv "$REF/bin/decomp_dbg.new" "$REF/bin/decomp_dbg"
+  printf '%s\n' "$DBG_FP" > "$STATE/decomp_dbg.fp"
+  CHANGED=1
+  say "  built bin/decomp_dbg"
+fi
+
+# The Makefile's variables as make evaluates them with the overrides above.
+make_var() { sed -n "s/^$1=//p" "$STATE/consoleext.vars"; }
+EXT_FP=$( { echo "tools: $TOOLS_FP"; echo "decomp_dbg: $DBG_FP"; echo "extension: $EXT_HASH"; } | hash_stdin)
+if [ "$(cat "$STATE/consoleext.fp" 2>/dev/null || true)" = "$EXT_FP" ] \
+    && [ -x "$REF/bin/decomp_bk" ] && [ -x "$REF/bin/decomp_bk_dbg" ]; then
+  say "  decomp_bk, decomp_bk_dbg up to date"
+else
+  rm -f "$STATE/consoleext.fp"
+  ref_make -s -f Makefile -f "$EXT_DIR/vars.mk" bk-vars > "$STATE/consoleext.vars" 2> "$LOGS/consoleext.log" \
+    || die "reading the Makefile's variables failed; log: $LOGS/consoleext.log"
+  EXT_OUT=$REF/src/consoleext
+  rm -rf "$EXT_OUT"
+  mkdir -p "$EXT_OUT/opt" "$EXT_OUT/dbg"
+  : > "$LOGS/consoleext.log"
+  # Compile one variant: ext_compile opt|dbg CXXFLAGS DEFINES
+  ext_compile() {
+    local variant=$1 flags=$2 defines=$3 src obj
+    for src in "$EXT_DIR"/*.cc; do
+      obj=$EXT_OUT/$variant/$(basename "$src" .cc).o
+      # shellcheck disable=SC2086
+      (cd "$REF/src/cpp" && $(make_var BK_CXX) $(make_var BK_ARCH_TYPE) $flags $(make_var BK_ADDITIONAL_FLAGS) \
+          $defines -fno-access-control -I "$REF/src/cpp" -c "$src" -o "$obj") >> "$LOGS/consoleext.log" 2>&1 \
+        || { cat "$LOGS/consoleext.log" >&2; die "compiling $(basename "$src") ($variant) failed"; }
+    done
+  }
+  # Link one console: ext_link NAME CXXFLAGS OBJS-VARIABLE VARIANT
+  ext_link() {
+    local name=$1 flags=$2 objs=$3 variant=$4
+    # shellcheck disable=SC2046,SC2086
+    (cd "$REF/src/cpp" && $(make_var BK_CXX) $flags $(make_var BK_ARCH_TYPE) -o "$REF/bin/$name.new" \
+        $(make_var "$objs") "$EXT_OUT/$variant"/*.o $(make_var BK_BFDLIB) $(make_var BK_LNK)) >> "$LOGS/consoleext.log" 2>&1 \
+      || { cat "$LOGS/consoleext.log" >&2; die "linking $name failed"; }
+    mv "$REF/bin/$name.new" "$REF/bin/$name"
+  }
+  say "  compiling the console extension ($(ls "$EXT_DIR"/*.cc | wc -l | tr -d ' ') files, twice)"
+  ext_compile opt "$(make_var BK_OPT_CXXFLAGS)" "$(make_var BK_COMMANDLINE_OPT)"
+  ext_compile dbg "$(make_var BK_DBG_CXXFLAGS)" "$(make_var BK_COMMANDLINE_DEBUG)"
+  ext_link decomp_bk "$(make_var BK_OPT_CXXFLAGS)" BK_OPT_OBJS opt
+  ext_link decomp_bk_dbg "$(make_var BK_DBG_CXXFLAGS)" BK_DBG_OBJS dbg
+  printf '%s\n' "$EXT_FP" > "$STATE/consoleext.fp"
+  CHANGED=1
+  say "  built bin/decomp_bk, bin/decomp_bk_dbg"
+fi
+
 # -------------------------------------------------------- 3. languages
 #
 # Ghidra's Gradle build (gradle/processorProject.gradle, task sleighCompile)
@@ -643,9 +739,10 @@ write_stamp() {
     grep -E '^(unit_failure|data_failure|data_error|unit_crash|data_crash|unit_exit|data_exit|unit_seconds|data_seconds): ' "$STATE/tests.summary" || true
     echo
     echo "== tools: sha256  bytes  path"
-    for f in sleigh decomp decomp_test pcodedump snippetdump; do
+    for f in sleigh decomp decomp_test pcodedump snippetdump decomp_dbg decomp_bk decomp_bk_dbg; do
       printf '%s  %s  bin/%s\n' "$(hash_file "$REF/bin/$f")" "$(file_size "$REF/bin/$f")" "$f"
     done
+    echo "console_extension: $EXT_HASH"
     echo
     echo "== languages: sha256  bytes  compile-seconds  path"
     (cd "$REF" && find Ghidra/Processors -type f -name '*.sla' | LC_ALL=C sort) | while IFS= read -r f; do
@@ -672,6 +769,7 @@ fi
 say
 say "reference tools ready in $REF"
 say "  tools:      bin/sleigh bin/decomp bin/decomp_test bin/pcodedump bin/snippetdump"
+say "              bin/decomp_dbg bin/decomp_bk bin/decomp_bk_dbg"
 say "  languages:  $SLA_TOTAL .sla files"
 say "  unit tests: $UNIT_RESULT"
 say "  data tests: $DATA_RESULT"

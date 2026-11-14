@@ -10,6 +10,7 @@ ships in the product (ADR-005). Specification:
 |---|---|
 | `pcodedump.cc` | A small C++ program linked against Ghidra's SLEIGH engine that prints disassembly and p-code in the format below |
 | `snippetdump.cc` | Compiles p-code snippets (the `<pcode>` bodies of `.cspec`/`.pspec` files) with Ghidra's `PcodeSnippet` and prints the templates; format under "`snippetdump`" |
+| `consoleext/` | Basilisk's console extension (the `bk …` commands, ADR-042), linked into `decomp_bk` and `decomp_bk_dbg`; commands and formats under "The console extension" |
 | `patches/` | Patches the build script applies to its **copy** of Ghidra's source |
 | `measure.sh` | Measures the reference tools for the baseline in `docs/PERF.md` |
 
@@ -31,6 +32,10 @@ reference/
   bin/decomp_test            Ghidra's test runner            (decomp_test_dbg)
   bin/pcodedump              the oracle in this directory
   bin/snippetdump            the p-code snippet oracle in this directory
+  bin/decomp_dbg             Ghidra's CPUI_DEBUG console      (decomp_dbg)
+  bin/decomp_bk              decomp_opt's objects + consoleext/
+  bin/decomp_bk_dbg          decomp_dbg's objects + consoleext/
+  src/consoleext/{opt,dbg}/  the extension's objects
   Ghidra/Processors/<Module>/data/languages/
                              a copy of each language directory with a
                              compiled .sla beside every .slaspec
@@ -50,6 +55,21 @@ bison 2.3, which is too old for the grammars).
 Each step records a fingerprint of its inputs and is skipped when nothing
 changed, so a second run does no work; a new Ghidra commit, an edited patch
 or `pcodedump.cc`, or a deleted output rebuilds what depends on it.
+
+Step `[1b/5]` adds the three debugging consoles without touching what step
+1 built: `make decomp_dbg` in the same source copy with the same overrides
+(only `com_dbg/` objects and `decomp_dbg` are made), then the extension's
+sources compiled **outside** the Makefile — with the flags the Makefile
+gives `com_opt/` and `com_dbg/` objects (read from make itself through
+`consoleext/vars.mk`), plus `-fno-access-control` and `-I src/cpp` — and
+linked with exactly the objects of `decomp_opt` and `decomp_dbg`. The
+extension registers its commands through a static `IfaceCapability`, so
+linking its objects is all it takes; Ghidra's files are compiled without
+the flag and `bin/decomp` stays Ghidra's, byte for byte. `decomp_dbg` and
+the extension have their own fingerprints (`.state/decomp_dbg.fp`,
+`.state/consoleext.fp`): an edited extension source recompiles the
+extension and relinks only the two `_bk` consoles. `STAMP` lists all eight
+tools and `console_extension: <sha256 of the extension's sources>`.
 
 ### How the build differs from Ghidra's Makefile
 
@@ -213,6 +233,184 @@ Output:
 | `O` | source, base used, base after, error count (0 or 1: whether any error was reported), first error, template XML | Compiled (possibly with errors Ghidra ignores). The XML is `ConstructTpl::encode(-1)` through `XmlEncode` with formatting |
 | `F` | source, base used, `rejected` or `exception`, message | Not compiled. `rejected`: `parseStream` returned false; the message is `getErrorMessage()`, the first error. `exception`: a `LowlevelError` escaped (`SleighError` from `PcodeCompile`); the message is its text |
 | `T` | number of `O`, number of `F` | Last line |
+
+## The console extension (`consoleext/`, `decomp_bk`, `decomp_bk_dbg`)
+
+Basilisk's commands for measuring the decompiler port
+(`docs/features/decomp-oracle.md`, ADR-042). They exist only in
+`bin/decomp_bk` and `bin/decomp_bk_dbg`; every Ghidra command works there as
+in `bin/decomp`. Run them like the console itself:
+
+```
+echo | LC_ALL=C SLEIGHHOME=<reference> <reference>/bin/decomp_bk -i SCRIPT
+```
+
+Errors are the console's own (`Execution error: <message>`, the script
+stops). Files are written atomically (`<file>.part`, then renamed). Paths
+cannot contain white space (the console has no quoting). The commands that
+read graph files need an architecture only for an opcode table; `load test
+file <datatests>/elseif.xml` is the conventional set-up.
+
+| Command | Effect |
+|---|---|
+| `bk version` | `bk console extension (<format versions>)` |
+| `bk list actions` | the current root's actions and rules, format `bkactions 1` (below), to the bulk stream |
+| `bk break start <n>` | start breakpoint on the action at position `n` of `bk list actions` (a rule has none: Ghidra checks only a rule's action breakpoint, `ActionPool::processOp`) |
+| `bk break action <n>` | action breakpoint on the action or rule at position `n` |
+| `bk break clear` | clears every breakpoint of the current root |
+| `bk dump blocks <file>` | the current function's basic blocks as a graph file, with their real facts |
+| `bk dump structure <file>` | the current function's structured hierarchy (`P` and `S` records; leaves are `L<position of the basic block in the block list>`) |
+| `bk cfg analyze <graph> <out>` | Ghidra's analyses on a graph file: format `bkcfg 1` |
+| `bk structure <graph> <out> [bare\|asgiven] [finish] [trace] [xml <file>]` | Ghidra's structurer on a graph file: format `bkstruct 1` |
+
+Positions are what `list action` prints; give them by path from `bk list
+actions` (`ActionList::position_of` in `bk-testkit`), never as numbers
+written into a script, so that a change in Ghidra's action list cannot shift
+a test silently. Breakpoints by position reach the actions whose names
+occur more than once (`blockstructure` at 0168 and 0231, …), which Ghidra's
+`break start <name>` cannot.
+
+### Conventions of every format
+
+One record per line, fields separated by one tab, LF line ends, a header
+naming the format and its version, a final `T` record. Decimal numbers
+have no sign (unless negative) and no leading zeros; hexadecimal numbers
+are `0x` and lower-case digits without leading zeros (`0x0`). A list field
+is comma-separated, `-` when empty. A text field escapes `\`, tab, LF, CR
+and NUL as `\\`, `\t`, `\n`, `\r`, `\0`. An address is `<space>:0x<offset>`.
+Each number has one spelling, so a parsed file written back is the same
+bytes; `bk-testkit`'s readers (`bk_testkit::oracle`) enforce that. A change
+to a format bumps its version here, in the extension and in the reader
+together.
+
+### Graph files, `bkgraph` version 1
+
+The input of `bk cfg analyze` and `bk structure`, the output of `bk dump
+blocks`.
+
+```
+H	bkgraph	1	<node count>
+N	<id>	<index>	<flags hex>	<facts>	<idom id or ->	<numdesc>
+I	<id>	<src>:<src out-slot>:<label hex>,…     (in-edges in order; - if none)
+A	<id>	<start address>	<stop address>      (optional; basic blocks only)
+T
+```
+
+Per node, in Ghidra's list order, an `N`, an `I` and optionally an `A`
+record; ids are `0..n-1` in that order. `flags` are `FlowBlock::flags`,
+labels `FlowBlock::edge_flags`. Out-edge order is given by the slot
+numbers: every out-slot of every node must be named by exactly one in-edge
+(Ghidra's XML reader would leave a slot uninitialised). `<facts>` is a
+subset of `csrn` in that order, or `-`: `c` too complex to be a condition
+(`isComplex`), `s` switch out (`f_switch_out`, also set in the flags), `r`
+ends in `RETURN`, `n` negating the condition changes data-flow
+(`docs/features/decomp-cfg.md` 4.1). A node cannot have both `s` and `r`.
+`index`, `idom` and `numdesc` are used only by `asgiven` mode. `bk dump
+blocks` writes `c` from `BlockBasic::isComplex`, `s` from the flags, `r`
+from the last op, and always `n`. Ghidra's plain blocks (what `structure
+blocks` builds from XML) have the facts `c`.
+
+The structurer runs on **fact blocks**: plain `FlowBlock`s of the extension
+whose `isComplex` returns `c`, whose `negateCondition` logs the flip, swaps
+the block's own edges and returns `n`, and whose `lastOp` is null or, for
+`r`, a `PcodeOp` with opcode `RETURN` and no parent (read only by
+`compareFinalOrder`).
+
+### Analysis dumps, `bkcfg` version 1 (`bk cfg analyze`)
+
+The graph is copied (`buildCopy`), and on the copy `structureLoops`,
+`calcForwardDominator`, `clearVisitCount` and a `CollapseStructure`'s
+`orderLoopBodies` run.
+
+```
+H	bkcfg	1	ok|error	<message or ->
+O	<input ids in list order after the analysis>
+N	<id>	<index>	<idom id or ->	<numdesc>	<dominator depth>     (list order)
+I	<id>	<src>:<src out-slot>:<label hex>,…                   (list order)
+R	<root ids in rootlist order>
+L	<head>	<depth>	<exit or ->	<uniquecount>	<tails>	<top>bottom,…	<container head or ->
+T
+```
+
+One `L` record per `LoopBody` in Ghidra's list order (deepest first). On a
+`LowlevelError` the header says `error` with Ghidra's message and only `T`
+follows.
+
+### Structure dumps, `bkstruct` version 1 (`bk structure`, `bk dump structure`)
+
+`bk structure` builds fact blocks, copies them (`buildCopy`); in `bare`
+mode (the default) runs `structureLoops` and `calcForwardDominator` on the
+copy, as `structure blocks` does, while `asgiven` takes index, dominator,
+descendant count and labels from the file, as `ActionBlockStructure` takes
+them from the function; then collapses; with `finish` runs `orderBlocks`,
+`scopeBreak(-1,-1)`, `markUnstructured`, `markLabelBumpUp(false)`
+(`ActionFinalStructure` without `finalizePrinting`). The collapse runs
+twice, on two copies: once by the extension's copy of
+`CollapseStructure::collapseAll`/`collapseInternal`/`collapseConditions`,
+which calls Ghidra's own rule methods in Ghidra's order and logs them, and
+once by Ghidra's unmodified `collapseAll`; unless both give the same flips,
+change count and hierarchy the command writes `error` with `trace replica
+differs`. `xml <file>` also writes the result with Ghidra's encoder
+(`BlockGraph::encode`, what `structure blocks` writes).
+
+```
+H	bkstruct	1	ok|error	<message or ->
+G	<source>	<out-slot>	<target>	<cause>         (each new goto mark)
+F	<leaf>                                          (each condition flip)
+C	<data-flow change count>
+S	<node>	<kind>	<index>	<flags hex>	<depth>	<leaf count>	<parent or ->	<components>	<kind data>	<in-edges>	<out-edges>
+P	<top-level nodes in list order>
+R	<seq>	<rule>	<node>                            (with trace)
+T
+```
+
+* Node names: leaves (`BlockCopy`) are `L<input id>` (`bk dump
+  structure`: `L<position of the basic block>`); structured nodes are
+  `S<n>`, numbered in pre-order of the final hierarchy (top-level list
+  order, components in order). `G`, `F` and `R` records name nodes as they
+  are at the end (nodes are never freed).
+* One `S` record per node, leaves included, in that pre-order. Kinds are
+  Ghidra's with `if` and `ifnoexit` as their own names (`typeToName` writes
+  `properif` and `ifelse`): `copy`, `goto`, `multigoto`, `list`,
+  `condition`, `if`, `ifelse`, `ifnoexit`, `ifgoto`, `whiledo`, `dowhile`,
+  `infloop`, `switch`. Depth is `getStructureDepth()`, leaf count
+  `getBasicCount()`.
+* Kind data: `goto` and `ifgoto` `<target or ->,<goto type hex>`;
+  `multigoto` `<targets>,…,default` or `…,-`; `condition` the stored opcode
+  name (`INT_OR`, `BOOL_AND`, `BOOL_OR`); `whiledo` `overflow` or `-`;
+  `switch` per case in `caseblocks` order
+  `<node>:<outindex>:<chain>:<gototype hex>:<isexit 0|1>:<isdefault 0|1>`;
+  every other kind `-`.
+* Edges: `<node>:<reverse index>:<label hex>`, in order.
+* `G`: after `selectGoto` (cause `selected` when it returned a block,
+  `clipped` when `clipExtraRoots` marked edges), after a `ruleBlockSwitch`
+  that matched without building (`switchskip`) and after `ruleCaseFallthru`
+  (`fallthru`), the level is scanned in list order and out-slot order for
+  `f_goto_edge` labels that were not there before; one record per new mark.
+* `F`: the fact blocks' `negateCondition` calls, in order.
+* `R` (`trace`): one per rule application in the collapse: running number,
+  rule (`blockgoto`, `blockcat`, `blockor`, `blockproperif`, `blockifelse`,
+  `blockwhiledo`, `blockdowhile`, `blockinfloop`, `blockswitch`,
+  `blockifnoexit`, `casefallthru`), the node it was applied to.
+* `bk dump structure` writes only `H`, `S`, `P` and `T`.
+
+### Action lists, `bkactions` version 1 (`bk list actions`)
+
+```
+H	bkactions	1	<root name>	<line count>
+<line as list action prints it>	<full path>
+T
+```
+
+The line is rendered as `Action::print` and `ActionPool::print` render it
+(position `setw(4)`, ` repeat ` or eight blanks, `!` once per function, `S`
+and `A` breakpoint flags, `depth*5+2` blanks, the name; rules: position,
+`D` when disabled, `A`, blanks, name) in a fresh stream — `list action`
+itself prints into the console's stream, whose fill and base earlier
+commands may have changed — without `list action`'s blank separator lines
+and `<--` state marker. The path joins the names from the root with `:`
+(`universal:fullloop:mainloop:blockstructure`); a line's position is its
+index.
 
 ## Measuring
 
