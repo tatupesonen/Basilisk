@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds the reference tools Basilisk is measured against (ADR-007,
 # docs/features/reference-tools.md): Ghidra's SLEIGH compiler, decompiler
-# console and decompiler test runner, Basilisk's pcodedump oracle, and a
+# console and decompiler test runner, Basilisk's pcodedump and snippetdump
+# oracles, and a
 # compiled .sla for every processor language.
 #
 # Everything is written under one directory outside both repositories
@@ -486,6 +487,29 @@ else
   say "  built bin/pcodedump"
 fi
 
+# ------------------------------------------------------- 4b. snippetdump
+# The p-code snippet oracle (tools/reference/snippetdump.cc), built like
+# pcodedump against the same objects.
+
+say "[3b/5] snippetdump"
+SNIPPETDUMP_SRC=$ROOT/tools/reference/snippetdump.cc
+[ -f "$SNIPPETDUMP_SRC" ] || die "missing $SNIPPETDUMP_SRC"
+SNIPPETDUMP_FP=$( { echo "tools: $TOOLS_FP"; echo "libsla: $(hash_file "$REF/src/cpp/libsla.a")"; echo "source: $(hash_file "$SNIPPETDUMP_SRC")"; } | hash_stdin)
+if [ "$(cat "$STATE/snippetdump.fp" 2>/dev/null || true)" = "$SNIPPETDUMP_FP" ] && [ -x "$REF/bin/snippetdump" ]; then
+  say "  up to date"
+else
+  rm -f "$STATE/snippetdump.fp"
+  if ! $CXX_CMD -std=c++11 -O2 $CXX_EXTRA_FLAGS -I "$REF/src/cpp" "$SNIPPETDUMP_SRC" \
+      "$REF/src/cpp/libsla.a" "$REF/src/zlib/libz.a" -o "$REF/bin/snippetdump.new" > "$LOGS/snippetdump.log" 2>&1; then
+    cat "$LOGS/snippetdump.log" >&2
+    die "building snippetdump failed"
+  fi
+  mv "$REF/bin/snippetdump.new" "$REF/bin/snippetdump"
+  printf '%s\n' "$SNIPPETDUMP_FP" > "$STATE/snippetdump.fp"
+  CHANGED=1
+  say "  built bin/snippetdump"
+fi
+
 # ------------------------------------------------- 5. Ghidra's own tests
 #
 # The result is a baseline, not a gate: failures are recorded and reported,
@@ -619,7 +643,7 @@ write_stamp() {
     grep -E '^(unit_failure|data_failure|data_error|unit_crash|data_crash|unit_exit|data_exit|unit_seconds|data_seconds): ' "$STATE/tests.summary" || true
     echo
     echo "== tools: sha256  bytes  path"
-    for f in sleigh decomp decomp_test pcodedump; do
+    for f in sleigh decomp decomp_test pcodedump snippetdump; do
       printf '%s  %s  bin/%s\n' "$(hash_file "$REF/bin/$f")" "$(file_size "$REF/bin/$f")" "$f"
     done
     echo
@@ -647,7 +671,7 @@ fi
 
 say
 say "reference tools ready in $REF"
-say "  tools:      bin/sleigh bin/decomp bin/decomp_test bin/pcodedump"
+say "  tools:      bin/sleigh bin/decomp bin/decomp_test bin/pcodedump bin/snippetdump"
 say "  languages:  $SLA_TOTAL .sla files"
 say "  unit tests: $UNIT_RESULT"
 say "  data tests: $DATA_RESULT"

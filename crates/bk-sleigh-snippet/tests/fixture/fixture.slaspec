@@ -1,0 +1,41 @@
+# A small language for the p-code snippet tests: x86-like register names,
+# a word-addressed space, user ops, and symbols of every kind a snippet
+# must not see (a token field, a context field, a table, a name-attached
+# field). Compiled in the tests with bk-sleigh-compiler; written out as a
+# .sla for the snippetdump oracle.
+
+define endian=little;
+define alignment=1;
+
+define space ram      type=ram_space      size=4 default;
+define space register type=register_space size=4;
+define space io       type=ram_space      size=2 wordsize=2;
+
+define register offset=0 size=4 [ EAX ECX EDX EBX ESP EBP ESI EDI ];
+define register offset=0 size=2 [ AX _ CX _ DX _ BX _ ];
+define register offset=0 size=1 [ AL AH _ _ CL CH _ _ DL DH _ _ BL BH ];
+define register offset=0x40 size=2 [ ES CS ];
+define register offset=0x50 size=8 [ R64 ];
+define register offset=0x60 size=16 [ XMM0 ];
+define register offset=0x80 size=4 [ contextreg ];
+
+define context contextreg
+  TMode = (0,0)
+;
+
+define token instr (8)
+  op = (0,7)
+  reg = (0,2)
+  mode = (6,7)
+;
+
+attach names [ mode ] [ m0 m1 m2 m3 ];
+
+define pcodeop segment;
+define pcodeop syscall;
+define pcodeop in;
+
+sub: reg is reg { export *[register]:4 reg; }
+
+:NOP is op=0x90 { }
+:MOV sub is mode=1 & sub { sub = 1; }

@@ -9,6 +9,7 @@ ships in the product (ADR-005). Specification:
 | File | What it is |
 |---|---|
 | `pcodedump.cc` | A small C++ program linked against Ghidra's SLEIGH engine that prints disassembly and p-code in the format below |
+| `snippetdump.cc` | Compiles p-code snippets (the `<pcode>` bodies of `.cspec`/`.pspec` files) with Ghidra's `PcodeSnippet` and prints the templates; format under "`snippetdump`" |
 | `patches/` | Patches the build script applies to its **copy** of Ghidra's source |
 | `measure.sh` | Measures the reference tools for the baseline in `docs/PERF.md` |
 
@@ -29,6 +30,7 @@ reference/
   bin/decomp                 Ghidra's decompiler console     (decomp_opt)
   bin/decomp_test            Ghidra's test runner            (decomp_test_dbg)
   bin/pcodedump              the oracle in this directory
+  bin/snippetdump            the p-code snippet oracle in this directory
   Ghidra/Processors/<Module>/data/languages/
                              a copy of each language directory with a
                              compiled .sla beside every .slaspec
@@ -175,6 +177,42 @@ Things to know when comparing against it:
   differently; compare them up to renaming if that is the case.
 * Only the processor specification's context is applied, not a compiler
   specification's (three Go `.cspec` files carry `<context_data>`).
+
+## `snippetdump`
+
+```
+snippetdump <root> <language-id> < records
+```
+
+Loads the language as `pcodedump` does (resolving the `.sla` beside the
+`.ldefs`), applies the language's `<truncate_space>` entries, and compiles
+each input record with Ghidra's `PcodeSnippet` exactly as
+`PcodeInjectLibrarySleigh::parseInject` does: parameters added in record
+order with their indices, the unique base set, `parseStream`, and on
+success the carried base updated. Exit status: 0 when every record was
+read, 1 when the language cannot be loaded, 2 for a bad command line, 3 for
+a malformed record.
+
+### Record format, version 1
+
+Lines of tab-separated fields. Text fields are escaped: backslash, tab,
+line feed, carriage return and NUL are written `\\`, `\t`, `\n`, `\r`,
+`\0`.
+
+Input, one line per snippet:
+
+| Fields | Meaning |
+|---|---|
+| `S`, source, base, body, then `index:name` per parameter | *source* is a label echoed back; *base* is `continue` (use the carried base and advance it, as for call fix-ups and injections), `0x…` (set the carried base to this value first; the library starts at `unique_base + 0x200`), or `fixed:0x…` (use this base and leave the carried one alone, as for executable p-code at 0x2000); *body* is the snippet text |
+
+Output:
+
+| Record | Fields after the tag | Meaning |
+|---|---|---|
+| `H` | version, language id, `unique_base` (`0x`), initial carried base (`0x`) | First line |
+| `O` | source, base used, base after, error count (0 or 1: whether any error was reported), first error, template XML | Compiled (possibly with errors Ghidra ignores). The XML is `ConstructTpl::encode(-1)` through `XmlEncode` with formatting |
+| `F` | source, base used, `rejected` or `exception`, message | Not compiled. `rejected`: `parseStream` returned false; the message is `getErrorMessage()`, the first error. `exception`: a `LowlevelError` escaped (`SleighError` from `PcodeCompile`); the message is its text |
+| `T` | number of `O`, number of `F` | Last line |
 
 ## Measuring
 
