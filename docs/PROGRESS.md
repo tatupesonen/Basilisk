@@ -108,16 +108,16 @@ rename of the repository needs a redeploy.
 | `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`) | Opus | `a41574e3f4a6e75b9` | resumed 17:25 after the full disk. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Its findings: `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` is ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. Cut from the integration branch that is now `master` `a961ff3`. |
 | `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:02. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
 
-**In CI:** `ui-flake` (`afdc9312b2424f522`, finished) on branch
-`integration` (worktree `../basilisk-wt/ui-flake`, `82ffd0a`), CI run
-43613387498; local gate 1,970 tests, 0 new packages, advisories ok. It
-was a test bug (the worker stores the result, then wakes; the test
-asserted the wake at once: 308 failures in 3,000 runs under load before,
-0 in 5,000 after) plus real gaps fixed on the way: `set_waker` now wakes
-once (a request finished before the waker was installed woke nobody),
-the busy count is given back before the wake and on every path, a
-panicking task delivers `SourceError::TaskPanicked` instead of leaving
-the spinner on. Green → merge, delete branch and worktree.
+**Merged:** `ui-flake` (`afdc9312b2424f522`; CI run 43613387498 green
+on every job, local gate 1,970 tests; worktree and branch removed). The
+flaky `bk-ui` test was a test bug (the worker stores the result, then
+wakes; the test asserted the wake at once: 308 failures in 3,000 runs
+under load before, 0 in 5,000 after). Fixed on the way: `set_waker` now
+wakes once (a request finished before the waker was installed woke
+nobody), the busy count is given back before the wake and on every path,
+and a panicking task delivers `SourceError::TaskPanicked` instead of
+leaving the spinner on. The flake note in agents' briefs is no longer
+needed.
 
 **kassini is the build host** (owner, 2026-11-14: "You can use this
 computer heavily and install whatever you'd like on it", "If you are
