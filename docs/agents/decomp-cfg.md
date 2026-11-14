@@ -13,13 +13,17 @@ analyses, structured hierarchy, structurer). Contract:
       reference's `structure blocks` — 3,000 of 3,000 byte-identical,
       the 161 `Could not finish collapsing block structure` included
       (scratch run, `tests/xml_dev.rs` with `BK_CFG_XC_DIR`).
-- [ ] Rust graph generator (`tests/support/graphgen.rs`, four classes).
-- [ ] 6.2 table `tests/data/structure_blocks.txt.gz` (both hosts) and
-      its replay test.
-- [ ] 6.1 unit tests, 6.5 properties, 6.6 fuzz targets, 6.7 benchmarks.
-- [ ] 6.3/6.4 oracle tests against the D00 formats (skip until
-      `decomp_bk` exists).
-- [ ] Final gates, report.
+- [x] Rust graph generator (`tests/support/graphgen.rs`, four classes).
+- [x] 6.2 table `tests/data/structure_blocks.txt.gz` (4,000 graphs; Mac
+      and build host byte-identical) and its replay test (all equal).
+- [x] 6.1 unit tests, 6.5 properties, 6.6 fuzz targets, 6.7 benchmarks
+      (PERF.md), spec sections 8–10 appended.
+- [x] 6.3/6.4 oracle tests against the D00 formats (skip until
+      `decomp_bk` exists; `tests/oracle/regen.sh`).
+- [ ] Testbed checks (fuzz 300 s, Wine, arm64), both gates, report.
+- [ ] When D00 lands: `git merge master`, switch test helpers to
+      `bk-testkit`, run `tests/oracle/regen.sh` on both builds, corpus
+      captures (6.3.2), host-difference classification.
 
 ## Notes for whoever continues
 
