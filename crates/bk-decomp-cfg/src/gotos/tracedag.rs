@@ -552,11 +552,17 @@ impl<'l> TraceDag<'l> {
     }
 
     /// `pushBranches` (blockaction.cc:983).
+    ///
+    /// In an acyclic view each node is opened at most once; more openings
+    /// than nodes mean a cycle that Ghidra would trace forever, which is
+    /// [`CfgError::TraceCycle`] here.
     pub(crate) fn push_branches(
         &mut self,
         g: &mut Graph,
         budget: &mut Budget,
     ) -> Result<(), CfgError> {
+        let max_opens = 2 * g.list.len() + 8;
+        let mut opens = 0usize;
         let mut current = self.head;
         self.missedactivecount = 0;
         while self.activecount > 0 {
@@ -575,6 +581,10 @@ impl<'l> TraceDag<'l> {
                 current = self.retire_branch(top, exit)?;
                 self.missedactivecount = 0;
             } else if self.check_open(g, curtrace)? {
+                opens += 1;
+                if opens > max_opens {
+                    return Err(CfgError::TraceCycle);
+                }
                 current = self.open_branch(g, curtrace)?;
                 self.missedactivecount = 0;
             } else {

@@ -141,6 +141,12 @@ pub enum CfgError {
     /// dereferences an empty list, `docs/GHIDRA-BUGS.md` entry 25).
     #[error("no candidate edge to mark as a goto (empty bad-edge list)")]
     NoBadEdge,
+    /// `TraceDAG::pushBranches` opened more branch points than an acyclic
+    /// graph allows: the loop-DAG view of the graph has a cycle, and Ghidra
+    /// opens and retires branch points on it without end (Basilisk; see
+    /// `docs/agents/decomp-cfg.md`, Ghidra defects).
+    #[error("goto trace does not terminate (cycle in the loop DAG)")]
+    TraceCycle,
     /// A block document whose out-edge slots are not each named exactly
     /// once by an in-edge (Basilisk; Ghidra leaves them uninitialised,
     /// `docs/GHIDRA-BUGS.md` entry 26).
