@@ -1,0 +1,18 @@
+---
+// A key binding as keycaps (the program's key chip, ui-design.md §5).
+// keys="Ctrl+Shift+P" → three caps. Ctrl is the platform command key, as in
+// Ghidra and the program.
+interface Props {
+  keys: string;
+}
+const parts = Astro.props.keys.split('+').map((k) => k.trim()).filter(Boolean);
+---
+
+<span class="bk-kbd" aria-label={Astro.props.keys}>
+  {parts.map((k, i) => (
+    <>
+      {i > 0 && <span class="bk-kbd-plus" aria-hidden="true">+</span>}
+      <kbd aria-hidden="true">{k}</kbd>
+    </>
+  ))}
+</span>

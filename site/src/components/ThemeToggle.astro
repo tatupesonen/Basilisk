@@ -1,0 +1,36 @@
+---
+// The sun/moon switch, as in the program's tool bar. It shares Starlight's
+// storage key ("starlight-theme"), so a choice made on the site carries into
+// the documentation and back. Without scripts the button is hidden and the
+// page follows the system theme (tokens.css).
+import Icon from './Icon.astro';
+---
+
+<button type="button" class="bk-theme-toggle" data-bk-theme-toggle hidden aria-label="Switch to light theme" title="Switch theme">
+  <Icon name="sun" class="bk-theme-sun" size="18" />
+  <Icon name="moon" class="bk-theme-moon" size="18" />
+</button>
+
+<script>
+  const key = 'starlight-theme';
+  function current(): 'light' | 'dark' {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+  function label(btn: HTMLElement) {
+    btn.setAttribute('aria-label', current() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+  }
+  document.querySelectorAll<HTMLButtonElement>('[data-bk-theme-toggle]').forEach((btn) => {
+    btn.hidden = false;
+    label(btn);
+    btn.addEventListener('click', () => {
+      const next = current() === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try {
+        localStorage.setItem(key, next);
+      } catch {
+        /* storage unavailable: the choice lasts for this page */
+      }
+      document.querySelectorAll<HTMLElement>('[data-bk-theme-toggle]').forEach(label);
+    });
+  });
+</script>
