@@ -139,8 +139,9 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate running on the build host (started 01:48
-on 2026-11-15):** `decomp-cfg-oracle` (`ae8492491a7ef480f`) on branch
+**Finished, integration gate green (2,421 tests, 0 new packages,
+advisories ok), in CI as run 43655392031 since 01:52 on 2026-11-15:**
+`decomp-cfg-oracle` (`ae8492491a7ef480f`) on branch
 `integration` (worktree `../basilisk-wt/decomp-cfg-oracle`, `3e46ca8`)
 — D04's oracle acceptance, which completes D04. Its tests now use
 `bk-testkit`'s formats and `decomp_bk`. **Generated graphs**: 12,000
