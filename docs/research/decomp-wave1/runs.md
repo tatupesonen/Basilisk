@@ -44,3 +44,32 @@ identical.
 (`$BASILISK_REFERENCE_DIR`, Debian g++ 14.2, libstdc++): exit 0, 161
 `Could not finish collapsing block structure`, sha256 of all outputs
 `124c7654…` — byte-identical to the Mac (libc++).
+
+## R5. Every data test, with `print raw`, `print tree varnode` and `print tree block` after each `decompile`
+
+`dt_scripts.py` turns each `DT/*.xml` into a console script (commands as
+`FunctionTestCollection` passes them: CDATA unwrapped, newlines to
+spaces, `testfunction.cc:119`), adding the three prints after every
+`decompile`/`dec`; `dt_run.sh REF GHIDRA OUT` runs them (93 files, 5.8 s
+on the Mac, every script exit 0, 17,112 output lines) and replaces
+`internal=0x…` by `internal=X`.
+
+Two runs on the Mac (`dt_compare.py target/dt1 target/dt2`): 50 files
+byte-identical; 43 differ, and only in (a) host pointers printed as
+constants — `#0x104b42900`, `#0x…:8` (the `AddrSpace *` constant of
+`LOAD`/`STORE`) and `i0x…:4c` (an `iop` varnode whose op is not a branch
+prints the op's `SeqNum`… after the pointer-valued offset in `print tree
+varnode`) — and (b) the **order** of lines for varnodes in the `fspec`
+and `iop` spaces and of pointer-valued constants: `print tree varnode`
+walks the bank's def order (`Funcdata::printVarnodeTree`,
+funcdata.cc:576), which sorts free varnodes by address, and these
+addresses are heap pointers. So the reference's own varnode order is not
+reproducible between runs of the same binary (ASLR).
+
+## R6. The same on the build host
+
+Two runs (`dt_compare.py target/dth1 target/dth2`): 52 identical, 41
+pointer-only, 0 other. Mac against host after dropping pointer lines,
+fspec varnode lines and the lines naming the data-test path: every file
+equal except `floatprint` (`floatv6 = NAN;` on the Mac, `-NAN` on the
+host — ADR-021's known case).
