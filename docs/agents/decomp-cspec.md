@@ -171,8 +171,9 @@ sorted, alias share-stack reset, `checkFit`, locked
   with the OTHER space is done in the replay, as D06 will.
 - User ops named by fix-ups and segment ops are not checked against the
   language (needs D07).
-- Not run: Windows tests (Docker/Wine not used in this session); Linux
-  tests; regeneration of the table on x86-64 Linux.
+- Not run: tests on Linux, tests on native Windows (MSVC), regeneration of
+  the table on x86-64 Linux, and the G tests under Wine (the container had
+  no spec root mounted). Those rest on CI.
 
 ## Follow-ups
 
@@ -189,6 +190,25 @@ sorted, alias share-stack reset, `checkFit`, locked
 - **D06**: resolve `globals()` into the global scope, plus the OTHER space
   (Ghidra `addOtherSpace`).
 - Regenerate the oracle table on x86-64 Linux to settle the tie orders.
+
+## Platforms and gate (2026-11-15, after the master merge, Rust 1.100.0)
+
+- macOS AArch64: all bk-cspec tests with the spec root set, with it unset
+  (G tests print `SKIPPED`), and with `/Users/tatu/slop/basilisk-wt/../ghidra`.
+- Windows: `cargo clippy -p bk-cspec --all-targets --target
+  x86_64-pc-windows-msvc -- -D warnings` clean. `cargo test -p bk-cspec`
+  for `x86_64-pc-windows-gnu` under Wine (linux/amd64 Docker container, the
+  scratch scripts copied to `target/windows/`, `rustup target add` added
+  for the 1.100.0 toolchain): all pass, S tests only — no spec root inside
+  the container, so the G tests skipped. Native MSVC runs rest on CI.
+- Fuzz 60 s (nightly, macOS), properties at 1,000,000 cases (release).
+- `scripts/check-dep-age.py master`: 0 new registry packages;
+  `git diff master -- Cargo.lock` only adds `bk-cspec`.
+- Gate `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`, with
+  `BASILISK_GHIDRA_DIR`/`BASILISK_REFERENCE_DIR` set: 0, "tests: 1924
+  passed, 0 failed"; with both unset: 0, "tests: 1924 passed, 0 failed".
+  (An earlier run failed on two redundant rustdoc links in `lib.rs`, fixed.)
+  The known `bk-ui` flake did not occur.
 
 ## Commits
 
