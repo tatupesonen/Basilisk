@@ -36,6 +36,10 @@ fn packed_round_trip_is_byte_exact() {
                 continue;
             }
         };
+        // What Ghidra's compiler writes always places the labels it uses.
+        if let Err(error) = sla.check_labels() {
+            failures.push(format!("{}/{}: {error}", file.module, file.name));
+        }
         let encoded = sla.encode_packed().unwrap();
         if encoded != stream {
             let at = encoded.iter().zip(&stream).position(|(a, b)| a != b);

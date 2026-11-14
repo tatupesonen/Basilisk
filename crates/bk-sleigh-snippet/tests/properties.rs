@@ -18,7 +18,7 @@ mod common;
 
 use std::sync::OnceLock;
 
-use bk_sla::{ConstTpl, Limits, Template};
+use bk_sla::{Limits, Template};
 use bk_sleigh_snippet::{Options, Parameter, SnippetCompiler, TempAllocator};
 use proptest::prelude::*;
 
@@ -131,19 +131,10 @@ fn check(text: &str) {
         Ok(compiled) => {
             assert_eq!((temps.next - start) % temps.step, 0);
             let xml = compiled.template.encode_xml(c.space_table());
-            // Ghidra compiles a branch to a label that is never placed (no
-            // label check in snippets); `bk_sla` refuses to read such a
-            // template, and the runtime fails on it when it is expanded.
-            let t = compiled.template.as_ref();
-            let labels = u64::from(t.header().labels.unsigned_abs());
-            let dangling = t.ops().iter().any(|op| {
-                t.inputs(op)
-                    .iter()
-                    .any(|v| matches!(v.offset, ConstTpl::Relative(l) if l >= labels))
-            });
-            if dangling {
-                return;
-            }
+            // Reading accepts every compiled template, including a branch
+            // to a label that is never placed (Ghidra compiles it and fails
+            // only when injecting it; `bk_sla::Template::check_labels` is
+            // the separate check).
             let back = Template::decode_xml(&xml, c.space_table(), &Limits::default())
                 .unwrap_or_else(|e| panic!("{text:?}: {e}\n{xml}"));
             assert_eq!(back, compiled.template, "{text:?}");
@@ -172,4 +163,22 @@ proptest! {
     ) {
         check(&parts.concat());
     }
+}
+
+/// The case proptest found (`properties.proptest-regressions`): Ghidra
+/// compiles `goto <L>;` with `<L>` never placed; the template reads back,
+/// and only the explicit label check refuses it.
+#[test]
+fn a_branch_to_an_unplaced_label_reads_back() {
+    check("goto <L>;");
+    let c = compiler();
+    let compiled = c
+        .compile("goto <L>;", &params(), &mut TempAllocator::new(0x1000))
+        .unwrap();
+    let error = compiled.template.check_labels().unwrap_err();
+    assert!(error.to_string().contains("label 0"), "{error}");
+    let placed = c
+        .compile("goto <L>; <L>", &params(), &mut TempAllocator::new(0x1000))
+        .unwrap();
+    placed.template.check_labels().unwrap();
 }

@@ -21,6 +21,22 @@ pub(crate) struct CtorPath<'s, 'c> {
     ctor: &'c Constructor,
 }
 
+impl<'s, 'c> CtorPath<'s, 'c> {
+    pub(crate) fn new(
+        sla: &'s crate::Sla,
+        table: SymbolId,
+        ct: u32,
+        ctor: &'c Constructor,
+    ) -> Self {
+        Self {
+            sla,
+            table,
+            ct,
+            ctor,
+        }
+    }
+}
+
 impl Display for CtorPath<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let file = self.sla.source_file(self.ctor.source).unwrap_or("?");
@@ -74,12 +90,7 @@ impl<'s> Validator<'s> {
         ct: u32,
         ctor: &'c Constructor,
     ) -> CtorPath<'s, 'c> {
-        CtorPath {
-            sla: self.sla,
-            table,
-            ct,
-            ctor,
-        }
+        CtorPath::new(self.sla, table, ct, ctor)
     }
 
     fn constructor(
@@ -402,8 +413,11 @@ impl<'s> Validator<'s> {
     }
 }
 
-/// Checks one template: ranges, labels, spaces, handle indices below
-/// `num_operands`, directive shapes.
+/// Checks one template: ranges, spaces, handle indices below
+/// `num_operands`, directive shapes. Label numbers are not checked here:
+/// Ghidra reads a template whose branch names a label that is never placed
+/// and fails only when it builds p-code from it; [`super::labels`] has the
+/// separate check.
 pub(crate) fn check_template(
     limits: &crate::Limits,
     space_known: &dyn Fn(u32) -> bool,
@@ -419,7 +433,6 @@ pub(crate) fn check_template(
     if template.ops().len() != header.ops.len() as usize {
         return fail(path, "dangling ops");
     }
-    let labels = header.labels as u64;
     let check = |c: &ConstTpl| -> Result<(), SlaError> {
         match *c {
             ConstTpl::Handle {
@@ -436,9 +449,6 @@ pub(crate) fn check_template(
             }
             ConstTpl::Space(space) if !space_known(space) => {
                 return fail(path, format!("unknown space index {space}"));
-            }
-            ConstTpl::Relative(label) if label >= labels => {
-                return fail(path, format!("label {label} is not below {labels}"));
             }
             _ => {}
         }
@@ -484,8 +494,9 @@ pub(crate) fn check_template(
             OpCode::MultiEqual => {
                 inputs.len() == 1 && constant(0).is_some_and(|v| v < u64::from(num_operands))
             }
-            OpCode::Indirect => inputs.len() == 1 && constant(0).is_some(),
-            OpCode::PtrAdd => inputs.len() == 1 && constant(0).is_some_and(|v| v < labels),
+            // DELAY_SLOT and LABEL: a constant (the label number is checked
+            // by `labels::check_labels`, not here).
+            OpCode::Indirect | OpCode::PtrAdd => inputs.len() == 1 && constant(0).is_some(),
             OpCode::PtrSub => inputs.len() == 2 && constant(1).is_some(),
             _ => true,
         };

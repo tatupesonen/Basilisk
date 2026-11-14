@@ -13,7 +13,8 @@
 
 mod common;
 
-use bk_sla::{Limits, PackedReader, Sla, SpaceTable, Template, ids};
+use bk_pcode::OpCode;
+use bk_sla::{ConstTpl, Limits, PackedReader, Sla, SpaceTable, Template, VarnodeTpl, ids};
 
 #[test]
 fn the_full_model_round_trips_in_both_forms_and_the_container() {
@@ -173,14 +174,55 @@ fn a_lone_template_round_trips() {
         Template::decode_xml(&xml, &spaces, &limits).unwrap(),
         template
     );
-    // An unknown space name is an error, as is a label beyond the count.
+    // An unknown space name is an error.
     let error = Template::decode_xml(&xml, &SpaceTable::new(), &limits).unwrap_err();
     assert!(
         error.to_string().contains("unknown address space"),
         "{error}"
     );
+    template.check_labels().unwrap();
+    // A label beyond the count reads, as in Ghidra (`ConstructTpl::decode`
+    // does not check it); the separate label check refuses it.
     let bad = xml.replace("labels=\"1\"", "labels=\"0\"");
-    assert!(Template::decode_xml(&bad, &spaces, &limits).is_err());
+    let read = Template::decode_xml(&bad, &spaces, &limits).unwrap();
+    let error = read.check_labels().unwrap_err();
+    assert!(
+        error.to_string().contains("label 0 is not below 0"),
+        "{error}"
+    );
+}
+
+/// A branch to a label that is never placed, as Ghidra's snippet compiler
+/// produces for `goto <L>;`: reading accepts it in both forms; the label
+/// check names the label.
+#[test]
+fn a_branch_to_an_unplaced_label_reads_and_fails_the_label_check() {
+    let sla = common::full_model();
+    let spaces = sla.space_table();
+    let limits = Limits::default();
+    let mut template = Template::new();
+    template.set_header(None, 0, 1);
+    let target = VarnodeTpl {
+        space: ConstTpl::Space(0),
+        offset: ConstTpl::Relative(0),
+        size: ConstTpl::Real(4),
+    };
+    template.push_op(OpCode::Branch, None, &[target]);
+    let xml = template.encode_xml(&spaces);
+    assert_eq!(
+        Template::decode_xml(&xml, &spaces, &limits).unwrap(),
+        template
+    );
+    let packed = template.encode_packed(&spaces);
+    assert_eq!(
+        Template::decode_packed(&packed, &spaces, &limits).unwrap(),
+        template
+    );
+    let error = template.check_labels().unwrap_err();
+    assert!(
+        error.to_string().contains("label 0 is never placed"),
+        "{error}"
+    );
 }
 
 #[test]
