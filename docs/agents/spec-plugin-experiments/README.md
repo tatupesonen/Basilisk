@@ -85,3 +85,13 @@ Apple's 3.9 likewise, pyenv's 3.10.11 has `libpython3.10.dylib`; a default
 pyenv build without `--enable-shared` and Debian's `/usr/bin/python3.X`
 (statically linked) have none — not checked here, stated from their build
 defaults.
+
+## `pyo3-abi3/` under `#![forbid(unsafe_code)]`
+
+With `#![forbid(unsafe_code)]` prepended to `src/lib.rs` (every
+`#[pyclass]`, `#[pymethods]`, `#[pyfunction]`, `#[pymodule]` and
+`create_exception!` of the experiment in use), the crate still builds;
+adding one explicit `unsafe {}` block fails with `error: usage of an
+unsafe block`. So PyO3 0.30.1's macros put no `unsafe` into the user's
+crate: a binding crate can keep the workspace's `unsafe_code = "forbid"`,
+and all `unsafe` stays inside `pyo3` and `pyo3-ffi`.
