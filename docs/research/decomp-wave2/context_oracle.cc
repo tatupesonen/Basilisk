@@ -77,7 +77,7 @@ static void one(void)
     case 1: { Address a = randAddr(); ctx.setVariable(v,a,val); s << "set " << v << ' ' << a.getSpace()->getName() << ' ' << hex << a.getOffset() << ' ' << val; break; }
     case 2: { Address a = randAddr(); Address b = r(4) ? a + (int8)(1 + r(0x20)) : Address();
 	ctx.setVariableRegion(v,a,b,val);
-	s << "region " << v << ' ' << a.getSpace()->getName() << ' ' << hex << a.getOffset() << ' ' << (b.isInvalid() ? string("-") : b.getSpace()->getName()) << ' ' << b.getOffset() << ' ' << val; break; }
+	s << "region " << v << ' ' << a.getSpace()->getName() << ' ' << hex << a.getOffset() << ' ' << (b.isInvalid() ? string("- -") : b.getSpace()->getName() + " " + std::to_string((unsigned long long)b.getOffset())) << ' ' << val; break; }
     case 3: { Address a = randAddr(); Address b = a + (int8)(1 + r(0x20));
 	TrackedSet &ts(ctx.createSet(a,b));
 	int4 n = r(3);
