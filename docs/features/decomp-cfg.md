@@ -868,17 +868,25 @@ this crate's test support parses and writes them.
 2. **Corpus graphs**: for every `decompile` of every data test (193
    `decompile` commands in 93 files; **ran**: `grep -o "<com>[^<]*</com>"
    DT/*.xml`) and every function of the research corpus (209 functions,
-   `docs/research/decompiler-quality/README.md`), D00's capture script
-   writes `bk dump blocks` at `break start blockstructure` and `bk dump
-   structure` at `break start finalstructure` and at the end; the test
-   structures the first with `Analyse::AsGiven` and the real facts and
-   compares with the second (hierarchy, flips as the parity per leaf, and
-   `dataflow_changes` against the action's change count in the trace when
-   D00 provides it), then runs `finish` with the case labels in the dump
-   and compares with the third. The number of graphs is what D00's
-   capture produced (it reports the count; a function whose
-   `blockstructure` runs twice because of a restart contributes the last
-   run). Checked-in subset: all of them if the compressed captures stay
+   `docs/research/decompiler-quality/README.md`), D00's capture driver
+   stops with positional breakpoints (`bk break start <n>`, D00 4.10 —
+   the console cannot stop at the top-level `blockstructure` by name, D00
+   4.1) at **both** `blockstructure` instances (positions 0168 in
+   `mainloop` and 0231 for the `decompile` root) and at the action after
+   each; it writes `bk dump blocks` at a `blockstructure` start when the
+   function's structured graph is empty (otherwise the action returns at
+   once, blockaction.cc:2182, and there is no case), `bk dump structure`
+   at the next action's start, and `bk dump structure` plus `bk dump
+   state` at `finalstructure`'s successor and at the end. Each actual
+   structuring run is one case: the test structures the `bk dump blocks`
+   graph with `Analyse::AsGiven` and the real facts and compares with the
+   following `bk dump structure` (hierarchy and flips as the parity per
+   leaf); the last run is then finished with `finish`, the case labels
+   taken from the state dump's `@jumptables`, and compared with the final
+   structure. The number of graphs is what D00's
+   capture produced (it reports the count; one function can give several
+   cases, since `structureReset` empties the structured graph whenever the
+   blocks change and the `mainloop` instance runs again). Checked-in subset: all of them if the compressed captures stay
    under 2 MB, else a mechanically chosen subset covering every node kind
    and every rule (the selection script is checked in), with the rest L.
 3. **Ghidra's own determinism** is part of the table: `regen.sh` runs the
