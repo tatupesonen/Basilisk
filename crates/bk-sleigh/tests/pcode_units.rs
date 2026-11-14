@@ -457,18 +457,14 @@ fn unplaced_labels_fail_with_ghidras_message(
 /// op bound fails instead of growing the label table (Ghidra's C++ would
 /// try to allocate up to 16 GiB; its Java engine throws for 2^31 and up).
 #[rstest]
-#[case::both_small(1, 1, Some(1))]
-#[case::placed_wraps(1 << 32 | 1, 1, Some(1))]
-#[case::referenced_wraps(1, 1 << 32 | 1, Some(1))]
-#[case::both_wrap(3 << 32 | 1, u64::MAX << 32 | 1, Some(1))]
-#[case::no_wrap_below_2_32(1, (1 << 32) - 1, None)]
-#[case::bound_below_2_32((1 << 32) - 1, (1 << 32) - 1, None)]
-#[case::bound_after_wrap(1 << 32 | 0x10_0000, 0x10_0000, None)]
-fn label_numbers_are_32_bits(
-    #[case] placed: u64,
-    #[case] label: u64,
-    #[case] resolves_to: Option<u32>,
-) {
+#[case::both_small(1, 1, true)]
+#[case::placed_wraps(1 << 32 | 1, 1, true)]
+#[case::referenced_wraps(1, 1 << 32 | 1, true)]
+#[case::both_wrap(3 << 32 | 1, u64::MAX << 32 | 1, true)]
+#[case::no_wrap_below_2_32(1, (1 << 32) - 1, false)]
+#[case::bound_below_2_32((1 << 32) - 1, (1 << 32) - 1, false)]
+#[case::bound_after_wrap(1 << 32 | 0x10_0000, 0x10_0000, false)]
+fn label_numbers_are_32_bits(#[case] placed: u64, #[case] label: u64, #[case] resolves: bool) {
     // LABEL placed; COPY; BRANCH rel(label).
     let mut t = Template::new();
     t.set_header(None, 0, 2);
@@ -484,17 +480,14 @@ fn label_numbers_are_32_bits(
             size: ConstTpl::Real(4),
         }],
     );
-    match resolves_to {
-        Some(_) => {
-            let out = inject(&t).unwrap();
-            let branch = &out.ops()[2];
-            // The label is at op 1, the branch is op 2: displacement -1.
-            assert_eq!(out.inputs(branch)[0].offset, 0xffff_ffff);
-        }
-        None => {
-            let err = inject(&t).unwrap_err();
-            assert!(matches!(err, LiftError::MissingLabel { .. }), "{err:?}");
-        }
+    if resolves {
+        let out = inject(&t).unwrap();
+        let branch = &out.ops()[2];
+        // The label is at op 1, the branch is op 2: displacement -1.
+        assert_eq!(out.inputs(branch)[0].offset, 0xffff_ffff);
+    } else {
+        let err = inject(&t).unwrap_err();
+        assert!(matches!(err, LiftError::MissingLabel { .. }), "{err:?}");
     }
 }
 
