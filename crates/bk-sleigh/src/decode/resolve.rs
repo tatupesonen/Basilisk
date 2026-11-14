@@ -170,10 +170,14 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), De
         // Ghidra `calcCurrentLength`.
         let start = i64::from(node.offset);
         let mut end = start + i64::from(info.length);
-        for i in 0..info.num_ops {
-            if let Some(child) = node.child(i).and_then(|c| parse.nodes.get(c as usize)) {
-                end = end.max(i64::from(child.offset) + i64::from(child.length));
-            }
+        let children = parse
+            .nodes
+            .get(node.first_child as usize..)
+            .unwrap_or_default()
+            .iter()
+            .take(node.num_children().min(info.num_ops) as usize);
+        for child in children {
+            end = end.max(i64::from(child.offset) + i64::from(child.length));
         }
         if let Some(slot) = parse.nodes.get_mut(cur as usize) {
             slot.length = (end - start).clamp(0, i64::from(u32::MAX)) as u32;
