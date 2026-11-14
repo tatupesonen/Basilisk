@@ -261,3 +261,6 @@ impl Hierarchy {
         (0..self.g.nodes.len()).all(|i| self.g.edges_consistent(NodeId::new(i as u32)))
     }
 }
+
+#[cfg(test)]
+mod tests;
