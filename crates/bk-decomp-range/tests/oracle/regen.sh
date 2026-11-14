@@ -95,7 +95,12 @@ clang++ -no-pie "$work/rangeutil.o" "$work/address.o" "$work/oracle_ub_main.o" "
 grep -o '@[0-9a-f]*' "$work/ub_raw.txt" | sort -u | tr -d @ > "$work/pcs.txt" || true
 : > "$work/pcmap.txt"
 while read -r pc; do
-  loc=$(addr2line -e "$work/oracle_ub" "$(printf '0x%x' $((0x$pc - 1)))" | sed 's|.*/||; s| (discriminator.*||')
+  # file:line; where the compiler merged code of several lines (no line),
+  # file:function instead.
+  a2l=$(addr2line -f -C -e "$work/oracle_ub" "$(printf '0x%x' $((0x$pc - 1)))")
+  fn=$(printf '%s\n' "$a2l" | sed -n 1p | sed 's|(.*||; s|.*::||')
+  loc=$(printf '%s\n' "$a2l" | sed -n 2p | sed 's|.*/||; s| (discriminator.*||')
+  case "$loc" in *:\?) loc="${loc%:?}:$fn" ;; esac
   echo "$pc $loc" >> "$work/pcmap.txt"
 done < "$work/pcs.txt"
 awk 'NR == FNR { m[$1] = $2; next }
