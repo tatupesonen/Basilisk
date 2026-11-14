@@ -267,6 +267,7 @@ const MESSAGES: &[&str] = &[
     "Subtable not attached to operand",
     "Redefinition of symbol",
     "Illegal truncation on left-hand side of assignment",
+    "Illegal subpiece on left-hand side of assignment",
     "Must use 'local' keyword to define symbol",
     "Multiple delayslot declarations",
     "Must be at least two inputs to cpool",
