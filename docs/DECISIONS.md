@@ -1407,3 +1407,83 @@ places the specification found wrong (its section "Amendments,
 2026-11-14"). The reference is rebuilt with the new script on both
 machines when D00 lands, and both stamps are recorded. Ghidra headless
 as an oracle for whole-program results stays a later track (M5).
+
+## ADR-043 — The decompiler's symbol crate uses the SLEIGH context store, which moves to its own crate
+
+*2026-11-15. Proposed by track `spec-decomp-wave2` (proposal A);
+`docs/features/decomp-symbols.md`. Amends ADR-026 and the dependency
+rule of `decomp-plan.md` section 2.*
+
+**Context.** The plan's D06 row lists `globalcontext.*`
+(`ContextDatabase`, `ContextInternal`, tracked registers), but ADR-026
+already put the context store in `bk-sleigh`, where instruction decoding
+uses it. Porting `ContextInternal` a second time for the decompiler
+would give two implementations of one behaviour; depending on
+`bk-sleigh` from a low decompiler crate would pull the whole translator
+under the symbol database.
+
+**Decision.** The `context` module of `bk-sleigh`, with its partition
+map, becomes a small crate `bk-context` that `bk-sleigh` re-exports
+unchanged. `bk-decomp-symbols` depends on `bk-context` and adds what the
+decompiler needs on top of it (variable names, `<context_points>` and
+tracked-register XML, the look-ups of `globalcontext.cc`); it does not
+depend on `bk-sleigh`. The move is the first step of the D06 track: a
+relocation with a re-export, no behaviour change, every `bk-sleigh` test
+unchanged and green.
+
+## ADR-044 — Program state is frozen during a decompilation; each function writes an overlay
+
+*2026-11-15. Proposed by track `spec-decomp-wave2` (proposal B).
+Applies ADR-025 (parallel decompilation) to the symbol database.*
+
+**Context.** Decompiling a function adds to global state in Ghidra:
+`DAT_` symbols in the global scope, host replies that are cached,
+string and constant-pool cache entries, property changes. Ghidra's
+console is sequential, so a later function sees what an earlier one
+created, and its output can depend on that. Basilisk decompiles
+functions in parallel.
+
+**Decision.** While a function is decompiled the program state it reads
+is frozen. Everything it would add to shared state goes into a
+per-function overlay, with ids continuing from the frozen counters.
+Overlays are committed in operation order. The console and the
+data-test runner commit after every function, which reproduces Ghidra's
+sequential behaviour exactly; the parallel driver's commit policy is
+D17's to specify and must be deterministic (the same input gives the
+same output whatever the thread count).
+
+## ADR-045 — Where Ghidra's in-memory codecs are undefined or contradict themselves, Basilisk defines them
+
+*2026-11-15. Proposed by track `spec-decomp-wave2` (proposal C);
+ADR-024's form.*
+
+**Decision.** In `bk-decomp-symbols`: hex content (`<binaryimage>`,
+string data) is read as the signed-`char` x86-64 build reads it and
+always terminates (with unsigned `char` Ghidra's loops never end —
+`loadimage_xml.cc:115–135`, `stringmanage.cc:246–266` — which is why the
+reference is built with `-fsigned-char`); `CPoolRecord` byte data is
+written as hex, which is what the decoder reads (Ghidra's encoder
+writes characters); a default `<context_pointset>` sets all its
+variables (Ghidra's `decodeContext` zeroes the default per `<set>`); a
+symbol entry that runs past the end of its space is rejected before
+anything changes (Ghidra crashes). Each is listed under "Differences
+from Ghidra" in the feature document and in `docs/GHIDRA-BUGS.md`.
+
+## ADR-046 — The IR crate delegates the environment steps of `Funcdata`'s mutation methods through a trait
+
+*2026-11-15. Proposed by track `spec-decomp-wave2` (proposal D);
+`docs/features/decomp-ir.md`. Amends the D05 row of `decomp-plan.md`.*
+
+**Context.** The plan gives D05 "the low-level halves" of
+`funcdata_op.cc` and `funcdata_varnode.cc`. Read closely, those methods
+are not separable by file: creating a varnode or setting an op's output
+consults default types, symbol properties, high-variable and
+laned-register registration, wrapping addresses and prototype effects —
+state that belongs to D06, D07 and D14, which D05 must not depend on.
+
+**Decision.** `bk-decomp-ir` implements the structural part of each
+mutation method and calls a trait, `FunctionEnv`, at exactly the points
+where Ghidra consults that state. D07's function state implements the
+trait; D05 ships a table-driven implementation for its own tests.
+Whether the trait should be split is an open item of the D05
+specification, to be settled by the D05 track.
