@@ -75,10 +75,9 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
         if descended {
             continue;
         }
-        let sla = lang.sla();
-        let export = sla
-            .constructor(ctor_id)
-            .and_then(|ctor| sla.main_template(ctor))
+        let export = lang
+            .tables
+            .main_template(lang.sla(), ctor_id)
             .and_then(|template| template.result().copied());
         if let Some(export) = export {
             let handle = fix(&env(lang, parse, naddr), &export, cur)?;

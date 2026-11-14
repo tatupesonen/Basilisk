@@ -99,7 +99,7 @@ fn sweep(decoder: &mut Decoder, initial: &ContextDb, code: &[u8], mode: Mode) ->
                     text.clear();
                     let _ = decoder.mnemonic(&mut text);
                     let _ = decoder.body(&mut text);
-                    let _ = decoder.lift(addr, &bytes, &mut db, &mut counter);
+                    let _ = decoder.lift_decoded(addr, &bytes, &mut db, &mut counter, &mut ());
                 }
                 len
             }
@@ -255,4 +255,33 @@ fn bench_pcode_x86_64() {
         "end to end, full listing to a null device: basilisk disasm {a:.3} s, pcodedump {b:.3} s"
     );
     eprintln!("load average after: {}", load_average());
+}
+
+/// Lifts the x86-64 code over and over for `BK_PROFILE_SECONDS` (default
+/// 8): a steady load for a sampling profiler.
+#[test]
+#[ignore = "profiling aid"]
+fn profile_lift_x86_64() {
+    let Some(reference) = common::reference() else {
+        return;
+    };
+    let Some(code) = input("x86-64-code.bin") else {
+        return;
+    };
+    let registry = LanguageRegistry::builder()
+        .module(reference.root().join("Ghidra/Processors/x86"))
+        .build()
+        .unwrap();
+    let id = LanguageId::new("x86:LE:64:default").unwrap();
+    let lang = Arc::new(Language::load(&registry, &id).unwrap());
+    let db = lang.initial_context();
+    let mut decoder = Decoder::new(Arc::clone(&lang));
+    let seconds: f64 = std::env::var("BK_PROFILE_SECONDS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(8.0);
+    let start = Instant::now();
+    while start.elapsed().as_secs_f64() < seconds {
+        sweep(&mut decoder, &db, &code, Mode::Lift);
+    }
 }

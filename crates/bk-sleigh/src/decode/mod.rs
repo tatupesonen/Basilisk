@@ -61,6 +61,9 @@ pub struct Decoder {
     pub(crate) buf: crate::pcode::buffer::OpBuffer,
     /// Scratch parses for crossbuild targets decoded on demand.
     pub(crate) cross: Vec<Parse>,
+    /// Whether `main` holds what the last [`Decoder::decode`] produced and
+    /// nothing has prepared it since.
+    fresh: bool,
 }
 
 impl Decoder {
@@ -75,6 +78,7 @@ impl Decoder {
             operand_limit: u32::MAX,
             buf: crate::pcode::buffer::OpBuffer::default(),
             cross: Vec::new(),
+            fresh: false,
         }
     }
 
@@ -114,6 +118,7 @@ impl Decoder {
         C: ContextSource + ?Sized,
     {
         self.num_delays = 0;
+        self.fresh = false;
         resolve::resolve(
             &self.lang,
             &mut self.main,
@@ -133,6 +138,7 @@ impl Decoder {
             );
             self.main.set_next2(found);
         }
+        self.fresh = true;
         Ok(&self.main)
     }
 
@@ -238,16 +244,21 @@ impl Decoder {
         B: ByteSource + ?Sized,
         C: ContextSource + ContextSink + ?Sized,
     {
-        self.prepare_inner(addr, bytes, context).map_err(|(e, _)| e)
+        self.prepare_inner(addr, bytes, context, false)
+            .map_err(|(e, _)| e)
     }
 
     /// [`Decoder::prepare`], saying whether the error came from a
     /// delay-slot instruction.
+    /// With `decoded`, the instruction at `addr` is the one the last
+    /// [`Decoder::decode`] decoded, from the same bytes and context, and is
+    /// not decoded again.
     pub(crate) fn prepare_inner<B, C>(
         &mut self,
         addr: Address,
         bytes: &B,
         context: &mut C,
+        decoded: bool,
     ) -> Result<Prepared, (DecodeError, bool)>
     where
         B: ByteSource + ?Sized,
@@ -266,7 +277,14 @@ impl Decoder {
         }
         let main = |e| (e, false);
         let delay = |e| (e, true);
-        self.decode(addr, bytes, &*context).map_err(main)?;
+        let reuse = decoded
+            && self.fresh
+            && self.main.addr == addr
+            && self.main.state >= ParseState::Resolved;
+        self.fresh = false;
+        if !reuse {
+            self.decode(addr, bytes, &*context).map_err(main)?;
+        }
         self.resolve_handles(bytes, &*context).map_err(main)?;
         commit::apply_commits(&self.lang, &self.main, context).map_err(main)?;
         let length = self.main.length();

@@ -22,6 +22,10 @@ pub(crate) enum Handles<'p> {
         parse: &'p Parse,
         /// The node whose constructor's template is being built.
         node: u32,
+        /// That node's first child and number of children (its operands).
+        first_child: u32,
+        /// The number of children.
+        num_children: u32,
     },
     /// Parameters of a free-standing template, by operand index.
     Params(&'p [(u32, VarnodeData)]),
@@ -55,7 +59,7 @@ impl<'p> Walk<'p> {
     /// The walk of `node` of `parse`, with constants from `parse` itself.
     pub(crate) fn of(parse: &'p Parse, node: u32, unique: u64) -> Self {
         Self {
-            handles: Handles::Node { parse, node },
+            handles: node_handles(parse, node),
             start: parse.addr,
             next: parse.naddr,
             next2: parse.next2,
@@ -70,7 +74,7 @@ impl<'p> Walk<'p> {
     pub(crate) fn at(self, node: u32) -> Self {
         match self.handles {
             Handles::Node { parse, .. } => Self {
-                handles: Handles::Node { parse, node },
+                handles: node_handles(parse, node),
                 ..self
             },
             Handles::Params(_) => self,
@@ -80,12 +84,20 @@ impl<'p> Walk<'p> {
     /// The handle of operand `index`.
     pub(crate) fn handle(&self, index: u32) -> FixedHandle {
         match self.handles {
-            Handles::Node { parse, node } => parse
-                .nodes
-                .get(node as usize)
-                .and_then(|n| n.child(index))
-                .and_then(|c| parse.nodes.get(c as usize))
-                .map_or(FixedHandle::UNSET, |n| n.handle),
+            Handles::Node {
+                parse,
+                first_child,
+                num_children,
+                ..
+            } => {
+                if index >= num_children {
+                    return FixedHandle::UNSET;
+                }
+                parse
+                    .nodes
+                    .get(first_child.wrapping_add(index) as usize)
+                    .map_or(FixedHandle::UNSET, |n| n.handle)
+            }
             Handles::Params(params) => {
                 params
                     .iter()
@@ -99,6 +111,19 @@ impl<'p> Walk<'p> {
                     })
             }
         }
+    }
+}
+
+fn node_handles(parse: &Parse, node: u32) -> Handles<'_> {
+    let (first_child, num_children) = parse
+        .nodes
+        .get(node as usize)
+        .map_or((0, 0), |n| (n.first_child, n.num_children()));
+    Handles::Node {
+        parse,
+        node,
+        first_child,
+        num_children,
     }
 }
 
@@ -203,6 +228,40 @@ pub(crate) fn location(
     vn: &VarnodeTpl,
     w: &Walk<'_>,
 ) -> Result<VarnodeData, DecodeError> {
+    // The common case: an operand used whole (space, offset and size of
+    // one handle), resolved with one handle lookup.
+    if let (
+        ConstTpl::Handle {
+            index,
+            select: HandleSelect::Space,
+            ..
+        },
+        ConstTpl::Handle {
+            index: i2,
+            select: HandleSelect::Offset,
+            ..
+        },
+        ConstTpl::Handle {
+            index: i3,
+            select: HandleSelect::Size,
+            ..
+        },
+    ) = (vn.space, vn.offset, vn.size)
+        && index == i2
+        && index == i3
+    {
+        let hand = w.handle(index);
+        let (space, offset) = if hand.is_dynamic() {
+            (hand.temp_space, hand.temp_offset)
+        } else {
+            (hand.space, hand.offset_offset)
+        };
+        return Ok(VarnodeData::new(
+            SpaceId::new(space),
+            place(lang, space, offset, hand.size, w.unique),
+            hand.size,
+        ));
+    }
     let space = fix_space(&vn.space, w)?;
     let size = fix(lang, &vn.size, w)? as u32;
     let offset = fix(lang, &vn.offset, w)?;

@@ -81,6 +81,8 @@ pub(crate) struct CtorInfo {
     /// Whether the constructor has a main template (its body is not
     /// `unimpl`).
     pub(crate) has_main: bool,
+    /// The main template's id (meaningful when `has_main`).
+    pub(crate) main: bk_sla::TemplateId,
 }
 
 /// The precomputed tables of a language.
@@ -159,10 +161,31 @@ impl Tables {
                 delay: main.map_or(0, |t| t.header().delay),
                 flow_through,
                 has_main: main.is_some(),
+                main: sla
+                    .template_ids(ctor)
+                    .find(|id| {
+                        sla.template(*id)
+                            .is_some_and(|t| t.header().section.is_none())
+                    })
+                    .unwrap_or(bk_sla::TemplateId::new(0)),
             });
         }
         tables.next2_anywhere |= tables.uses_next2;
         tables
+    }
+
+    /// The main template of constructor `id` (`None` for `unimpl`).
+    pub(crate) fn main_template<'s>(
+        &self,
+        sla: &'s Sla,
+        id: ConstructorId,
+    ) -> Option<bk_sla::TemplateRef<'s>> {
+        let info = self.ctor(id)?;
+        if info.has_main {
+            sla.template(info.main)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn ctor(&self, id: ConstructorId) -> Option<&CtorInfo> {

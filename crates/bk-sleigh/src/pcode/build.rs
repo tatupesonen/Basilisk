@@ -57,7 +57,7 @@ where
     /// The constructor at the walk's node.
     fn ctor_of(w: &Walk<'_>) -> Option<ConstructorId> {
         match w.handles {
-            Handles::Node { parse, node } => parse
+            Handles::Node { parse, node, .. } => parse
                 .nodes
                 .get(node as usize)
                 .and_then(crate::Node::constructor),
@@ -164,7 +164,7 @@ where
     /// The node and constructor of operand `index` of the walk's node, when
     /// the operand is a subtable.
     fn subtable_child(&self, w: &Walk<'_>, index: u32) -> Option<(u32, ConstructorId)> {
-        let Handles::Node { parse, node } = w.handles else {
+        let Handles::Node { parse, node, .. } = w.handles else {
             return None;
         };
         let n = parse.nodes.get(node as usize)?;
@@ -186,7 +186,7 @@ where
         section: u32,
         slots: &mut [Parse],
     ) -> Result<(), LiftError> {
-        let Handles::Node { parse, node } = w.handles else {
+        let Handles::Node { parse, node, .. } = w.handles else {
             return Ok(());
         };
         if self.depth >= MAX_BUILD_DEPTH {
@@ -366,9 +366,8 @@ pub(crate) fn template_of(
     section: Option<u32>,
 ) -> Option<TemplateRef<'_>> {
     let sla = lang.sla();
-    let c = sla.constructor(ctor)?;
     match section {
-        None => sla.main_template(c),
-        Some(s) => sla.section_template(c, s),
+        None => lang.tables.main_template(sla, ctor),
+        Some(s) => sla.section_template(sla.constructor(ctor)?, s),
     }
 }

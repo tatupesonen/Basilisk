@@ -164,12 +164,12 @@ pub fn sweep<O: SweepObserver>(
         pcode.clear();
         let lifted = if quiet {
             let mut counter = PcodeCounter::default();
-            let r = decoder.lift_observed(addr, &bytes, context, &mut counter, obs);
+            let r = decoder.lift_decoded(addr, &bytes, context, &mut counter, obs);
             counts.ops += counter.ops;
             r
         } else {
             let mut records = PcodeRecords::new(&lang, &mut pcode);
-            let r = decoder.lift_observed(addr, &bytes, context, &mut records, obs);
+            let r = decoder.lift_decoded(addr, &bytes, context, &mut records, obs);
             counts.ops += records.count;
             r
         };

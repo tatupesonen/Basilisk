@@ -140,23 +140,64 @@ impl Decoder {
         E: PcodeEmit + ?Sized,
         O: BuildObserver,
     {
+        self.lift_inner(addr, bytes, context, emit, obs, false)
+    }
+
+    /// [`Decoder::lift_observed`] of the instruction the last
+    /// [`Decoder::decode`] decoded (at `addr`), which is not decoded again:
+    /// `bytes` and `context` must be what that decode read, unchanged since.
+    /// This is what Ghidra's parse cache gives `oneInstruction` after
+    /// `printAssembly`. If the last call was not a successful `decode` at
+    /// `addr`, the instruction is decoded as [`Decoder::lift`] does.
+    pub fn lift_decoded<B, C, E, O>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &mut C,
+        emit: &mut E,
+        obs: &mut O,
+    ) -> Result<u32, LiftError>
+    where
+        B: ByteSource + ?Sized,
+        C: ContextSource + ContextSink + ?Sized,
+        E: PcodeEmit + ?Sized,
+        O: BuildObserver,
+    {
+        self.lift_inner(addr, bytes, context, emit, obs, true)
+    }
+
+    fn lift_inner<B, C, E, O>(
+        &mut self,
+        addr: Address,
+        bytes: &B,
+        context: &mut C,
+        emit: &mut E,
+        obs: &mut O,
+        decoded: bool,
+    ) -> Result<u32, LiftError>
+    where
+        B: ByteSource + ?Sized,
+        C: ContextSource + ContextSink + ?Sized,
+        E: PcodeEmit + ?Sized,
+        O: BuildObserver,
+    {
         self.buf.clear();
-        let prepared = self
-            .prepare_inner(addr, bytes, context)
-            .map_err(|(e, in_delay)| {
-                if in_delay {
-                    LiftError::DelaySlot {
-                        address: addr,
-                        source: e,
+        let prepared =
+            self.prepare_inner(addr, bytes, context, decoded)
+                .map_err(|(e, in_delay)| {
+                    if in_delay {
+                        LiftError::DelaySlot {
+                            address: addr,
+                            source: e,
+                        }
+                    } else {
+                        LiftError::from(e)
                     }
-                } else {
-                    LiftError::from(e)
-                }
-            })?;
+                })?;
         if self.cross.len() < CROSS_SLOTS {
             self.cross.resize_with(CROSS_SLOTS, Parse::new);
         }
-        let lang = std::sync::Arc::clone(&self.lang);
+        let lang: &crate::Language = &self.lang;
         let main = &self.main;
         let mut parses: [&Parse; 1 + crate::decode::MAX_DELAY_INSTRUCTIONS] =
             [main; 1 + crate::decode::MAX_DELAY_INSTRUCTIONS];
@@ -166,7 +207,7 @@ impl Decoder {
         }
         let parses = parses.get(..=delays.len()).unwrap_or_default();
         let mut builder = Builder {
-            lang: &lang,
+            lang,
             source: Some((bytes, &*context)),
             parses,
             buf: &mut self.buf,
@@ -183,7 +224,7 @@ impl Decoder {
             .nodes
             .first()
             .and_then(crate::Node::constructor)
-            .and_then(|c| template_of(&lang, c, None));
+            .and_then(|c| template_of(lang, c, None));
         let built = builder.build(tpl, None, walk, &mut self.cross);
         let built = built.and_then(|()| self.buf.resolve_relatives(addr));
         if let Err(mut e) = built {
