@@ -151,6 +151,7 @@ public:
     registerCapabilityCommands(status);
     registerCfgCommands(status);
     registerStateCommands(status);
+    registerPcodeCommands(status);
   }
 };
 

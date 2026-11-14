@@ -23,6 +23,9 @@ extern const char *const FORMAT_VERSIONS;
 /// Escape a text field: backslash, tab, LF, CR and NUL become \\ \t \n \r \0.
 std::string escape(const std::string &s);
 
+/// Undo escape(); an unknown escape is kept as it is.
+std::string unescape(const std::string &s);
+
 /// Lower-case hexadecimal with a 0x prefix (named so as not to hide std::hex).
 std::string hx(uintb v);
 

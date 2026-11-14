@@ -27,6 +27,25 @@ std::string escape(const std::string &s)
   return res;
 }
 
+std::string unescape(const std::string &s)
+{
+  std::string res;
+  res.reserve(s.size());
+  for (size_t i = 0; i < s.size(); ++i) {
+    if (s[i] != '\\' || i + 1 == s.size()) { res += s[i]; continue; }
+    char c = s[++i];
+    switch (c) {
+    case '\\': res += '\\'; break;
+    case 't': res += '\t'; break;
+    case 'n': res += '\n'; break;
+    case 'r': res += '\r'; break;
+    case '0': res += '\0'; break;
+    default: res += '\\'; res += c; break;
+    }
+  }
+  return res;
+}
+
 std::string hx(uintb v)
 {
   std::ostringstream s;
