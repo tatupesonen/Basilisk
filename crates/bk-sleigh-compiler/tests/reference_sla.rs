@@ -36,7 +36,8 @@ struct Report {
 fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report {
     let name = format!("{}/{}", spec.module, spec.name);
     let options = Options::from_switches(
-        common::module_options(reference, &spec.module)
+        reference
+            .module_options(&spec.module)
             .iter()
             .map(String::as_str),
     );
@@ -248,7 +249,7 @@ fn every_shipped_spec_writes_the_reference_xml() {
                         *n - 1
                     };
                     let Some(spec) = specs.get(i) else { break };
-                    let switches = common::module_options(&reference, &spec.module);
+                    let switches = reference.module_options(&spec.module);
                     let mut sleigh = reference.sleigh().switch('y');
                     for s in &switches {
                         if let Some(c) = s.strip_prefix('-').and_then(|s| s.chars().next()) {

@@ -418,6 +418,39 @@ fn directives_that_need_an_instruction_are_errors_in_templates() {
     assert!(matches!(inject(&t), Err(LiftError::MissingLabel { .. })));
 }
 
+/// A branch to a label that is never placed, with any label count — as
+/// Ghidra's snippet compiler produces for `goto <L>;`, which `bk_sla` now
+/// reads — fails where Ghidra's `resolveRelatives` does, with its message,
+/// and never allocates per label number or loops.
+#[rstest]
+fn unplaced_labels_fail_with_ghidras_message(
+    #[values(0, 1)] count: i32,
+    #[values(0, 1, 7, 1 << 40, u64::MAX)] label: u64,
+    #[values(None, Some(3), Some(u64::MAX))] placed: Option<u64>,
+) {
+    if placed == Some(label) {
+        return;
+    }
+    let mut t = Template::new();
+    t.set_header(None, 0, count);
+    if let Some(placed) = placed {
+        t.push_op(OpCode::PtrAdd, None, &[c(placed, 4)]);
+    }
+    t.push_op(
+        OpCode::Branch,
+        None,
+        &[VarnodeTpl {
+            space: ConstTpl::Space(0),
+            offset: ConstTpl::Relative(label),
+            size: ConstTpl::Real(4),
+        }],
+    );
+    assert!(t.check_labels().is_err());
+    let err = inject(&t).unwrap_err();
+    assert!(matches!(err, LiftError::MissingLabel { .. }), "{err:?}");
+    assert_eq!(err.to_string(), "Reference to non-existant sleigh label");
+}
+
 #[test]
 fn one_op_with_too_many_varnodes() {
     let mut t = Template::new();

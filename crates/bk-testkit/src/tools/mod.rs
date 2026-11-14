@@ -9,6 +9,7 @@
 //! | [`Decomp`] | Ghidra's decompiler console | the transcript, command by command |
 //! | [`DecompTest`] | Ghidra's test runner | pass or fail per test |
 //! | [`Pcodedump`] | Basilisk's p-code oracle | parsed instructions and p-code ops |
+//! | [`Snippetdump`] | Basilisk's p-code snippet oracle | one outcome per snippet |
 //!
 //! Arguments are passed as an argument vector; nothing goes through a shell.
 
@@ -18,6 +19,7 @@ pub mod decomp;
 pub mod decomp_test;
 pub mod pcodedump;
 pub mod sleigh;
+pub mod snippetdump;
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -29,6 +31,9 @@ pub use pcodedump::{
     LiftError, LiftErrorKind, PcodeDump, Pcodedump, parse_dump,
 };
 pub use sleigh::Sleigh;
+pub use snippetdump::{
+    SnippetBase, SnippetOutcome, SnippetParameter, SnippetParseError, SnippetRecord, Snippetdump,
+};
 
 use crate::paths::{ReferenceDir, Tool};
 
@@ -123,6 +128,9 @@ pub enum ToolError {
     /// `pcodedump` printed something that is not its documented format.
     #[error("pcodedump: unexpected output: {0}")]
     Dump(#[from] DumpParseError),
+    /// `snippetdump` printed something that is not its record format.
+    #[error("snippetdump: unexpected output: {0}")]
+    Snippet(#[from] SnippetParseError),
     /// `decomp_test` printed something that is not its usual report.
     #[error("decomp_test: unexpected output: {0}")]
     Report(#[from] ReportParseError),
@@ -152,6 +160,11 @@ impl ReferenceDir {
     /// The p-code oracle, finding its languages in this directory.
     pub fn pcodedump(&self) -> Pcodedump {
         Pcodedump::new(self.tool_path(Tool::Pcodedump), self.root().to_path_buf())
+    }
+
+    /// The p-code snippet oracle, finding its languages in this directory.
+    pub fn snippetdump(&self) -> Snippetdump {
+        Snippetdump::new(self.tool_path(Tool::Snippetdump), self.root().to_path_buf())
     }
 }
 

@@ -372,7 +372,9 @@ impl Compiler<'_> {
             }
             let kind = if bit_offset.is_multiple_of(8) && bits.is_multiple_of(8) {
                 let delta = if self.big_endian {
-                    (size - bit_offset - bits) / 8
+                    // `uint4` arithmetic: wraps when `bit_offset + bits`
+                    // wrapped past the bounds check (`defineBitrange`).
+                    size.wrapping_sub(bit_offset).wrapping_sub(bits) / 8
                 } else {
                     bit_offset / 8
                 };
