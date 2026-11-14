@@ -11,6 +11,9 @@
     clippy::print_stderr,
     clippy::allow_attributes,
     clippy::tests_outside_test_module,
+    clippy::string_slice,
+    clippy::many_single_char_names,
+    clippy::format_push_string,
     reason = "test code"
 )]
 

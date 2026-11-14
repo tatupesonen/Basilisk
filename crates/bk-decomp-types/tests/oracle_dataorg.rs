@@ -147,10 +147,10 @@ fn model_names(cspec_text: &str) -> Vec<String> {
     };
     let mut stack = vec![doc.root()];
     while let Some(e) = stack.pop() {
-        if matches!(e.name(), "prototype" | "resolveprototype" | "modelalias") {
-            if let Some(n) = e.attribute("name") {
-                names.push(n.to_owned());
-            }
+        if matches!(e.name(), "prototype" | "resolveprototype" | "modelalias")
+            && let Some(n) = e.attribute("name")
+        {
+            names.push(n.to_owned());
         }
         stack.extend(e.children());
     }

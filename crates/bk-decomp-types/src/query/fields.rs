@@ -39,7 +39,7 @@ impl TypeFactory {
     pub(crate) fn field_iter<'f>(&self, fields: &'f [Field], off: i64) -> Option<&'f Field> {
         let (mut lo, mut hi) = (0i64, fields.len() as i64 - 1);
         while lo <= hi {
-            let mid = (lo + hi) / 2;
+            let mid = i64::midpoint(lo, hi);
             let f = fields.get(mid as usize)?;
             if i64::from(f.offset) > off {
                 hi = mid - 1;
@@ -103,7 +103,7 @@ impl TypeFactory {
         let bits = self.entry(id).bitfields();
         let (mut lo, mut hi) = (0i64, bits.len() as i64 - 1);
         while lo <= hi {
-            let mid = (lo + hi) / 2;
+            let mid = i64::midpoint(lo, hi);
             let b = bits.get(mid as usize)?;
             match range.overlap_test(&b.bits) {
                 BitOverlap::Equal => return Some(b),

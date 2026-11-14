@@ -150,7 +150,7 @@ impl DataOrganization {
     /// Reads a `<data_organization>` element (Ghidra
     /// `decodeDataOrganization`): only the five sizes and the alignment map;
     /// every other child is skipped.
-    pub fn decode_data_organization<'a>(&mut self, decoder: &mut dyn Decoder<'a>) -> Result<()> {
+    pub fn decode_data_organization(&mut self, decoder: &mut dyn Decoder<'_>) -> Result<()> {
         let elem = decoder.open_element_expecting(ELEM_DATA_ORGANIZATION)?;
         while let Some(sub) = decoder.open_element()? {
             let field = if sub == ELEM_INTEGER_SIZE {
@@ -182,7 +182,7 @@ impl DataOrganization {
 
     /// Reads the entries of a `<size_alignment_map>` (Ghidra
     /// `decodeAlignmentMap`).
-    fn decode_alignment_map<'a>(&mut self, decoder: &mut dyn Decoder<'a>) -> Result<()> {
+    fn decode_alignment_map(&mut self, decoder: &mut dyn Decoder<'_>) -> Result<()> {
         self.align_map.clear();
         loop {
             if decoder.peek_element() != Some(ELEM_ENTRY.code()) {
@@ -223,7 +223,7 @@ impl DataOrganization {
     }
 
     /// Reads an `<enum size= signed=>` element (Ghidra `parseEnumConfig`).
-    pub fn decode_enum_config<'a>(&mut self, decoder: &mut dyn Decoder<'a>) -> Result<()> {
+    pub fn decode_enum_config(&mut self, decoder: &mut dyn Decoder<'_>) -> Result<()> {
         let elem = decoder.open_element_expecting(ELEM_ENUM)?;
         self.enum_size = decoder.read_signed_attr(ATTRIB_SIZE)? as i32;
         self.enum_signed = decoder.read_bool_attr(crate::xml::ids::ATTRIB_SIGNED)?;

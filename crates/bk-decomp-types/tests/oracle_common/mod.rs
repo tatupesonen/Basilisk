@@ -1,4 +1,5 @@
 //! Reading the oracle tables and rebuilding the environment they record.
+#![allow(dead_code, reason = "shared by several test crates, each using a part")]
 
 use std::io::Read as _;
 use std::path::Path;
@@ -7,7 +8,7 @@ use bk_decomp_types::{DataOrganization, SpaceInfo, TypeEnv};
 use bk_marshal::SpaceId;
 
 /// Escapes a string as the oracle does (`\t`, `\n`, `\\`).
-pub fn esc(s: &str) -> String {
+pub(crate) fn esc(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -21,7 +22,7 @@ pub fn esc(s: &str) -> String {
 }
 
 /// The lines of a gzip-compressed table under `tests/data`.
-pub fn table(name: &str) -> Vec<String> {
+pub(crate) fn table(name: &str) -> Vec<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("data")
@@ -36,7 +37,7 @@ pub fn table(name: &str) -> Vec<String> {
 
 /// A [`TypeEnv`] from the ENV fields: space addrsize wordsize bigendian
 /// codeaddrsize spsize farinner farbase model maxbase.
-pub fn env_from(fields: &[&str]) -> TypeEnv {
+pub(crate) fn env_from(fields: &[&str]) -> TypeEnv {
     let n = |i: usize| fields[i].parse::<i32>().unwrap();
     TypeEnv {
         max_basetype_size: n(9),
@@ -56,7 +57,7 @@ pub fn env_from(fields: &[&str]) -> TypeEnv {
 }
 
 /// A [`DataOrganization`] from the ORG fields.
-pub fn org_from(fields: &[&str]) -> DataOrganization {
+pub(crate) fn org_from(fields: &[&str]) -> DataOrganization {
     let n = |i: usize| fields[i].parse::<i32>().unwrap();
     DataOrganization {
         size_of_int: n(0),
@@ -72,7 +73,7 @@ pub fn org_from(fields: &[&str]) -> DataOrganization {
 }
 
 /// The ORG fields as the oracle prints them.
-pub fn org_fields(org: &DataOrganization) -> String {
+pub(crate) fn org_fields(org: &DataOrganization) -> String {
     let map: Vec<String> = org.align_map.iter().map(i32::to_string).collect();
     format!(
         "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",

@@ -20,11 +20,10 @@ impl TypeFactory {
             offset: o,
             ..
         } = self.entry(contain).kind
+            && self.entry(contain).metatype == Metatype::PartialStruct
         {
-            if self.entry(contain).metatype == Metatype::PartialStruct {
-                contain = c;
-                off = off.saturating_add(o);
-            }
+            contain = c;
+            off = off.saturating_add(o);
         }
         let c = self.entry(contain);
         let mut e = TypeEntry::new(

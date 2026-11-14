@@ -144,7 +144,7 @@ impl<'a> Lexer<'a> {
                 self.set_error("Illegal character");
                 return Out::Bad;
             }
-        } else if signed >= 127 {
+        } else if signed == 127 {
             self.set_error("Illegal character");
             return Out::Bad;
         }
@@ -369,15 +369,14 @@ fn char_value(text: &[u8]) -> u64 {
     }
     match text.get(1).copied() {
         Some(b'n') => 10,
-        Some(b'0') => 0,
         Some(b'a') => 7,
         Some(b'b') => 8,
         Some(b't') => 9,
         Some(b'v') => 11,
         Some(b'f') => 12,
         Some(b'r') => 13,
+        Some(b'0') | None => 0,
         Some(b) => i64::from(b as i8) as u64,
-        None => 0,
     }
 }
 

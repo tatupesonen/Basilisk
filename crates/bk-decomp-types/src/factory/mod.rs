@@ -62,7 +62,7 @@ static INVALID: LazyLock<TypeEntry> =
 pub struct TypeFactory {
     pub(crate) env: TypeEnv,
     pub(crate) org: DataOrganization,
-    parent: Option<Arc<TypeFactory>>,
+    parent: Option<Arc<Self>>,
     slots: Vec<Slot>,
     identity: HashIndex,
     names: HashIndex,

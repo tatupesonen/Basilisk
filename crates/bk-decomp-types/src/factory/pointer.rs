@@ -88,10 +88,10 @@ impl TypeFactory {
     ) -> Result<TypeId> {
         self.entry_checked(ptrto)?;
         let mut pt = self.strip(ptrto);
-        if let TypeKind::Array { element, .. } = self.entry(pt).kind {
-            if self.entry(pt).metatype == Metatype::Array {
-                pt = element;
-            }
+        if let TypeKind::Array { element, .. } = self.entry(pt).kind
+            && self.entry(pt).metatype == Metatype::Array
+        {
+            pt = element;
         }
         let cand = self.pointer_entry(size, pt, wordsize)?;
         let res = self.find_add(cand)?;

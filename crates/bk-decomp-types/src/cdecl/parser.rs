@@ -109,7 +109,7 @@ impl<'f, 'a> Parser<'f, 'a> {
     fn set_error(&mut self, msg: &str) {
         let mut s = String::from(msg);
         let file = if self.filenum == 0 { "stream" } else { "" };
-        let _ = write!(s, " at line {} in {file}\n", self.lineno);
+        let _ = writeln!(s, " at line {} in {file}", self.lineno);
         if self.lineno == self.lexer.line() {
             s.push_str(&String::from_utf8_lossy(self.lexer.buffer()));
             s.push('\n');
@@ -332,15 +332,16 @@ impl<'f, 'a> Parser<'f, 'a> {
                     }
                     spec.ty = t;
                 }
-                SpecItem::Func(s) => match keyword(&s) {
-                    Some(k) => spec.flags |= k,
-                    None => {
+                SpecItem::Func(s) => {
+                    if let Some(k) = keyword(&s) {
+                        spec.flags |= k;
+                    } else {
                         if !spec.function.is_empty() {
                             self.set_error("Multiple parameter models");
                         }
                         spec.function = s;
                     }
-                },
+                }
             }
         }
         spec

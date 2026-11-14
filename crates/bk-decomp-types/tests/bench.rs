@@ -57,7 +57,7 @@ fn intern_one_million() {
     let n = 1_000_000;
     for _ in 0..n {
         let r = rng.next();
-        let fresh = r % 10 == 0;
+        let fresh = r.is_multiple_of(10);
         let base = pool[(r >> 8) as usize % pool.len()];
         let t = match (r >> 4) % 3 {
             0 => f

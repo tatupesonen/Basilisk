@@ -35,7 +35,6 @@ impl TypeFactory {
 
     /// Ghidra `encodeBasic`.
     fn encode_basic(
-        &self,
         enc: &mut dyn Encoder,
         e: &TypeEntry,
         meta: Metatype,
@@ -108,10 +107,8 @@ impl TypeFactory {
                 | TypeKind::PartialUnion { .. }
                 | TypeKind::PointerRel { .. }
         );
-        if typedef_kind {
-            if let Some(of) = e.typedef_imm {
-                return self.encode_typedef(enc, e, of, depth);
-            }
+        if typedef_kind && let Some(of) = e.typedef_imm {
+            return self.encode_typedef(enc, e, of, depth);
         }
         match &e.kind {
             TypeKind::Void => {
@@ -126,7 +123,7 @@ impl TypeFactory {
                 ..
             } => {
                 enc.open_element(ELEM_TYPE);
-                self.encode_basic(enc, e, Metatype::PtrRel, -1)?;
+                Self::encode_basic(enc, e, Metatype::PtrRel, -1)?;
                 if ptr.wordsize != 1 {
                     enc.write_unsigned(ATTRIB_WORDSIZE, u64::from(ptr.wordsize));
                 }
@@ -143,18 +140,18 @@ impl TypeFactory {
         enc.open_element(ELEM_TYPE);
         match &e.kind {
             TypeKind::Base | TypeKind::PartialStruct { .. } => {
-                self.encode_basic(enc, e, e.metatype, -1)?
+                Self::encode_basic(enc, e, e.metatype, -1)?;
             }
             TypeKind::Char => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 enc.write_bool(ATTRIB_CHAR, true);
             }
             TypeKind::Unicode => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 enc.write_bool(ATTRIB_UTF, true);
             }
             TypeKind::Pointer(p) => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 if p.wordsize != 1 {
                     enc.write_unsigned(ATTRIB_WORDSIZE, u64::from(p.wordsize));
                 }
@@ -171,7 +168,7 @@ impl TypeFactory {
                 self.encode_ref_depth(enc, p.ptrto, depth + 1)?;
             }
             TypeKind::Array { element, count } => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 enc.write_signed(ATTRIB_ARRAYSIZE, i64::from(*count));
                 self.encode_ref_depth(enc, *element, depth + 1)?;
             }
@@ -181,7 +178,7 @@ impl TypeFactory {
                 } else {
                     Metatype::EnumUint
                 };
-                self.encode_basic(enc, e, meta, -1)?;
+                Self::encode_basic(enc, e, meta, -1)?;
                 for (v, n) in &values.values {
                     enc.open_element(ELEM_VAL);
                     enc.write_string(ATTRIB_NAME, n)?;
@@ -190,19 +187,19 @@ impl TypeFactory {
                 }
             }
             TypeKind::PartialEnum { parent, offset, .. } => {
-                self.encode_basic(enc, e, Metatype::PartialEnum, -1)?;
+                Self::encode_basic(enc, e, Metatype::PartialEnum, -1)?;
                 enc.write_signed(ATTRIB_OFFSET, i64::from(*offset));
                 self.encode_ref_depth(enc, *parent, depth + 1)?;
             }
             TypeKind::PartialUnion {
                 container, offset, ..
             } => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 enc.write_signed(ATTRIB_OFFSET, i64::from(*offset));
                 self.encode_ref_depth(enc, *container, depth + 1)?;
             }
             TypeKind::Struct { fields, bitfields } => {
-                self.encode_basic(enc, e, e.metatype, e.alignment)?;
+                Self::encode_basic(enc, e, e.metatype, e.alignment)?;
                 let (mut fi, mut bi) = (fields.iter().peekable(), bitfields.iter().peekable());
                 loop {
                     let take_field = match (fi.peek(), bi.peek()) {
@@ -227,19 +224,19 @@ impl TypeFactory {
                 }
             }
             TypeKind::Union { fields } => {
-                self.encode_basic(enc, e, e.metatype, e.alignment)?;
+                Self::encode_basic(enc, e, e.metatype, e.alignment)?;
                 for f in fields {
                     self.encode_field(enc, f, depth)?;
                 }
             }
             TypeKind::Code(sig) => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 if let Some(sig) = sig {
                     self.encode_signature(enc, sig, depth)?;
                 }
             }
             TypeKind::Spacebase { space, scope } => {
-                self.encode_basic(enc, e, e.metatype, -1)?;
+                Self::encode_basic(enc, e, e.metatype, -1)?;
                 let (name, packed) = self.space_ref(*space);
                 enc.write_space(
                     ATTRIB_SPACE,
@@ -253,7 +250,7 @@ impl TypeFactory {
                     .scopes
                     .as_ref()
                     .and_then(|s| s.frame_of_scope(*scope));
-                self.encode_address(enc, frame)?;
+                self.encode_address(enc, frame);
             }
             TypeKind::Void | TypeKind::PointerRel { .. } => {}
         }
@@ -266,7 +263,7 @@ impl TypeFactory {
         &self,
         enc: &mut dyn Encoder,
         addr: Option<(bk_marshal::SpaceId, u64)>,
-    ) -> Result<()> {
+    ) {
         enc.open_element(ELEM_ADDR);
         if let Some((space, offset)) = addr {
             let (name, packed) = self.space_ref(space);
@@ -280,7 +277,6 @@ impl TypeFactory {
             enc.write_unsigned(ATTRIB_OFFSET, offset);
         }
         enc.close_element(ELEM_ADDR);
-        Ok(())
     }
 
     fn encode_field(

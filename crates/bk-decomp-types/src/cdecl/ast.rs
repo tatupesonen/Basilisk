@@ -58,14 +58,13 @@ impl Modifier {
     /// Ghidra's `FunctionModifier` constructor: a single `void` parameter
     /// means none.
     pub(crate) fn function(mut params: Vec<Declarator>, dotdotdot: bool, f: &TypeFactory) -> Self {
-        if let [only] = params.as_slice() {
-            if only.mods.is_empty()
-                && only
-                    .base
-                    .is_some_and(|b| f.entry(b).metatype() == Metatype::Void)
-            {
-                params.clear();
-            }
+        if let [only] = params.as_slice()
+            && only.mods.is_empty()
+            && only
+                .base
+                .is_some_and(|b| f.entry(b).metatype() == Metatype::Void)
+        {
+            params.clear();
         }
         Self::Function { params, dotdotdot }
     }

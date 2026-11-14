@@ -73,6 +73,10 @@ impl TypeFactory {
         cmp3(&self.entry(a).id, &self.entry(b).id)
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "the two types and their parts, side by side"
+    )]
     fn cmp_level(&self, a: TypeId, b: TypeId, level: i32) -> i32 {
         let (x, y) = (self.entry(a), self.entry(b));
         // Enumerations and spacebases compare as in `compareDependency`.
@@ -279,6 +283,7 @@ impl TypeFactory {
 
     #[expect(
         clippy::too_many_arguments,
+        clippy::many_single_char_names,
         reason = "the two pointers' parts, as Ghidra's TypePointer::compare reads them"
     )]
     fn pointer_tail(

@@ -32,7 +32,7 @@ fn metatype_by_name(name: &str) -> Option<i64> {
     Metatype::from_name(name).ok().map(|m| m as i64)
 }
 
-fn read_meta<'a>(dec: &mut dyn Decoder<'a>) -> Result<Metatype> {
+fn read_meta(dec: &mut dyn Decoder<'_>) -> Result<Metatype> {
     let v = dec.read_enum(&metatype_by_name)?;
     u8::try_from(v)
         .ok()
@@ -42,7 +42,7 @@ fn read_meta<'a>(dec: &mut dyn Decoder<'a>) -> Result<Metatype> {
 
 /// Ghidra `Datatype::decodeBasic`: reads name, size, metatype, id and
 /// properties into `e`.
-fn decode_basic<'a>(e: &mut TypeEntry, dec: &mut dyn Decoder<'a>) -> Result<()> {
+fn decode_basic(e: &mut TypeEntry, dec: &mut dyn Decoder<'_>) -> Result<()> {
     let mut size: i64 = -1;
     e.metatype = Metatype::Void;
     e.id = 0;
@@ -107,7 +107,7 @@ struct FieldAccum {
 
 impl TypeFactory {
     /// Ghidra `decodeType`: a `<typeref>`, or a definition.
-    pub fn decode_type<'a>(&mut self, dec: &mut dyn Decoder<'a>) -> Result<TypeId> {
+    pub fn decode_type(&mut self, dec: &mut dyn Decoder<'_>) -> Result<TypeId> {
         if dec.peek_element() == Some(ELEM_TYPEREF.code()) {
             let elem = dec
                 .open_element()?
@@ -163,9 +163,9 @@ impl TypeFactory {
     }
 
     /// Ghidra `decodeTypeNoRef`: a `<type>`, `<def>` or `<void>` element.
-    pub fn decode_type_no_ref<'a>(
+    pub fn decode_type_no_ref(
         &mut self,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         forcecore: bool,
     ) -> Result<TypeId> {
         if self.decode_depth >= MAX_DECODE_DEPTH {
@@ -177,9 +177,9 @@ impl TypeFactory {
         res
     }
 
-    fn decode_no_ref_inner<'a>(
+    fn decode_no_ref_inner(
         &mut self,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         forcecore: bool,
     ) -> Result<TypeId> {
         let elem = dec
@@ -209,7 +209,7 @@ impl TypeFactory {
             Metatype::Ptr => {
                 let mut tp = TypeEntry::new(0, -1, Metatype::Ptr, TypeKind::Base);
                 decode_basic(&mut tp, dec)?;
-                let (wordsize, space) = self.pointer_attrs(dec)?;
+                let (wordsize, space) = Self::pointer_attrs(dec)?;
                 let ptrto = self.decode_type(dec)?;
                 tp.kind = TypeKind::Pointer(PointerData {
                     ptrto,
@@ -230,7 +230,7 @@ impl TypeFactory {
                 tp.flags |= TypeFlags::IS_PTRREL;
                 decode_basic(&mut tp, dec)?;
                 tp.metatype = Metatype::Ptr;
-                let (wordsize, space) = self.pointer_attrs(dec)?;
+                let (wordsize, space) = Self::pointer_attrs(dec)?;
                 let ptrto = self.decode_type(dec)?;
                 let parent = self.decode_type(dec)?;
                 let sub = dec.open_element_expecting(ELEM_OFF)?;
@@ -303,7 +303,7 @@ impl TypeFactory {
                 let mut tsb = TypeEntry::new(0, 1, Metatype::Spacebase, TypeKind::Base);
                 decode_basic(&mut tsb, dec)?;
                 let space = dec.read_space_attr(ATTRIB_SPACE)?;
-                let frame = self.decode_address(dec)?;
+                let frame = Self::decode_address(dec)?;
                 let scope = self
                     .hooks
                     .scopes
@@ -334,7 +334,7 @@ impl TypeFactory {
 
     /// The default case of `decodeTypeNoRef`: a character, wide character
     /// or plain base type.
-    fn decode_atomic<'a>(&mut self, dec: &mut dyn Decoder<'a>, core: TypeFlags) -> Result<TypeId> {
+    fn decode_atomic(&mut self, dec: &mut dyn Decoder<'_>, core: TypeFlags) -> Result<TypeId> {
         let mut kind = TypeKind::Base;
         while let Some(attr) = dec.next_attribute()? {
             if attr == ATTRIB_CHAR && dec.read_bool()? {
@@ -373,10 +373,7 @@ impl TypeFactory {
         self.find_add(e)
     }
 
-    fn pointer_attrs<'a>(
-        &self,
-        dec: &mut dyn Decoder<'a>,
-    ) -> Result<(u32, Option<bk_marshal::SpaceId>)> {
+    fn pointer_attrs(dec: &mut dyn Decoder<'_>) -> Result<(u32, Option<bk_marshal::SpaceId>)> {
         dec.rewind_attributes();
         let (mut wordsize, mut space) = (1u32, None);
         while let Some(attr) = dec.next_attribute()? {
@@ -409,9 +406,8 @@ impl TypeFactory {
     }
 
     /// Ghidra `Address::decode`: an `<addr>` element; `None` when invalid.
-    pub(crate) fn decode_address<'a>(
-        &self,
-        dec: &mut dyn Decoder<'a>,
+    pub(crate) fn decode_address(
+        dec: &mut dyn Decoder<'_>,
     ) -> Result<Option<(bk_marshal::SpaceId, u64)>> {
         let elem = dec.open_element_expecting(ELEM_ADDR)?;
         let (mut space, mut offset) = (None, 0);
@@ -427,13 +423,13 @@ impl TypeFactory {
     }
 
     /// Ghidra `decodeTypedef`.
-    fn decode_typedef<'a>(&mut self, dec: &mut dyn Decoder<'a>) -> Result<TypeId> {
+    fn decode_typedef(&mut self, dec: &mut dyn Decoder<'_>) -> Result<TypeId> {
         let (mut id, mut name, mut format) = (0u64, String::new(), 0u32);
         while let Some(attr) = dec.next_attribute()? {
             if attr == ATTRIB_ID {
                 id = dec.read_unsigned()?;
             } else if attr == ATTRIB_NAME {
-                name = dec.read_string()?.to_owned();
+                dec.read_string()?.clone_into(&mut name);
             } else if attr == ATTRIB_FORMAT {
                 format = encode_integer_format(dec.read_string()?)?;
             }
@@ -446,41 +442,39 @@ impl TypeFactory {
         if d.is_variable_length() {
             id = hash_size(id, d.size);
         }
-        if matches!(d.metatype, Metatype::Struct | Metatype::Union) {
-            if let Some(prev) = self.find_by_id_local(&name, id) {
-                let p = self.entry(prev);
-                if p.typedef_imm != Some(defed) {
-                    return Err(TypeError::new(format!(
-                        "Trying to create typedef of existing type: {}",
-                        p.name
-                    )));
-                }
-                let layout = Layout {
-                    size: d.size,
-                    align: d.alignment,
-                    flags: d.flags,
-                };
-                if p.fields().len() != d.fields().len() {
-                    match d.kind {
-                        TypeKind::Struct { fields, bitfields }
-                            if p.metatype == Metatype::Struct =>
-                        {
-                            self.set_struct_fields(prev, fields, bitfields, layout)?;
-                        }
-                        TypeKind::Union { fields } => {
-                            self.set_union_fields(prev, fields, layout)?
-                        }
-                        _ => {}
-                    }
-                }
-                return Ok(prev);
+        if matches!(d.metatype, Metatype::Struct | Metatype::Union)
+            && let Some(prev) = self.find_by_id_local(&name, id)
+        {
+            let p = self.entry(prev);
+            if p.typedef_imm != Some(defed) {
+                return Err(TypeError::new(format!(
+                    "Trying to create typedef of existing type: {}",
+                    p.name
+                )));
             }
+            let layout = Layout {
+                size: d.size,
+                align: d.alignment,
+                flags: d.flags,
+            };
+            if p.fields().len() != d.fields().len() {
+                match d.kind {
+                    TypeKind::Struct { fields, bitfields } if p.metatype == Metatype::Struct => {
+                        self.set_struct_fields(prev, fields, bitfields, layout)?;
+                    }
+                    TypeKind::Union { fields } => {
+                        self.set_union_fields(prev, fields, layout)?;
+                    }
+                    _ => {}
+                }
+            }
+            return Ok(prev);
         }
         self.typedef(defed, &name, id, format)
     }
 
     /// Ghidra `decodeEnum` with `TypeEnum::decode`.
-    fn decode_enum<'a>(&mut self, dec: &mut dyn Decoder<'a>, forcecore: bool) -> Result<TypeId> {
+    fn decode_enum(&mut self, dec: &mut dyn Decoder<'_>, forcecore: bool) -> Result<TypeId> {
         let mut te = TypeEntry::new(1, -1, Metatype::EnumInt, TypeKind::Enum(Box::default()));
         te.flags |= TypeFlags::ENUMTYPE;
         decode_basic(&mut te, dec)?;
@@ -498,7 +492,7 @@ impl TypeFactory {
                 if attr == ATTRIB_VALUE {
                     val = (dec.read_signed()? as u64) & mask;
                 } else if attr == ATTRIB_NAME {
-                    nm = dec.read_string()?.to_owned();
+                    dec.read_string()?.clone_into(&mut nm);
                 }
             }
             if nm.is_empty() {
@@ -507,12 +501,10 @@ impl TypeFactory {
                     te.name
                 )));
             }
-            if values.values.contains_key(&val) {
-                if warning.is_empty() {
-                    warning = format!("Enum \"{}\": Some values do not have unique names", te.name);
-                }
-            } else {
-                values.values.insert(val, nm.into());
+            if let std::collections::btree_map::Entry::Vacant(e) = values.values.entry(val) {
+                e.insert(nm.into());
+            } else if warning.is_empty() {
+                warning = format!("Enum \"{}\": Some values do not have unique names", te.name);
             }
             dec.close_element(child)?;
         }
@@ -528,7 +520,7 @@ impl TypeFactory {
     }
 
     /// Ghidra `decodeStruct`.
-    fn decode_struct<'a>(&mut self, dec: &mut dyn Decoder<'a>, forcecore: bool) -> Result<TypeId> {
+    fn decode_struct(&mut self, dec: &mut dyn Decoder<'_>, forcecore: bool) -> Result<TypeId> {
         let mut ts = TypeEntry::new(
             0,
             -1,
@@ -578,10 +570,10 @@ impl TypeFactory {
     }
 
     /// Ghidra `TypeStruct::decodeFields`.
-    fn decode_struct_fields<'a>(
+    fn decode_struct_fields(
         &mut self,
         ts: &mut TypeEntry,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
     ) -> Result<String> {
         let mut acc = FieldAccum {
             last_off: -1,
@@ -610,10 +602,10 @@ impl TypeFactory {
         if !bits.is_empty() || acc.has_bitfields {
             ts.flags |= TypeFlags::HAS_BITFIELDS;
         }
-        if let [only] = fields.as_slice() {
-            if self.entry(only.ty).size == ts.size {
-                ts.flags |= TypeFlags::NEEDS_RESOLUTION;
-            }
+        if let [only] = fields.as_slice()
+            && self.entry(only.ty).size == ts.size
+        {
+            ts.flags |= TypeFlags::NEEDS_RESOLUTION;
         }
         if ts.alignment < 1 {
             ts.alignment = acc.calc_align;
@@ -627,12 +619,12 @@ impl TypeFactory {
     }
 
     /// Ghidra's `TypeField(decoder, typegrp)` constructor.
-    fn read_field<'a>(&mut self, dec: &mut dyn Decoder<'a>) -> Result<Field> {
+    fn read_field(&mut self, dec: &mut dyn Decoder<'_>) -> Result<Field> {
         let elem = dec.open_element_expecting(ELEM_FIELD)?;
         let (mut ident, mut offset, mut name) = (-1i64, -1i64, String::new());
         while let Some(attr) = dec.next_attribute()? {
             if attr == ATTRIB_NAME {
-                name = dec.read_string()?.to_owned();
+                dec.read_string()?.clone_into(&mut name);
             } else if attr == ATTRIB_OFFSET {
                 offset = dec.read_signed()?;
             } else if attr == ATTRIB_ID {
@@ -660,10 +652,10 @@ impl TypeFactory {
         })
     }
 
-    fn decode_field<'a>(
+    fn decode_field(
         &mut self,
         ts: &TypeEntry,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         acc: &mut FieldAccum,
         fields: &mut Vec<Field>,
     ) -> Result<()> {
@@ -709,10 +701,10 @@ impl TypeFactory {
         Ok(())
     }
 
-    fn decode_bitfield<'a>(
+    fn decode_bitfield(
         &mut self,
         ts: &TypeEntry,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         acc: &mut FieldAccum,
         fields: &mut Vec<Field>,
         bits: &mut Vec<BitField>,
@@ -723,7 +715,7 @@ impl TypeFactory {
         let (mut byte_offset, mut num_bits, mut lsb) = (-1i64, -1i64, -1i64);
         while let Some(attr) = dec.next_attribute()? {
             if attr == ATTRIB_NAME {
-                name = dec.read_string()?.to_owned();
+                dec.read_string()?.clone_into(&mut name);
             } else if attr == ATTRIB_ID {
                 ident = dec.read_signed()?;
             } else if attr == ATTRIB_OFFSET {
@@ -831,7 +823,7 @@ impl TypeFactory {
     }
 
     /// Ghidra `decodeUnion` with `TypeUnion::decodeFields`.
-    fn decode_union<'a>(&mut self, dec: &mut dyn Decoder<'a>, forcecore: bool) -> Result<TypeId> {
+    fn decode_union(&mut self, dec: &mut dyn Decoder<'_>, forcecore: bool) -> Result<TypeId> {
         let mut tu = TypeEntry::new(
             0,
             -1,
@@ -899,9 +891,13 @@ impl TypeFactory {
     }
 
     /// Ghidra `decodeCode`.
-    fn decode_code<'a>(
+    #[expect(
+        clippy::fn_params_excessive_bools,
+        reason = "Ghidra's decodeCode(decoder, isConstructor, isDestructor, forcecore)"
+    )]
+    fn decode_code(
         &mut self,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         ctor: bool,
         dtor: bool,
         forcecore: bool,
@@ -961,9 +957,9 @@ impl TypeFactory {
 
     /// Ghidra `decodeTypeWithCodeFlags`: a pointer to a function type with
     /// constructor/destructor flags.
-    pub fn decode_type_with_code_flags<'a>(
+    pub fn decode_type_with_code_flags(
         &mut self,
-        dec: &mut dyn Decoder<'a>,
+        dec: &mut dyn Decoder<'_>,
         ctor: bool,
         dtor: bool,
     ) -> Result<TypeId> {
@@ -994,7 +990,7 @@ impl TypeFactory {
     }
 
     /// Ghidra `TypeFactory::decode`: every definition in a `<typegrp>`.
-    pub fn decode<'a>(&mut self, dec: &mut dyn Decoder<'a>) -> Result<()> {
+    pub fn decode(&mut self, dec: &mut dyn Decoder<'_>) -> Result<()> {
         let elem = dec.open_element_expecting(ELEM_TYPEGRP)?;
         while dec.peek_element().is_some() {
             self.decode_type_no_ref(dec, false)?;
@@ -1005,7 +1001,7 @@ impl TypeFactory {
 
     /// Ghidra `decodeCoreTypes`: clears the factory, reads `<coretypes>`
     /// and caches them.
-    pub fn decode_core_types<'a>(&mut self, dec: &mut dyn Decoder<'a>) -> Result<()> {
+    pub fn decode_core_types(&mut self, dec: &mut dyn Decoder<'_>) -> Result<()> {
         self.clear();
         let elem = dec.open_element_expecting(ELEM_CORETYPES)?;
         while dec.peek_element().is_some() {

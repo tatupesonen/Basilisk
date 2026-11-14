@@ -16,9 +16,9 @@ use crate::meta::Metatype;
 /// `TypeEnum::Representation`).
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Representation {
-    /// Names ORed together; empty when no representation exists.
+    /// Names `ORed` together; empty when no representation exists.
     pub names: Vec<String>,
-    /// Whether the ORed value is complemented.
+    /// Whether the `ORed` value is complemented.
     pub complement: bool,
     /// Left shift applied to the final value (partial enumerations).
     pub shift: i32,
@@ -109,7 +109,7 @@ impl TypeFactory {
             return Err(TypeError::new("Not an enumeration"));
         }
         self.modify(id, |e| {
-            e.kind = TypeKind::Enum(Box::new(EnumValues { values }))
+            e.kind = TypeKind::Enum(Box::new(EnumValues { values }));
         })
     }
 

@@ -84,6 +84,10 @@ fn count_order(a: usize, b: usize) -> i32 {
 }
 
 /// Ghidra `compareDependency`: negative when `a` sorts first.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "the two types and their parts, side by side"
+)]
 pub fn compare_dependency(a: &TypeEntry, b: &TypeEntry) -> i32 {
     if a.submeta != b.submeta {
         return cmp3(&a.submeta, &b.submeta);

@@ -105,17 +105,16 @@ impl TypeFactory {
                         continue;
                     }
                     if is_char {
-                        if size < 5 {
-                            if let Some(slot) = self.cache.chars.get_mut(sz) {
-                                *slot = Some(id);
-                            }
+                        if size < 5
+                            && let Some(slot) = self.cache.chars.get_mut(sz)
+                        {
+                            *slot = Some(id);
                         }
-                        if is_ascii {
-                            if let Some(slot) =
+                        if is_ascii
+                            && let Some(slot) =
                                 col.and_then(|c| self.cache.table.get_mut(sz)?.get_mut(c))
-                            {
-                                *slot = Some(id);
-                            }
+                        {
+                            *slot = Some(id);
                         }
                         continue;
                     }
@@ -128,12 +127,11 @@ impl TypeFactory {
                 | Metatype::Float => fill_first = true,
                 _ => {}
             }
-            if fill_first {
-                if let Some(slot) = col.and_then(|c| self.cache.table.get_mut(sz)?.get_mut(c)) {
-                    if slot.is_none() {
-                        *slot = Some(id);
-                    }
-                }
+            if fill_first
+                && let Some(slot) = col.and_then(|c| self.cache.table.get_mut(sz)?.get_mut(c))
+                && slot.is_none()
+            {
+                *slot = Some(id);
             }
         }
     }
@@ -197,10 +195,11 @@ impl TypeFactory {
     /// Ghidra `getBaseNoChar`: like [`base`](Self::base) but a 1-byte
     /// signed integer is never `char`.
     pub fn base_no_char(&mut self, size: i32, meta: Metatype) -> Result<TypeId> {
-        if size == 1 && meta == Metatype::Int {
-            if let Some(id) = self.cache.nochar {
-                return Ok(id);
-            }
+        if size == 1
+            && meta == Metatype::Int
+            && let Some(id) = self.cache.nochar
+        {
+            return Ok(id);
         }
         self.base(size, meta)
     }
@@ -209,20 +208,20 @@ impl TypeFactory {
     /// metatype; above `max_basetype_size`, an array of 1-byte unknowns.
     pub fn base(&mut self, size: i32, meta: Metatype) -> Result<TypeId> {
         if (0..9).contains(&size) {
-            if meta >= Metatype::Float {
-                if let Some(id) = self.cached(size, meta) {
-                    return Ok(id);
-                }
+            if meta >= Metatype::Float
+                && let Some(id) = self.cached(size, meta)
+            {
+                return Ok(id);
             }
         } else if meta == Metatype::Float {
             if size == 10 {
                 if let Some(id) = self.cache.float10 {
                     return Ok(id);
                 }
-            } else if size == 16 {
-                if let Some(id) = self.cache.float16 {
-                    return Ok(id);
-                }
+            } else if size == 16
+                && let Some(id) = self.cache.float16
+            {
+                return Ok(id);
             }
         }
         if size > self.env.max_basetype_size {

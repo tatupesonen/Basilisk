@@ -46,10 +46,10 @@ impl TypeFactory {
                 stack.pop();
                 continue;
             };
-            if let Some(dep) = dep {
-                if mark.insert(dep) {
-                    stack.push((dep, 0));
-                }
+            if let Some(dep) = dep
+                && mark.insert(dep)
+            {
+                stack.push((dep, 0));
             }
         }
     }

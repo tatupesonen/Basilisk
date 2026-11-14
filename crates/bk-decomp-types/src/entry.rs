@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn hash_name_known_values() {
-        assert_eq!(hash_name(""), 123 | 0xC000_0000_0000_0000);
+        assert_eq!(hash_name(""), 0x7b | 0xC000_0000_0000_0000);
         // Sign extension of bytes >= 0x80 changes the result.
         let ascii = hash_name("a");
         assert_ne!(hash_name("\u{e9}"), ascii);
@@ -576,10 +576,6 @@ mod tests {
 
     #[test]
     fn entry_size_is_bounded() {
-        assert!(
-            std::mem::size_of::<TypeEntry>() <= 128,
-            "{}",
-            std::mem::size_of::<TypeEntry>()
-        );
+        assert!(size_of::<TypeEntry>() <= 128, "{}", size_of::<TypeEntry>());
     }
 }

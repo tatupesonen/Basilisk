@@ -23,7 +23,7 @@ pub trait PrototypeCodec: Send + Sync {
     /// Writes the `<prototype>` element for a signature.
     fn encode(&self, f: &TypeFactory, enc: &mut dyn Encoder, sig: &CodeSignature) -> Result<()>;
     /// Reads a `<prototype>` element into a signature.
-    fn decode<'a>(&self, f: &mut TypeFactory, dec: &mut dyn Decoder<'a>) -> Result<CodeSignature>;
+    fn decode(&self, f: &mut TypeFactory, dec: &mut dyn Decoder<'_>) -> Result<CodeSignature>;
 }
 
 /// The codec used when none is installed: it keeps the signature and drops
@@ -49,13 +49,12 @@ impl PrototypeCodec for SignatureCodec {
             enc.write_bool(ATTRIB_DESTRUCTOR, true);
         }
         enc.open_element(ELEM_RETURNSYM);
-        f.encode_address(enc, None)?;
-        match sig.output {
-            Some(o) => f.encode_ref(enc, o)?,
-            None => {
-                enc.open_element(bk_marshal::ids::ELEM_VOID);
-                enc.close_element(bk_marshal::ids::ELEM_VOID);
-            }
+        f.encode_address(enc, None);
+        if let Some(o) = sig.output {
+            f.encode_ref(enc, o)?;
+        } else {
+            enc.open_element(bk_marshal::ids::ELEM_VOID);
+            enc.close_element(bk_marshal::ids::ELEM_VOID);
         }
         enc.close_element(ELEM_RETURNSYM);
         enc.open_element(ELEM_INTERNALLIST);
@@ -67,7 +66,7 @@ impl PrototypeCodec for SignatureCodec {
             if !name.is_empty() {
                 enc.write_string(ATTRIB_NAME, name)?;
             }
-            f.encode_address(enc, None)?;
+            f.encode_address(enc, None);
             f.encode_ref(enc, *ty)?;
             enc.close_element(ELEM_PARAM);
         }
@@ -76,7 +75,7 @@ impl PrototypeCodec for SignatureCodec {
         Ok(())
     }
 
-    fn decode<'a>(&self, f: &mut TypeFactory, dec: &mut dyn Decoder<'a>) -> Result<CodeSignature> {
+    fn decode(&self, f: &mut TypeFactory, dec: &mut dyn Decoder<'_>) -> Result<CodeSignature> {
         let elem = dec.open_element_expecting(ELEM_PROTOTYPE)?;
         let mut sig = CodeSignature {
             first_vararg: -1,
@@ -134,7 +133,7 @@ impl PrototypeCodec for SignatureCodec {
                 let mut hidden = false;
                 while let Some(attr) = dec.next_attribute()? {
                     if attr == ATTRIB_NAME {
-                        name = dec.read_string()?.to_owned();
+                        dec.read_string()?.clone_into(&mut name);
                     } else if attr == ATTRIB_HIDDENRETPARM {
                         hidden = dec.read_bool()?;
                     }
@@ -170,10 +169,7 @@ impl TypeFactory {
 
     /// Reads a signature through the installed codec (or
     /// [`SignatureCodec`]).
-    pub(crate) fn decode_signature<'a>(
-        &mut self,
-        dec: &mut dyn Decoder<'a>,
-    ) -> Result<CodeSignature> {
+    pub(crate) fn decode_signature(&mut self, dec: &mut dyn Decoder<'_>) -> Result<CodeSignature> {
         match self.hooks.prototypes.clone() {
             Some(codec) => codec.decode(self, dec),
             None => SignatureCodec.decode(self, dec),

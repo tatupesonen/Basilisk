@@ -260,9 +260,10 @@ fn assign_contiguous_bitfields(
         }
     }
     *offset = offset.saturating_add(total_bytes);
-    if big && *pos - start > 1 {
-        if let Some(run) = bitlist.get_mut(start..*pos) {
-            run.reverse();
-        }
+    if big
+        && *pos - start > 1
+        && let Some(run) = bitlist.get_mut(start..*pos)
+    {
+        run.reverse();
     }
 }

@@ -84,21 +84,22 @@ impl TypeFactory {
         let size = e.size;
         let target = self.entry(p.ptrto);
         let ptrto_size = i64::from(target.align_size);
-        if res.offset < 0 || res.offset >= ptrto_size {
-            if ptrto_size != 0 && !target.is_variable_length() {
-                if !wrap {
-                    return Ok(res);
-                }
-                let bit = (size.saturating_mul(8) - 1).clamp(0, 63) as u32;
-                let mut sign_off = sign_extend_bit(res.offset, bit) % ptrto_size;
-                if sign_off < 0 {
-                    sign_off += ptrto_size;
-                }
-                res.offset = sign_off;
-                if res.offset == 0 {
-                    res.pointer = Some(ptr);
-                    return Ok(res);
-                }
+        if (res.offset < 0 || res.offset >= ptrto_size)
+            && ptrto_size != 0
+            && !target.is_variable_length()
+        {
+            if !wrap {
+                return Ok(res);
+            }
+            let bit = (size.saturating_mul(8) - 1).clamp(0, 63) as u32;
+            let mut sign_off = sign_extend_bit(res.offset, bit) % ptrto_size;
+            if sign_off < 0 {
+                sign_off += ptrto_size;
+            }
+            res.offset = sign_off;
+            if res.offset == 0 {
+                res.pointer = Some(ptr);
+                return Ok(res);
             }
         }
         if target.is_enum() {
@@ -170,22 +171,19 @@ impl TypeFactory {
                     return false;
                 }
                 let (sub, newoff) = self.sub_type(id, off);
-                match sub {
-                    Some(sub) => {
-                        if newoff != 0 {
-                            return false;
-                        }
-                        if (extra < 0 || extra >= i64::from(self.entry(sub).size))
-                            && !self.test_for_array_slack(sub, extra)
-                        {
-                            return false;
-                        }
-                        true
+                if let Some(sub) = sub {
+                    if newoff != 0 {
+                        return false;
                     }
-                    None => {
-                        let extra = extra + newoff;
-                        !((extra < 0 || extra >= i64::from(e.size)) && e.size != 0)
+                    if (extra < 0 || extra >= i64::from(self.entry(sub).size))
+                        && !self.test_for_array_slack(sub, extra)
+                    {
+                        return false;
                     }
+                    true
+                } else {
+                    let extra = extra + newoff;
+                    !((extra < 0 || extra >= i64::from(e.size)) && e.size != 0)
                 }
             }
             TypeKind::Code(_) => extra >= 0,
@@ -210,7 +208,8 @@ impl TypeFactory {
         if target.metatype == Metatype::Struct && byte_off < target.size.max(0) as u64 {
             return false;
         }
-        byte_off = byte_off.wrapping_add(*offset as i64 as u64) & calc_mask(e.size.max(0) as u32);
+        byte_off =
+            byte_off.wrapping_add(i64::from(*offset) as u64) & calc_mask(e.size.max(0) as u32);
         byte_off < self.entry(*parent).size.max(0) as u64
     }
 

@@ -295,10 +295,10 @@ impl TypeFactory {
                 ..
             } => {
                 let res = self.depend(*container, index)?;
-                Some(if self.entry(res).size != e.size {
-                    *stripped
-                } else {
+                Some(if self.entry(res).size == e.size {
                     res
+                } else {
+                    *stripped
                 })
             }
             _ => None,
