@@ -207,3 +207,39 @@ pub(crate) fn desc(t: &TestTypes, h: TypeHandle) -> String {
 pub(crate) fn b(v: bool) -> &'static str {
     if v { "1" } else { "0" }
 }
+
+/// The architecture of one pair, rebuilt from the table and the pair's
+/// `.cspec` in the spec root: spec, manager and a type model with the
+/// file's C sizes (`integer_size`, `long_size`, `long_long_size`,
+/// `long_double_size`, defaults as Java's `DataOrganizationImpl`).
+pub(crate) fn arch(
+    ghidra: &bk_testkit::GhidraDir,
+    pair_id: &str,
+) -> (bk_cspec::CompilerSpec, SpaceManager, TestTypes) {
+    let text = table();
+    let (pairs, _) = pairs(&text);
+    let pair = pairs.iter().find(|p| p.id == pair_id).unwrap();
+    let files = cspec_files(&ghidra.processors_dir());
+    let cspec = std::fs::read_to_string(&files[&pair.cspec]).unwrap();
+    let mut m = manager(pair);
+    let spec = bk_cspec::CompilerSpec::read(&cspec, &mut m, bk_cspec::ReadOptions::default()).unwrap();
+    let mut t = types(pair);
+    let size = |tag: &str, default: i32| {
+        cspec
+            .split(&format!("<{tag} value=\""))
+            .nth(1)
+            .and_then(|r| r.split('"').next())
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(default)
+    };
+    let c = CSizes {
+        int: size("integer_size", 4),
+        long: size("long_size", 4),
+        long_long: size("long_long_size", 8),
+        long_double: size("long_double_size", 8),
+        pointer: t.c_sizes.pointer,
+    };
+    let map = t.align_map.clone();
+    t = TestTypes::new(map, c);
+    (spec, m, t)
+}
