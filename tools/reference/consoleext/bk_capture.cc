@@ -8,7 +8,9 @@
  * finished decompilation is an error.
  *
  * Files, for structuring run k = 0, 1, …:
- *   <prefix>.<k>.blocks.bkg       bk dump blocks at a blockstructure start whose structure is empty
+ *   <prefix>.<k>.blocks.bkg       the basic blocks at a blockstructure start whose structure is
+ *                                 empty, with the switch defaults installed as the action does
+ *                                 next (Funcdata::installSwitchDefaults)
  *   <prefix>.<k>.structure.bks    bk dump structure at the next action's start
  *   <prefix>.final.structure.bks, <prefix>.final.state   at the start of the action after finalstructure
  *   <prefix>.end.structure.bks, <prefix>.end.state       when the decompilation is complete
@@ -86,6 +88,10 @@ public:
           if (entries[structure[i]].action->getStatus() == Action::status_breakstarthit &&
               fd->getStructure().getSize() == 0) {
             pending = runs++;
+            // ActionBlockStructure installs the switch defaults before it
+            // copies the blocks (blockaction.cc); doing it here, when the
+            // action is about to do it, gives the graph the structurer gets.
+            fd->installSwitchDefaults();
             writeBlocks(fd, prefix + "." + num(pending) + ".blocks.bkg");
           }
         for (size_t i = 0; i < after.size(); ++i)

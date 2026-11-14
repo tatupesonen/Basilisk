@@ -345,6 +345,10 @@ pub(crate) fn unescape(text: &str) -> Option<String> {
     let mut out = String::with_capacity(text.len());
     let mut chars = text.chars();
     while let Some(c) = chars.next() {
+        if c == '\0' || c == '\r' {
+            // Written escaped, so a raw one is not in the field's one spelling.
+            return None;
+        }
         if c != '\\' {
             out.push(c);
             continue;
@@ -458,6 +462,8 @@ mod tests {
         assert_eq!(unescape(&escape(text)).as_deref(), Some(text));
         assert_eq!(unescape("bad\\q"), None);
         assert_eq!(unescape("bad\\"), None);
+        assert_eq!(unescape("raw\0nul"), None);
+        assert_eq!(unescape("raw\rcr"), None);
     }
 
     #[test]

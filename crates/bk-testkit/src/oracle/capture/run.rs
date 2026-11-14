@@ -17,8 +17,8 @@ use crate::tools::{Decomp, DecompTranscript};
 use super::CaptureError;
 use super::checks::{check_completeness, without_pointers};
 use super::scripts::{
-    CorpusScript, Positions, dumps_script, mark, plain_script, replay_script, structure_script,
-    trace_script,
+    CorpusScript, Positions, arg, dumps_script, mark, plain_script, replay_script,
+    structure_script, trace_script,
 };
 
 /// How long one console run may take.
@@ -306,6 +306,43 @@ fn capture_script(
             runs += 1;
         }
         f.structuring_runs = runs;
+    }
+    // Each run's blocks, structured `asgiven` with their real facts, give
+    // the hierarchy the pipeline built (the property D04's corpus replay
+    // rests on; decomp-cfg.md 6.3 item 2).
+    let mut replay = vec![script.load.clone()];
+    for (k, f) in summary.functions.iter().enumerate() {
+        for run in 0..f.structuring_runs {
+            replay.push(format!(
+                "bk structure {} {} asgiven",
+                arg(&file(k, &format!("{run}.blocks.bkg")))?,
+                arg(&file(k, &format!("{run}.asgiven.bks")))?
+            ));
+        }
+    }
+    if replay.len() > 1 {
+        console(reference, ReferenceDir::decomp_bk, &script.dir).run_script(replay)?;
+    }
+    for (k, f) in summary.functions.iter_mut().enumerate() {
+        for run in 0..f.structuring_runs {
+            let (a, s) = (
+                file(k, &format!("{run}.asgiven.bks")),
+                file(k, &format!("{run}.structure.bks")),
+            );
+            let replayed = StructureDump::parse(&read_text(&a).map_err(io(&a))?);
+            let actual = StructureDump::parse(&read_text(&s).map_err(io(&s))?);
+            let same = match (replayed, actual) {
+                (Ok(StructureDump::Ok(r)), Ok(StructureDump::Ok(p))) => {
+                    r.nodes == p.nodes && r.top == p.top
+                }
+                _ => false,
+            };
+            if !same {
+                f.error.get_or_insert_with(|| {
+                    format!("structuring run {run}: asgiven replay of its blocks differs from the pipeline's structure")
+                });
+            }
+        }
     }
 
     // decomp_dbg prints what decomp prints (R8), host pointers aside.

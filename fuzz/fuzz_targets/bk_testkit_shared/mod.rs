@@ -12,7 +12,13 @@ pub fn text(data: &[u8], sample: &str) -> Option<String> {
         Some((0, rest)) => std::str::from_utf8(rest).ok().map(str::to_owned),
         Some((_, ops)) => {
             let mut bytes = sample.as_bytes().to_vec();
+            // Edits may grow the text, but never without bound (a line
+            // duplicated again and again would double each time).
+            let limit = sample.len() * 2 + 4096;
             for op in ops.chunks_exact(4) {
+                if bytes.len() > limit {
+                    break;
+                }
                 let len = bytes.len().max(1);
                 let pos = (usize::from(op[1]) << 8 | usize::from(op[2])) * 37 % len;
                 match op[0] % 6 {
@@ -29,8 +35,14 @@ pub fn text(data: &[u8], sample: &str) -> Option<String> {
                     3 => bytes.truncate(pos),
                     4 => {
                         // Duplicate the line at pos.
-                        let start = bytes[..pos.min(bytes.len())].iter().rposition(|&b| b == b'\n').map_or(0, |p| p + 1);
-                        let end = bytes[start..].iter().position(|&b| b == b'\n').map_or(bytes.len(), |p| start + p + 1);
+                        let start = bytes[..pos.min(bytes.len())]
+                            .iter()
+                            .rposition(|&b| b == b'\n')
+                            .map_or(0, |p| p + 1);
+                        let end = bytes[start..]
+                            .iter()
+                            .position(|&b| b == b'\n')
+                            .map_or(bytes.len(), |p| start + p + 1);
                         let line = bytes[start..end].to_vec();
                         bytes.splice(end..end, line);
                     }
