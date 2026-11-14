@@ -6,7 +6,7 @@
 /// The text to parse: `data[1..]` when `data[0] == 0`, else `sample` edited
 /// by the operations `data` encodes (each four bytes: kind, position high,
 /// position low, argument).
-pub fn text(data: &[u8], sample: &str) -> Option<String> {
+pub(crate) fn text(data: &[u8], sample: &str) -> Option<String> {
     match data.split_first() {
         None => Some(String::new()),
         Some((0, rest)) => std::str::from_utf8(rest).ok().map(str::to_owned),
@@ -15,7 +15,7 @@ pub fn text(data: &[u8], sample: &str) -> Option<String> {
             // Edits may grow the text, but never without bound (a line
             // duplicated again and again would double each time).
             let limit = sample.len() * 2 + 4096;
-            for op in ops.chunks_exact(4) {
+            for op in ops.as_chunks::<4>().0 {
                 if bytes.len() > limit {
                     break;
                 }
