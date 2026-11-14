@@ -31,7 +31,13 @@ struct ActionEntry {
 /// Walk the current root in print order.
 void collectActions(Action *root, std::vector<ActionEntry> &out);
 
+/// A state dump of the function (bk_state.cc).
+void writeStateDump(std::ostream &o, Funcdata *fd, IfaceStatus *status);
+/// A structure dump of the function's sblocks (bk_cfg.cc).
+void writeStructureDump(std::ostream &o, Funcdata *fd);
+
 void registerCapabilityCommands(IfaceStatus *status);
+void registerCaptureCommands(IfaceStatus *status);
 void registerCfgCommands(IfaceStatus *status);
 void registerStateCommands(IfaceStatus *status);
 void registerPcodeCommands(IfaceStatus *status);

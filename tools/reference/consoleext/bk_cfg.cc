@@ -417,6 +417,17 @@ public:
   }
 };
 
+void writeStructureDump(std::ostream &o, Funcdata *fd)
+{
+  PositionMap pos;
+  buildPositions(fd->getBasicBlocks(), pos);
+  NodeNames names;
+  names.build(fd->getStructure(), copiedPosition, &pos);
+  writeHeader(o, "bkstruct", "");
+  writeStructureNodes(o, fd->getStructure(), names);
+  o << "T\n";
+}
+
 /// `bk dump structure <file>`
 class BkDumpStructure : public BkCommand {
 public:
@@ -424,15 +435,8 @@ public:
     Funcdata *fd = requireFunction();
     std::string file = nextWord(s);
     if (file.empty()) throw IfaceParseError("Missing output file");
-    PositionMap pos;
-    buildPositions(fd->getBasicBlocks(), pos);
-    NodeNames names;
-    names.build(fd->getStructure(), copiedPosition, &pos);
     AtomicFile out(file);
-    std::ostream &o(out.stream());
-    writeHeader(o, "bkstruct", "");
-    writeStructureNodes(o, fd->getStructure(), names);
-    o << "T\n";
+    writeStructureDump(out.stream(), fd);
     out.commit();
   }
 };

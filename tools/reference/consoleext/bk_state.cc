@@ -246,6 +246,28 @@ static void writeBlocks(StateDump &d)
   d.w.end();
 }
 
+void writeStateDump(std::ostream &o, Funcdata *fd, IfaceStatus *status)
+{
+  StateDump d(fd, status, o);
+  d.w.line(record({"BKSTATE", "1", BK_GHIDRA_COMMIT, escape(d.glb->archid)}));
+  writeFunction(d);
+  writeActions(d);
+  writeSpaces(d);
+  writeVarnodes(d);
+  writeOps(d);
+  writeBlocks(d);
+  writeProtoSection(d);
+  writeCallSpecSection(d);
+  writeJumpTableSection(d);
+  preRegisterHighSymbols(d);
+  writeScopeSection(d);
+  writeHeritageSection(d);
+  writeHighSection(d);
+  writeTypeSection(d);
+  writeCSection(d);
+  d.w.finish();
+}
+
 /// `bk dump state <file>`
 class BkDumpState : public BkCommand {
 public:
@@ -254,24 +276,7 @@ public:
     std::string file = nextWord(s);
     if (file.empty()) throw IfaceParseError("Missing output file");
     AtomicFile out(file);
-    StateDump d(fd, status, out.stream());
-    d.w.line(record({"BKSTATE", "1", BK_GHIDRA_COMMIT, escape(d.glb->archid)}));
-    writeFunction(d);
-    writeActions(d);
-    writeSpaces(d);
-    writeVarnodes(d);
-    writeOps(d);
-    writeBlocks(d);
-    writeProtoSection(d);
-    writeCallSpecSection(d);
-    writeJumpTableSection(d);
-    preRegisterHighSymbols(d);
-    writeScopeSection(d);
-    writeHeritageSection(d);
-    writeHighSection(d);
-    writeTypeSection(d);
-    writeCSection(d);
-    d.w.finish();
+    writeStateDump(out.stream(), fd, status);
     out.commit();
   }
 };

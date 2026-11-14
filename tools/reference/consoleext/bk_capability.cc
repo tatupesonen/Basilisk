@@ -152,6 +152,7 @@ public:
     registerCfgCommands(status);
     registerStateCommands(status);
     registerPcodeCommands(status);
+    registerCaptureCommands(status);
   }
 };
 
