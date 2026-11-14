@@ -190,7 +190,7 @@ Checks:
 - Windows: `cargo clippy -p bk-ui --all-targets --all-features --target
   x86_64-pc-windows-msvc -- -D warnings` clean (cross-check only; tests not
   run on Windows or Linux — those rest on CI).
-- Gate: GATE_RESULT
+- Gate: `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` printed `0`; last line of `gate.log`: `tests: 1823 passed, 0 failed`.
 
 ## Follow-ups
 
