@@ -152,6 +152,11 @@ pub enum VarnodeOffset {
     Op(SeqNum),
     /// An `fspec`-space varnode: the call spec it holds (`call:c<k>`).
     Call(CallRef),
+    /// An `fspec`-space varnode whose call spec is no longer in
+    /// `Funcdata::qlst` (`call:-`): Ghidra deleted it (`deleteCallSpecs`)
+    /// and the varnode keeps the dangling pointer. Its sort key is the
+    /// largest offset.
+    DeadCall,
     /// A `LOAD`/`STORE` space constant (`space:<name>`).
     Space(String),
 }
@@ -163,6 +168,9 @@ impl Codec for VarnodeOffset {
             return SeqNum::parse(rest).map(Self::Op);
         }
         if let Some(rest) = text.strip_prefix("call:") {
+            if rest == "-" {
+                return Some(Self::DeadCall);
+            }
             return CallRef::parse(rest).map(Self::Call);
         }
         if let Some(rest) = text.strip_prefix("space:") {
@@ -182,6 +190,7 @@ impl Codec for VarnodeOffset {
                 out.push_str("call:");
                 push_display(out, c);
             }
+            Self::DeadCall => out.push_str("call:-"),
             Self::Space(name) => {
                 out.push_str("space:");
                 out.push_str(name);

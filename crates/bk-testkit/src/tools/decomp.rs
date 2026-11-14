@@ -22,6 +22,7 @@ pub struct Decomp {
     program: PathBuf,
     sleigh_home: PathBuf,
     timeout: Duration,
+    cwd: Option<PathBuf>,
 }
 
 impl Decomp {
@@ -33,6 +34,7 @@ impl Decomp {
             program,
             sleigh_home,
             timeout: Self::DEFAULT_TIMEOUT,
+            cwd: None,
         }
     }
 
@@ -40,6 +42,15 @@ impl Decomp {
     #[must_use]
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    /// Run the console in `dir`, so that relative paths in commands (`load
+    /// test file elseif.xml`) resolve there and the console's echo of them
+    /// does not depend on where the corpus is (decomp-oracle.md 4.11).
+    #[must_use]
+    pub fn current_dir(mut self, dir: impl Into<PathBuf>) -> Self {
+        self.cwd = Some(dir.into());
         self
     }
 
@@ -82,6 +93,7 @@ impl Decomp {
             .envs
             .push(("SLEIGHHOME", self.sleigh_home.clone().into_os_string()));
         invocation.envs.push(("LC_ALL", "C".into()));
+        invocation.cwd.clone_from(&self.cwd);
         let output = invocation.run()?.require_success(tool)?;
         Ok(DecompTranscript::parse(output))
     }

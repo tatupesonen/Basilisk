@@ -16,9 +16,11 @@
 //! | [`pcoderec`] | `pcoderec 1` | `bk pcode record` |
 
 pub mod actions;
+pub mod capture;
 pub mod cfgdump;
 pub mod generate;
 pub mod graph;
+pub mod host;
 pub mod pcoderec;
 pub mod state;
 pub mod structure;

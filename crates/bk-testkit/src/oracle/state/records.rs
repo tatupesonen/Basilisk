@@ -29,7 +29,7 @@ record! {
         /// `cast_phase_index`.
         cast_phase_index: u32 = Hex<u32>,
         /// `minLanedSize`.
-        min_laned_size: i32 = Dec<i32>,
+        min_laned_size: u32 = Dec<u32>,
     }
 }
 

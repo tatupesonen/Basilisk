@@ -157,7 +157,10 @@ void writeTypeSection(StateDump &d)
 void writeCSection(StateDump &d)
 {
   d.w.begin("c");
-  if (d.fd->isProcComplete()) {
+  // processing_complete survives Funcdata::clear (funcdata.cc), so it is
+  // stale while a function is decompiled a second time; the root action
+  // standing mid-way tells such a stop apart from a finished function.
+  if (d.fd->isProcComplete() && d.glb->allacts.getCurrent()->getStatus() != Action::status_mid) {
     std::ostringstream c;
     d.glb->print->setOutputStream(&c);
     d.glb->print->docFunction(d.fd);

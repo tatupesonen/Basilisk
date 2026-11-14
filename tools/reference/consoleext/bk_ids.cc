@@ -90,6 +90,9 @@ std::string DumpIds::offsetText(const Varnode *v) const
 
 std::string DumpIds::call(const FuncCallSpecs *fc) const
 {
+  // A call spec that is not in qlst any more: an fspec varnode left behind
+  // by blockRemoveInternal / deleteCallSpecs holds a pointer to a deleted
+  // FuncCallSpecs; it is never dereferenced here.
   std::map<const FuncCallSpecs *, int4>::const_iterator it = callIndex.find(fc);
   return (it == callIndex.end()) ? std::string("-") : "c" + num(it->second);
 }
