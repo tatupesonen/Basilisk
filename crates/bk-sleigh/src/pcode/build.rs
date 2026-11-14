@@ -308,7 +308,6 @@ where
 
     /// Ghidra `SleighBuilder::dump`: one op with the loads and stores its
     /// dynamic operands need.
-    #[inline(never)]
     fn dump(&mut self, tpl: TemplateRef<'_>, op: &OpTpl, w: &Walk<'_>) -> Result<(), LiftError> {
         let inputs = tpl.inputs(op);
         if O::WATCHES {
