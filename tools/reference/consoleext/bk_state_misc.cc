@@ -33,12 +33,97 @@ static std::string symbolId(const Symbol *sym)
   return s.str();
 }
 
+/// Comma-joined items (an empty category slot is `null`).
+static std::string joinSlots(const std::vector<std::string> &items)
+{
+  std::string out;
+  for (size_t i = 0; i < items.size(); ++i) out += (i ? "," : "") + items[i];
+  return out;
+}
+
 static bool byId(const Symbol *a, const Symbol *b) { return a->getId() < b->getId(); }
 
 void preRegisterHighSymbols(StateDump &d)
 {
   std::vector<const HighVariable *> highs = d.ids.highs();
   for (size_t i = 0; i < highs.size(); ++i) d.ids.symbol(highs[i]->symbol);
+}
+
+/// `s<symbol id>:<index in the symbol's mapentry>` for every entry of the
+/// scope's symbols. The index is the entry's real position, not
+/// Symbol::getMapEntryPosition (which gives 0 for every piece,
+/// database.cc:395).
+typedef std::map<const SymbolEntry *, std::string> EntryRefs;
+
+static void buildEntryRefs(ScopeLocal *scope, EntryRefs &refs)
+{
+  for (SymbolNameTree::const_iterator it = scope->nametree.begin(); it != scope->nametree.end(); ++it) {
+    const Symbol *sym = *it;
+    for (size_t k = 0; k < sym->mapentry.size(); ++k)
+      refs[sym->mapentry[k]] = symbolId(sym) + ":" + num((intb)k);
+  }
+}
+
+static std::string entryRef(const EntryRefs &refs, const SymbolEntry *e)
+{
+  EntryRefs::const_iterator it = refs.find(e);
+  return (it == refs.end()) ? std::string("?") : it->second;
+}
+
+/// The version-2 records of @scope (bkstate 2): what a reader needs, beyond
+/// the symbols and entries, to rebuild the ScopeInternal exactly — its ids,
+/// child scopes, category slots (empty ones included), the multi-entry set,
+/// and per space the entry map's record list (with each record's subsort)
+/// and fragment multiset, whose orders follow insertion history
+/// (rangemap.hh), and the order of the dynamic entry list. Nothing here
+/// calls Scope's own walkers: only the containers are read, so none of the
+/// defects in addMapSym, addUnassigned or clearCategory can be reached.
+static void writeScopeOrders(StateDump &d, ScopeLocal *scope)
+{
+  std::vector<std::string> children;
+  for (ScopeMap::const_iterator it = scope->children.begin(); it != scope->children.end(); ++it)
+    children.push_back(hx((*it).first));
+  d.w.add(record({"I", hx(scope->uniqueId), hx(scope->nextUniqueId), escape(scope->getDisplayName()),
+                  scope->parent == (Scope *)0 ? std::string("-") : hx(scope->parent->uniqueId),
+                  joinList(children)}));
+  for (size_t c = 0; c < scope->category.size(); ++c) {
+    std::vector<std::string> slots;
+    for (size_t k = 0; k < scope->category[c].size(); ++k) {
+      const Symbol *sym = scope->category[c][k];
+      slots.push_back(sym == (const Symbol *)0 ? std::string("null") : symbolId(sym));
+    }
+    d.w.add(record({"C", num((intb)c), slots.empty() ? std::string("-") : joinSlots(slots)}));
+  }
+  std::vector<std::string> multi;
+  for (SymbolNameTree::const_iterator it = scope->multiEntrySet.begin(); it != scope->multiEntrySet.end(); ++it)
+    multi.push_back(symbolId(*it));
+  d.w.add(record({"E", joinList(multi)}));
+  EntryRefs refs;
+  buildEntryRefs(scope, refs);
+  std::vector<std::string> fragments;
+  for (size_t i = 0; i < scope->maptable.size(); ++i) {
+    const EntryMap *map = scope->maptable[i];
+    if (map == (const EntryMap *)0) continue;
+    std::string space = escape(d.glb->getSpace((int4)i)->getName());
+    // Each record's subsort, as its fragments carry it (computed once, at insertion).
+    std::map<const SymbolRange *, const SymbolRange::EntrySubsort *> subsort;
+    for (std::multiset<EntryMap::AddrRange>::const_iterator f = map->tree.begin(); f != map->tree.end(); ++f) {
+      const SymbolRange *rec = &(*(*f).value);
+      if (subsort.find(rec) == subsort.end()) subsort[rec] = &(*f).subsort;
+      fragments.push_back(record({"F", space, hx((*f).first), hx((*f).last), entryRef(refs, rec->entry)}));
+    }
+    for (std::list<SymbolRange>::const_iterator r = map->record.begin(); r != map->record.end(); ++r) {
+      std::map<const SymbolRange *, const SymbolRange::EntrySubsort *>::const_iterator s = subsort.find(&(*r));
+      d.w.add(record({"R", space, entryRef(refs, (*r).entry), hx((*r).getFirst()), hx((*r).getLast()),
+                      s == subsort.end() ? std::string("-") : num(s->second->useindex),
+                      s == subsort.end() ? std::string("-") : hx(s->second->useoffset)}));
+    }
+  }
+  for (size_t i = 0; i < fragments.size(); ++i) d.w.add(fragments[i]);
+  std::vector<std::string> dynamic;
+  for (list<DynamicEntry *>::const_iterator it = scope->dynamicentry.begin(); it != scope->dynamicentry.end(); ++it)
+    dynamic.push_back(entryRef(refs, *it));
+  d.w.add(record({"Q", joinList(dynamic)}));
 }
 
 void writeScopeSection(StateDump &d)
@@ -79,6 +164,7 @@ void writeScopeSection(StateDump &d)
     if (!sym->mapentry.empty()) where = entryStorage(sym->mapentry[0]);
     d.w.add(record({"G", symbolId(sym), escape(sym->getName()), escape(sym->getScope()->getName()), where}));
   }
+  if (scope != (ScopeLocal *)0) writeScopeOrders(d, scope);
   d.w.end();
 }
 

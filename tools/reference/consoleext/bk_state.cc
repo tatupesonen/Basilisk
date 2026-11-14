@@ -258,7 +258,7 @@ static void writeBlocks(StateDump &d)
 void writeStateDump(std::ostream &o, Funcdata *fd, IfaceStatus *status)
 {
   StateDump d(fd, status, o);
-  d.w.line(record({"BKSTATE", "1", BK_GHIDRA_COMMIT, escape(d.glb->archid)}));
+  d.w.line(record({"BKSTATE", "2", BK_GHIDRA_COMMIT, escape(d.glb->archid)}));
   writeFunction(d);
   writeActions(d);
   writeSpaces(d);
