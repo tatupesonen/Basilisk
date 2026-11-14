@@ -7,7 +7,9 @@ Track `sleigh-compiler-back`, milestone M2. Starts when
 and 11.
 
 Path abbreviations: `CPP/` = `Ghidra/Features/Decompiler/src/decompile/cpp/`
-under `../ghidra`; `REF` = `../reference`.
+under `../ghidra`; `REF` = `../reference` (built with
+`-ffp-contract=off` since 2026-11-14: its 150 `.sla` are byte-identical to
+the x86-64 Linux build in `../reference-x86_64/x86_64-linux`, ADR-032).
 
 ## 1. Purpose
 
@@ -96,13 +98,40 @@ instruction, strict comparisons; `consistentValues`; `orderPatterns` with
 the identical check, the insertion pass and the conflict resolution;
 `number` counted as Ghidra does.
 
-**Floating point.** Scores are computed in `f64` in the C++'s order:
-`p = count as f64 / total as f64`; `sc -= p * ln(p)` over bins in
-ascending order; `sc / ln(2.0)`. Use `libm::log` (pure Rust, already a
-workspace dependency), not the host's `ln`, so that basilisk's output is
-the same on every platform. Ghidra's own result depends on its host's
-`log` only when two candidate fields score within rounding error of each
-other; acceptance 1 says how such a case is recognised if one exists.
+**Floating point** (ADR-032; evidence and reasoning in
+`docs/research/sla-host-dependence.md`, sections 2 and 6.1). At 25
+decision nodes of the 150 specifications two candidate fields have
+mathematically equal scores, and the last bit of the computed scores
+decides `chooseOptimalField`'s strict `>`. basilisk's score is therefore a
+defined computation, the one x86-64 Linux (and Ghidra's Java compiler)
+performs:
+
+1. **Unfused IEEE `f64` arithmetic in Ghidra's order.** `p = count as f64
+   / total as f64`; `sc = sc - p * log(p)` with the product and the
+   subtraction rounded separately, over bins in ascending value order;
+   the result is `sc / log(2.0)`; scan order and strict `>` as
+   `chooseOptimalField` (10 c.7). Rust never contracts on its own; never
+   write `mul_add` (or anything else that fuses) here. Ghidra's C++
+   compiled for AArch64 fuses `sc -= p * log(p)` into one multiply-subtract
+   by default, and 14 of its 150 files then differ.
+2. **A `log` bit-equal to glibc's `log`, FMA variant (glibc ≥ 2.28)**, on
+   every argument the compiler can produce today: `k/n` with
+   1 ≤ k < n ≤ 16,384 (the largest table in the corpus has about 9,356
+   patterns). A table with more patterns than 16,384 is still compiled,
+   with a warning that its scores lie outside the verified domain (the
+   bound can then be extended by regenerating the table, 6.4). The
+   implementation is a port of the `log` glibc uses — Szabolcs Nagy's
+   algorithm from Arm's optimized-routines, MIT OR Apache-2.0 WITH
+   LLVM-exception (musl carries the same code), well documented and
+   licence-clean — following its FMA path with a correctly rounded fused
+   multiply-add that does not depend on the platform (for example
+   `libm::fma`) and no other fusion. Whether to port it or take a crate
+   that already provides exactly this function is the implementing
+   track's ADR-011 evaluation. Not `libm::log` (fdlibm: measured to change
+   ARM8_le and ARM8m_le), not the host's `f64::ln` (Apple's and MSVC's
+   differ from glibc's in the last bit).
+
+The output is then the same on every host and equals x86-64 Linux's.
 
 ### 4.4 Diagnostics
 The messages of 10 (c) and 9.1: per-constructor pattern errors collected
@@ -195,22 +224,28 @@ lines, in order, against the reference build's log
 Ghidra's `FILE:LINE:` prefixes inside the messages kept (they are
 constructor and table locations, which basilisk knows).
 
-Tolerated differences: **none expected**. One class is admitted if it
-occurs, recognised mechanically: a decision node where basilisk and the
-reference chose different fields and basilisk's scores for the two
-fields differ by at most 2 units in the last place — a tie decided by
-the host's `log` in Ghidra. Each such node is listed in a checked-in
-file with both scores; the affected language is then compared on
-everything outside that table's tree, and in addition must decode
-identically (next paragraph).
+**The oracle** is byte equality with the x86-64 Linux build for all 150
+specifications (ADR-032): `REF`, which is built with `-ffp-contract=off`
+and gives exactly those bytes on every host
+(`../reference-x86_64/x86_64-linux` holds the original x86-64 files; the
+two agree for all 150). Tolerated differences: **none**. There are no
+admitted ties: with the arithmetic of 4.3 none is expected, and a
+decision node where basilisk chose a different field is a failure.
+
+For anyone comparing against an old or unpatched AArch64 build of
+Ghidra's compiler (a diagnostic, not the acceptance test; research
+document 6.2): every `bk_sla::diff` path must start with `table "` and
+contain ` decision`, and at each node where the trees first differ the
+two subtrees must resolve every assignment of the bits their patterns
+constrain to the same constructor (`tools/sla-host-diff`'s `equiv`).
 
 **Behavioural cross-check** (uses the merged runtime; skip if
 `sleigh-pcode` is not merged yet, and then it becomes a merge condition
 of whichever lands second): for 12 languages (the list of
 `sleigh-decode` §6.2), decode the directed samples with basilisk's
 runtime once from Ghidra's `.sla` and once from basilisk's; the outputs
-must be identical. This is redundant when the files are equal and is
-what stands behind an admitted tie.
+must be identical. This is redundant when the files are equal; it
+localises a failure of the byte comparison to behaviour or to layout.
 
 ### 6.3 Diagnostics against Ghidra's compiler
 Part 1's harness, extended with a case for every message of this half
@@ -236,7 +271,23 @@ listed as expected).
   `orderOperands` with dependent offsets; `chooseOptimalField` on small
   hand-made sets including a context-versus-instruction tie and the
   `maxfixed` reset; `orderPatterns` with nested, overlapping-resolved and
-  conflicting patterns.
+  conflicting patterns; the score's arithmetic on a hand-made tie where
+  fused and unfused arithmetic choose different fields (the TI_MSP430
+  node of research document section 2: counts (2,2,1) against (2,1,2)),
+  which must choose the unfused one.
+* **The `log` table** (oracle-free, every platform, under a second):
+  `docs/research/sla-host-dependence/logtable-glibc.txt.gz` (16,384
+  lines: the bits of `log(2.0)`, then one line per n = 2…16,384 with a
+  hash of the bits of glibc's `log(k/n)` for all 1 ≤ k < n, computed as
+  `logtable.c` does; produced by `tools/sla-host-diff/containers/logtable/logtable.c`
+  in the `gcc:14` container; md5 of the uncompressed text
+  `a9e120b2c0f1bd977abb3f70640effbb`). The test loads that file from the
+  repository (path relative to the workspace root, via
+  `CARGO_MANIFEST_DIR`; it is checked in, so the test never skips) and
+  requires basilisk's `log`, hashed the same way, to equal it on every
+  line. It pins the arithmetic that decides the 25 ties without the
+  reference. Regenerating the table for a larger bound is described in
+  `tools/sla-host-diff/README.md`.
 * `proptest`: for random small sets of disjoint patterns over 16 bits,
   the tree built resolves every bit string to the same constructor as a
   linear scan of the specialisation-ordered list (the tree is an index,
@@ -254,9 +305,10 @@ reference; all 150 on one thread in at most the reference's total.
 
 ## 7. Acceptance
 
-1. 6.2 passes for all 150 specifications: packed stream equal, XML text
-   equal, warnings equal; any admitted tie is in the checked-in file with
-   its scores and the behavioural cross-check passes for its language.
+1. 6.2 passes for all 150 specifications against the x86-64 bytes
+   (`REF`, equal to `../reference-x86_64/x86_64-linux`): packed stream
+   equal, XML text equal, warnings equal; no tolerated differences.
+   The `log` table test of 6.4 passes on every platform.
 2. The three ported test classes of 6.1 pass and are marked.
 3. 6.3 and 6.4 pass with every message covered; fuzz target 60 s clean.
 4. 6.5 meets its figures; the M2 lines of the plan can be ticked.
@@ -268,7 +320,12 @@ reference; all 150 on one thread in at most the reference's total.
 
 * `EqualEquation` uses Java's unsigned range test (C++ compares signed,
   which makes constraints on 64-bit fields unsatisfiable).
-* `log` from `libm`, for host-independent output.
+* The score's `log` is glibc's, reimplemented; the arithmetic is unfused
+  as on x86-64 and in Java, so output is the same on every host. Ghidra's
+  own C++ output depends on the compiler's contraction setting (AArch64
+  builds fuse `sc -= p * log(p)` and differ in 14 of 150 files), and its
+  Java output on `Math.log` (Homebrew's 12.0 built on Apple silicon
+  differs from the official release in ARM8_le and ARM8m_le).
 * Command line: Java's options in addition to C++'s; extensions tested
   at the end of the name; all-mode continues after a failure.
 * Diagnostics carry real locations; unrecoverable errors are ordinary
