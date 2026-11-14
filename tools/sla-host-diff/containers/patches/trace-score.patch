@@ -1,6 +1,6 @@
 diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
 --- a/cpp/slghsymbol.cc	2026-11-14 11:01:12
-+++ b/cpp/slghsymbol.cc	2026-11-14 11:02:39
++++ b/cpp/slghsymbol.cc	2026-11-14 11:25:08
 @@ -16,6 +16,9 @@
  #include "slghsymbol.hh"
  #include "sleighbase.hh"
@@ -19,7 +19,7 @@ diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
    for(int4 i=0;i<construct.size();++i) {
      pat = construct[i]->getPattern()->getPattern();
      if (pat->numDisjoint() == 0)
-@@ -2137,6 +2141,116 @@
+@@ -2137,6 +2141,124 @@
    return ( sc / log(2.0) );
  }
  
@@ -127,8 +127,16 @@ diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
 +  // The scores of both fields under both arithmetics.
 +  for(int4 k=0;k<2;++k) {
 +    int4 s = k ? s1 : s0, z = k ? z1 : z0; bool c = k ? c1 : c0;
-+    fprintf(stderr,"  field %s[%d..+%d]: fused %a unfused %a\n",c?"ctx":"ins",s,z,
++    fprintf(stderr,"  field %s[%d..+%d]: fused %a unfused %a counts",c?"ctx":"ins",s,z,
 +	    traceScore(s,z,c,0),traceScore(s,z,c,1));
++    uintm m = (((uintm)1)<<z) - 1;
++    vector<int4> cnt(1<<z,0);
++    for(int4 i=0;i<list.size();++i) {
++      if ((list[i].first->getMask(s,z,c)&m)!=m) continue;
++      cnt[list[i].first->getValue(s,z,c)] += 1;
++    }
++    for(int4 i=0;i<cnt.size();++i) if (cnt[i] > 0) fprintf(stderr," [%d]=%d",i,cnt[i]);
++    fprintf(stderr,"\n");
 +  }
 +}
 +// ---- end of instrumentation ----
@@ -136,7 +144,7 @@ diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
  void DecisionNode::chooseOptimalField(void)
  
  {
-@@ -2198,6 +2312,7 @@
+@@ -2198,6 +2320,7 @@
    } while(!context);
    if (score <= 0.0)		// If we failed to get a positive score
      bitsize = 0;		// treat the node as terminal

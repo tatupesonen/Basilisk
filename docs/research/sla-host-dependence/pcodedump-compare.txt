@@ -1,0 +1,14 @@
+AARCH64 2097152 bytes, 1659421 lines, last: T 363124 916552; identical
+AARCH64BE 2097152 bytes, 1661564 lines, last: T 363231 916530; identical
+AARCH64_AppleSilicon 2097152 bytes, 1657744 lines, last: T 362798 918443; identical
+ARM8_le 2097152 bytes, 3766717 lines, last: T 746195 450727; identical
+ARM8m_le 2097152 bytes, 3833475 lines, last: T 764637 464950; identical
+mips32le 2097152 bytes, 2581462 lines, last: P INT_ADD (unique,0x200,4) (regi; identical
+mips32R6le 2097152 bytes, 1634581 lines, last: T 447355 542037; identical
+ppc_64_isa_le 2097152 bytes, 2869317 lines, last: T 490552 380402; identical
+ppc_64_isa_altivec_le 2097152 bytes, 2846699 lines, last: T 491518 378535; identical
+TI_MSP430 2490368 bytes, 9205781 lines, last: T 728532 505781; identical
+TI_MSP430X 2490368 bytes, 9348141 lines, last: T 742319 432917; identical
+tricore 2097152 bytes, 4344835 lines, last: T 631047 735263; identical
+x86 2097152 bytes, 7270474 lines, last: T 825088 23203; identical
+x86-64 2097152 bytes, 6353647 lines, last: T 699005 110228; identical

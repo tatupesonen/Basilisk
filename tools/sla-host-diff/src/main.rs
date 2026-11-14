@@ -11,6 +11,7 @@
 //!   differences by kind (path shape), and an analysis of each decision
 //!   tree that differs (see `trees.rs`).
 
+mod equiv;
 mod trees;
 
 use std::collections::BTreeMap;
@@ -31,6 +32,8 @@ fn main() -> ExitCode {
         ["classify", left, right] => classify(Path::new(left), Path::new(right)),
         ["logtable", impl_, n] => logtable(impl_, n),
         ["logdump", impl_, n, out] => logdump(impl_, n, Path::new(out)),
+        ["equiv", left, right] => equiv_dirs(Path::new(left), Path::new(right)),
+        ["node", file, table, path] => node(Path::new(file), table, path),
         ["maxpatterns", dir] => maxpatterns(Path::new(dir)),
         ["trees", left, right] => trees_files(Path::new(left), Path::new(right), false),
         ["trees", left, right, "-v"] => trees_files(Path::new(left), Path::new(right), true),
@@ -268,4 +271,60 @@ fn logdump(name: &str, n: &str, out: &Path) -> Result<(), String> {
         }
     }
     std::fs::write(out, bytes).map_err(|e| format!("{}: {e}", out.display()))
+}
+
+/// For each pair of files that differ: the behavioural comparison of every
+/// differing decision subtree (`equiv.rs`).
+fn equiv_dirs(left: &Path, right: &Path) -> Result<(), String> {
+    for (stem, pa, pb) in differing(left, right, false)? {
+        let (a, b) = (load(&pa)?, load(&pb)?);
+        println!("== {stem}");
+        print!("{}", equiv::compare(&a, &b));
+    }
+    Ok(())
+}
+
+/// Prints the field the decision node at `path` (e.g. `root/1/9`) of
+/// `table` tests, and the number of pairs under it.
+fn node(file: &Path, table: &str, path: &str) -> Result<(), String> {
+    let sla = load(file)?;
+    let id = sla
+        .global(table)
+        .and_then(|s| sla.subtable(s))
+        .map(|t| t.decision)
+        .ok_or_else(|| format!("no table {table}"))?;
+    let mut n = sla.decision(id).ok_or("no root")?;
+    for step in path.split('/').skip(1) {
+        let v: u32 = step.parse().map_err(|e| format!("bad path {path}: {e}"))?;
+        let c = sla.decision_child(n, v).ok_or_else(|| format!("{path}: no child {v}"))?;
+        n = sla.decision(c).ok_or("bad child")?;
+    }
+    // The distinct (constructor, pattern) pairs under the node, hashed, so
+    // the node's input can be compared between files.
+    let mut pairs = std::collections::BTreeSet::new();
+    let mut stack = vec![n];
+    while let Some(m) = stack.pop() {
+        for p in sla.pairs(m) {
+            pairs.insert(trees::pair_text(&sla, p));
+        }
+        stack.extend(sla.children(m).filter_map(|c| sla.decision(c)));
+    }
+    // Patterns only (constructor numbers shift when a source file changes).
+    let patterns: std::collections::BTreeSet<&str> =
+        pairs.iter().map(|p| p.split_once(' ').map_or(p.as_str(), |(_, rest)| rest)).collect();
+    let mut h: u64 = 1_469_598_103_934_665_603;
+    for p in &patterns {
+        for b in p.bytes() {
+            h = (h ^ u64::from(b)).wrapping_mul(1_099_511_628_211);
+        }
+    }
+    println!(
+        "{}[{}..+{}] ({} pairs, pattern set {:016x})",
+        if n.context { "ctx" } else { "ins" },
+        n.start_bit,
+        n.size,
+        pairs.len(),
+        h
+    );
+    Ok(())
 }
