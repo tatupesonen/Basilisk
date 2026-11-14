@@ -1,14 +1,14 @@
 // Oracle for bk-cspec: evaluates Ghidra's own compiler-specification reader
 // and prototype models (architecture.cc, fspec.cc, modelrules.cc, linked from
 // the reference build's objects) and prints one record per line. Built and
-// run by regen.sh; the output is tests/data/cspec_oracle.txt.gz, replayed by
-// tests/oracle_replay.rs. Not part of the Rust build. Compiled with
+// run by regen.sh; the output is tests/data/cspec_oracle.<lib>.txt.gz (one per
+// C++ standard library), replayed by tests/oracle_replay.rs. Not part of the Rust build. Compiled with
 // -fno-access-control to read private members, -std=c++11.
 //
 // Usage: cspec_oracle <sleighhome> <signatures.txt> <cspec-list>
 //
 // Nothing here depends on iteration over pointer-keyed or hash containers:
-// pairs come in .ldefs order, models in name order (std::map<string>),
+// pairs come in byte order of their id, models in name order (std::map<string>),
 // entries, rules and effects in list order. Every value printed is computed
 // in its own statement, so no output depends on the order C++ evaluates
 // function arguments.
@@ -41,6 +41,7 @@
 #include "libdecomp.hh"
 #include "sleigh_arch.hh"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -700,6 +701,34 @@ void effectTable(const string &pair, ProtoModel *m) {
   }
 }
 
+// Ghidra defect: a merged model's input list (ParamListMerged, built by
+// ProtoModelMerged::foldIn, fspec.cc:2829) comes from the default constructor
+// ParamListMerged(void) : ParamListStandard() (fspec.hh:732), and
+// ParamListStandard(void) {} (fspec.hh:630) leaves numgroup, maxdelay,
+// thisbeforeret and autoKilledByCall uninitialised; only
+// ParamListStandard::decode (fspec.cc:1447) sets them.
+// ProtoModel::assignParameterStorage (fspec.cc:2416) calls allocateStatus
+// first, i.e. status.resize(numgroup,0) (fspec.cc:790), on that garbage, and
+// only then ParamListMerged::assignMap, which throws the intended "Cannot
+// assign prototype before model has been resolved". When the garbage is huge
+// or negative, resize throws std::length_error instead (seen on x86-64 Linux
+// in 25-75 % of runs). The generator defines the four fields as a decode of
+// an empty list would (0, 0, false, false) before using a merged model, so
+// Ghidra's code runs as intended; nothing printed reads them (LIST prints
+// "-" for a merged list).
+void defineMergedFields(Architecture *g) {
+  for (map<string, ProtoModel *>::const_iterator it = g->protoModels.begin(); it != g->protoModels.end(); ++it) {
+    ProtoModel *m = (*it).second;
+    if (!m->isMerged()) continue;
+    ParamListStandard *in = (ParamListStandard *)m->input;
+    if (in == (ParamListStandard *)0 || in->getType() != ParamList::p_merged) continue;
+    in->numgroup = 0;
+    in->maxdelay = 0;
+    in->thisbeforeret = false;
+    in->autoKilledByCall = false;
+  }
+}
+
 // Reads the list of .cspec paths (one per line) into a map by file name.
 map<string, string> cspecPaths(const string &listfile) {
   map<string, string> res;
@@ -735,20 +764,33 @@ int run(const string &sigfile, const string &listfile) {
       sigs.push_back(s);
     }
   }
-  set<string> heavyDone;
+  // Pairs in byte order of their id. Ghidra's own list follows the order in
+  // which readdir returns the .ldefs files (FileManage::matchListDir,
+  // filemanage.cc), which is the filesystem's; ids are unique, so this order
+  // is the same on every host. The first pair of a .cspec file in this order
+  // that Ghidra can build is its heavy pair.
+  vector<std::pair<string, string> > pairs;  // pair id, .cspec name
   const vector<LanguageDescription> &descs = SleighArchitecture::getDescriptions();
   for (size_t di = 0; di < descs.size(); ++di) {
     const LanguageDescription &d(descs[di]);
     for (int4 c = 0; c < d.numCompilers(); ++c) {
       const CompilerTag &tag(d.getCompiler(c));
-      string pair = d.getId() + ":" + tag.getId();
-      string spec = tag.getSpec();
+      pairs.push_back(make_pair(d.getId() + ":" + tag.getId(), tag.getSpec()));
+    }
+  }
+  sort(pairs.begin(), pairs.end());
+  set<string> heavyDone;
+  for (size_t pi = 0; pi < pairs.size(); ++pi) {
+    {
+      const string &pair(pairs[pi].first);
+      const string &spec(pairs[pi].second);
       Architecture *g = (Architecture *)0;
       try {
         g = build(pair);
       }
       catch (LowlevelError &err) { cout << "PAIRERR\t" << pair << '\t' << esc(err.explain) << '\n'; continue; }
       catch (DecoderError &err) { cout << "PAIRERR\t" << pair << '\t' << esc(err.explain) << '\n'; continue; }
+      defineMergedFields(g);
       bool heavy = heavyDone.insert(spec).second;
       cout << "PAIR\t" << pair << '\t' << esc(spec) << '\t' << b(heavy) << '\n';
       string text;
