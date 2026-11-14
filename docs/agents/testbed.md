@@ -383,6 +383,15 @@ is read-only), and a few GB of memory per headless analysis.
 - Timings were taken while other jobs were building on the host (load
   12–22), so they are upper bounds.
 
+## Gates
+
+On `a19bdc9` (this branch, master merged), 12 jobs:
+- `scripts/remote.sh gate`: exit 0, `tests: 2095 passed, 0 failed`.
+- `scripts/remote.sh gate --no-ref`: exit 0, `tests: 2095 passed, 0 failed`.
+- `scripts/check-dep-age.py master`: 0 new registry packages.
+- No crate was changed. Everything ran on the build host; only editing and
+  the no-host exit-2 check happened on the Mac.
+
 ## Proposed text (not edited by this track)
 
 For `docs/LOOP.md`, a subsection after "The build host":
