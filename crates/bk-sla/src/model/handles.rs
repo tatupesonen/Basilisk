@@ -154,15 +154,7 @@ impl Strings {
         self.text.get(id.range()).unwrap_or_default()
     }
 
-    pub(crate) fn len(&self) -> usize {
-        self.text.len()
-    }
-
     pub(crate) fn capacity(&self) -> usize {
         self.text.capacity()
-    }
-
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.text.shrink_to_fit();
     }
 }

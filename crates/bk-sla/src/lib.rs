@@ -31,6 +31,10 @@ mod validate;
 mod write;
 
 
+pub use builder::{
+    BlockDef, ConstructorDef, DecisionDef, PairDef, PatternDef, PrintDef, SlaBuilder, SpaceDef,
+    SymbolDef, TableDef,
+};
 pub use diff::{Difference, diff};
 pub use error::{Location, SlaError, StreamError};
 pub use limits::Limits;

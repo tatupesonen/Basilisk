@@ -47,31 +47,6 @@ pub(crate) struct Arenas {
 }
 
 impl Arenas {
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.strings.shrink_to_fit();
-        self.source_files.shrink_to_fit();
-        self.spaces.shrink_to_fit();
-        self.scopes.shrink_to_fit();
-        self.symbols.shrink_to_fit();
-        self.constructors.shrink_to_fit();
-        self.operand_lists.shrink_to_fit();
-        self.print_pieces.shrink_to_fit();
-        self.context_changes.shrink_to_fit();
-        self.templates.shrink_to_fit();
-        self.ops.shrink_to_fit();
-        self.varnodes.shrink_to_fit();
-        self.handles.shrink_to_fit();
-        self.decisions.shrink_to_fit();
-        self.pairs.shrink_to_fit();
-        self.blocks.shrink_to_fit();
-        self.words.shrink_to_fit();
-        self.exprs.shrink_to_fit();
-        self.fields.shrink_to_fit();
-        self.value_table.shrink_to_fit();
-        self.name_table.shrink_to_fit();
-        self.varnode_table.shrink_to_fit();
-    }
-
     /// Bytes held by the arenas (capacity, not length).
     pub(crate) fn heap_bytes(&self) -> usize {
         fn bytes<T>(v: &Vec<T>) -> usize {
