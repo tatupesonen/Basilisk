@@ -17,35 +17,31 @@ scratch copy: `cp -Rp ../reference target/ref` and run the script with
 
 ## State
 
-Done:
-- Build script step `[1b/5]`: `decomp_dbg`, extension compiled outside the
-  Makefile with the Makefile's flags (read through `consoleext/vars.mk`)
-  plus `-fno-access-control`, `decomp_bk`, `decomp_bk_dbg`; own
-  fingerprints; STAMP lines. Verified on a scratch copy of the Mac
-  reference: steps 1–4 stay "up to date".
-- Extension: `bk version`, `bk list actions`, `bk break start|action|clear`,
-  `bk dump blocks`, `bk dump structure`, `bk cfg analyze`, `bk structure`
-  (bare/asgiven/finish/trace/xml, trace replica checked against Ghidra's
-  own `collapseAll`).
-- `bk-testkit`: `Tool::{DecompDbg, DecompBk, DecompBkDbg}` (enum now
-  `#[non_exhaustive]`), `ReferenceDir::{decomp_dbg, decomp_bk,
-  decomp_bk_dbg}`, `LC_ALL=C` for every console run; `oracle::{graph,
-  cfgdump, structure, actions, generate}` with unit and property tests;
-  fuzz targets `bk_testkit_graph`, `bk_testkit_structure`; samples in
-  `crates/bk-testkit/tests/data/oracle/`; `tests/oracle_cfg.rs`
-  (regenerates every sample when `decomp_bk` exists; 3,000 generated graphs:
-  `structure blocks` XML = `bk structure … xml` XML, 165 end in Ghidra's
-  error, replica never differs — Mac).
+Done (all committed):
+- Build step `[1b/5]` (decomp_dbg, decomp_bk, decomp_bk_dbg); extension
+  commands: version, list actions, break, dump blocks/structure/state,
+  cfg analyze, structure, capture structure, pcode record/replay/stop,
+  trace stream.
+- `bk-testkit::oracle`: graph, cfgdump, structure, actions, state, trace,
+  pcoderec readers/writers with property tests and five fuzz targets
+  (`bk_testkit_{graph,structure,state,trace,pcoderec}`); generate; host
+  (library detection, digests, named-cause classification); capture
+  (driver library) and the `bk-oracle` binary.
+- Captures on both machines (scratch references): 167 scripts, 607
+  decompiles, 0 errors, two runs identical on each; Mac vs host differ in 5
+  files (floatprint: nan-sign 48 lines, nan-order 8). Fixtures in
+  `fixtures/decomp-oracle/`.
+- valgrind on the host found three uninitialised reads in the dump
+  (Action::count/lcount, FuncCallSpecs::matchCallCount, FuncProto::extrapop
+  without a model) — fixed.
 
-In progress / next:
-1. State dump (`bk dump state`, `bkstate 1`) and its reader.
-2. Trace (`bk trace stream`, reader), recorded p-code (`bk pcode
-   record|replay|stop`, `pcoderec 1`, reader).
-3. Capture driver `bk-oracle`, fixtures, completeness checker, replay
-   check, determinism on both hosts, `decomp_dbg` = `decomp`.
-4. Optional logs (4.12): decide.
-5. Nightly `oracle` item; rebuild both shared references (hash before and
-   after); gates; final report.
+Next:
+1. README sections for bkstate, pcoderec, trace, bk capture structure.
+2. Split files over 600 lines (structure.rs, state/records.rs, state/sections.rs).
+3. Nightly `oracle` item.
+4. Build checks 6.7; rebuild both shared references with before/after hashes.
+5. Optional logs (4.12): decide and report.
+6. wine, fuzz 300 s, gates; feature doc sections 8–10; final report.
 
 ## Notes for whoever continues
 
