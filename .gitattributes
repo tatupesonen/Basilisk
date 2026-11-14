@@ -23,3 +23,9 @@ vendor/** -text
 # Website screenshots (docs/features/site-screenshots/)
 *.jpg binary
 *.woff2 binary
+
+# Oracle captures (output of the reference consoles, decomp_bk): formats
+# with LF line ends whose readers are exact and reject a CR. Keep them LF.
+crates/bk-testkit/tests/data/oracle/** text eol=lf
+crates/bk-testkit/tests/data/oracle/*.gz binary
+fixtures/decomp-oracle/** text eol=lf
