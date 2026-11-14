@@ -83,7 +83,7 @@ pub fn check_completeness(dump: &StateDump, raw: &str, tree: &str) -> Result<Com
         let create =
             paren_hex(line, "create").ok_or_else(|| format!("no create index in: {line}"))?;
         let create =
-            u32::try_from(create).map_err(|_| format!("create index too large: {line}"))?;
+            u32::try_from(create).map_err(|e| format!("create index too large ({e}): {line}"))?;
         let consumed =
             paren_hex(line, "consumed").ok_or_else(|| format!("no consumed mask in: {line}"))?;
         let v = dump

@@ -57,6 +57,9 @@ pub struct ScriptSummary {
     /// What went wrong for the script as a whole (a console failed, the
     /// replay differed, `decomp_dbg` differed from `decomp`), if anything.
     pub error: Option<String>,
+    /// Why the script was not captured although nothing is wrong with the
+    /// oracle: the script fails in Ghidra's own `decomp` as well.
+    pub skipped: Option<String>,
 }
 
 /// One pass over a corpus.
@@ -100,9 +103,11 @@ impl CaptureReport {
                 sc.functions.len(),
                 sc.recording_events,
                 sc.context_dependent,
-                sc.error
-                    .as_deref()
-                    .map_or("ok".to_owned(), |e| format!("error: {}", one_line(e)))
+                match (&sc.error, &sc.skipped) {
+                    (Some(e), _) => format!("error: {}", one_line(e)),
+                    (None, Some(why)) => format!("skipped: {}", one_line(why)),
+                    (None, None) => "ok".to_owned(),
+                }
             );
             for (k, f) in sc.functions.iter().enumerate() {
                 let _ = writeln!(
@@ -117,7 +122,7 @@ impl CaptureReport {
                     f.structuring_runs,
                     f.error
                         .as_deref()
-                        .map_or("ok".to_owned(), |e| format!("error: {}", one_line(e)))
+                        .map_or_else(|| "ok".to_owned(), |e| format!("error: {}", one_line(e)))
                 );
                 decompiles += 1;
                 ops += f.ops;
@@ -186,35 +191,38 @@ fn console(reference: &ReferenceDir, which: fn(&ReferenceDir) -> Decomp, dir: &P
 fn capture_script(
     reference: &ReferenceDir,
     script: &CorpusScript,
-    p: &Positions,
+    positions: &Positions,
     out: &Path,
 ) -> Result<ScriptSummary, CaptureError> {
     std::fs::create_dir_all(out).map_err(io(out))?;
-    let n = script.decompile_count();
+    let count = script.decompile_count();
     let mut summary = ScriptSummary {
         name: format!("{}/{}", script.corpus, script.name),
-        functions: vec![FunctionSummary::default(); n],
+        functions: vec![FunctionSummary::default(); count],
         ..ScriptSummary::default()
     };
     let file = |k: usize, kind: &str| out.join(format!("{}.{k}.{kind}", script.name));
 
     // Run A: dumps, print raw, print tree varnode, recording.
-    let a = console(reference, ReferenceDir::decomp_bk, &script.dir)
-        .run_script(dumps_script(script, p, out)?)?;
+    let run_a = console(reference, ReferenceDir::decomp_bk, &script.dir)
+        .run_script(dumps_script(script, positions, out)?)?;
     for (k, f) in summary.functions.iter_mut().enumerate() {
-        let p1 = after_mark(&a, k, "p1", 0).unwrap_or("");
+        let p1 = after_mark(&run_a, k, "p1", 0).unwrap_or("");
         write_text(&file(k, "p1.raw"), p1).map_err(io(&file(k, "p1.raw")))?;
         for point in ["p1", "p2", "p3", "p4"] {
             let path = file(k, &format!("{point}.state"));
             let text = read_text(&path).map_err(io(&path))?;
             if let Err(e) = StateDump::parse(&text) {
                 f.error
-                    .get_or_insert(format!("{point} dump does not parse: {e}"));
+                    .get_or_insert_with(|| format!("{point} dump does not parse: {e}"));
             }
         }
         let path = file(k, "end.state");
         let dump = StateDump::parse(&read_text(&path).map_err(io(&path))?);
-        let (raw, tree) = (after_mark(&a, k, "end", 0), after_mark(&a, k, "end", 1));
+        let (raw, tree) = (
+            after_mark(&run_a, k, "end", 0),
+            after_mark(&run_a, k, "end", 1),
+        );
         match (dump, raw, tree) {
             (Ok(dump), Some(raw), Some(tree)) => {
                 f.function.clone_from(&dump.function.function.name);
@@ -225,17 +233,18 @@ fn capture_script(
                         f.pointer_valued = c.pointer_valued;
                     }
                     Err(e) => {
-                        f.error.get_or_insert(format!("incomplete dump: {e}"));
+                        f.error
+                            .get_or_insert_with(|| format!("incomplete dump: {e}"));
                     }
                 }
             }
             (Err(e), _, _) => {
                 f.error
-                    .get_or_insert(format!("end dump does not parse: {e}"));
+                    .get_or_insert_with(|| format!("end dump does not parse: {e}"));
             }
             _ => {
                 f.error
-                    .get_or_insert("no print raw / print tree varnode at the end".into());
+                    .get_or_insert_with(|| "no print raw / print tree varnode at the end".into());
             }
         }
     }
@@ -247,31 +256,32 @@ fn capture_script(
 
     // Run B: replay; print raw after start must be the same.
     if recording.context_dependent.is_empty() {
-        let b = console(reference, ReferenceDir::decomp_bk, &script.dir)
-            .run_script(replay_script(script, p, &rec_path)?)?;
-        for k in 0..n {
-            let replayed = after_mark(&b, k, "p1", 0).unwrap_or("");
-            let recorded = after_mark(&a, k, "p1", 0).unwrap_or("");
+        let run_b = console(reference, ReferenceDir::decomp_bk, &script.dir)
+            .run_script(replay_script(script, positions, &rec_path)?)?;
+        for k in 0..count {
+            let replayed = after_mark(&run_b, k, "p1", 0).unwrap_or("");
+            let recorded = after_mark(&run_a, k, "p1", 0).unwrap_or("");
             if replayed != recorded {
-                summary
-                    .error
-                    .get_or_insert(format!("decompilation {k}: replayed print raw differs"));
+                summary.error.get_or_insert_with(|| {
+                    format!("decompilation {k}: replayed print raw differs")
+                });
             }
         }
     }
 
     // Run C: the trace.
-    let c = console(reference, ReferenceDir::decomp_bk_dbg, &script.dir)
+    let run_c = console(reference, ReferenceDir::decomp_bk_dbg, &script.dir)
         .run_script(trace_script(script))?;
     for (k, f) in summary.functions.iter_mut().enumerate() {
-        let output = after_mark(&c, k, "trace", 0).unwrap_or("");
+        let output = after_mark(&run_c, k, "trace", 0).unwrap_or("");
         match Trace::extract(output) {
             Ok(t) => {
                 f.trace_records = t.records.len();
                 write_text(&file(k, "trace.gz"), &t.write()).map_err(io(&file(k, "trace.gz")))?;
             }
             Err(e) => {
-                f.error.get_or_insert(format!("trace does not parse: {e}"));
+                f.error
+                    .get_or_insert_with(|| format!("trace does not parse: {e}"));
             }
         }
     }
@@ -291,7 +301,7 @@ fn capture_script(
                 );
             if !ok {
                 f.error
-                    .get_or_insert(format!("structuring run {runs} does not parse"));
+                    .get_or_insert_with(|| format!("structuring run {runs} does not parse"));
             }
             runs += 1;
         }
@@ -305,29 +315,72 @@ fn capture_script(
     if without_pointers(&opt.output.stdout) != without_pointers(&dbg.output.stdout) {
         summary
             .error
-            .get_or_insert("decomp_dbg output differs from decomp".into());
+            .get_or_insert_with(|| "decomp_dbg output differs from decomp".into());
     }
     Ok(summary)
 }
 
-/// Capture every script of a corpus into `out/<corpus>/`; a script whose
-/// consoles fail is reported, not fatal.
+/// The summary of a script whose capture failed: skipped when the plain
+/// script fails in `decomp` too (a corpus problem), an error otherwise.
+fn failed_script(
+    reference: &ReferenceDir,
+    script: &CorpusScript,
+    error: &CaptureError,
+) -> ScriptSummary {
+    let mut summary = ScriptSummary {
+        name: format!("{}/{}", script.corpus, script.name),
+        ..ScriptSummary::default()
+    };
+    let plain =
+        console(reference, ReferenceDir::decomp, &script.dir).run_script(plain_script(script));
+    match plain {
+        Err(crate::tools::ToolError::Failed { stdout, .. }) => {
+            let last = stdout
+                .lines()
+                .rev()
+                .find(|l| l.contains("ERROR") || l.contains("error"))
+                .unwrap_or("")
+                .to_owned();
+            summary.skipped = Some(format!("fails in decomp too: {last}"));
+        }
+        _ => summary.error = Some(error.to_string()),
+    }
+    summary
+}
+
+/// Capture every script of a corpus into `out/<corpus>/`, `jobs` scripts
+/// at a time; a script whose consoles fail is reported, not fatal. The
+/// report is in corpus order whatever the order the scripts finish in.
 pub fn capture_corpus(
     reference: &ReferenceDir,
     scripts: &[CorpusScript],
     positions: &Positions,
     out: &Path,
+    jobs: usize,
 ) -> CaptureReport {
-    let mut report = CaptureReport::default();
-    for script in scripts {
-        let dir: PathBuf = out.join(script.corpus);
-        let summary =
-            capture_script(reference, script, positions, &dir).unwrap_or_else(|e| ScriptSummary {
-                name: format!("{}/{}", script.corpus, script.name),
-                error: Some(e.to_string()),
-                ..ScriptSummary::default()
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let results: std::sync::Mutex<Vec<Option<ScriptSummary>>> =
+        std::sync::Mutex::new(vec![None; scripts.len()]);
+    std::thread::scope(|scope| {
+        for _ in 0..jobs.clamp(1, scripts.len().max(1)) {
+            scope.spawn(|| {
+                loop {
+                    let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    let Some(script) = scripts.get(i) else { break };
+                    let dir: PathBuf = out.join(script.corpus);
+                    let summary = capture_script(reference, script, positions, &dir)
+                        .unwrap_or_else(|e| failed_script(reference, script, &e));
+                    if let Ok(mut r) = results.lock()
+                        && let Some(slot) = r.get_mut(i)
+                    {
+                        *slot = Some(summary);
+                    }
+                }
             });
-        report.scripts.push(summary);
+        }
+    });
+    let scripts_done = results.into_inner().unwrap_or_default();
+    CaptureReport {
+        scripts: scripts_done.into_iter().flatten().collect(),
     }
-    report
 }

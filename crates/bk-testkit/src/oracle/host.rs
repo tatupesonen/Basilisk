@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::fmt::Write as _;
 use std::path::Path;
 
 use crate::paths::ReferenceDir;
@@ -94,11 +95,65 @@ pub fn digest_tree(dir: &Path) -> std::io::Result<BTreeMap<String, u64>> {
     Ok(out)
 }
 
+/// The kind of a capture file, from its name: `state`, `raw`, `trace`,
+/// `structure` or `pcoderec`; `other` for anything else.
+pub fn capture_kind(name: &str) -> &'static str {
+    const KINDS: [(&str, &str); 6] = [
+        (".state", "state"),
+        (".raw", "raw"),
+        (".trace.gz", "trace"),
+        (".bkg", "structure"),
+        (".bks", "structure"),
+        (".pcoderec", "pcoderec"),
+    ];
+    KINDS
+        .iter()
+        .find(|(suffix, _)| {
+            name.rsplit_once('.').is_some() && name.to_ascii_lowercase().ends_with(suffix)
+        })
+        .map_or("other", |(_, kind)| kind)
+}
+
+/// A capture file's group: `<corpus>/<script>.<kind>` — the script being the
+/// name before its first all-digit component (`zerotop.0.p1.state` →
+/// `zerotop`), or before `.pcoderec`.
+pub fn capture_group(path: &str) -> String {
+    let (dir, name) = path.rsplit_once('/').unwrap_or(("", path));
+    let parts: Vec<&str> = name.split('.').collect();
+    let cut = parts
+        .iter()
+        .enumerate()
+        .skip(1)
+        .find(|(_, p)| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+        .map_or_else(|| parts.len().saturating_sub(1), |(i, _)| i);
+    let script = parts.get(..cut).unwrap_or(&[]).join(".");
+    let kind = capture_kind(name);
+    if dir.is_empty() {
+        format!("{script}.{kind}")
+    } else {
+        format!("{dir}/{script}.{kind}")
+    }
+}
+
+/// One digest per capture group (`capture_group`), over the group's file
+/// paths and digests in order: the fixture table (a few hundred lines
+/// where the files number thousands).
+pub fn group_digests(files: &BTreeMap<String, u64>) -> BTreeMap<String, u64> {
+    let mut parts: BTreeMap<String, Vec<u8>> = BTreeMap::new();
+    for (path, d) in files {
+        let bytes = parts.entry(capture_group(path)).or_default();
+        bytes.extend_from_slice(path.as_bytes());
+        bytes.push(0);
+        bytes.extend_from_slice(&d.to_le_bytes());
+    }
+    parts.into_iter().map(|(g, b)| (g, digest(&b))).collect()
+}
+
 /// A digest table as text: `<digest, 16 hex digits>  <path>` per line.
 pub fn write_digests(table: &BTreeMap<String, u64>) -> String {
     let mut s = String::new();
     for (path, d) in table {
-        s.push_str(&format!("{d:016x}  {path}\n"));
+        let _ = writeln!(s, "{d:016x}  {path}");
     }
     s
 }
@@ -259,6 +314,40 @@ mod tests {
         assert_eq!(d.changed, ["c"]);
         assert_eq!(d.only_first, ["a/b.state"]);
         assert_eq!(d.only_second, ["d"]);
+    }
+
+    #[test]
+    fn capture_files_are_grouped_by_script_and_kind() {
+        assert_eq!(
+            capture_group("datatests/zerotop.0.p1.state"),
+            "datatests/zerotop.state"
+        );
+        assert_eq!(
+            capture_group("datatests/zerotop.0.0.blocks.bkg"),
+            "datatests/zerotop.structure"
+        );
+        assert_eq!(
+            capture_group("research/a01.x64-gcc-O2.3.trace.gz"),
+            "research/a01.x64-gcc-O2.trace"
+        );
+        assert_eq!(
+            capture_group("research/a01.x64-gcc-O2.pcoderec"),
+            "research/a01.x64-gcc-O2.pcoderec"
+        );
+        let mut files = BTreeMap::new();
+        files.insert("d/t.0.p1.state".to_owned(), 1_u64);
+        files.insert("d/t.0.end.state".to_owned(), 2);
+        files.insert("d/t.pcoderec".to_owned(), 3);
+        let groups = group_digests(&files);
+        assert_eq!(
+            groups.keys().collect::<Vec<_>>(),
+            ["d/t.pcoderec", "d/t.state"]
+        );
+        files.insert("d/t.0.end.state".to_owned(), 4);
+        assert_ne!(
+            group_digests(&files).get("d/t.state"),
+            groups.get("d/t.state")
+        );
     }
 
     #[test]

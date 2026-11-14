@@ -4,10 +4,10 @@
 //! reference tools are).
 //!
 //! ```text
-//! bk-oracle capture <datatests|research|all> <out> [--runs N] [--only TEXT]
+//! bk-oracle capture <datatests|research|all> <out> [--runs N] [--only TEXT] [--jobs N]
 //!     captures every script N times (default 2) into <out>/run<i>, requires
 //!     the runs to be byte-identical, writes <out>/summary.txt and
-//!     <out>/captures.<library>.txt (a digest per capture file)
+//!     <out>/captures.<library>.txt (a digest per script and kind of capture)
 //! bk-oracle compare <capture-dir-1> <capture-dir-2> [--write FILE]
 //!     the captures of two reference builds: every differing file must
 //!     differ only by named causes; the counts per file and cause are
@@ -23,6 +23,7 @@
 )]
 
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -34,7 +35,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn usage() -> ExitCode {
     eprintln!(
-        "usage: bk-oracle capture <datatests|research|all> <out> [--runs N] [--only TEXT]\n       \
+        "usage: bk-oracle capture <datatests|research|all> <out> [--runs N] [--only TEXT] [--jobs N]\n       \
          bk-oracle compare <capture-dir-1> <capture-dir-2> [--write FILE]\n       \
          bk-oracle check <out> <fixtures-dir>"
     );
@@ -73,6 +74,10 @@ fn cmd_capture(args: &[String]) -> Result<bool> {
     };
     let runs: usize = option(args, "--runs").map_or(Ok(2), str::parse)?;
     let only = option(args, "--only");
+    let jobs: usize = match option(args, "--jobs") {
+        Some(j) => j.parse()?,
+        None => std::thread::available_parallelism().map_or(1, std::num::NonZero::get),
+    };
     let reference =
         bk_testkit::reference_dir().ok_or("no reference directory (BASILISK_REFERENCE_DIR)")?;
     let ghidra = bk_testkit::ghidra_dir().ok_or("no Ghidra tree (BASILISK_GHIDRA_DIR)")?;
@@ -102,7 +107,7 @@ fn cmd_capture(args: &[String]) -> Result<bool> {
             std::fs::remove_dir_all(&dir)?;
         }
         let started = std::time::Instant::now();
-        let report = capture::capture_corpus(&reference, &scripts, &positions, &dir);
+        let report = capture::capture_corpus(&reference, &scripts, &positions, &dir, jobs);
         let digests = host::digest_tree(&dir)?;
         println!(
             "run {run}: {} scripts, {} files, {} errors, {:.1} s",
@@ -138,7 +143,7 @@ fn cmd_capture(args: &[String]) -> Result<bool> {
     std::fs::write(out.join("summary.txt"), report.summary())?;
     std::fs::write(
         out.join(format!("captures.{}.txt", library.name())),
-        host::write_digests(&digests),
+        host::write_digests(&host::group_digests(&digests)),
     )?;
     let verbose = std::env::var_os("BK_ORACLE_VERBOSE").is_some();
     for e in report.errors() {
@@ -178,7 +183,7 @@ fn cmd_compare(args: &[String]) -> Result<bool> {
         match host::classify(&ta, &tb, &host::KNOWN_CAUSES) {
             Ok(counts) => {
                 for (cause, n) in counts {
-                    report.push_str(&format!("{path}\t{cause}\t{n}\n"));
+                    let _ = writeln!(report, "{path}\t{cause}\t{n}");
                     *totals.entry(cause).or_insert(0) += n;
                 }
             }
@@ -189,7 +194,7 @@ fn cmd_compare(args: &[String]) -> Result<bool> {
         }
     }
     for (cause, n) in &totals {
-        report.push_str(&format!("total\t{cause}\t{n}\n"));
+        let _ = writeln!(report, "total\t{cause}\t{n}");
     }
     print!("{report}");
     println!(
