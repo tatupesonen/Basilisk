@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-13, 17:20)
+## Now — RESUME HERE (2026-11-14, 10:20)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -12,83 +12,78 @@ and the GNU disassembler crates
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
 
-**Hard cap: four running workers** (owner, 2026-11-13), counting helpers;
-agents are told to start none. Fable 5.2 (high effort) for research and
+Workers count helpers; agents are told to start none. Fable 5.2 (high effort) for research and
 specs, Opus 5.5 (medium) for implementation.
 
-**Usage limit reached again on 2026-11-13 at about 18:00.** The four
-agents in the table below may have been stopped mid-work; resume each by
-its id (their work is committed often). Everything up to here is pushed.
-**CI run 43452049262: the Windows test job is still red** after the
-`windows-ci` merge (macOS and Linux green; `cargo-deny` red there only
-because that run predates the advisories fix). Failure lines from
-`gh run view 43452049262 --log-failed`:
+**Hard cap: three running workers** (owner, 2026-11-14; replaces the four
+above).
 
-      test error::tests::messages_are_ghidras ... ok
-      test error::tests::messages_carry_context ... ok
-      test error::tests::messages_match_ghidra ... ok
-      test loader::tests::windows_spellings ... FAILED
-      test registry::paths::tests::windows_spellings::case_02 ... FAILED
-      test registry::paths::tests::windows_spellings::case_03 ... FAILED
-      thread 'loader::tests::windows_spellings' (6664) panicked at crates\bk-sleigh-syntax\src\loader.rs:251:13:
-      thread 'registry::paths::tests::windows_spellings::case_02' (7340) panicked at crates\bk-lang\src\registry\paths.rs:362:9:
-      thread 'registry::paths::tests::windows_spellings::case_03' (1824) panicked at crates\bk-lang\src\registry\paths.rs:362:9:
+**`master` is red in CI on Linux and Windows** (run 43456260254, the push
+of 2026-11-13 18:00; macOS, miri and `cargo-deny` green). Fixing it comes
+before any other merge:
 
-Resume agent `af713570d2e64dbed` in a new worktree with the full log.
-Read also the result of the run
-on the push made at 18:00 (first Windows build of `bk-binutils-sys`;
-`cargo-deny` with the advisories fix).
+* **Linux (and the lint and rustdoc jobs, which run on Linux)**:
+  `bk-binutils-sys` does not compile with GCC on `ubuntu-latest` —
+  `vendor/binutils-2.41/opcodes/mips-formats.h:52: error: expected
+  identifier or '(' before 'static_assert'`. The track had verified Linux
+  only with clang on aarch64, and the local gate runs on macOS.
+* **Windows**: three Windows-only tests added by `windows-ci` fail
+  (`windows_spellings` in `bk-lang` cases 02 and 03 and in
+  `bk-sleigh-syntax`): a lower-case drive letter is not upper-cased
+  (left `c:\a\b`, right `C:\a\b`). The three tests that failed before
+  now pass. `bk-binutils-sys` showed no error on Windows in that run; the
+  `gnu-disasm` agent is asked to confirm from the log that it built and
+  ran there.
 
-### Running (state at 2026-11-13 17:55)
+Lesson for merges: a branch with C code, or with platform-specific code,
+is run on Linux x86-64 with GCC (container) and for Windows under Wine
+before it is merged; "not run" on a platform in an agent's report is a
+reason to send it back, not a note.
+
+### Running (resumed 2026-11-14 10:20 after the usage-limit stop of 2026-11-13 18:00)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `decomp-types` | Opus | `ae9088c291801e2f1` | started 17:55; D02 of `features/decomp-plan.md`: `bk-decomp-types` from `features/decomp-types.md` (first decompiler track, on the critical path). |
-| `sla` | Opus | `a10095edf70216b9d` | started 17:20; implements `bk-sla` from `features/sla.md` (first SLEIGH track, ADR-023). |
-| `store-spike` | Fable | `a8012f27279847feb` | started 17:20 (fresh agent); `research/storage-engine.md` plus benchmarks in `tools/store-spike/` (its own workspace), recommends the engine for ADR-003. |
-| `spec-pe` | Fable | `a53aca50251d9e64c` | started 17:35 (fresh agent); `features/pe.md` for `bk-pe` with the crate decision by experiment (`docs/agents/spec-pe-crate-eval/`), from four helper fact sheets it must verify. |
+| `windows-ci2` (worktree `../basilisk-wt/windows-ci`) | Opus | `af713570d2e64dbed` | fixes the three failing Windows tests; told to run Windows tests under Wine with the scripts in `../basilisk-wt/gnu-disasm/target/windows/` and to say whether Wine reproduces the CI failure. |
+| `gnu-disasm` (worktree kept, fast-forwarded to master) | Opus | `a5b2605fa521b5dd2` | fixes the GCC/Linux build of `bk-binutils-sys`; verifies in a `linux/amd64` Ubuntu 24.04 container with GCC. |
+| `sla` | Opus | `a10095edf70216b9d` | resumed; had 3 commits (model, reader, structural diff in progress). First SLEIGH track, `features/sla.md`. |
+
+Stopped by the limit, to resume by id when a slot frees (work is in their
+worktrees, committed up to the stop):
+
+| Branch | Model | Agent id | State at the stop |
+|---|---|---|---|
+| `decomp-types` | Opus | `ae9088c291801e2f1` | nothing on disk yet (it was reading `grammar.y`); D02, `features/decomp-types.md`. |
+| `store-spike` | Fable | `a8012f27279847feb` | 3 commits (workload section, verified notes) plus uncommitted files; `research/storage-engine.md`. |
+| `spec-pe` | Fable | `a53aca50251d9e64c` | 2 commits (core PE fact sheet, crate evaluation started) plus uncommitted files; `features/pe.md`. |
 
 An agent stopped by a usage limit or a session restart can be resumed with
-its context intact by sending a message to its agent id (worked on
-2026-11-13 for agents stopped the day before). If that fails, start a
-fresh agent briefed from the branch's files.
+its context intact by sending a message to its agent id. If that fails,
+start a fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* `master` was pushed at 18:00 with the `gnu-disasm` and
-  `spec-decompiler` merges, `Provenance`, `scripts/check-dep-age.py` and
-  the `deny.toml` advisories fix (gate green, 1,680 tests).
-* **Windows job**: `windows-ci` was merged and pushed at 17:30. CI run
-  43452049262 is the first time the fix runs on Windows. If the Windows
-  job is still red, resume agent `af713570d2e64dbed` (its worktree was
-  removed: make a new one) with the exact failure from
-  `gh run view <id> --log-failed`.
-* **CI's `cargo-deny` job went red when `bk-ui` merged**: it checks
-  advisories, which the offline gate does not. Four "unmaintained"
-  notices from the GUI stack (`paste` via `egui_dock`; `zvariant`,
-  `zbus_names`, `zvariant_derive` via accesskit on Linux) are now
-  accepted in `deny.toml` with reasons. On every merge result run
-  `scripts/check-dep-age.py` and `cargo deny check advisories` (both need
-  the network).
-* **After the next push, the Windows job builds `bk-binutils-sys` for
-  the first time on a real Windows machine.** It needs `clang-cl` on
-  `PATH` (hosted runners ship LLVM; unverified). If it fails, resume
-  agent `a5b2605fa521b5dd2` with the log; its worktree
-  `../basilisk-wt/gnu-disasm` is kept for that and for the next point.
+* When `windows-ci2` and `gnu-disasm` report: review, merge `--no-ff`,
+  gate, `scripts/check-dep-age.py`, `cargo deny check advisories`, push,
+  and **read the CI run of that push on all three systems** before
+  starting anything that depends on it.
 * **Windows tests can be run locally under Wine**, as `gnu-disasm` did
   (MinGW and MSVC targets, cross-compiled; `cargo-xwin` for the MSVC CRT
   and SDK). Its container scripts are scratch files in
   `../basilisk-wt/gnu-disasm/target/windows/` and `target/linux/`
   (sanitizers), not committed. Queue item `win-local` turns them into
-  committed tooling so every track can run its Windows tests before CI.
-  Do not remove that worktree before then.
-* **Owner should know**: `cargo-xwin` downloaded Microsoft's CRT and SDK
-  to this Mac for that check, accepting Microsoft's licence terms on the
-  machine's behalf. Nothing from it is in the repository. Reported to the
-  owner in the session on 2026-11-13.
+  committed tooling. Do not remove that worktree before then.
+* ADR to write once CI shows the build working on Windows: builds of
+  `bk-binutils-sys` for MSVC targets use `clang-cl`, not `cl.exe`
+  (amends ADR-019).
+* `cargo-xwin` downloaded Microsoft's CRT and SDK to this Mac
+  (Microsoft's licence terms accepted on the machine's behalf); the owner
+  was told on 2026-11-13.
 
 ### Queue (start as slots free, in this order)
 
+0. Resume the three stopped agents above: `decomp-types` first (critical
+   path), then `spec-pe`, then `store-spike`.
 1. `sleigh-decode` and `sleigh-compiler-front` (Opus) — both start when
    `sla` is merged, in parallel (ADR-023). Then `sleigh-pcode`,
    `sleigh-compiler-back`, `sleigh-snippet`.
@@ -138,18 +133,14 @@ fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. Read CI run 43452049262, then push (above), then read the run of
-   that push: Windows job with `bk-binutils-sys`, and `cargo-deny`.
-2. ADR to write: Windows builds of `bk-binutils-sys` use `clang-cl`, not
-   `cl.exe` (binutils uses GNU C extensions `cl` rejects) — amend ADR-019
-   when CI has shown the build working.
-3. `sla` reports → review against `features/sla.md` section 7, merge,
+1. Get CI green on all three systems (above).
+2. `sla` reports → review against `features/sla.md` section 7, merge,
    start `sleigh-decode` and `sleigh-compiler-front`.
-4. `decomp-types` reports → review against `features/decomp-types.md`,
+3. `decomp-types` reports → review against `features/decomp-types.md`,
    merge; with D00 and D04 merged, start D05.
-5. `store-spike` reports → decide ADR-003's engine; then
+4. `store-spike` reports → decide ADR-003's engine; then
    `spec-program-model`.
-6. `features/sleigh-language.md` is a draft with open `[to verify]` items
+5. `features/sleigh-language.md` is a draft with open `[to verify]` items
    (nothing Java was run); complete it before its wave.
 
 ### Working notes
