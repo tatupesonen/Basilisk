@@ -1,0 +1,13 @@
+diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
+--- a/cpp/slghsymbol.cc	2026-11-14 11:01:49
++++ b/cpp/slghsymbol.cc	2026-11-14 11:01:49
+@@ -2132,7 +2132,8 @@
+     if (count[i] <= 0) continue;
+     if (count[i] >= list.size()) return -1.0;
+     double p = ((double)count[i])/total;
+-    sc -= p * log(p);
++    volatile double prod = p * log(p); /* sla-host-diff: round the product */
++    sc -= prod;
+   }
+   return ( sc / log(2.0) );
+ }

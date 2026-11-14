@@ -1,0 +1,10 @@
+# header: md5 of table, n values (of 16383) whose hash differs from glibc arm64, table
+c954db84015790b1c6f7c377b05a395a 16366 logtable-c-fdlibm.txt
+5a984f43f8b07ad20bf94e09c971de81 8688 logtable-glibc-amd64-nofma.txt
+a9e120b2c0f1bd977abb3f70640effbb 0 logtable-glibc-amd64.txt
+a9e120b2c0f1bd977abb3f70640effbb 0 logtable-glibc-arm64.txt
+5f520085c2f0f42529eb644bad5bd90f 15641 logtable-mac.txt
+5a984f43f8b07ad20bf94e09c971de81 8688 logtable-musl-amd64.txt
+f038ecf06e01ff07b225ce696c0a7ba3 1135 logtable-musl-arm64.txt
+c954db84015790b1c6f7c377b05a395a 16366 logtable-rust-libm.txt
+5f520085c2f0f42529eb644bad5bd90f 15641 logtable-rust-std-mac.txt

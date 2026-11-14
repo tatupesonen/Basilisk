@@ -1,0 +1,151 @@
+TIE table=fcvt_vmnemonic node=root patterns=10 build=fused
+  fused   picks ins[9..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[10..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[9..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [2]=4 [3]=4 [4]=2
+  field ins[10..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [2]=4 [3]=4
+WARN  149 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=fcvt_vmnemonic node=root patterns=10 build=fused
+  fused   picks ins[9..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[10..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[9..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [2]=4 [3]=4 [4]=2
+  field ins[10..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [2]=4 [3]=4
+WARN  149 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/1/0/1/1 patterns=6 build=fused
+  fused   picks ins[11..+5] score 0x1.203562725340ap+1 (2.251629167387823)
+  unfused picks ins[12..+4] score 0x1.2035627253409p+1 (2.2516291673878226)
+  field ins[11..+5]: fused 0x1.203562725340ap+1 unfused 0x1.2035627253409p+1 counts [8]=1 [12]=1 [16]=1 [17]=1 [18]=2
+  field ins[12..+4]: fused 0x1.2035627253409p+1 unfused 0x1.2035627253409p+1 counts [0]=1 [1]=1 [2]=2 [8]=1 [12]=1
+TIE table=fcvt_vmnemonic node=root patterns=10 build=fused
+  fused   picks ins[9..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[10..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[9..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [2]=4 [3]=4 [4]=2
+  field ins[10..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [2]=4 [3]=4
+WARN  508 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/1/0/1/0/0/15/0 patterns=11 build=fused
+  fused   picks ins[31..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  unfused picks ins[1..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  field ins[31..+1]: fused 0x1.fb6e5241b518ap-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=4 [1]=5
+  field ins[1..+1]: fused 0x1.fb6e5241b5189p-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=5 [1]=4
+TIE table=instruction node=root/1/0/1/0/0/15/1 patterns=11 build=fused
+  fused   picks ins[31..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  unfused picks ins[1..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  field ins[31..+1]: fused 0x1.fb6e5241b518ap-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=4 [1]=5
+  field ins[1..+1]: fused 0x1.fb6e5241b5189p-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=5 [1]=4
+WARN  540 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/0/1/1/0/0/15/0 patterns=11 build=fused
+  fused   picks ins[31..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  unfused picks ins[1..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  field ins[31..+1]: fused 0x1.fb6e5241b518ap-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=4 [1]=5
+  field ins[1..+1]: fused 0x1.fb6e5241b5189p-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=5 [1]=4
+TIE table=instruction node=root/0/1/1/0/0/15/1 patterns=11 build=fused
+  fused   picks ins[31..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  unfused picks ins[1..+1] score 0x1.fb6e5241b518ap-1 (0.99107605983822222)
+  field ins[31..+1]: fused 0x1.fb6e5241b518ap-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=4 [1]=5
+  field ins[1..+1]: fused 0x1.fb6e5241b5189p-1 unfused 0x1.fb6e5241b518ap-1 counts [0]=5 [1]=4
+WARN  23 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=DEST_W_AD node=root/1/9 patterns=7 build=fused
+  fused   picks ins[4..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[6..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[4..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=2 [4]=1
+  field ins[6..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=1 [2]=2
+TIE table=DEST_B_AD node=root/1/9 patterns=7 build=fused
+  fused   picks ins[4..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[6..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[4..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=2 [4]=1
+  field ins[6..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=1 [2]=2
+WARN  85 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=DEST_W_AD node=root/1/9 patterns=7 build=fused
+  fused   picks ins[4..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[6..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[4..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=2 [4]=1
+  field ins[6..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=1 [2]=2
+TIE table=DEST_B_AD node=root/1/9 patterns=7 build=fused
+  fused   picks ins[4..+3] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  unfused picks ins[6..+2] score 0x1.859d146267a17p+0 (1.5219280948873626)
+  field ins[4..+3]: fused 0x1.859d146267a17p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=2 [4]=1
+  field ins[6..+2]: fused 0x1.859d146267a15p+0 unfused 0x1.859d146267a17p+0 counts [0]=2 [1]=1 [2]=2
+WARN  123 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/0/17/5 patterns=25 build=fused
+  fused   picks ins[31..+1] score 0x1.f036e3217b549p-3 (0.24229218908241482)
+  unfused picks ins[30..+1] score 0x1.f036e3217b549p-3 (0.24229218908241482)
+  field ins[31..+1]: fused 0x1.f036e3217b549p-3 unfused 0x1.f036e3217b549p-3 counts [0]=24 [1]=1
+  field ins[30..+1]: fused 0x1.f036e3217b548p-3 unfused 0x1.f036e3217b549p-3 counts [0]=1 [1]=24
+WARN  131 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/0/17/5 patterns=25 build=fused
+  fused   picks ins[31..+1] score 0x1.f036e3217b549p-3 (0.24229218908241482)
+  unfused picks ins[30..+1] score 0x1.f036e3217b549p-3 (0.24229218908241482)
+  field ins[31..+1]: fused 0x1.f036e3217b549p-3 unfused 0x1.f036e3217b549p-3 counts [0]=24 [1]=1
+  field ins[30..+1]: fused 0x1.f036e3217b548p-3 unfused 0x1.f036e3217b549p-3 counts [0]=1 [1]=24
+WARN  86 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/63/4/136 patterns=10 build=fused
+  fused   picks ins[14..+2] score 0x1.d806f5919c0f9p-1 (0.92192809488736238)
+  unfused picks ins[13..+2] score 0x1.d806f5919c0f9p-1 (0.92192809488736238)
+  field ins[14..+2]: fused 0x1.d806f5919c0f9p-1 unfused 0x1.d806f5919c0f9p-1 counts [1]=1 [2]=8 [3]=1
+  field ins[13..+2]: fused 0x1.d806f5919c0f8p-1 unfused 0x1.d806f5919c0f9p-1 counts [1]=1 [2]=1 [3]=8
+WARN  85 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/63/4/136 patterns=10 build=fused
+  fused   picks ins[14..+2] score 0x1.d806f5919c0f9p-1 (0.92192809488736238)
+  unfused picks ins[13..+2] score 0x1.d806f5919c0f9p-1 (0.92192809488736238)
+  field ins[14..+2]: fused 0x1.d806f5919c0f9p-1 unfused 0x1.d806f5919c0f9p-1 counts [1]=1 [2]=8 [3]=1
+  field ins[13..+2]: fused 0x1.d806f5919c0f8p-1 unfused 0x1.d806f5919c0f9p-1 counts [1]=1 [2]=1 [3]=8
+WARN  17 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/0/9/2/0 patterns=29 build=fused
+  fused   picks ins[30..+2] score 0x1.ee706b436fa8fp+0 (1.9314028777731982)
+  unfused picks ins[16..+2] score 0x1.ee706b436fa8ep+0 (1.931402877773198)
+  field ins[30..+2]: fused 0x1.ee706b436fa8fp+0 unfused 0x1.ee706b436fa8ep+0 counts [0]=4 [1]=8 [2]=10 [3]=7
+  field ins[16..+2]: fused 0x1.ee706b436fa8ep+0 unfused 0x1.ee706b436fa8ep+0 counts [0]=8 [1]=10 [2]=7 [3]=4
+WARN  390 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/2/12/1 patterns=7 build=fused
+  fused   picks ctx[12..+4] score 0x1.203562725340ap+1 (2.251629167387823)
+  unfused picks ctx[13..+3] score 0x1.2035627253409p+1 (2.2516291673878226)
+  field ctx[12..+4]: fused 0x1.203562725340ap+1 unfused 0x1.2035627253409p+1 counts [2]=2 [4]=1 [5]=1 [8]=1 [9]=1
+  field ctx[13..+3]: fused 0x1.2035627253409p+1 unfused 0x1.2035627253409p+1 counts [0]=1 [1]=1 [2]=2 [4]=1 [5]=1
+TIE table=instruction node=root/2/13/1 patterns=7 build=fused
+  fused   picks ctx[12..+4] score 0x1.203562725340ap+1 (2.251629167387823)
+  unfused picks ctx[13..+3] score 0x1.2035627253409p+1 (2.2516291673878226)
+  field ctx[12..+4]: fused 0x1.203562725340ap+1 unfused 0x1.2035627253409p+1 counts [2]=2 [4]=1 [5]=1 [8]=1 [9]=1
+  field ctx[13..+3]: fused 0x1.2035627253409p+1 unfused 0x1.2035627253409p+1 counts [0]=1 [1]=1 [2]=2 [4]=1 [5]=1
+TIE table=instruction node=root/5/2/9 patterns=19 build=fused
+  fused   picks ctx[13..+3] score 0x1.0921d668ef59ap+1 (2.071345139730238)
+  unfused picks ctx[12..+4] score 0x1.0921d668ef59ap+1 (2.071345139730238)
+  field ctx[13..+3]: fused 0x1.0921d668ef59ap+1 unfused 0x1.0921d668ef599p+1 counts [0]=6 [1]=1 [2]=3 [3]=6 [4]=2
+  field ctx[12..+4]: fused 0x1.0921d668ef59ap+1 unfused 0x1.0921d668ef59ap+1 counts [0]=6 [2]=3 [3]=6 [4]=2 [9]=1
+TIE table=instruction node=root/5/2/10 patterns=21 build=fused
+  fused   picks ctx[13..+3] score 0x1.05f1b9754e0a2p+1 (2.0464393446710156)
+  unfused picks ctx[12..+4] score 0x1.05f1b9754e0a2p+1 (2.0464393446710156)
+  field ctx[13..+3]: fused 0x1.05f1b9754e0a2p+1 unfused 0x1.05f1b9754e0a1p+1 counts [0]=6 [1]=2 [2]=2 [3]=8 [4]=2
+  field ctx[12..+4]: fused 0x1.05f1b9754e0a2p+1 unfused 0x1.05f1b9754e0a2p+1 counts [0]=6 [2]=2 [3]=8 [4]=2 [9]=2
+WARN  374 NOP constructors found
+WARN  Use -n switch to list each individually
+TIE table=instruction node=root/2/12/2 patterns=12 build=fused
+  fused   picks ctx[34..+2] score 0x1.bac55be3d44afp+0 (1.7295739585136223)
+  unfused picks ctx[12..+4] score 0x1.bac55be3d44b1p+0 (1.7295739585136227)
+  field ctx[34..+2]: fused 0x1.bac55be3d44afp+0 unfused 0x1.bac55be3d44afp+0 counts [0]=2 [1]=6 [2]=1 [3]=3
+  field ctx[12..+4]: fused 0x1.bac55be3d44afp+0 unfused 0x1.bac55be3d44b1p+0 counts [2]=6 [3]=3 [4]=2 [8]=1
+TIE table=instruction node=root/5/2/9 patterns=18 build=fused
+  fused   picks ctx[13..+3] score 0x1.0921d668ef59ap+1 (2.071345139730238)
+  unfused picks ctx[12..+4] score 0x1.0921d668ef59ap+1 (2.071345139730238)
+  field ctx[13..+3]: fused 0x1.0921d668ef59ap+1 unfused 0x1.0921d668ef599p+1 counts [0]=6 [1]=1 [2]=3 [3]=6 [4]=2
+  field ctx[12..+4]: fused 0x1.0921d668ef59ap+1 unfused 0x1.0921d668ef59ap+1 counts [0]=6 [2]=3 [3]=6 [4]=2 [9]=1
+TIE table=instruction node=root/5/2/10 patterns=20 build=fused
+  fused   picks ctx[13..+3] score 0x1.05f1b9754e0a2p+1 (2.0464393446710156)
+  unfused picks ctx[12..+4] score 0x1.05f1b9754e0a2p+1 (2.0464393446710156)
+  field ctx[13..+3]: fused 0x1.05f1b9754e0a2p+1 unfused 0x1.05f1b9754e0a1p+1 counts [0]=6 [1]=2 [2]=2 [3]=8 [4]=2
+  field ctx[12..+4]: fused 0x1.05f1b9754e0a2p+1 unfused 0x1.05f1b9754e0a2p+1 counts [0]=6 [2]=2 [3]=8 [4]=2 [9]=2
+TIE table=instruction node=root/15/3 patterns=9 build=fused
+  fused   picks ctx[20..+1] score 0x1.e8ab92d981957p-1 (0.95443400292496505)
+  unfused picks ctx[14..+1] score 0x1.e8ab92d981957p-1 (0.95443400292496505)
+  field ctx[20..+1]: fused 0x1.e8ab92d981957p-1 unfused 0x1.e8ab92d981957p-1 counts [0]=5 [1]=3
+  field ctx[14..+1]: fused 0x1.e8ab92d981956p-1 unfused 0x1.e8ab92d981957p-1 counts [0]=3 [1]=5

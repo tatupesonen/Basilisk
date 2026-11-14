@@ -1,0 +1,53 @@
+== AARCH64
+  table fcvt_vmnemonic root: 10 patterns (same set), 6 free bits, all 64 inputs (10 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== AARCH64BE
+  table fcvt_vmnemonic root: 10 patterns (same set), 6 free bits, all 64 inputs (10 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== AARCH64_AppleSilicon
+  table instruction root/1/0/1/1: 6 patterns (same set), 25 free bits, all 33554432 inputs (68 resolve), 0 mismatches 
+  table fcvt_vmnemonic root: 10 patterns (same set), 6 free bits, all 64 inputs (10 resolve), 0 mismatches 
+  equivalence: 2 subtrees equal on every input, 0 equal on all samples, 0 differ
+== ARM8_le
+  table instruction root/1/0/1/0/0/15/0: 11 patterns (same set), 13 free bits, all 8192 inputs (4256 resolve), 0 mismatches 
+  table instruction root/1/0/1/0/0/15/1: 11 patterns (same set), 13 free bits, all 8192 inputs (4256 resolve), 0 mismatches 
+  equivalence: 2 subtrees equal on every input, 0 equal on all samples, 0 differ
+== ARM8m_le
+  table instruction root/0/1/1/0/0/15/0: 11 patterns (same set), 13 free bits, all 8192 inputs (4256 resolve), 0 mismatches 
+  table instruction root/0/1/1/0/0/15/1: 11 patterns (same set), 13 free bits, all 8192 inputs (4256 resolve), 0 mismatches 
+  equivalence: 2 subtrees equal on every input, 0 equal on all samples, 0 differ
+== TI_MSP430
+  table DEST_W_AD root/1/9: 7 patterns (same set), 7 free bits, all 128 inputs (64 resolve), 0 mismatches 
+  table DEST_B_AD root/1/9: 7 patterns (same set), 7 free bits, all 128 inputs (64 resolve), 0 mismatches 
+  equivalence: 2 subtrees equal on every input, 0 equal on all samples, 0 differ
+== TI_MSP430X
+  table DEST_W_AD root/1/9: 7 patterns (same set), 7 free bits, all 128 inputs (64 resolve), 0 mismatches 
+  table DEST_B_AD root/1/9: 7 patterns (same set), 7 free bits, all 128 inputs (64 resolve), 0 mismatches 
+  equivalence: 2 subtrees equal on every input, 0 equal on all samples, 0 differ
+== mips32R6le
+  table instruction root/0/17/5: 25 patterns (same set), 14 free bits, all 16384 inputs (2756 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== mips32le
+  table instruction root/0/17/5: 25 patterns (same set), 14 free bits, all 16384 inputs (2756 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== ppc_64_isa_altivec_le
+  table instruction root/63/4/136: 10 patterns (same set), 9 free bits, all 512 inputs (72 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== ppc_64_isa_le
+  table instruction root/63/4/136: 10 patterns (same set), 9 free bits, all 512 inputs (72 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== tricore
+  table instruction root/0/9/2/0: 29 patterns (same set), 21 free bits, all 2097152 inputs (1019936 resolve), 0 mismatches 
+  equivalence: 1 subtrees equal on every input, 0 equal on all samples, 0 differ
+== x86
+  table instruction root/2/12/2: 12 patterns (same set), 12 free bits, all 4096 inputs (24 resolve), 0 mismatches 
+  table instruction root/5/2/9: 18 patterns (same set), 12 free bits, all 4096 inputs (32 resolve), 0 mismatches 
+  table instruction root/5/2/10: 20 patterns (same set), 12 free bits, all 4096 inputs (38 resolve), 0 mismatches 
+  table instruction root/15/3: 9 patterns (same set), 18 free bits, all 262144 inputs (131174 resolve), 0 mismatches 
+  equivalence: 4 subtrees equal on every input, 0 equal on all samples, 0 differ
+== x86-64
+  table instruction root/2/12/1: 7 patterns (same set), 15 free bits, all 32768 inputs (2138 resolve), 0 mismatches 
+  table instruction root/2/13/1: 7 patterns (same set), 15 free bits, all 32768 inputs (2138 resolve), 0 mismatches 
+  table instruction root/5/2/9: 19 patterns (same set), 16 free bits, all 65536 inputs (4576 resolve), 0 mismatches 
+  table instruction root/5/2/10: 21 patterns (same set), 16 free bits, all 65536 inputs (4666 resolve), 0 mismatches 
+  equivalence: 4 subtrees equal on every input, 0 equal on all samples, 0 differ
