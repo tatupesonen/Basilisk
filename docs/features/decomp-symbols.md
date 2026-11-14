@@ -1373,3 +1373,234 @@ replaced value is the caller's to record, ADR-036), 12 (no generics in
 the trait surface), 14 (addresses are fully qualified: `bk_core::Address`
 with its space). Rules 1, 3, 5, 7, 9, 10, 13, 15 concern the program
 model and UI, not this crate.
+
+## 6. Tests
+
+Kinds as in plan 4.5: **S** self-contained, **G** needs the Ghidra tree,
+**L** needs the live reference tools.
+
+### 6.1 Unit tests from the source (S)
+
+One table-driven test per behaviour table of section 4, inputs built in
+test code on a small space manager (const, ram 8-byte, register, stack,
+join, OTHER) and a type factory with the base types:
+
+* `entrymap`: every insertion and erasure case of 4.2 — a record inside
+  one piece, across pieces, sharing `a` or `b` with another, equal keys
+  inserted with each of the three hint outcomes, erasure that re-sews
+  and erasure that must not (another record ends at `a - 1` or starts at
+  `b + 1`); the record-list placement including the non-`(b, subsort)`
+  case; `find`, `find(p, s1, s2)`, `find_end` on a contained point,
+  `find_first_after`, `find_last_before`, `find_overlap`; offsets at 0
+  and `u64::MAX`.
+* `partmap` and the property map: split, default, open end, and the
+  cross-space effect of an open end (4.3).
+* Entries and symbols: `addMap`'s six steps (persist, the use-limit
+  "kludge", addrtied with properties, the wrap error leaving the scope
+  unchanged, join pieces with `precishi`/`precislo`), ids and the `0x40`
+  rule, dedup, categories with holes, `getMapEntryPosition`'s Ghidra
+  result, `isValueClose`, external-ref names, the depth cache's
+  staleness.
+* Queries: one test per row of 4.6, including overlapping entries,
+  use-point windows, `findExternalRef` stopping at a non-external entry,
+  `stackExternalRef` without discovery.
+* Names: `makeNameUnique` (`nm_00`, `nm_07`→`nm_08`, `nm_99`→`nm_x00100`,
+  `nm_x00100`→`nm_x00101`, a non-conforming `nm_ab` skipped, a taken
+  result), `buildUndefinedName` (`$$undefffffffff` error),
+  `buildVariableName` each rule.
+* Codecs: every element of 4.11–4.17 encoded and decoded, Ghidra's
+  quirks (display name not written, `index` only for category 0, the
+  conflict entry as `<hash val="0x0">`, union facets skipped, unknown
+  override children skipped, `<context_points/>`), and Basilisk's
+  documented departures (4.21 rows 8, 12).
+* Hex content (4.15): a table of inputs and Ghidra's bytes, computed by
+  the signed-`char` rule — white space between and inside pairs, letters
+  past `f`, upper case, a NUL, a byte `>= 0x80`, an odd final character,
+  empty content.
+* Strings: every branch of `getCodepoint` and `writeUtf8`, the 32-byte
+  reads, the trailing bytes after the terminator kept for `charsize` 1,
+  the cached failure, `registerInternalStringData`'s hash.
+* Comments: `uniq` numbering, no-duplicate, `clearType`, the 65,536th
+  comment error.
+* Overrides: insertion, `hasDeadcodeDelay`, `printRaw` text,
+  `generateOverrideMessages`.
+* Host cache layer against `ScriptedHost`: each rule of 4.19 with the
+  calls asserted (holes stop repeat queries; a space without a global
+  range is never asked; `FUN_`/`DAT_` names are not asked; one comment
+  fill per `clear`; `clear` restores properties).
+
+### 6.2 Oracle tables (S replay, L regeneration)
+
+Three generators kept under `crates/bk-decomp-symbols/tests/oracle/`
+(`scope.cc`, `context.cc`, `image.cc`, from the prototypes in
+`docs/research/decomp-wave2/`), built by `regen.sh` against `REF/` with
+`docs/research/decomp-wave2/build.sh`'s flags, run on both reference
+builds; tables checked in as gzip files named
+`*.libcxx.txt.gz` / `*.libstdcxx.txt.gz` (`bk-testkit`'s `oracle::host`
+detects the library from the name).
+
+* **Scope table** (`scope.cc SLEIGHHOME DT/elseif.xml 1 2000`): 205,104
+  rows (W3). The final generator adds a header `H bk-scope-oracle 1
+  <commit> <seed> <cases>`, `P` rows for the architecture's spaces (index,
+  name, size, word size, big endian) and `T` rows for every type it uses
+  (name, size, metatype, and its `encodeRef` text), so that the replay
+  builds its space manager and type factory without the spec root (S);
+  prints every number in hex and an invalid address as `-`; and keeps the
+  prototype's row kinds and fields otherwise (documented in the
+  generator's head comment). The replay drives Basilisk with the same
+  operations in the same order — the operation rows (`+sym`, `+func`,
+  `+label`, `+extref`, `+equate`, `+mapsym` with its XML, `+map`,
+  `rename`, `retype`, `remove`, `lock`, `unlock`, `cat`, `scope`, `prop`)
+  carry their arguments — and requires every answer row, warning row,
+  `print`, `xml`, `multi`, `cats` and `props` row to be equal.
+  `+func` instantiates the function (the generator calls `getFunction`
+  at once): the replay calls `create_function_scope` there.
+* **Context table** (`context.cc SLEIGHHOME DT/elseif.xml 1 2000`):
+  85,713 rows (W4), same header additions; drives `ContextNames` over
+  `bk_sleigh::ContextDb` and requires every `get`, `tracked`, `encode`
+  and `redecode` row to be equal.
+* **Image table** (`image.cc SLEIGHHOME DT/*.xml`, files passed in byte
+  order of their names): 8,435 rows (W2). Replay is **G**: Basilisk reads
+  each data test's `<binaryimage>` and the language's `.sla`, `.pspec`
+  and `.cspec` from the spec root, runs 4.18's steps, and requires the
+  `K` (chunks after pad, with an FNV-1a hash of their bytes), `Y`, `R`,
+  `D`, `P`, `B`, `M`, `V`, `c`, `C`, `t`, `T` and `L` rows to be equal.
+  The `C`/`T` rows check `bk-sleigh`'s and `bk-lang`'s context reading
+  as well; a difference there is reported to their owners, not tolerated.
+* **Host differences**: none in any of the three (W2–W4: equal row for
+  row between libc++ and libstdc++, and between two runs on each). The
+  replay therefore requires the two tables of each kind to be identical
+  and fails if a regeneration makes them differ; a future difference
+  enters as a named, counted cause in ADR-040's form.
+
+### 6.3 `print map` and the console (G, L)
+
+* **G**: for every data test, Basilisk's `print_bounds` + `print_entries`
+  of the global scope after loading equals the `B` and `M` rows of the
+  image table (lines as printed).
+* **L** (checks the oracle itself, and is the plan's "`print map`
+  equal to the console's"): `bk-oracle capture` runs `load test file
+  DT/<x>.xml` and `print map` in `decomp_bk` for all 93 files; the lines
+  after the command (the empty full-name line, bounds, `Scope `, entries)
+  equal the image table's `B`/`M` rows. The console's own `dump`
+  command aborts the script on the first unmapped byte (W1), so the
+  table's `L` probes replace it.
+* The data tests' `map …`, `set context`, `set track`, `volatile`,
+  `readonly`, `comment instr` commands are D09's console commands over
+  this crate's API; D09's acceptance runs them.
+
+### 6.4 State dumps (S replay, L all)
+
+From D00's captures (`fixtures/decomp-oracle/`, `bk-testkit`
+`oracle::state`): load the `@scope` section of every captured dump into
+a function scope (symbols with their ids and dedups, entries with
+storage, use limits, flags, properties) and write it back byte-equal —
+S on the checked-in samples, L on all 607 captured decompilations. What
+the dump lacks for an exact rebuild of the entry maps is listed in the
+track report (fragment order and record-list order, the scope's
+`nextUniqueId` and Ghidra id, the dynamic list order); until format 2
+the test compares symbol and entry records only and rebuilds maps by
+inserting in symbol-id then entry order.
+
+### 6.5 Ghidra tests
+
+* No C++ unit test covers these modules (`unittests/`: circle range,
+  float emulation, prototypes, marshal, multi-precision, parameter
+  stores, types).
+* `ghidra.app.plugin.core.decompile.DecompilerPspecVolatilityTest` (4
+  tests, `docs/inventory/tests/features-decompiler.md`): its inputs are
+  pspec variants written by `SleighLanguageVolatilityTest.setUp`
+  (Framework/SoftwareModeling …/SleighLanguageVolatilityTest.java:48–117:
+  `PORTF` at `mem:0x31` with optional `volatile` and `size`, `PORTG` at
+  `mem:0x34`, an optional `<volatile>` range `mem:0x20–0x57` or one that
+  excludes `0x31`, the two elements in either order) and its assertions
+  are whether the decompiler treats `mem:0x31`/`0x34` as volatile. The
+  property part is ported here as `tests/pspec_volatility.rs` (S): the
+  property map after 4.18's steps for each variant gives the asserted
+  answers (the decompiler applies `<volatile>` during the pspec and
+  default symbols after it, whatever their order in the file). The
+  checklist lines stay open until D17 runs the whole decompilation.
+* `DecompilerSpecExtensionTest` (5 tests, GUI): spec extensions through
+  the program — M5.
+
+### 6.6 Properties and fuzzing
+
+* Properties (`proptest`): `EntryMap` against a naive model (a list of
+  records; fragments recomputed from scratch) under random inserts and
+  erasures — the fragments partition the union, each fragment's record
+  covers it, look-ups agree with the model, and the record list follows
+  4.2's placement rule; every codec round-trips (decode ∘ encode =
+  identity on Basilisk's own encodings, except the documented
+  `<context_points/>` case); changing only provenance never changes any
+  query answer, printing or encoding (3f); no input panics.
+* Fuzz targets (root `fuzz/`): `bk_decomp_symbols_scope` (a `<scope>` or
+  `<db>` document decoded into a database, then queried and re-encoded),
+  `_binaryimage`, `_commentdb`, `_stringmanage`, `_constantpool`,
+  `_context_points`, `_override`; 300 s each on the build host without a
+  finding (`scripts/remote.sh long fuzz 300 …`).
+
+### 6.7 Benchmarks
+
+As 5.8, recorded in `PERF.md` with the commands.
+
+## 7. Acceptance
+
+From plan 6 (D06), made concrete:
+
+1. Section 3's scope is implemented; every exclusion is where 3.2 says.
+2. Unit tests of 6.1 pass (S).
+3. The scope table (205,104 rows) and the context table (85,713 rows)
+   replay with every row equal, on Windows, macOS and Linux (S); both
+   regenerated on both reference builds give identical tables (L).
+4. The image table (8,435 rows) replays equal for all 93 data tests (G);
+   `print map` after loading equals the console's for all 93 (L).
+5. `@scope` sections of D00's samples load and write back equal (S); all
+   captures (L).
+6. The `DecompilerPspecVolatilityTest` property assertions pass (S).
+7. Properties at 1,000,000 cases (`scripts/remote.sh long proptest`) and
+   the seven fuzz targets at 300 s each, without a finding.
+8. `ProgramHost` with its two 3d methods and their defaults exists; the
+   cache layer passes 6.1's host tests; provenance never changes an
+   answer (property).
+9. Benchmarks recorded; both remote gate runs green.
+
+## 8. Differences from Ghidra
+
+- Every crash and undefined read of 4.21 has a defined result (rows 1, 3,
+  5, 7, 9–18); Ghidra's logic quirks that reach output are reproduced
+  (rows 4, 6; 4.8's name rules; `findExternalRef` stopping at the first
+  entry).
+- `CPoolRecord` byte data is encoded as hex (row 8); a default
+  `<context_pointset>` sets all its variables (row 12).
+- Ids are arena indices; Ghidra's ids are kept beside them.
+- Per-function overlays with an explicit commit replace Ghidra's single
+  mutable database (5.7); committing after every function reproduces
+  Ghidra's sequential behaviour.
+- Symbols carry provenance (ADR-025 3f).
+
+(The implementing agent appends further differences here.)
+
+## 9. Status
+
+Not started.
+
+## 10. Open items
+
+1. **Flag type ownership**: D05 defines varnode flags with the same
+   values; one crate should own the shared bit values (proposal: a small
+   `flags` module in `bk-decomp-symbols`, re-exported by
+   `bk-decomp-ir`, since D06 does not depend on D05).
+2. **`bk_sleigh::context` as its own crate** (proposed ADR in the
+   track report), so `bk-decomp-symbols` does not depend on the whole
+   SLEIGH runtime.
+3. **The 3d acceptance in plan 8** ("a test host that answers 'does not
+   return' changes flow exactly as `override flow … callreturn`") needs
+   flow following: it moves to D09's acceptance; D06 delivers the trait,
+   its defaults and the test host.
+4. **State dump format 2** for an exact rebuild of a function scope's
+   entry maps (6.4; the track report gives the fields).
+5. **Whether `queryFunction`'s instantiation side effect** (a function
+   scope appears as a child and becomes reachable by name, e.g.
+   `fn::x`) reaches output anywhere: Ghidra creates it lazily on first
+   query, Basilisk when D07 creates the function; the scope oracle
+   instantiates at creation to compare like with like.
