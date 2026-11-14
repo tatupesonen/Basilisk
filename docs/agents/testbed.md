@@ -54,6 +54,47 @@ from the root of a checkout: `tools/testbed/wine.sh`, `ubuntu.sh`,
 `differential.sh`. Each writes `summary.txt` and `failures.txt` to
 `$BK_OUT` (default `target/testbed/out`); `lib.sh` documents the contract.
 
+## Results on `master`'s content (493ae3f, 2026-11-14)
+
+Measured on the build host (20-vCPU x86-64 Linux VM, Debian 13), 12-core
+budget, while another agent was building there (load 12–22).
+
+| Check | Result | Wall |
+|---|---|---|
+| `wine` (gnu, whole workspace, Ghidra tree mounted) | **2,036 passed, 0 failed, 33 ignored**; 31 tests print `SKIPPED` (reference tools: Unix-only, ADR-022) | 2 min 11 s warm image + cold build |
+| `long miri` | no crate is marked `miri` in `unsafe-crates.txt`; nothing to run | 0 s |
+| `long sanitizers` | ASan: 66 passed, 0 failed, 1 ignored, 189 binutils objects instrumented, no report. UBSan: 66 passed, 197 objects instrumented, 2 non-fatal report sites (known, below) | 1 min 26 s cold, 15 s warm |
+| `long fuzz` (16 targets × 600 s, 12 at a time) | **no finding**; table below | 21 min 24 s (build 1 min 22 s) |
+
+UBSan sites (both already reported by the gnu-disasm track; binutils code,
+pointer arithmetic on NULL that is never dereferenced):
+`vendor/binutils-2.41/opcodes/csky-dis.c:274:41` and
+`vendor/binutils-2.41/opcodes/riscv-dis.c:170:42`, "applying non-zero
+offset 1 to null pointer".
+
+Fuzz table (first run, corpora empty except the checked-in regressions):
+
+    target                               exit        execs      cov   corpus
+    bk_binutils_sys_disassemble             0       900293    67545    21308
+    bk_cspec_decode                         0     12504768     1941     1591
+    bk_decomp_types_cdecl                   0      5548555     2132     1904
+    bk_decomp_types_xml                     0     16573377     2071     1859
+    bk_elf_parse                            0      3914260     2027     1225
+    bk_lang_readers                         0      5439132     2049     2129
+    bk_marshal_packed_decode                0      7184294     1387     2378
+    bk_marshal_xml_decode                   0     18827429     2527     2900
+    bk_sla_decode_packed                    0     18688436      852      723
+    bk_sla_read                             0      4241804      804      519
+    bk_sleigh_compiler_compile              0      2418681     7746     3153
+    bk_sleigh_compiler_elaborate            0      1218417     8267     3395
+    bk_sleigh_decode                        0      9814404     1656      482
+    bk_sleigh_hostile_sla                   0     50964995      596      609
+    bk_sleigh_lift                          0     13454604     1526      418
+    bk_sleigh_syntax_parse                  0      1968684     3708     3686
+
+The corpora persist on the host (`~/bk/testbed/fuzz/corpus/<target>`), so
+each later run (the nightly one included) starts where the last ended.
+
 ## Proposed text (not edited by this track)
 
 For `docs/LOOP.md`, a subsection after "The build host":
