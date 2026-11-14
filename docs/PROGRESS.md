@@ -121,6 +121,16 @@ and a panicking task delivers `SourceError::TaskPanicked` instead of
 leaving the spinner on. The flake note in agents' briefs is no longer
 needed.
 
+**When `remote-build` reports** (owner, 2026-11-14: "Once the remote
+script finishes, explain running agents how they can use it to offload
+work to a faster x86 computer"): review and merge it, then message every
+running agent with the exact commands — how to get `scripts/remote.sh`
+into its worktree (`git merge master`, on the coordinator's word), `sync`,
+`gate`, `run -- <command>`, `status`, `clean`, what runs there (builds,
+tests, both gates, fuzz, benchmarks) and what stays on the Mac (editing)
+— and put the same text in every later brief. From that merge the cap is
+one agent.
+
 **kassini is the build host** (owner, 2026-11-14: "You can use this
 computer heavily and install whatever you'd like on it", "If you are
 stuck without compute to use, then you can at any point use that"). The
