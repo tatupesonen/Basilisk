@@ -73,6 +73,11 @@ that changes `site/**`, `docs/PARITY.md`, `docs/PLAN.md`,
 `gh workflow run Pages`. The parity matrix and milestones on the site are
 read from `PARITY.md` and `PLAN.md`, so updating those republishes. The
 documentation is still a shell; `docs-content` fills it.
+The site's base path is the repository name as GitHub reports it: after
+the rename the first deployment (built for `/basilisk/`) served pages
+whose assets returned 404; a redeploy (run 43606229878) built it for
+`/Basilisk/` and every asset on the home and docs pages answers 200. A
+rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-14 16:30)
 
@@ -80,7 +85,7 @@ documentation is still a shell; `docs-content` fills it.
 |---|---|---|---|
 | `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
-| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | see the log of this session | started 2026-11-14 16:45 at the owner's explicit request, beside the cap: writes the product name as "Basilisk" in prose everywhere on `master` (rules in `DIRECTION.md`), leaving identifiers, commands, paths and URLs lower-case. It does **not** touch files the two running tracks own or append to (`crates/bk-sleigh`, `crates/basilisk`, `fuzz/`, their specs and status files, `docs/PERF.md`, `docs/inventory/tests/`) — a second pass covers those after they merge — and does not redraw artwork. |
+| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | `ae31b5f684cd62440` | started 2026-11-14 16:45 at the owner's explicit request, beside the cap: writes the product name as "Basilisk" in prose everywhere on `master` (rules in `DIRECTION.md`), leaving identifiers, commands, paths and URLs lower-case. It does **not** touch files the two running tracks own or append to (`crates/bk-sleigh`, `crates/basilisk`, `fuzz/`, their specs and status files, `docs/PERF.md`, `docs/inventory/tests/`) — a second pass covers those after they merge — and does not redraw artwork. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
