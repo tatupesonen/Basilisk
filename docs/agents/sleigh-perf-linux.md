@@ -204,7 +204,12 @@ to compare the fast form with Ghidra's loop for sizes 0–10. Every
 differential test is unchanged and byte-equal to `pcodedump`.
 `every_language` (ignored, long) passes on both hosts.
 
-Gate results: see the end of this report.
+Gate results (build host, on bf76285): `scripts/remote.sh gate` →
+`tests: 2104 passed, 0 failed`, `remote: gate exit 0`;
+`scripts/remote.sh gate --no-ref` → `tests: 2104 passed, 0 failed`,
+`remote: gate exit 0`. Also: `cargo clippy -p bk-sleigh --all-targets
+--target x86_64-pc-windows-msvc -- -D warnings` clean on the Mac;
+`scripts/check-dep-age.py master`: 0 new packages.
 
 ## Differences from Ghidra
 
