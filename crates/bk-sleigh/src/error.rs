@@ -266,7 +266,7 @@ impl DecodeError {
 pub enum LoadError {
     /// The registry does not know the language or cannot read its files.
     #[error(transparent)]
-    Registry(#[from] RegistryError),
+    Registry(Box<RegistryError>),
     /// The language has no compiled `.sla` file.
     #[error("language {language} has no compiled .sla file (expected {})", expected.display())]
     MissingSla {
@@ -281,11 +281,11 @@ pub enum LoadError {
         /// The file.
         path: PathBuf,
         /// What went wrong.
-        source: SlaError,
+        source: Box<SlaError>,
     },
     /// The model's address spaces cannot be built.
     #[error("address spaces: {0}")]
-    Spaces(#[from] SlaError),
+    Spaces(Box<SlaError>),
     /// An address-space operation failed (truncation, ranges).
     #[error(transparent)]
     Space(#[from] SpaceError),
@@ -314,4 +314,16 @@ pub enum LoadError {
         /// The space named.
         space: String,
     },
+}
+
+impl From<RegistryError> for LoadError {
+    fn from(error: RegistryError) -> Self {
+        Self::Registry(Box::new(error))
+    }
+}
+
+impl From<SlaError> for LoadError {
+    fn from(error: SlaError) -> Self {
+        Self::Spaces(Box::new(error))
+    }
 }

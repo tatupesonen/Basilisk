@@ -129,7 +129,7 @@ impl Language {
             })?;
         let sla = Sla::read_file(&path, &Limits::default()).map_err(|source| LoadError::Sla {
             path: path.clone(),
-            source,
+            source: Box::new(source),
         })?;
         let mut language = Self::from_sla(Arc::new(sla))?;
         for truncation in description.truncated_spaces() {
