@@ -68,7 +68,9 @@ static std::string actionState(const ActionEntry &e, Funcdata *fd)
   std::vector<std::string> parts;
   Action *act = e.action;
   ActionRestartGroup *restart = dynamic_cast<ActionRestartGroup *>(act);
-  if (restart != (ActionRestartGroup *)0) parts.push_back("restart:" + num(restart->curstart));
+  // curstart is set by reset(); an action never started may not have had one.
+  bool started = act->status != Action::status_start || act->count_tests > 0;
+  if (restart != (ActionRestartGroup *)0 && started) parts.push_back("restart:" + num(restart->curstart));
   if (act->status == Action::status_mid) {
     ActionGroup *group = dynamic_cast<ActionGroup *>(act);
     if (group != (ActionGroup *)0 && group->state != group->list.end())
@@ -97,7 +99,14 @@ static void writeActions(StateDump &d)
       continue;
     }
     Action *a = e.action;
-    d.w.add(record({"A", num(e.position), escape(e.path), hx(a->status), num(a->count), num(a->lcount),
+    // Action's constructor leaves count and lcount uninitialised (action.cc);
+    // perform sets count at every start and lcount when it goes on from a
+    // start, so before that they are written as `-`.
+    bool counted = a->status != Action::status_start || a->count_tests > 0;
+    bool lcounted = a->count_tests > 0 ||
+                    (a->status != Action::status_start && a->status != Action::status_breakstarthit);
+    d.w.add(record({"A", num(e.position), escape(e.path), hx(a->status), counted ? num(a->count) : "-",
+                    lcounted ? num(a->lcount) : "-",
                     num(a->count_tests), num(a->count_apply), hx(a->flags), hx(a->breakpoint),
                     actionState(e, d.fd)}));
   }

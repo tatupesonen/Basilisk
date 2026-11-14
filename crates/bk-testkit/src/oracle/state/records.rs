@@ -112,10 +112,11 @@ record! {
         path: String = Text,
         /// `Action::status`.
         status: u32 = Hex<u32>,
-        /// `count`.
-        count: i32 = Dec<i32>,
-        /// `lcount`.
-        lcount: i32 = Dec<i32>,
+        /// `count`; absent before the action first started (Ghidra leaves it
+        /// uninitialised until then).
+        count: Option<i32> = Opt<Dec<i32>>,
+        /// `lcount`; absent until the action first went on from a start.
+        lcount: Option<i32> = Opt<Dec<i32>>,
         /// `count_tests`.
         count_tests: u32 = Dec<u32>,
         /// `count_apply`.
