@@ -96,6 +96,19 @@ rules so merges are clean and the result is shippable.
   Linux x86-64 result: Windows and macOS still need the cross-check
   clippy and what your brief says. Benchmarks measured there are
   labelled with the machine type (a 20-vCPU x86-64 Linux VM).
+- **Testbed checks before the final report** (`LOOP.md`, "Testbed").
+  Besides both gate runs: a track that touches paths, files, processes,
+  floating point, C code or anything under `cfg(windows)` runs
+  `scripts/remote.sh wine -- -p <crate> …` for its crates and reports
+  the counts; a track that adds or changes a parser runs
+  `scripts/remote.sh long fuzz 300 <its targets>`; a track whose results
+  depend on floating point runs `scripts/remote.sh arm64 -- -p <crate>`;
+  a track that changes C code or the `build.rs` of a C-binding crate
+  runs `scripts/remote.sh long sanitizers` and `scripts/remote.sh
+  ubuntu`; a track with `unsafe` runs `scripts/remote.sh long miri`. The
+  whole-workspace Wine run, fuzzing at length, the million-case property
+  tests and the full differential runs belong to the nightly run; do not
+  start them yourself unless your brief says so.
 - While developing, build and test only your crates
   (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
 - Before your final commit run the full gate exactly as

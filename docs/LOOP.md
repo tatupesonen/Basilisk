@@ -99,6 +99,39 @@ is a Linux x86-64 result; platform-specific code still needs the Mac or
 CI as well. The coordinator's integration gate before a merge runs there
 too, followed by CI on the three systems as before.
 
+#### Testbed
+
+The build host is also the project's testbed: the checks that are slow
+or impossible on the Mac run there, through `scripts/remote.sh` (scripts
+in `tools/testbed/`, details in `docs/agents/testbed.md`). They take 12
+of the 20 cores by default, run below normal priority, are bounded in
+time, and copy their results back to `target/testbed/`:
+
+- `wine [-- -p <crate>…]` — the tests built for `x86_64-pc-windows-gnu`
+  and run under Wine, with the Ghidra tree as `Z:\ghidra`. It catches
+  path, separator, C-library and `cfg(windows)` problems before CI;
+  CI's `windows-latest` job (MSVC, real Windows, NTFS links) stays the
+  final word. `wine --msvc` builds with cargo-xwin and clang-cl instead.
+- `ubuntu` — the crates that compile C and the reference tools with
+  Ubuntu 26.04's GCC 15.
+- `arm64 [-- -p <crate>…]` — tests cross-built for Linux AArch64 and run
+  under qemu-user (by default the floating-point-contraction crates,
+  ADR-029/ADR-039).
+- `long miri|sanitizers|fuzz|proptest|differential|all` — Miri, ASan and
+  UBSan on the C-binding crates, every fuzz target for 10 minutes, the
+  property tests at 1,000,000 cases (where a suite leaves the count to
+  `PROPTEST_CASES`), and the full differential runs.
+
+A nightly run (the host user's crontab, 01:30 host time) tests the
+host's `master` with the gate, the Wine check and one rotating slot of
+the long runs, and writes one report per night; `scripts/remote.sh
+report` prints the latest, `report --all` lists them. The host's
+`master` is what the coordinator last sent: **after every merge to
+`master` the coordinator runs `scripts/remote.sh publish`**. The
+coordinator reads the report at the start of each day's work; a new
+failure there is a task. `scripts/remote.sh nightly status` shows the
+schedule, `nightly remove` takes it out.
+
 ## Lint configuration
 
 Lint levels live in the root `Cargo.toml` under `[workspace.lints]` and
