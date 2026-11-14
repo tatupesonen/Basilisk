@@ -1,6 +1,17 @@
 //! Pattern expressions and pattern equations as resolved trees
 //! (`slghpatexpress.hh`): the values of fields and operands, and the bit
-//! patterns of constructors, which the back half turns into patterns.
+//! patterns of constructors, which the back half turns into patterns; and
+//! the bit patterns themselves (`slghpattern.hh`, `TokenPattern`).
+
+mod algebra;
+mod block;
+mod disjoint;
+mod token_pattern;
+
+pub use algebra::Pattern;
+pub use block::Block;
+pub use disjoint::Disjoint;
+pub use token_pattern::{CombineError, Tok, TokenPattern};
 
 use bk_sla::{BinaryOp, Field, UnaryOp};
 
