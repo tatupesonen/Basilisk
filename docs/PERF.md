@@ -304,3 +304,28 @@ C debug info is off by default (`CFLAGS=-g` to have it). Size added to a
 stripped `dist`-profile binary (fat LTO) by using `bk-gnu-disasm`:
 13.4 MB (13.7 MB against 0.3 MB for the same program without it) — the
 tables of every libopcodes target.
+
+### `bk-sleigh` (decoding, track `sleigh-decode`)
+
+    crates/bk-sleigh/tests/reference_bench/build.sh ../reference
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 \
+      cargo test --release -p bk-sleigh --test bench -- --ignored --nocapture --test-threads=1
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 \
+      cargo test -p bk-sleigh --test bench_heap -- --nocapture
+
+Input: 538,553 bytes of x86-64 code, the text sections of Ghidra's
+`ruleaction.cc`, `coreaction.cc`, `fspec.cc` and `type.cc` built with Apple
+clang 17 `-O2 -arch x86_64` (`build.sh`); 147,953 instructions and 1,331
+undecodable positions on both sides (the counts of inventory 8a). Context:
+the `.pspec` defaults. Reference: `tests/reference_bench/slabench.cc` linked
+against the reference build's `libsla.a`, run by the benchmark in the same
+session. Best of 5. 2026-11-14, M1 Pro (8 cores), load average 10–15 (other
+agents' builds and the differential test running).
+
+| Benchmark | basilisk | Ghidra C++ (same session) | Required |
+|---|---:|---:|---|
+| `Language::load` x86-64 (module registry + `.sla` + `.ldefs` + `.pspec`) | **20.3 ms** (`Sla::read_file` 19.0 ms) | 32.2 ms (`Sleigh::initialize` + `<context_data>`) | ≤ reference and ≤ 40 ms — met |
+| decode only (`Decoder::decode` / `instructionLength`) | **3.25 M instructions/s** (308 ns) | 3.17 M/s | ≥ reference — met |
+| decode + text (`decode` + `mnemonic` + `body` / `printAssembly`) | **2.41 M/s** (415 ns) | 1.50 M/s | ≥ reference — met |
+| allocations per instruction, steady state (`dhat`, 100,000 instructions) | **0** (x86-64 and the `bkfix` fixture; the only blocks counted are the context database's, built once) | — | 0 — met |
+| 8 threads sharing one `Language`, decode only | 2 threads 1.98×, 4 threads 3.60×, **8 threads 4.78×** | — | ≥ 6× on an idle 8-core machine — not met on this loaded machine (load average 14 with three agents' work); recorded, see the track report |
