@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 23:31)
+## Now — RESUME HERE (2026-11-15 00:39)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 23:31)
+### Running (state at 2026-11-15 00:39)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,33 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Finished except its oracle acceptance, integration gate running on
+the build host (started 00:37 on 2026-11-15):** `decomp-cfg`
+(`ae8492491a7ef480f`) on branch `integration` (worktree
+`../basilisk-wt/decomp-cfg`, `33cb6f6`). New crate `bk-decomp-cfg`
+(D04; 7,100 lines of source, every file under 600, no `unsafe`, no
+recursion; depends on `bk-marshal` and `thiserror`): the arena block
+graph with Ghidra's edge order, every edge-surgery method and analysis,
+all structured kinds, the full `CollapseStructure` with `LoopBody` and
+`TraceDAG` behind a replaceable `GotoSelector`, finishing, block XML,
+`print_tree`, and `structure(&Cfg, &BlockFacts, &StructureOptions, &mut
+dyn GotoSelector) -> Structured`. 104 tests; **4,000 generated graphs
+equal Ghidra's `structure blocks` byte for byte, errors included**, the
+table generated twice on each reference build and identical in all four
+runs; fuzz 2 × 300 s, Wine 104, arm64 104; structuring a 7,177-node
+graph 21 ms against the reference's 51. Its gates: 2,349 tests. A new
+Ghidra defect confirmed (`GHIDRA-BUGS.md` entry 29: `TraceDAG` never
+ends on one generated graph; Basilisk returns an error). **Open, all
+waiting for D00's `decomp_bk`**: the `bk cfg`/`bk structure` table
+(tests and `regen.sh` written, skipping), the corpus captures, the
+trace comparison, whether the two C++ libraries differ on `orderBlocks`
+ties (120 of 11,661 generated runs tie), and replacing its local format
+helpers (`tests/support/dump.rs`) by `bk-testkit`'s. The steps are in
+the State section of `docs/agents/decomp-cfg.md`. **After D00 is on
+`master`: resume this agent** (a fresh worktree and branch
+`decomp-cfg-oracle` cut from `master`; tell it the path) to do them.
+Gate green → push, CI, merge, delete, clean, publish.
 
 **Merged: `sleigh-perf-linux`** (`a20fadd7bd1040732`; `31c529e`, CI run
 43642488252 green on all 8 jobs, integration gate on the build host
@@ -301,7 +328,7 @@ left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `decomp-cfg` (worktree `../basilisk-wt/decomp-cfg`, cut from `master` `bf8d45b`) | Opus | `ae8492491a7ef480f` | started 23:18. D04 from `features/decomp-cfg.md`: crate `bk-decomp-cfg` (block graph, graph algorithms, structured hierarchy, the structurer; `structure(graph, facts, options)`). Starts with what needs no D00 (the `structure blocks` cross-check, properties, fuzz, benchmark); its `bk structure`/`bk cfg` oracle tests are written to the specified formats and skip until `decomp_bk` exists. **When D00's commands are on `master`, message it** (it may then `git merge master`, at most twice); if it hands back first with only the oracle acceptance open, resume it after D00 merges. |
+| `spec-decomp-wave2` (worktree `../basilisk-wt/spec-decomp-wave2`, cut from `master` `9b0c4d5`) | Opus | `a2f24c167e7e94cd7` | started 00:37 on 2026-11-15. Writes `features/decomp-symbols.md` (D06 `bk-decomp-symbols`: scopes and symbols, comments, strings, constant pool, load images, context, overrides, the host trait; ADR-025 items 3d, 3f) and revises `features/decomp-ir.md` (D05) against the source, the D00 and D04 specs and the coordinator's corrections; docs only. D06 first, so its track can start when the document exists. Proposes ADRs without numbers. |
 | `decomp-oracle` (worktree `../basilisk-wt/decomp-oracle`, cut from `master` `e8041d6`) | Opus | `a5bfa968bedb8543f` | started 23:09. D00 from `features/decomp-oracle.md` (ADR-042): the console extension (`tools/reference/consoleext/`, consoles `decomp_bk`, `decomp_bk_dbg`, plus `decomp_dbg`), the dump, graph, structure, trace and p-code-recording formats, their readers in `bk-testkit`, a nightly `oracle` item. Told to deliver `bk structure` and `bk cfg` first (D04 needs them), to develop against scratch copies of the reference, and to run the new build script on the two shared reference directories only at the end, adding files only, with before/after hashes in its report. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
@@ -614,13 +641,15 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `sleigh-perf-linux` is merged (above).
-   `decomp-oracle` reports → check the before/after hashes of both
-   reference directories, merge through `integration`, **message
-   `decomp-cfg`** that the commands are on `master`, start queue item 7
-   (the monitor type). `decomp-cfg` reports → merge (or resume it for
-   the oracle acceptance if D00 was not merged yet). After each merge:
-   `scripts/remote.sh publish`.
+   `sleigh-perf-linux` is merged (above). `decomp-cfg`: integration
+   gate → CI → merge (state above). `decomp-oracle` reports → check the
+   before/after hashes of both reference directories, merge through
+   `integration`, then **resume the `decomp-cfg` agent** on a new
+   branch for its oracle acceptance (that takes the slot; the monitor
+   type, queue item 7, follows). `spec-decomp-wave2` reports → review,
+   record its ADRs, amend the plan, merge directly, start D06
+   `decomp-symbols`; D05 `decomp-ir` starts when D00 and D04's oracle
+   part are merged. After each merge: `scripts/remote.sh publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
