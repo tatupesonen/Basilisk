@@ -1,10 +1,20 @@
 name: Pages
 
-# Deploys the website and documentation (site/, ADR-031) to GitHub Pages.
-# Manual for now: the repository owner must first set Settings → Pages →
-# Build and deployment → Source to "GitHub Actions". Then run this workflow
-# from the Actions tab (or `gh workflow run Pages`).
+# Deploys the website and documentation (site/, ADR-031) to GitHub Pages
+# (Settings → Pages → Source is "GitHub Actions"; published at the owner's
+# word on 2026-11-14). Runs on every push to master that changes the site
+# or a file the site is built from (the parity matrix and the milestones
+# are read from docs/ at build time), and by hand from the Actions tab or
+# `gh workflow run Pages`.
 on:
+  push:
+    branches: [master]
+    paths:
+      - 'site/**'
+      - 'docs/PARITY.md'
+      - 'docs/PLAN.md'
+      - 'scripts/site.sh'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:

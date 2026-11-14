@@ -62,10 +62,15 @@ part 1, `bk-pcode` on the x86-64 oracle, the website and documentation
 shell (`site/`), the unfused reference build. Last green CI: run 43605009924 (all jobs, all three
 systems; gate 1,819 tests).
 
-**The site is built but not published** (owner: "Not until there is more
-to show"). When the owner says so: GitHub → Settings → Pages → Source
-"GitHub Actions", then `gh workflow run Pages`
-(`https://tatupesonen.github.io/basilisk/`).
+**The site is published** at `https://tatupesonen.github.io/basilisk/`
+(docs under `/docs/`), at the owner's word on 2026-11-14 ("you can do it,
+set up auto build as well"). Pages is enabled with source "GitHub
+Actions"; `.github/workflows/pages.yml` deploys on every push to `master`
+that changes `site/**`, `docs/PARITY.md`, `docs/PLAN.md`,
+`scripts/site.sh` or the workflow itself, and by hand with
+`gh workflow run Pages`. The parity matrix and milestones on the site are
+read from `PARITY.md` and `PLAN.md`, so updating those republishes. The
+documentation is still a shell; `docs-content` fills it.
 
 ### Running (state at 2026-11-14 16:30)
 
@@ -225,9 +230,6 @@ start a fresh agent briefed from the branch's files.
   basilisk-owned overlays for unimplemented instructions and for vector
   operations that Ghidra models as opaque user ops. Needs an ADR
   (ADR-002 says the specifications are used unchanged) if it is taken up.
-* **The site is built but not published** (owner, 2026-11-14: "Not until
-  there is more to show"). When the owner says so: Settings → Pages →
-  Source "GitHub Actions", then `gh workflow run Pages`.
 * `spec-pe` and `store-spike` (Fable, paused since 2026-11-13) are
   resumed as they are when their turn comes (owner, 2026-11-14).
 

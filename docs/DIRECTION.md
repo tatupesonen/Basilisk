@@ -141,7 +141,10 @@ and a sane architecture in mind.
     instructions): the idea is recorded in `PROGRESS.md`, not queued.
   - *The site is not published until there is more to show*: no Pages
     deployment until the documentation content exists and the owner says
-    so.
+    so. **Superseded the same day** (owner, 2026-11-14, later: "you can
+    do it, set up auto build as well"): the site is published on GitHub
+    Pages at `https://tatupesonen.github.io/basilisk/` and is redeployed
+    automatically on every push to `master` that changes it.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer
