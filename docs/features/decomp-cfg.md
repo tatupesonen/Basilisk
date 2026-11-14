@@ -979,9 +979,45 @@ the reference console's time for `structure blocks` on the same graphs.
 
 (The implementing agent appends further differences here.)
 
+Added by the implementing track (`docs/agents/decomp-cfg.md`):
+
+- `TraceDAG::pushBranches` stops with `CfgError::TraceCycle` when one trace
+  opens more than `2·nodes + 8` branch points. In an acyclic view each node
+  opens at most once; past that the view has a cycle on which Ghidra opens
+  and retires branch points forever, allocating one per turn (a new Ghidra
+  defect, reproduced on a 25-node function-like graph; the 6.2 table has it
+  as a `hang` row). Ghidra never finishes such a graph, so no output
+  differs.
+- The checks Ghidra makes only in debug builds (`BLOCKCONSISTENT_DEBUG`) are
+  made only at the public `Cfg` entry points (`Bad edge create`, …); inside
+  the structurer the release behaviour is ported (`forceOutputNum` with too
+  many outputs does nothing, as the reference build does).
+- Where Ghidra would dereference null or index out of bounds on hostile
+  input — a null front leaf in `addCase` (reported as `Case block has become
+  detached from switch`), a null dominator or an index that is not a list
+  position in `calcForwardDominator` (`CfgError::BadIndex`), the finger
+  loop failing to meet (the work limit) — Basilisk returns an error.
+- A block document whose `<bhead>` declares a nested `graph` or `copy`
+  block is rejected (`CfgError::BadDocument`): Ghidra's decoder builds a
+  `BlockCopy` with a null original that the structurer later dereferences.
+- `Limits::max_steps` defaults to `2·(n+e)² + 10⁶` (measured, `docs/PERF.md`),
+  not the provisional `64·(n+e)²/1000 + 10⁶`, which 720-node graphs exceed.
+- The oracle table of 6.3.1 stores, per graph and mode, the dump's header
+  line and a 128-bit FNV-1a fingerprint of the dump instead of the dump
+  (about 12,000 graphs times four dumps of several kilobytes would not fit
+  the repository); the 6.2 table stores the full outputs (1.1 MB).
+
 ## 9. Status
 
-Not started.
+Implemented by track `decomp-cfg` (report: `docs/agents/decomp-cfg.md`).
+Everything of section 3 is built; the structurer equals the reference's
+`structure blocks` byte for byte on 4,000 generated graphs on both
+reference builds (6.2), whose tables are identical. Waiting for D00: the
+`bk cfg`/`bk structure` table of 6.3.1 (the tests are written and skip),
+the corpus captures of 6.3.2 and the trace comparison of 6.4 against
+Ghidra's `R` records, and with them the confirmation that
+`Case block has become detached from switch` on graphs with input
+default-switch labels is Ghidra's result too.
 
 ## 10. Open items
 
@@ -995,3 +1031,46 @@ Not started.
    of the reference on some graph if it is.
 3. The default of `max_steps` (5.3) is a guess until the corpus
    benchmarks exist.
+
+Settled by the implementing track:
+
+4. Item 2: **unreachable, by reading.** When no trace can move, take a
+   deepest open branch point (one whose paths are all active; it exists
+   because every inactive path has a derived branch point and the chain is
+   finite). Its paths are not empty (a lone non-terminal path retires its
+   branch point before it can be chosen as a bad edge, so `removeTrace`
+   never empties one). If all its paths are terminal, its path 0 retires it
+   (`checkRetirement`), and the cursor visits path 0 before
+   `missedactivecount` reaches `activecount`; a non-terminal path is either
+   a virtual root path, which always opens, or a candidate. So the list is
+   never empty when `selectBadEdge` runs. The property test asserts
+   `NoBadEdge` never occurs; no run produced it. (A different
+   non-termination does exist: see section 8, `TraceCycle`.)
+5. Item 3: `max_steps` defaults to `2·(n+e)² + 10⁶` (section 8). The
+   corpus benchmark waits for D00's captures.
+6. Item 1, generated graphs only: of 11,661 finished runs over the 6.3.1
+   graph set, 120 end with two or more top-level nodes ending in `RETURN`
+   (119 of them on a top level of four or more nodes, where libc++ may
+   reorder, 25 of 17 or more, where libstdc++ may); pinned in
+   `tests/oracle_bk.rs`. Whether the libraries actually differ on them is
+   seen when the D00 table exists on both builds; the corpora count waits
+   for D00's capture.
+7. Spec items found wrong (the source wins): the messages `Bad block output
+   force`, `Bad block identify`, `Bad edge create/remove/move`, `Bad block
+   remove`, `Bad (or Illegal) remove from flow (split)`, `Bad set start` and
+   `Swapping edges for block that doesn't have two edges` are debug-build
+   checks that the reference never raises (4.4 says `forceOutputNum`
+   raises one); `forceFalseEdge` also raises `Can only preserve binary
+   condition` (block.cc:1221), missing from 5.2; 4.1 "both halves of one
+   edge carry the same label" does not hold after `dedup`, which ORs a
+   merged label into one half only (block.cc:463, 492); 4.9 step 5 — a
+   graph passes its *own* argument to its first component, not `true`
+   (block.cc:1278; only loops pass `true`); 4.9 step 1 — `compareFinalOrder`
+   reads `lastOp()` of top-level *structured* nodes, which delegates by
+   kind (goto kinds to component 0, list to its last, condition to
+   component 1, if-no-exit to component 2, others null), so
+   `ends_in_return` is asked of that leaf; 4.2 — the virtual root of
+   `calcForwardDominator` has index 0, so Ghidra's finger arithmetic maps
+   it to list position 0 and an intersection reaching it yields `list[0]`
+   (reproduced); 5.3 — the default step limit (item 5).
+
