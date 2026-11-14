@@ -142,10 +142,73 @@ it rests on CI.
   verbatim UNC paths in the unit tests' `\\?\UNC\server\share` case.
   Ghidra-dependent tests on a Windows machine are not covered by CI.
 
+## Round 2 (branch `windows-ci2`): new Windows-only tests failed on CI
+
+CI run 43456260254: the three originally failing tests passed on real
+Windows, but three of the new `#[cfg(windows)]` unit tests failed:
+`bk-lang` `registry::paths::tests::windows_spellings::case_02` and
+`case_03`, and `bk-sleigh-syntax` `loader::tests::windows_spellings`.
+In each, `c:\a\b` came back unchanged instead of `C:\a\b`.
+
+- **Cause** (product bug in my `windows_spelling`): std's `Prefix::Disk`
+  and `Prefix::VerbatimDisk` already carry the drive letter in upper case.
+  So the test `letter.is_ascii_lowercase()` never succeeded, and a plain
+  path with a lower-case drive was returned unchanged. Verbatim paths
+  were not affected, because they are always rebuilt from the upper-cased
+  letter. **Fix:** lower case is now read from the prefix's own text
+  (`prefix.as_os_str()`).
+- **Running Windows tests under Wine:**
+  - Setup: the `bk-gnu-disasm-win` image (built by the gnu-disasm track,
+    used unchanged), with my own scripts in `target/windows/`
+    (`dock.sh`, `run.sh`). It builds for `x86_64-pc-windows-gnu`
+    (MinGW-w64) and runs the tests with `wine` as the cargo runner.
+  - The container is limited to 3 CPUs and 6 GB, with a `timeout` inside
+    the container and `alarm` outside.
+  - **Wine reproduces all three failures before the fix**
+    (`target/windows/before.log`, `before-sleigh.log`), and they pass
+    after it.
+- **Every non-C crate under Wine:** `bk-lang`, `bk-sleigh-syntax`,
+  `bk-bin`, `bk-core`, `bk-elf`, `bk-marshal`, `bk-pcode` and `bk-testkit`
+  were run with `--no-fail-fast`. The second run added the real Ghidra
+  tree, mounted read-only and given as `BASILISK_GHIDRA_DIR=Z:\ghidra`,
+  so the Ghidra-dependent tests ran on Windows too. That run found three
+  more problems, all fixed:
+  1. `bk-pcode` `float::host::tests::round_is_half_away_from_zero` and
+     one row of `cpp_oracle::u64_path_equals_ghidra_cpp`: `f64::round`
+     calls the C library's `round()`. Under MinGW-w64/Wine that returns
+     1 for 0.49999999999999994 (`floor(x + 0.5)`). It passed on CI's MSVC
+     build. Product fix: `op_round` uses `libm::round` (already a
+     dependency), which is exact on every platform.
+  2. `bk-lang` `root_spelling::a_root_reached_through_a_symbolic_link…`:
+     Wine's `symlink_dir` succeeds, but the link cannot be followed. The
+     test now also skips when the link does not lead to its target. Its
+     skip line is now written to the real standard error, which the
+     harness does not capture, so a CI log shows whether the test ran or
+     skipped. On real Windows CI it passed, but the earlier log could not
+     show whether it ran.
+  3. `bk-lang` `root_spelling::every_spelling_of_the_ghidra_tree…`: the
+     test helper `spellings()` unwrapped the parent directory's name. A
+     tree at the root of a drive (`Z:\ghidra`, or `/ghidra`) has none.
+     This is a test bug and is fixed.
+- **Final Wine result:** all tests of those eight crates pass. The tests
+  that need the reference tools skipped with printed reasons; they are
+  Unix-only development tooling (ADR-022).
+- **Not run under Wine:** `bk-ui` and `basilisk` (the GUI, which has no
+  `#[cfg(windows)]` tests), and `bk-binutils-sys`/`bk-gnu-disasm` (C code,
+  covered by their own track).
+- **What Wine does not replace:** Wine runs the MinGW (`-gnu`) build,
+  while CI builds MSVC. The two had different C-library behaviour here
+  (`round`), and Wine's symbolic links do not behave like Windows'. So
+  the MSVC build, real NTFS links and the verbatim-UNC unit-test case
+  still rest on CI.
+- `cargo clippy … --target x86_64-pc-windows-msvc -- -D warnings` is
+  clean for the changed crates.
+
 ## Gate
 
 `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` printed 0;
-last line: `tests: 1533 passed, 0 failed` (run with the Ghidra and reference
+round 1 last line: `tests: 1533 passed, 0 failed`; round 2 (`windows-ci2`) printed 0
+with last line `tests: 1680 passed, 0 failed` (both run with the Ghidra and reference
 variables unset, so Ghidra-dependent tests skipped in the gate; they were
 run separately as listed above).
 

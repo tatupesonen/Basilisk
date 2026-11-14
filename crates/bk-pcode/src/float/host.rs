@@ -429,8 +429,14 @@ impl FloatFormat {
 
     /// `round(a)`: to the nearest integer, halfway cases away from zero
     /// (`opRound`).
+    ///
+    /// `f64::round` has no machine instruction and calls the C library's
+    /// `round`, which on `x86_64-pc-windows-gnu` (MinGW-w64 under Wine)
+    /// gives 1 for 0.49999999999999994, the largest double below one half
+    /// (it computes `floor(x + 0.5)`). `libm::round` is exact on every
+    /// platform.
     pub fn op_round(&self, a: u64) -> u64 {
-        self.unary(a, f64::round)
+        self.unary(a, libm::round)
     }
 }
 
