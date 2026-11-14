@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 16:35)
+## Now — RESUME HERE (2026-11-14 17:26)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -32,6 +32,22 @@ sides (that broke `fuzz/Cargo.toml` once; neither the gate nor CI builds
 the fuzz crate — check it with `cargo metadata --manifest-path
 fuzz/Cargo.toml`). Branches that touch only docs and development scripts
 may be merged directly.
+
+**Disk space is a working constraint** (460 GB disk; it ran completely
+full at 17:15 on 2026-11-14 and stopped every agent and every command).
+Each worktree's `target/` grows to 7–17 GB. The owner has said the
+coordinator fixes a full disk without asking ("You can autonomously fix
+it in the future"): delete regenerable build output only — Cargo's
+`target/debug`, `release`, `doc` and target-triple folders — never the
+scratch scripts some worktrees keep under `target/` (`windows/`,
+`linux/`, `ubuntu2604/`, `brand-name/`, …) and never uncommitted work.
+When a branch is merged, delete its build output at once and remove the
+worktree when its content is on `master`. Check `df -h
+/System/Volumes/Data` before starting a gate or an agent; keep 15 GB
+free. If no command can start at all (the harness cannot create its
+output file), empty a regenerable log with the Write tool (a `gate.log`,
+a fuzz log) to get the first megabyte back. Docker stops when the disk
+fills: `open -g -a Docker`.
 
 **`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 16:34; CI
 run 43605009924 on `integration`, every job green on Linux, macOS and
@@ -79,14 +95,39 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 16:30)
+### Running (state at 2026-11-14 17:26)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
-| `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
-| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | `ae31b5f684cd62440`, stopped | stopped at the owner's word at 16:54 ("kill the haiku agent as well and merge its work") with everything committed (4 commits, 163 files, text only; it was waiting for its gate). The coordinator reviewed the diff (no identifier, command, path or file name was capitalised), runs the gate on the branch, then integration, CI and merge. About 376 lower-case mentions remain outside the skipped files, nearly all commands, module names and paths; the second pass (after `sleigh-pcode` and `decomp-cspec` merge) covers the skipped files and looks at those again. |
-| `brand-name` (worktree `../basilisk-wt/brand-name`, based on `name-case`) | Opus | `a4515848d0bb9b7be` | started 16:58 at the owner's word ("upgrade the basilisk icon to big B as well, change nothing else", "tell new opus 5.5 to update the image", "do NOT change the logo, find the old scripts used for generating the logo"): first looks for the original generator scripts of the brand set (none was committed), then makes the wordmark's first letter a capital B with the emblem byte-identical and nothing else changed; before/after renders go to the owner before it is merged. Beside the cap at the owner's explicit request. |
+| `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`, cut from `integration` `c613bd2`) | Opus | `a41574e3f4a6e75b9` | started 17:14, stopped by the full disk before writing anything, resumed 17:25. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Findings so far (in its hand-back, to be written to its status file first): `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` has to be ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. |
+| `ui-flake` (worktree `../basilisk-wt/ui-flake`, cut from `name-case`) | Opus | `afdc9312b2424f522` | started 17:12, stopped by the full disk, resumed 17:25. `bk-ui` test `task::tests::requests_complete_off_thread_and_wake` fails about one run in three on a busy machine (the worker stores the result, then wakes; the test asserts the wake at once). Diagnosis from reading: a test bug, plus a real gap (a request finished before `set_waker` wakes nobody; hidden today by the views' fallback repaints) and a panic in a task leaving `running` raised. It fixes all three, reproduces before and after under load, runs the gate. |
+
+**Finished, on branch `integration`** (worktree
+`../basilisk-wt/integration`, `c613bd2`, not pushed yet): `brand-name`
+(`a4515848d0bb9b7be`; the wordmark reads "Basilisk", the emblem is
+byte-identical, the brand set's generator scripts were recovered from the
+logo agent's transcript and are in `assets/brand/tools/` with a
+`build.py`; site build and check passed), `sleigh-pcode`
+(`a392a8e6a16d0c340`; `bk-sleigh` part 2 and `basilisk disasm`: all 175
+language pairs match `pcodedump` on every record kind, the tolerated
+differences are three Ghidra behaviours that depend on stale memory or
+its parse cache; 37 instructions that crash `pcodedump` lift; gate 1,861
+tests; not shown: 8-thread scaling ≥ 6×, measured 4.7–5.7× on a loaded
+machine) and `decomp-cspec` (`aaa90a7df42087601`; D03 `bk-cspec`: 294
+language/compiler pairs replayed, 127,088 rows, none unexplained; gate
+1,924 tests). One conflict, two sections appended to `docs/PERF.md`,
+resolved by reading; both manifests and lock files parse. **The gate,
+`check-dep-age.py master` and the advisory check are running on it
+(started 17:25).** Green → push, `gh workflow run CI --ref integration`,
+green on every job → merge to `master`, delete the branch, delete the
+build output of the merged worktrees, update PLAN and PARITY (M1
+`sleigh-pcode` ✔, M3 wave 1 D03 ✔), write the ADR the pcode track
+proposes (where Ghidra's p-code depends on its parse cache or on
+uninitialised memory, Basilisk gives the result of a fresh parse).
+
+**Merged today besides the toolchain fix:** `name-case` (`2250a58`, CI
+run 43608295113; the Haiku agent `ae31b5f684cd62440` was stopped at the
+owner's word with its work committed; 163 files, text only).
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 

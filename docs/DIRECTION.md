@@ -158,6 +158,12 @@ and a sane architecture in mind.
     still `slop/basilisk`). The mechanical text
     pass is done by a Haiku agent at the owner's explicit request (an
     extra agent beside the two-worker cap, for that task only).
+  - *A full disk is the coordinator's to fix, without asking* (owner,
+    2026-11-14: "Fix full disk", "You can autonomously fix it in the
+    future"). Only regenerable build output is deleted (Cargo's build
+    folders); scratch scripts, uncommitted work and anything outside the
+    project's own folders are left alone. `PROGRESS.md` has the
+    procedure.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer

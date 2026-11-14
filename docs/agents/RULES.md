@@ -63,6 +63,12 @@ rules so merges are clean and the result is shippable.
   pipe it — and fix everything it reports. `gate.log` is git-ignored.
 - Temporary files go in your worktree's `target/` or a directory you
   create with a unique name; never in the Ghidra tree.
+- **Disk space is shared and finite.** A full disk stops every agent on
+  the machine. Check `df -h /System/Volumes/Data` before a full gate or
+  any large build; if less than 10 GB is free, stop, commit and report
+  instead of building. Delete the build directory of a Wine, container or
+  cross build when you are done with it (keep the scripts), and do not
+  keep several profiles or target triples built when one will do.
 
 ## Quality bar
 
