@@ -139,8 +139,9 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished except its oracle acceptance, integration gate running on
-the build host (started 00:37 on 2026-11-15):** `decomp-cfg`
+**Finished except its oracle acceptance; integration gate green (2,358
+tests, 0 new packages, advisories ok), in CI as run 43649366489 since
+00:41 on 2026-11-15:** `decomp-cfg`
 (`ae8492491a7ef480f`) on branch `integration` (worktree
 `../basilisk-wt/decomp-cfg`, `33cb6f6`). New crate `bk-decomp-cfg`
 (D04; 7,100 lines of source, every file under 600, no `unsafe`, no
