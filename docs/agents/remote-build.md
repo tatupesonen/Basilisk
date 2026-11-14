@@ -141,9 +141,12 @@ Findings:
 * **One failure in one run, not Linux-specific**: the first complete
   test run failed `bk-ui` `task::tests::requests_complete_off_thread_and_wake`
   (task.rs:320, the wake count asserted right after the result is seen).
-  This is the known flake the `ui-flake` track is fixing (PROGRESS.md); it
-  did not recur in the six later full test runs. Because `cargo test` stops at the
-  first failing binary, that run counted only 1,937 tests.
+  This is the known flake fixed by the `ui-flake` track, which reached
+  master after this branch was cut. Here it failed 2 of 9 full test runs
+  (the first, and the next-to-last on the final commit). Because
+  `cargo test` stops at the first failing binary, those runs counted only
+  1,937 tests. Final gate on this branch's last commit: exit 0,
+  `tests: 1966 passed, 0 failed`, 62 s warm.
 * **cargo-deny on a fresh machine**: `cargo deny --offline` failed with
   `failed to download accesskit_consumer` because a build downloads only
   the host platform's crates and `cargo metadata` wants all of them. On
