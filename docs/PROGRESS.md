@@ -38,7 +38,14 @@ A report that says "not run" for a platform is not a reason to skip this.
 |---|---|---|---|
 | `site-design` | Opus | `ad3bb266abb408203` | started 11:31; the website and the documentation's shell as one static Astro/Starlight project under `site/`, built only in a container (ADR-030, ADR-031); briefed as a designer. |
 | `sleigh-decode` | Opus | `a07f201f2114ec7f5` | started 11:45; `bk-sleigh` part 1 from `features/sleigh-decode.md`: language loading, context database, decoder, disassembly text, the `pcodedump` harness. |
-| `decomp-types` | Opus | `ae9088c291801e2f1` | resumed 11:15 (nothing was on disk); D02, `features/decomp-types.md`. |
+| `sleigh-compiler-front` | Opus | `a657ab279c091c7b8` | started 12:05; `bk-sleigh-compiler` part 1 from `features/sleigh-compiler-front.md`: elaboration up to symbols, constructors and templates, compared with Ghidra's files for all 150 specifications. |
+
+**Sent back, waiting for a slot** (resume before anything else in the
+queue — it is a short fix on the decompiler's critical path):
+
+| Branch | Agent id | What |
+|---|---|---|
+| `decomp-types` (13 commits, worktree kept) | `ae9088c291801e2f1` | Finished D02 with its own gate green (1,717 tests), but **the gate on the integration branch failed** at 11:49: the property test `fork_answers_as_a_flat_factory` (`crates/bk-decomp-types/tests/properties.rs:196`) found a counter-example, shrunk to `base_ops = [Base(0, 0), Struct(6, [9961564005345706205])], ops = [Base(0, 0), Struct(6, [349606341032502])]`. The seed line proptest wrote is saved in the session scratchpad as `decomp-types.proptest-regressions` (the `cc 9d5781db…` line; if the scratchpad is gone, the shrunk case above is enough). The agent is to find whether the fork or the test's model is wrong, fix it, check in the regressions file, and run the property tests at a much higher case count before reporting again. Everything else in its report stands: 197,330 oracle records match except 60 listed differences; data organisation of all 294 language/compiler pairs matches. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -170,11 +177,13 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `sleigh-compiler-front`, `x86-oracle`,
+1. As slots free, in this order: the `decomp-types` fix, `x86-oracle`,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
-2. `decomp-types` reports → review against `features/decomp-types.md`,
-   integration branch, merge; with D00 and D04 merged, start D05.
+2. `decomp-types`: resume for its fix as soon as a slot frees (above);
+   then integration branch, CI, merge. Follow-ups it names for D03
+   (`PrototypeCodec`, `TypeEnv::default_model`), D06 (`SpacebaseScopes`,
+   `TypeSource`) and D08 (the five `cast_*` tests) go into those briefs.
 3. `sleigh-decode` reports → review against `features/sleigh-decode.md`,
    integration branch, merge; start `sleigh-pcode`.
 4. `site-design` reports → look at its screenshots, integration branch
