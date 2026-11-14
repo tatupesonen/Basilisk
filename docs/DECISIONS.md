@@ -1339,3 +1339,71 @@ moved count, not as a silent difference. Microsoft's compiler was not
 run; a third table would enter as one more host. Ghidra's own callers
 bound the step at 32, so none of the crash or hang inputs is reachable
 from the decompiler today; they matter because the type is public API.
+
+## ADR-042 — The decompiler oracle is a console extension in separate reference consoles; dumps name objects by reproducible keys
+
+*2026-11-14. Proposed by track `spec-decomp-wave1` (as ADR-041, a
+number taken meanwhile); the specification is
+`docs/features/decomp-oracle.md`, the runs behind it
+`docs/research/decomp-wave1/runs.md`. Supersedes ADR-027's "one file
+added to the build's copy"; amends ADR-028.*
+
+**Context.** ADR-027 measures decompiler parity from Ghidra's own
+state, dumped by an addition to the reference console. Writing the D00
+specification against the source and the built console showed three
+things the plan did not have. (1) The extension cannot be compiled
+inside Ghidra's Makefile: it needs `-fno-access-control`, the Makefile
+has no per-file flags, so the flag would reach Ghidra's own files, and
+the file would also enter `decomp`, `decomp_test` and `libdecomp`. (2)
+Ghidra's own listings are not reproducible: the varnode bank orders
+`iop`, `fspec` and space-constant varnodes by the heap pointers stored
+in their offsets (`varnode.cc:39`, `73`), so two runs of the same
+binary differ (43 of the 93 data tests on the Mac), and stripping
+`internal=` attributes is not enough. (3) Breakpoints by name cannot
+address an action whose name occurs twice (`action.cc:456`, `481`,
+`777`), for example the top-level `blockstructure`. Besides, `structure
+blocks` — the console's only way to run the structurer on a bare graph
+— is too lossy to be D04's oracle: its XML drops edge labels, writes
+`ifnoexit` as `ifelse`, has no overflow flag and no condition flips,
+treats every plain block as complex and never calls `orderBlocks`.
+
+**Decision.**
+
+* Basilisk's commands (`bk …`) are C++ under
+  `tools/reference/consoleext/`, compiled with `-fno-access-control`
+  outside Ghidra's Makefile and linked with the Makefile's own objects
+  into two extra consoles, `bin/decomp_bk` and `bin/decomp_bk_dbg`.
+  `bin/decomp` and `decomp_dbg` stay Ghidra's, byte for byte.
+* Every dump names varnodes by creation index, ops by sequence number,
+  blocks by index and call specifications by position, and writes the
+  three kinds of host pointer that Ghidra stores in varnode offsets as
+  canonical keys; the bank orders are written with those keys
+  substituted. Breakpoints can be given by position.
+* `bk structure` runs the structurer on a graph file that carries the
+  per-block facts and dumps the hierarchy, the condition flips and the
+  goto marks; `structure blocks` stays as a cross-check that works
+  before D00 exists.
+* Every oracle output is generated twice on each of the two reference
+  builds (libc++ on macOS arm64, libstdc++ on x86-64 Linux, both built
+  natively by the same script — the plan's "x86-64 Linux container
+  target" is obsolete); a difference between builds is recognised by
+  cause and counted (ADR-040's form).
+
+**Amendment to ADR-028, item 3b.** "Unverified: that no structuring
+rule reads back a flag it flipped" is now verified by reading: the
+structurer reaches a basic block only through `isComplex`,
+`negateCondition` and, from the `BlockSwitch` constructor,
+`getJumptable`, and none of them depends on what a negation changed.
+The structurer (`bk-decomp-cfg`) takes four per-block facts
+(`complex`, `switch_out`, `ends_in_return`,
+`negation_changes_dataflow`) and the graph's analyses as given —
+`ActionBlockStructure` does not recompute them — and returns the
+hierarchy, flip events, goto marks with their causes, the change count
+and a measure; the track that applies it (D15) toggles the flags and
+swaps the edges of each block flipped an odd number of times.
+
+**Consequences.** `docs/features/decomp-plan.md` is amended in the
+places the specification found wrong (its section "Amendments,
+2026-11-14"). The reference is rebuilt with the new script on both
+machines when D00 lands, and both stamps are recorded. Ghidra headless
+as an oracle for whole-program results stays a later track (M5).

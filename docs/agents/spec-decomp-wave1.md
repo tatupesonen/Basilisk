@@ -159,7 +159,7 @@ From the documents' section 10:
 
 ## Proposed ADRs
 
-**ADR-041 — The decompiler oracle is a console extension linked into
+**ADR-042 (proposed as ADR-041, a number taken meanwhile) — The decompiler oracle is a console extension linked into
 separate reference consoles; dumps name objects by reproducible keys.**
 Basilisk's commands (`bk …`) are C++ under `tools/reference/consoleext/`,
 compiled with `-fno-access-control` outside Ghidra's Makefile and linked
