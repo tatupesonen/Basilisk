@@ -13,13 +13,26 @@
 //! Where Ghidra's result depends on the machine it runs on, basilisk gives
 //! one result on every host:
 //!
-//! - **The sign of a NaN result.** The C++ takes it from the host FPU. When an
-//!   input is a NaN, x86-64 and AArch64 agree: the result has the sign of the
-//!   first NaN input. When the operation creates a NaN (`inf - inf`,
-//!   `0 / 0`, `0 * inf`, `sqrt(-1)`), x86-64 produces its default NaN, which
-//!   is negative, and AArch64 a positive one. basilisk produces the negative
-//!   NaN, as x86-64 does: Ghidra's data test `floatprint.xml` expects the
-//!   folded `0.0f / 0.0f` to print as `-NAN` (it fails on AArch64).
+//! - **The sign of a NaN result.** The C++ takes it from the host FPU, and
+//!   basilisk computes it explicitly as Ghidra's reference build on x86-64
+//!   Linux (GCC, SSE2) gives it, never from the host's own arithmetic.
+//!   Decoding keeps only a NaN's sign (`getHostFloat` returns the host's
+//!   quiet NaN with that sign), so the result is always the quiet NaN of the
+//!   format and only its sign varies:
+//!   - one input is a NaN: its sign (both hosts agree);
+//!   - both inputs are NaNs: SSE2 returns its *first source operand*, which
+//!     is the operand the compiler put in the destination register. GCC
+//!     computes `val1 - val2` and `val1 / val2` with `val1` there, but
+//!     `val1 + val2` and `val1 * val2`, being commutative, with `val2` there
+//!     (the value just returned in `xmm0` by the second `getHostFloat`). So
+//!     `FLOAT_SUB`/`FLOAT_DIV` take the sign of `a`, `FLOAT_ADD`/
+//!     `FLOAT_MULT` the sign of `b`. AArch64 takes the first operand's for
+//!     all four. Ghidra's compiled C++ on x86-64 shows this on every such
+//!     row of `tests/data/opbehavior_cpp.txt.gz`;
+//!   - no input is a NaN (`inf - inf`, `0 / 0`, `0 * inf`, `sqrt(-1)`):
+//!     x86-64's default NaN, which is negative (AArch64's is positive).
+//!     Ghidra's data test `floatprint.xml` expects the folded `0.0f / 0.0f`
+//!     to print as `-NAN` (it fails on AArch64).
 //! - **`TRUNC` of a NaN, an infinity or a value outside the `i64` range.**
 //!   The C++ cast is undefined; x86-64 (`cvttsd2si`) gives `i64::MIN`,
 //!   AArch64 saturates and maps NaN to 0. Here basilisk does not follow
@@ -68,7 +81,8 @@ fn quiet_nan(negative: bool) -> f64 {
 }
 
 /// The result of a host operation with the NaN x86-64 gives: a NaN result
-/// takes the sign of the first NaN input, and is x86-64's default NaN
+/// takes the sign of the first NaN among `inputs`, which the caller lists in
+/// the order x86-64 gives them priority, and is x86-64's default NaN
 /// (negative) when no input is a NaN.
 #[inline]
 fn settle_nan(result: f64, inputs: [f64; 2]) -> f64 {
@@ -78,6 +92,15 @@ fn settle_nan(result: f64, inputs: [f64; 2]) -> f64 {
     } else {
         result
     }
+}
+
+/// Which input's NaN a binary operation passes on when both inputs are NaNs.
+#[derive(Debug, Clone, Copy)]
+enum NanPriority {
+    /// The first input (`a`), x86-64's choice for `a - b` and `a / b`.
+    First,
+    /// The second input (`b`), x86-64's choice for `a + b` and `a * b`.
+    Second,
 }
 
 /// `createFloat`: the double `signif / 2^63 * 2^exp`, negated if `sign`.
@@ -352,9 +375,19 @@ impl FloatFormat {
         u64::from(self.class(a) == FloatClass::Nan)
     }
 
-    fn binary(&self, a: u64, b: u64, op: impl FnOnce(f64, f64) -> f64) -> u64 {
+    fn binary(
+        &self,
+        a: u64,
+        b: u64,
+        nan_from: NanPriority,
+        op: impl FnOnce(f64, f64) -> f64,
+    ) -> u64 {
         let (val1, val2) = (self.host_float(a).0, self.host_float(b).0);
-        self.encoding(settle_nan(op(val1, val2), [val1, val2]))
+        let inputs = match nan_from {
+            NanPriority::First => [val1, val2],
+            NanPriority::Second => [val2, val1],
+        };
+        self.encoding(settle_nan(op(val1, val2), inputs))
     }
 
     fn unary(&self, a: u64, op: impl FnOnce(f64) -> f64) -> u64 {
@@ -362,24 +395,24 @@ impl FloatFormat {
         self.encoding(settle_nan(op(val), [val, val]))
     }
 
-    /// `a + b` (`opAdd`).
+    /// `a + b` (`opAdd`). When both are NaNs, the result has `b`'s sign.
     pub fn op_add(&self, a: u64, b: u64) -> u64 {
-        self.binary(a, b, |x, y| x + y)
+        self.binary(a, b, NanPriority::Second, |x, y| x + y)
     }
 
-    /// `a / b` (`opDiv`).
+    /// `a / b` (`opDiv`). When both are NaNs, the result has `a`'s sign.
     pub fn op_div(&self, a: u64, b: u64) -> u64 {
-        self.binary(a, b, |x, y| x / y)
+        self.binary(a, b, NanPriority::First, |x, y| x / y)
     }
 
-    /// `a * b` (`opMult`).
+    /// `a * b` (`opMult`). When both are NaNs, the result has `b`'s sign.
     pub fn op_mult(&self, a: u64, b: u64) -> u64 {
-        self.binary(a, b, |x, y| x * y)
+        self.binary(a, b, NanPriority::Second, |x, y| x * y)
     }
 
-    /// `a - b` (`opSub`).
+    /// `a - b` (`opSub`). When both are NaNs, the result has `a`'s sign.
     pub fn op_sub(&self, a: u64, b: u64) -> u64 {
-        self.binary(a, b, |x, y| x - y)
+        self.binary(a, b, NanPriority::First, |x, y| x - y)
     }
 
     /// `-a` (`opNeg`). The sign of a NaN is flipped too.
