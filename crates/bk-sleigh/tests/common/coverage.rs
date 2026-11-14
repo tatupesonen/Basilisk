@@ -11,58 +11,58 @@ use super::directed::{Rng, extend_for_coverage, pack, plan, seed};
 use super::{Tolerated, compare, is_crash, locate_crash, sweep, try_oracle};
 
 /// The base address of every stream.
-pub const BASE: u64 = 0;
+pub(crate) const BASE: u64 = 0;
 
 /// How much of each kind of input to use.
 #[derive(Clone, Copy, Debug)]
-pub struct Budget {
-    pub samples_per_pair: usize,
-    pub random_bytes: usize,
-    pub max_streams: usize,
-    pub coverage_attempts: usize,
+pub(crate) struct Budget {
+    pub(crate) samples_per_pair: usize,
+    pub(crate) random_bytes: usize,
+    pub(crate) max_streams: usize,
+    pub(crate) coverage_attempts: usize,
 }
 
 /// Extra byte streams for a language (real code), each with its
 /// configuration.
 #[derive(Clone, Debug)]
-pub struct Extra {
-    pub name: String,
-    pub base: u64,
-    pub bytes: Vec<u8>,
-    pub config: Vec<(String, u32)>,
+pub(crate) struct Extra {
+    pub(crate) name: String,
+    pub(crate) base: u64,
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) config: Vec<(String, u32)>,
 }
 
 /// What one language's run found.
 #[derive(Clone, Debug, Default)]
-pub struct LanguageResult {
-    pub id: String,
-    pub constructors: usize,
-    pub exercised: BTreeSet<u32>,
-    pub targeted: usize,
-    pub confirmed: BTreeSet<usize>,
-    pub inexpressible: usize,
-    pub over_20: usize,
-    pub over_20_decoded: usize,
-    pub shadowed: usize,
-    pub no_hit: usize,
-    pub tolerated: Tolerated,
-    pub failures: Vec<String>,
-    pub invocations: usize,
+pub(crate) struct LanguageResult {
+    pub(crate) id: String,
+    pub(crate) constructors: usize,
+    pub(crate) exercised: BTreeSet<u32>,
+    pub(crate) targeted: usize,
+    pub(crate) confirmed: BTreeSet<usize>,
+    pub(crate) inexpressible: usize,
+    pub(crate) over_20: usize,
+    pub(crate) over_20_decoded: usize,
+    pub(crate) shadowed: usize,
+    pub(crate) no_hit: usize,
+    pub(crate) tolerated: Tolerated,
+    pub(crate) failures: Vec<String>,
+    pub(crate) invocations: usize,
     /// Instructions whose processing crashes the oracle (address and bytes).
-    pub oracle_crashes: Vec<String>,
+    pub(crate) oracle_crashes: Vec<String>,
 }
 
 impl LanguageResult {
-    pub fn pair_rate(&self) -> f64 {
+    pub(crate) fn pair_rate(&self) -> f64 {
         self.confirmed.len() as f64 / self.targeted.max(1) as f64
     }
 
-    pub fn ctor_rate(&self) -> f64 {
+    pub(crate) fn ctor_rate(&self) -> f64 {
         self.exercised.len() as f64 / self.constructors.max(1) as f64
     }
 
     /// One row of the coverage table.
-    pub fn row(&self) -> String {
+    pub(crate) fn row(&self) -> String {
         format!(
             "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}\tshadowed {}\tno-hit {}\toracle-crashes {}",
             self.id,
@@ -129,7 +129,7 @@ fn run_stream(
 
 /// Runs directed samples, a random sweep and the extra streams for one
 /// language.
-pub fn run_language(reference: &ReferenceDir, lang: &Arc<Language>, id: &str, budget: Budget, extras: &[Extra]) -> LanguageResult {
+pub(crate) fn run_language(reference: &ReferenceDir, lang: &Arc<Language>, id: &str, budget: Budget, extras: &[Extra]) -> LanguageResult {
     let mut result = LanguageResult {
         id: id.to_owned(),
         constructors: lang.sla().constructors().len(),

@@ -141,9 +141,10 @@ impl ContextDb {
         var.get(self.get(addr))
     }
 
-    /// The flowing set by word (Ghidra `setContextChangePoint`). As in
-    /// Ghidra, `value` is ORed in without masking.
-    pub fn set_change_point(&mut self, addr: Address, word: usize, mask: u32, value: u32) {
+    /// The flowing set by word (Ghidra `setContextChangePoint`); also
+    /// [`ContextSink::set_change_point`]. As in Ghidra, `value` is combined
+    /// with a bitwise OR, without masking.
+    pub fn change_point(&mut self, addr: Address, word: usize, mask: u32, value: u32) {
         self.changes = self.changes.wrapping_add(1);
         self.blobs.split_with(addr, Blob::split_copy);
         let mut first = true;
@@ -161,9 +162,10 @@ impl ContextDb {
         }
     }
 
-    /// The region set by word (Ghidra `setContextRegion`). As in Ghidra,
-    /// `value` is ORed in without masking.
-    pub fn set_region(
+    /// The region set by word (Ghidra `setContextRegion`); also
+    /// [`ContextSink::set_region`]. As in Ghidra, `value` is combined with a
+    /// bitwise OR, without masking.
+    pub fn region(
         &mut self,
         first: Address,
         end: Option<Address>,
@@ -187,7 +189,7 @@ impl ContextDb {
     /// The flowing set of a variable (Ghidra `setVariable`).
     pub fn set_variable(&mut self, var: &ContextVar, addr: Address, value: u32) {
         let shifted = (value & var.value_mask()) << var.shift();
-        self.set_change_point(addr, var.word(), var.word_mask(), shifted);
+        self.change_point(addr, var.word(), var.word_mask(), shifted);
     }
 
     /// The region set of a variable (Ghidra `setVariableRegion`).
@@ -199,7 +201,7 @@ impl ContextDb {
         value: u32,
     ) {
         let shifted = (value & var.value_mask()) << var.shift();
-        self.set_region(first, end, var.word(), var.word_mask(), shifted);
+        self.region(first, end, var.word(), var.word_mask(), shifted);
     }
 
     /// The split points with their words and explicitly-set masks, in order.
@@ -251,11 +253,11 @@ impl ContextSource for ContextDb {
 
 impl ContextSink for ContextDb {
     fn set_change_point(&mut self, addr: Address, word: usize, mask: u32, value: u32) {
-        Self::set_change_point(self, addr, word, mask, value);
+        self.change_point(addr, word, mask, value);
     }
 
     fn set_region(&mut self, first: Address, end: Option<Address>, word: usize, mask: u32, value: u32) {
-        Self::set_region(self, first, end, word, mask, value);
+        self.region(first, end, word, mask, value);
     }
 }
 
@@ -314,8 +316,8 @@ mod tests {
     fn region_sets_cover_their_range_and_to_the_end() {
         let mut db = ContextDb::new(1);
         db.set_space_limits(vec![0, 0, 0, 0xffff]);
-        db.set_region(at(0x10), Some(at(0x20)), 0, 0xff, 0x12);
-        db.set_region(at(0x18), None, 0, 0xff00, 0x3400);
+        db.region(at(0x10), Some(at(0x20)), 0, 0xff, 0x12);
+        db.region(at(0x18), None, 0, 0xff00, 0x3400);
         assert_eq!(db.get(at(0x0f)), [0]);
         assert_eq!(db.get(at(0x10)), [0x12]);
         assert_eq!(db.get(at(0x18)), [0x3412]);
@@ -328,8 +330,8 @@ mod tests {
         assert_eq!(range.first, 0);
         assert!(db.change_count() >= 2);
         // Words past the database's size are ignored.
-        db.set_region(at(0), None, 5, 1, 1);
-        db.set_change_point(at(0), 5, 1, 1);
+        db.region(at(0), None, 5, 1, 1);
+        db.change_point(at(0), 5, 1, 1);
         db.set_default(5, 1, 1);
         let mut out = [9u32; 2];
         let _ = ContextSource::context_at(&db, at(0x18), &mut out);

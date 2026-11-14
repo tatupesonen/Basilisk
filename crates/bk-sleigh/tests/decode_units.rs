@@ -285,8 +285,8 @@ fn context_fields_read_across_a_word_boundary() {
     let lang = m.finish();
     assert_eq!(lang.context_words(), 2);
     let mut db = lang.empty_context();
-    db.set_region(ram(&lang, 0), None, 0, 0xf, 0xa);
-    db.set_region(ram(&lang, 0), None, 1, 0xf000_0000, 0x5000_0000);
+    db.region(ram(&lang, 0), None, 0, 0xf, 0xa);
+    db.region(ram(&lang, 0), None, 1, 0xf000_0000, 0x5000_0000);
     assert_eq!(disassemble(&lang, &[1], &db).unwrap(), "c 0xa5");
 }
 

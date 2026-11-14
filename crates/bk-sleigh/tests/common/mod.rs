@@ -3,11 +3,11 @@
 //! record-by-record comparison with `pcodedump`.
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
-pub mod coverage;
-pub mod directed;
-pub mod real_code;
-pub mod recording;
-pub mod sweep;
+pub(crate) mod coverage;
+pub(crate) mod directed;
+pub(crate) mod real_code;
+pub(crate) mod recording;
+pub(crate) mod sweep;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -17,16 +17,16 @@ use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
 use bk_testkit::{ReferenceDir, Tool};
 
-pub use sweep::{Record, Sweep, sweep};
+pub(crate) use sweep::{Record, Sweep, sweep};
 
 /// The reference directory with `pcodedump`, or `None` after printing why
 /// the test is skipped.
-pub fn reference() -> Option<ReferenceDir> {
+pub(crate) fn reference() -> Option<ReferenceDir> {
     bk_testkit::require_tool(Tool::Pcodedump)
 }
 
 /// The language registry over a directory with Ghidra's layout.
-pub fn registry(root: &Path) -> Arc<LanguageRegistry> {
+pub(crate) fn registry(root: &Path) -> Arc<LanguageRegistry> {
     static CACHE: OnceLock<Mutex<HashMap<std::path::PathBuf, Arc<LanguageRegistry>>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut cache = cache.lock().unwrap();
@@ -47,7 +47,7 @@ pub fn registry(root: &Path) -> Arc<LanguageRegistry> {
 }
 
 /// Loads a language of the reference directory.
-pub fn load(reference: &ReferenceDir, id: &str) -> Arc<Language> {
+pub(crate) fn load(reference: &ReferenceDir, id: &str) -> Arc<Language> {
     let registry = registry(reference.root());
     let id = LanguageId::new(id).expect("language id");
     Arc::new(Language::load(&registry, &id).unwrap_or_else(|e| panic!("load {id}: {e}")))
@@ -55,21 +55,21 @@ pub fn load(reference: &ReferenceDir, id: &str) -> Arc<Language> {
 
 /// The oracle's records of one run, without `H`, `P` and `U`.
 #[derive(Clone, Debug, Default)]
-pub struct OracleDump {
-    pub lines: Vec<String>,
-    pub instructions: u64,
+pub(crate) struct OracleDump {
+    pub(crate) lines: Vec<String>,
+    pub(crate) instructions: u64,
     /// Errors in the `T` record minus the `U` records.
-    pub errors: u64,
+    pub(crate) errors: u64,
 }
 
 /// Runs `pcodedump` and keeps the records this part compares.
-pub fn oracle(reference: &ReferenceDir, id: &str, base: u64, data: &[u8], context: &[(String, u32)]) -> OracleDump {
+pub(crate) fn oracle(reference: &ReferenceDir, id: &str, base: u64, data: &[u8], context: &[(String, u32)]) -> OracleDump {
     try_oracle(reference, id, base, data, context).unwrap_or_else(|e| panic!("pcodedump {id}: {e}"))
 }
 
 /// Runs `pcodedump`; the error says how it failed (a crash is reported as
 /// "exited with a signal").
-pub fn try_oracle(
+pub(crate) fn try_oracle(
     reference: &ReferenceDir,
     id: &str,
     base: u64,
@@ -86,13 +86,13 @@ pub fn try_oracle(
 }
 
 /// Whether an oracle failure is a crash of the process.
-pub fn is_crash(error: &str) -> bool {
+pub(crate) fn is_crash(error: &str) -> bool {
     error.contains("signal")
 }
 
 /// The bytes `[start, end)` of the instruction whose processing makes the
 /// oracle crash: the shortest crashing prefix ends with it.
-pub fn locate_crash(
+pub(crate) fn locate_crash(
     reference: &ReferenceDir,
     id: &str,
     base: u64,
@@ -119,7 +119,7 @@ pub fn locate_crash(
 }
 
 /// Keeps the `I`, `E` and `T` records of `pcodedump` output.
-pub fn parse_oracle(text: &str) -> OracleDump {
+pub(crate) fn parse_oracle(text: &str) -> OracleDump {
     let mut dump = OracleDump::default();
     let mut unlifted = 0u64;
     for line in text.lines() {
@@ -148,14 +148,14 @@ fn line_address(line: &str) -> u64 {
 /// The kinds of difference the harness tolerates (`features/sleigh-decode.md`
 /// 6.2), counted.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Tolerated {
-    pub over_20_operands: u64,
-    pub past_byte_16: u64,
-    pub next2_and_commit: u64,
+pub(crate) struct Tolerated {
+    pub(crate) over_20_operands: u64,
+    pub(crate) past_byte_16: u64,
+    pub(crate) next2_and_commit: u64,
 }
 
 impl Tolerated {
-    pub fn add(&mut self, other: &Self) {
+    pub(crate) fn add(&mut self, other: &Self) {
         self.over_20_operands += other.over_20_operands;
         self.past_byte_16 += other.past_byte_16;
         self.next2_and_commit += other.next2_and_commit;
@@ -164,17 +164,17 @@ impl Tolerated {
 
 /// The outcome of comparing one sweep with the oracle.
 #[derive(Clone, Debug, Default)]
-pub struct Comparison {
+pub(crate) struct Comparison {
     /// For each basilisk record, whether the oracle printed the same line.
-    pub confirmed: Vec<bool>,
-    pub tolerated: Tolerated,
-    pub failures: Vec<String>,
+    pub(crate) confirmed: Vec<bool>,
+    pub(crate) tolerated: Tolerated,
+    pub(crate) failures: Vec<String>,
 }
 
 /// Compares record by record, resynchronising after a tolerated difference
 /// (and after a failure, to report more than the first) at the next address
 /// both sides have a record for.
-pub fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
+pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
     let mut out = Comparison {
         confirmed: vec![false; ours.records.len()],
         ..Comparison::default()

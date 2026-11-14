@@ -90,7 +90,7 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
 
 impl Env<'_> {
     fn cur_space(&self) -> u32 {
-        self.addr.space().map_or(CONST, |space| space.index())
+        self.addr.space().map_or(CONST, bk_core::SpaceId::index)
     }
 
     fn space_size(&self, space: u32) -> u32 {

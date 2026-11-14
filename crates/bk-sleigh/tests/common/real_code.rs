@@ -24,7 +24,7 @@ const FILES: &[(&str, &str, &[&[(&str, u32)]])] = &[
 ];
 
 /// The `.text` bytes and address of a fixture.
-pub fn text_section(file: &str) -> Option<(u64, Vec<u8>)> {
+pub(crate) fn text_section(file: &str) -> Option<(u64, Vec<u8>)> {
     let path = bk_testkit::workspace_root()
         .join("crates")
         .join("bk-elf")
@@ -39,7 +39,7 @@ pub fn text_section(file: &str) -> Option<(u64, Vec<u8>)> {
 }
 
 /// Real-code streams by language.
-pub fn extras(_reference: &bk_testkit::ReferenceDir) -> BTreeMap<String, Vec<Extra>> {
+pub(crate) fn extras(_reference: &bk_testkit::ReferenceDir) -> BTreeMap<String, Vec<Extra>> {
     let mut out: BTreeMap<String, Vec<Extra>> = BTreeMap::new();
     for &(file, id, configs) in FILES {
         let Some((base, bytes)) = text_section(file) else {

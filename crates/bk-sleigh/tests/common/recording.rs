@@ -11,7 +11,7 @@ use bk_sleigh::Language;
 
 use super::{Tolerated, compare, parse_oracle, sweep};
 
-pub fn hex(bytes: &[u8]) -> String {
+pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
@@ -24,7 +24,7 @@ fn unhex(text: &str) -> Vec<u8> {
 /// Records one stream with `run` (which returns `None` when the oracle
 /// crashed); where Ghidra's engine crashes on an instruction, the stream is
 /// split around it.
-pub fn record(
+pub(crate) fn record(
     out: &mut String,
     run: &dyn Fn(u64, &[(String, u32)], &[u8]) -> Option<String>,
     base: u64,
@@ -69,14 +69,14 @@ pub fn record(
 
 /// What a replay saw.
 #[derive(Debug, Default)]
-pub struct Replay {
-    pub streams: usize,
-    pub instructions: u64,
-    pub tolerated: Tolerated,
+pub(crate) struct Replay {
+    pub(crate) streams: usize,
+    pub(crate) instructions: u64,
+    pub(crate) tolerated: Tolerated,
 }
 
 /// Replays a recording against basilisk; panics on a difference.
-pub fn replay(text: &str, lang: &Arc<Language>) -> Replay {
+pub(crate) fn replay(text: &str, lang: &Arc<Language>) -> Replay {
     let mut lines = text.lines().filter(|l| !l.starts_with('#'));
     let mut seen = Replay::default();
     while let Some(head) = lines.next() {

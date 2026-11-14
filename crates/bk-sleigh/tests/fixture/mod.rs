@@ -33,7 +33,7 @@ use bk_sla::{
 };
 
 /// The `.ldefs` and `.pspec` that go with the fixture's `.sla`.
-pub const LDEFS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+pub(crate) const LDEFS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <language_definitions>
   <language processor="BkFix" endian="big" size="32" variant="default" version="1.0"
             slafile="bkfix.sla" processorspec="bkfix.pspec" id="BkFix:BE:32:default">
@@ -44,7 +44,7 @@ pub const LDEFS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 "#;
 
 /// The processor specification: `nf` = 2 over the whole of `ram`.
-pub const PSPEC: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+pub(crate) const PSPEC: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <processor_spec>
   <context_data>
     <context_set space="ram">
@@ -55,7 +55,7 @@ pub const PSPEC: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 "#;
 
 /// The language id.
-pub const ID: &str = "BkFix:BE:32:default";
+pub(crate) const ID: &str = "BkFix:BE:32:default";
 
 struct Fx {
     b: SlaBuilder,
@@ -209,7 +209,7 @@ fn space(kind: SpaceKind, name: &str, index: u32, delay: i32, size: i32) -> Spac
 }
 
 /// Builds the fixture language.
-pub fn build() -> Sla {
+pub(crate) fn build() -> Sla {
     let mut fx = Fx {
         b: SlaBuilder::new(Header {
             big_endian: true,
@@ -593,7 +593,7 @@ pub fn build() -> Sla {
 }
 
 /// Writes the fixture as a language directory `pcodedump` can load.
-pub fn write_language_dir(dir: &std::path::Path) {
+pub(crate) fn write_language_dir(dir: &std::path::Path) {
     let sla = build();
     sla.write_file(&dir.join("bkfix.sla")).expect("write bkfix.sla");
     std::fs::write(dir.join("bkfix.ldefs"), LDEFS).unwrap();

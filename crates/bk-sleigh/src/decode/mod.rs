@@ -192,7 +192,7 @@ impl Decoder {
         C: ContextSource + ContextSink + ?Sized,
     {
         let align = u64::from(self.lang.alignment());
-        if align != 1 && addr.offset() % align != 0 {
+        if align != 1 && !addr.offset().is_multiple_of(align) {
             return Err(DecodeError::Unaligned {
                 address: addr,
                 at: self.lang.raw_text(addr),

@@ -10,38 +10,38 @@ use bk_sleigh::{ContextDb, DecodeError, Decoder, ErrorClass, Language, SliceByte
 /// One instruction or error of a sweep, with what the harness needs to
 /// judge differences.
 #[derive(Clone, Debug)]
-pub struct Record {
-    pub address: u64,
-    pub line: String,
+pub(crate) struct Record {
+    pub(crate) address: u64,
+    pub(crate) line: String,
     /// Constructors of every node, for an `I` record.
-    pub constructors: Vec<u32>,
-    pub root_constructor: Option<u32>,
+    pub(crate) constructors: Vec<u32>,
+    pub(crate) root_constructor: Option<u32>,
     /// Ghidra's C++ cannot decode a constructor with more than 20 operands.
-    pub too_many_operands: bool,
+    pub(crate) too_many_operands: bool,
     /// A delay-slot instruction folded into this one has more than 20
     /// operands (the oracle's flow length is then the plain length).
-    pub delay_over_20: bool,
-    pub reads_past_window: bool,
-    pub committed: bool,
-    pub uses_next2: bool,
+    pub(crate) delay_over_20: bool,
+    pub(crate) reads_past_window: bool,
+    pub(crate) committed: bool,
+    pub(crate) uses_next2: bool,
 }
 
 /// The sweep's records and the closing `T` line (whose error count has no
 /// `U` records, which this part cannot predict).
 #[derive(Clone, Debug, Default)]
-pub struct Sweep {
-    pub records: Vec<Record>,
-    pub instructions: u64,
-    pub errors: u64,
+pub(crate) struct Sweep {
+    pub(crate) records: Vec<Record>,
+    pub(crate) instructions: u64,
+    pub(crate) errors: u64,
 }
 
 impl Sweep {
-    pub fn t_line(&self) -> String {
+    pub(crate) fn t_line(&self) -> String {
         format!("T\t{}\t{}", self.instructions, self.errors)
     }
 }
 
-pub fn escape(text: &str, out: &mut String) {
+pub(crate) fn escape(text: &str, out: &mut String) {
     for c in text.chars() {
         match c {
             '\\' => out.push_str("\\\\"),
@@ -59,7 +59,7 @@ fn hex_bytes(bytes: &[u8], out: &mut String) {
     }
 }
 
-pub fn kind(error: &DecodeError) -> &'static str {
+pub(crate) fn kind(error: &DecodeError) -> &'static str {
     match error.class() {
         ErrorClass::BadData => "bad-data",
         ErrorClass::Unimplemented => "unimplemented",
@@ -69,7 +69,7 @@ pub fn kind(error: &DecodeError) -> &'static str {
 
 /// The context `pcodedump` starts from: the `.pspec` defaults, then each
 /// `--context` value set over the whole default code space.
-pub fn start_context(lang: &Language, context: &[(String, u32)]) -> ContextDb {
+pub(crate) fn start_context(lang: &Language, context: &[(String, u32)]) -> ContextDb {
     let mut db = lang.initial_context();
     for (name, value) in context {
         assert!(
@@ -81,7 +81,7 @@ pub fn start_context(lang: &Language, context: &[(String, u32)]) -> ContextDb {
 }
 
 /// Runs the sweep over `data` placed at `base`.
-pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u32)]) -> Sweep {
+pub(crate) fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u32)]) -> Sweep {
     let mut db = start_context(lang, context);
     let mut decoder = Decoder::new(Arc::clone(lang));
     // Fail as Ghidra's C++ does on more than 20 operands, so both sweeps stay
@@ -196,7 +196,7 @@ pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u
 /// Ghidra's builder then finds no cached parse ("Could not obtain cached
 /// delay slot instruction"), `pcodedump` prints a `U` record and the flow
 /// length is the instruction's own length.
-pub fn nested_delay_missing(decoder: &Decoder) -> bool {
+pub(crate) fn nested_delay_missing(decoder: &Decoder) -> bool {
     let delays = decoder.delay_slots();
     let decoded: Vec<u64> = std::iter::once(decoder.parse())
         .chain(delays)

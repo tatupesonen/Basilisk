@@ -14,14 +14,14 @@ use super::sweep::start_context;
 
 /// A deterministic generator (SplitMix64).
 #[derive(Clone, Debug)]
-pub struct Rng(u64);
+pub(crate) struct Rng(u64);
 
 impl Rng {
-    pub fn new(seed: u64) -> Self {
+    pub(crate) fn new(seed: u64) -> Self {
         Self(seed)
     }
 
-    pub fn next(&mut self) -> u64 {
+    pub(crate) fn next(&mut self) -> u64 {
         self.0 = self.0.wrapping_add(0x9e37_79b9_7f4a_7c15);
         let mut z = self.0;
         z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
@@ -29,11 +29,11 @@ impl Rng {
         z ^ (z >> 31)
     }
 
-    pub fn below(&mut self, n: usize) -> usize {
+    pub(crate) fn below(&mut self, n: usize) -> usize {
         (self.next() % n.max(1) as u64) as usize
     }
 
-    pub fn fill(&mut self, bytes: &mut [u8]) {
+    pub(crate) fn fill(&mut self, bytes: &mut [u8]) {
         for chunk in bytes.chunks_mut(8) {
             let word = self.next().to_le_bytes();
             chunk.copy_from_slice(&word[..chunk.len()]);
@@ -42,24 +42,24 @@ impl Rng {
 }
 
 /// A seed derived from a name.
-pub fn seed(name: &str) -> u64 {
+pub(crate) fn seed(name: &str) -> u64 {
     name.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(b)).wrapping_mul(0x100_0000_01b3))
 }
 
 /// A block as (offset, mask/value words).
 #[derive(Clone, Debug, Default)]
-pub struct Block {
-    pub offset: i32,
-    pub words: Vec<(u32, u32)>,
+pub(crate) struct Block {
+    pub(crate) offset: i32,
+    pub(crate) words: Vec<(u32, u32)>,
 }
 
 /// One pair of one leaf of the root tree.
 #[derive(Clone, Debug)]
-pub struct Target {
-    pub leaf: u32,
-    pub constructor: u32,
-    pub instruction: Option<Block>,
-    pub context: Option<Block>,
+pub(crate) struct Target {
+    pub(crate) leaf: u32,
+    pub(crate) constructor: u32,
+    pub(crate) instruction: Option<Block>,
+    pub(crate) context: Option<Block>,
 }
 
 fn block(sla: &Sla, id: bk_sla::BlockId) -> Option<Block> {
@@ -74,7 +74,7 @@ fn block(sla: &Sla, id: bk_sla::BlockId) -> Option<Block> {
 }
 
 /// Every pair at every leaf of a subtable's decision tree, in tree order.
-pub fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
+pub(crate) fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
     let Some(subtable) = sla.subtable(table) else {
         return Vec::new();
     };
@@ -108,7 +108,7 @@ pub fn leaf_pairs(sla: &Sla, table: SymbolId) -> Vec<Target> {
 /// The context variables that express a context block, with their values
 /// (unconstrained bits 0); `None` when some constrained bit is in no
 /// variable.
-pub fn configuration(lang: &Language, block: &Block) -> Option<Vec<(String, u32)>> {
+pub(crate) fn configuration(lang: &Language, block: &Block) -> Option<Vec<(String, u32)>> {
     // Masked bits as (global bit index, value).
     let mut bits = Vec::new();
     for (k, &(mask, value)) in block.words.iter().enumerate() {
@@ -151,7 +151,7 @@ fn covers(var: &ContextVar, bit: i64) -> bool {
 
 /// Imposes a block at `offset` of a 16-byte sample; `false` (and nothing
 /// changed) when it conflicts with bits fixed before or leaves the window.
-pub fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block, offset: i32, check: bool) -> bool {
+pub(crate) fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block, offset: i32, check: bool) -> bool {
     let mut edits = Vec::new();
     for (k, &(mask, value)) in block.words.iter().enumerate() {
         for i in 0..4 {
@@ -180,21 +180,21 @@ pub fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block, offset
 
 /// The directed samples of one language, grouped by configuration.
 #[derive(Clone, Debug, Default)]
-pub struct Plan {
-    pub targets: Vec<Target>,
+pub(crate) struct Plan {
+    pub(crate) targets: Vec<Target>,
     /// Configuration → samples as (target index, bytes); samples added for
     /// constructor coverage have no target.
-    pub groups: BTreeMap<Vec<(String, u32)>, Vec<(Option<usize>, [u8; 16])>>,
+    pub(crate) groups: BTreeMap<Vec<(String, u32)>, Vec<(Option<usize>, [u8; 16])>>,
     /// Targets whose context block no named variable expresses.
-    pub inexpressible: Vec<usize>,
+    pub(crate) inexpressible: Vec<usize>,
     /// Targets whose constructor has more than 20 operands (kept out of the
     /// oracle streams).
-    pub over_20: Vec<usize>,
+    pub(crate) over_20: Vec<usize>,
     /// Targets for which some sample decodes to the targeted constructor.
-    pub hit: BTreeSet<usize>,
+    pub(crate) hit: BTreeSet<usize>,
     /// Targets an earlier pair of the same leaf always wins over (no input
     /// can select them, in Ghidra or here).
-    pub shadowed: BTreeSet<usize>,
+    pub(crate) shadowed: BTreeSet<usize>,
 }
 
 /// How many random fillings are tried per sample to find one basilisk
@@ -318,7 +318,7 @@ fn nested_sample(
 /// Adds samples, found by decoding random fillings with basilisk, whose
 /// parses reach constructors no planned sample reaches (`attempts`
 /// fillings in all).
-pub fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng, attempts: usize) {
+pub(crate) fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng, attempts: usize) {
     let sla = lang.sla();
     let mut decoder = Decoder::new(Arc::clone(lang));
     let addr = Address::new(lang.default_space(), 0);
@@ -378,7 +378,7 @@ pub fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng,
 }
 
 /// Builds the samples: `per_pair` for each root leaf pair.
-pub fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan {
+pub(crate) fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan {
     let sla = lang.sla();
     let targets = leaf_pairs(sla, sla.root());
     let mut subtable_pairs: BTreeMap<u32, Vec<Target>> = BTreeMap::new();
@@ -485,11 +485,11 @@ fn shadowed(targets: &[Target], sla: &Sla) -> BTreeSet<usize> {
 /// One oracle invocation: bytes, configuration, and where each sample
 /// starts.
 #[derive(Clone, Debug)]
-pub struct Stream {
-    pub config: Vec<(String, u32)>,
-    pub bytes: Vec<u8>,
+pub(crate) struct Stream {
+    pub(crate) config: Vec<(String, u32)>,
+    pub(crate) bytes: Vec<u8>,
     /// (offset in the stream, target index).
-    pub starts: Vec<(u64, usize)>,
+    pub(crate) starts: Vec<(u64, usize)>,
 }
 
 /// Packs each group's samples into streams by basilisk's lengths. A sample
@@ -497,7 +497,7 @@ pub struct Stream {
 /// reached (after earlier samples' commits) starts a new stream while fewer
 /// than `max_streams` exist; a sample that does not decode to its target
 /// even then is dropped, so that it cannot shift the samples after it.
-pub fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: usize, max_bytes: usize) -> Vec<Stream> {
+pub(crate) fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: usize, max_bytes: usize) -> Vec<Stream> {
     let mut streams = Vec::new();
     let space = lang.default_space();
     let mut decoder = Decoder::new(Arc::clone(lang));

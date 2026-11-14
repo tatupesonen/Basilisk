@@ -105,7 +105,8 @@ pub(crate) fn resolve(
                 for set in &block.values {
                     let var = vars
                         .binary_search_by(|var| var.name().cmp(set.name.as_str()))
-                        .map_err(|_| LoadError::UnknownContextVariable(set.name.clone()))?;
+                        .ok()
+                        .ok_or_else(|| LoadError::UnknownContextVariable(set.name.clone()))?;
                     out.push(InitialSetting::Region {
                         var,
                         first,
