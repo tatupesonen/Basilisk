@@ -80,7 +80,8 @@ public:
   std::string file;
   // recording
   std::vector<std::string> lines;          ///< I/U/L records with their P records, in call order
-  std::map<Address, std::string> firstText;
+  std::map<Address, std::string> firstText;     ///< first oneInstruction record per address
+  std::map<Address, std::string> firstLength;   ///< first instructionLength record per address
   std::set<Address> contextDependent;
   int4 icount, ucount, lcount;
   // replay
@@ -91,7 +92,7 @@ public:
   PcodeSession(void) : mode(off), glb((Architecture *)0), orig((const Translate *)0), icount(0), ucount(0), lcount(0) {}
 
   std::string varnodeText(const VarnodeData &v, bool spaceConst) const;
-  void noteText(const Address &addr, const std::string &text);
+  void noteText(const Address &addr, const std::string &text, bool length = false);
   void loadRecording(const std::string &path);
   VarnodeData parseVarnode(const std::string &text, int4 line) const;
   void writeRecording(void);
@@ -120,10 +121,11 @@ std::string PcodeSession::varnodeText(const VarnodeData &v, bool spaceConst) con
   return s.str();
 }
 
-void PcodeSession::noteText(const Address &addr, const std::string &text)
+void PcodeSession::noteText(const Address &addr, const std::string &text, bool length)
 {
-  std::map<Address, std::string>::iterator it = firstText.find(addr);
-  if (it == firstText.end()) firstText[addr] = text;
+  std::map<Address, std::string> &first(length ? firstLength : firstText);
+  std::map<Address, std::string>::iterator it = first.find(addr);
+  if (it == first.end()) first[addr] = text;
   else if (it->second != text) contextDependent.insert(addr);
 }
 
@@ -155,7 +157,7 @@ int4 ProxyTranslate::instructionLength(const Address &baseaddr) const
   int4 len = orig->instructionLength(baseaddr);
   if (s.mode == PcodeSession::record) {
     std::string t = "L\t" + addrText(baseaddr) + "\t" + num(len);
-    s.noteText(baseaddr, "L" + t);
+    s.noteText(baseaddr, t, true);
     s.lines.push_back(t);
     s.lcount += 1;
   }
@@ -371,6 +373,7 @@ public:
     session.file = file;
     session.lines.clear();
     session.firstText.clear();
+    session.firstLength.clear();
     session.contextDependent.clear();
     session.icount = session.ucount = session.lcount = 0;
     if (mode == PcodeSession::replay) session.loadRecording(file);

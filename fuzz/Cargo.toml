@@ -166,8 +166,29 @@ doc = false
 bench = false
 
 [[bin]]
+name = "bk_testkit_pcoderec"
+path = "fuzz_targets/bk_testkit_pcoderec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_testkit_state"
+path = "fuzz_targets/bk_testkit_state.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "bk_testkit_structure"
 path = "fuzz_targets/bk_testkit_structure.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_testkit_trace"
+path = "fuzz_targets/bk_testkit_trace.rs"
 test = false
 doc = false
 bench = false

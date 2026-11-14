@@ -444,7 +444,8 @@ fn write_edges(out: &mut String, edges: &[StructEdge]) {
     write_list(out, &items);
 }
 
-fn parse_node(s: &Record<'_>) -> Result<StructNode, ParseError> {
+/// Read an `S` record.
+pub(crate) fn parse_node(s: &Record<'_>) -> Result<StructNode, ParseError> {
     s.expect("S", 12, "an S record")?;
     let kind = NodeKind::parse(s.field(2)).ok_or_else(|| s.bad("node kind", s.field(2)))?;
     let name = name_at(s, 1, "node name")?;
@@ -471,6 +472,46 @@ fn parse_node(s: &Record<'_>) -> Result<StructNode, ParseError> {
         in_edges: struct_edges(s, s.field(10))?,
         out_edges: struct_edges(s, s.field(11))?,
     })
+}
+
+/// Read the `P` record.
+pub(crate) fn parse_top(p: &Record<'_>) -> Result<Vec<NodeName>, ParseError> {
+    p.expect("P", 2, "the P record")?;
+    names(p, p.field(1), "top-level nodes")
+}
+
+/// Append an `S` record.
+pub(crate) fn write_node(s: &mut String, n: &StructNode) {
+    let _ = write!(
+        s,
+        "S\t{}\t{}\t{}\t{:#x}\t{}\t{}\t",
+        n.name,
+        n.kind.name(),
+        n.index,
+        n.flags,
+        n.depth,
+        n.leaf_count
+    );
+    match n.parent {
+        Some(p) => push_display(s, &p),
+        None => s.push('-'),
+    }
+    s.push('\t');
+    write_list(s, &n.components);
+    s.push('\t');
+    write_kind_data(s, &n.data);
+    s.push('\t');
+    write_edges(s, &n.in_edges);
+    s.push('\t');
+    write_edges(s, &n.out_edges);
+    s.push('\n');
+}
+
+/// Append the `P` record.
+pub(crate) fn write_top(s: &mut String, top: &[NodeName]) {
+    s.push_str("P\t");
+    write_list(s, top);
+    s.push('\n');
 }
 
 impl StructureDump {
@@ -508,8 +549,7 @@ impl StructureDump {
             result.nodes.push(parse_node(&s)?);
         }
         let p = lines.next_line("the P record")?;
-        p.expect("P", 2, "the P record")?;
-        result.top = names(&p, p.field(1), "top-level nodes")?;
+        result.top = parse_top(&p)?;
         let mut seq = 0_u32;
         while lines.peek_tag() == Some("R") {
             let r = lines.next_line("an R record")?;
@@ -564,33 +604,10 @@ impl StructureDump {
             let _ = writeln!(s, "C\t{c}");
         }
         for n in &result.nodes {
-            let _ = write!(
-                s,
-                "S\t{}\t{}\t{}\t{:#x}\t{}\t{}\t",
-                n.name,
-                n.kind.name(),
-                n.index,
-                n.flags,
-                n.depth,
-                n.leaf_count
-            );
-            match n.parent {
-                Some(p) => push_display(&mut s, &p),
-                None => s.push('-'),
-            }
-            s.push('\t');
-            write_list(&mut s, &n.components);
-            s.push('\t');
-            write_kind_data(&mut s, &n.data);
-            s.push('\t');
-            write_edges(&mut s, &n.in_edges);
-            s.push('\t');
-            write_edges(&mut s, &n.out_edges);
-            s.push('\n');
+            write_node(&mut s, n);
         }
-        s.push_str("P\t");
-        write_list(&mut s, &result.top);
-        s.push('\n');
+        write_top(&mut s, &result.top);
+
         for (i, r) in result.trace.iter().enumerate() {
             let _ = writeln!(s, "R\t{i}\t{}\t{}", r.rule, r.node);
         }
