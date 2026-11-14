@@ -29,6 +29,9 @@ fn main() -> ExitCode {
             Err(e) => Err(format!("bad CAP {cap}: {e}")),
         },
         ["classify", left, right] => classify(Path::new(left), Path::new(right)),
+        ["logtable", impl_, n] => logtable(impl_, n),
+        ["logdump", impl_, n, out] => logdump(impl_, n, Path::new(out)),
+        ["maxpatterns", dir] => maxpatterns(Path::new(dir)),
         ["trees", left, right] => trees_files(Path::new(left), Path::new(right), false),
         ["trees", left, right, "-v"] => trees_files(Path::new(left), Path::new(right), true),
         _ => Err("usage: sla-host-diff scan|classify LEFT_DIR RIGHT_DIR | diff A.sla B.sla [CAP] | trees A.sla B.sla [-v]".to_owned()),
@@ -205,4 +208,64 @@ fn trees_files(left: &Path, right: &Path, verbose: bool) -> Result<(), String> {
     let (a, b) = (load(left)?, load(right)?);
     print!("{}", trees::compare(&a, &b, verbose));
     Ok(())
+}
+
+/// The largest number of distinct (constructor, pattern) pairs at the
+/// leaves of one table, over all files under `dir`: an upper bound on the
+/// pattern count `DecisionNode::getScore` divides by at the root (the
+/// compiler may simplify patterns when it clones them into leaves, so
+/// distinct leaf pairs are close to, not exactly, the root's list).
+fn maxpatterns(dir: &Path) -> Result<(), String> {
+    let mut best = (0usize, String::new());
+    for (stem, path) in find_sla(dir)? {
+        let sla = load(&path)?;
+        for (name, count) in trees::distinct_pairs(&sla) {
+            if count > best.0 {
+                best = (count, format!("{stem} table {name}"));
+            }
+        }
+    }
+    println!("max distinct leaf pairs: {} ({})", best.0, best.1);
+    Ok(())
+}
+
+fn log_impl(name: &str) -> Result<fn(f64) -> f64, String> {
+    match name {
+        "libm" => Ok(libm::log),
+        "std" => Ok(f64::ln),
+        _ => Err(format!("unknown log implementation {name} (libm|std)")),
+    }
+}
+
+/// The same table as `containers/logtable/logtable.c`: per n, a hash of
+/// the bits of log(k/n) for 1 <= k < n, with the `libm` crate (fdlibm) or
+/// the platform's `f64::ln`.
+fn logtable(name: &str, n: &str) -> Result<(), String> {
+    let log = log_impl(name)?;
+    let max: u32 = n.parse().map_err(|e| format!("bad N: {e}"))?;
+    println!("log2 {:016x}", log(2.0).to_bits());
+    for n in 2..=max {
+        let mut h: u64 = 1_469_598_103_934_665_603;
+        for k in 1..n {
+            let p = f64::from(k) / f64::from(n);
+            h = (h ^ log(p).to_bits()).wrapping_mul(1_099_511_628_211);
+        }
+        println!("{n} {h:016x}");
+    }
+    Ok(())
+}
+
+/// Raw little-endian bits of log(k/n), n = 2..=N, k = 1..n, for counting
+/// differing values with `cmp -l`.
+fn logdump(name: &str, n: &str, out: &Path) -> Result<(), String> {
+    let log = log_impl(name)?;
+    let max: u32 = n.parse().map_err(|e| format!("bad N: {e}"))?;
+    let mut bytes = Vec::new();
+    for n in 2..=max {
+        for k in 1..n {
+            let p = f64::from(k) / f64::from(n);
+            bytes.extend_from_slice(&log(p).to_bits().to_le_bytes());
+        }
+    }
+    std::fs::write(out, bytes).map_err(|e| format!("{}: {e}", out.display()))
 }

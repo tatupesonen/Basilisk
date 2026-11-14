@@ -185,3 +185,23 @@ pub fn compare(a: &Sla, b: &Sla, verbose: bool) -> String {
     );
     out
 }
+
+/// For each subtable, the number of distinct (constructor, pattern) pairs
+/// over all leaves of its decision tree.
+pub fn distinct_pairs(sla: &Sla) -> Vec<(String, usize)> {
+    let mut out = Vec::new();
+    for s in sla.symbols() {
+        let SymbolKind::Subtable(t) = s.kind else { continue };
+        let mut set = std::collections::BTreeSet::new();
+        let mut stack: Vec<bk_sla::DecisionId> = vec![t.decision];
+        while let Some(id) = stack.pop() {
+            let Some(n) = sla.decision(id) else { continue };
+            for p in sla.pairs(n) {
+                set.insert(pair_text(sla, p));
+            }
+            stack.extend(sla.children(n));
+        }
+        out.push((sla.text(s.name).to_owned(), set.len()));
+    }
+    out
+}

@@ -10,3 +10,4 @@ description = "Investigation tool: compare two builds of Ghidra's .sla files str
 
 [dependencies]
 bk-sla = { path = "../../crates/bk-sla" }
+libm = "=0.2.16"

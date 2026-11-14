@@ -428,6 +428,7 @@ name = "sla-host-diff"
 version = "0.0.0"
 dependencies = [
  "bk-sla",
+ "libm",
 ]
 
 [[package]]

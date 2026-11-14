@@ -1,0 +1,87 @@
+diff --color -ru a/cpp/slghsymbol.cc b/cpp/slghsymbol.cc
+--- a/cpp/slghsymbol.cc	2026-11-14 11:08:09
++++ b/cpp/slghsymbol.cc	2026-11-14 11:08:09
+@@ -16,7 +16,71 @@
+ #include "slghsymbol.hh"
+ #include "sleighbase.hh"
+ #include <cmath>
++#include <cstdlib>
++#include <cstring>
++#include <stdint.h>
+ 
++// ---- sla-host-diff instrumentation (not Ghidra code) ----
++// DecisionNode::getScore with the arithmetic chosen at run time, so one
++// build can reproduce every host. Build with -ffp-contract=off.
++//   SLEIGH_LOG=fdlibm   log() is fdlibm's (FreeBSD e_log.c, as in the Rust
++//                       `libm` crate and Java's StrictMath); otherwise the
++//                       C library's.
++//   SLEIGH_FUSE=1       sc -= p*log(p) is one fused multiply-subtract (what
++//                       AArch64 compilers emit); otherwise the product is
++//                       rounded first (x86-64 without FMA, Java).
++static double fdlibm_log(double x)
++{
++  const double ln2_hi = 6.93147180369123816490e-01, ln2_lo = 1.90821492927058770002e-10;
++  const double Lg1 = 6.666666666666735130e-01, Lg2 = 3.999999999940941908e-01,
++    Lg3 = 2.857142874366239149e-01, Lg4 = 2.222219843214978396e-01,
++    Lg5 = 1.818357216161805012e-01, Lg6 = 1.531383769920937332e-01,
++    Lg7 = 1.479819860511658591e-01;
++  uint64_t ui; memcpy(&ui,&x,8);
++  uint32_t hx = (uint32_t)(ui >> 32);
++  int k = 0;
++  if (hx < 0x00100000 || (hx >> 31) != 0) {
++    if ((ui << 1) == 0) return -1.0/(x*x);
++    if ((hx >> 31) != 0) return (x-x)/0.0;
++    k -= 54; x *= 18014398509481984.0; memcpy(&ui,&x,8); hx = (uint32_t)(ui >> 32);
++  } else if (hx >= 0x7ff00000) return x;
++  else if (hx == 0x3ff00000 && (ui << 32) == 0) return 0.0;
++  hx += 0x3ff00000 - 0x3fe6a09e;
++  k += (int)(hx >> 20) - 0x3ff;
++  hx = (hx & 0x000fffff) + 0x3fe6a09e;
++  ui = ((uint64_t)hx << 32) | (ui & 0xffffffff);
++  memcpy(&x,&ui,8);
++  double f = x - 1.0;
++  double hfsq = 0.5*f*f;
++  double s = f/(2.0+f);
++  double z = s*s;
++  double w = z*z;
++  double t1 = w*(Lg2+w*(Lg4+w*Lg6));
++  double t2 = z*(Lg1+w*(Lg3+w*(Lg5+w*Lg7)));
++  double R = t2+t1;
++  double dk = (double)k;
++  return s*(hfsq+R)+dk*ln2_lo-hfsq+f+dk*ln2_hi;
++}
++static int score_mode(const char *var,const char *on)
++{
++  const char *v = getenv(var);
++  return (v != (const char *)0 && strcmp(v,on) == 0) ? 1 : 0;
++}
++static double score_log(double x)
++{
++  static int fd = score_mode("SLEIGH_LOG","fdlibm");
++  return fd ? fdlibm_log(x) : log(x);
++}
++static double score_term(double sc,double p)
++{
++  static int fuse = score_mode("SLEIGH_FUSE","1");
++  double lp = score_log(p);
++  if (fuse) return std::fma(-p,lp,sc);
++  volatile double prod = p*lp;
++  return sc - prod;
++}
++// ---- end of instrumentation ----
++
+ namespace ghidra {
+ 
+ using std::log;
+@@ -2132,9 +2196,9 @@
+     if (count[i] <= 0) continue;
+     if (count[i] >= list.size()) return -1.0;
+     double p = ((double)count[i])/total;
+-    sc -= p * log(p);
++    sc = score_term(sc,p);
+   }
+-  return ( sc / log(2.0) );
++  return ( sc / score_log(2.0) );
+ }
+ 
+ void DecisionNode::chooseOptimalField(void)
