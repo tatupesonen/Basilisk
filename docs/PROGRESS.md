@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14, 11:30)
+## Now — RESUME HERE (2026-11-14, 11:45)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -32,12 +32,12 @@ started with `gh workflow run CI --ref integration`; it is merged to
 and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
-### Running (state at 2026-11-14 11:30)
+### Running (state at 2026-11-14 11:45)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `sla-host-diff` | Opus | `ad76d2a046de2d2d9` | started 10:55; why 14 `.sla` files differ between hosts (ADR-029): `research/sla-host-dependence.md`, container builds, `bk-sla`'s structural diff. |
-| `spec-plugin` | Opus | `a0c2d046fd7132d8c` | started 10:50; `inventory/05-extension-points.md`, `features/plugin-api.md`, `features/plugin-binding-constraints.md` (ADR-014; the owner asked for it). |
+| `sleigh-decode` | Opus | `a07f201f2114ec7f5` | started 11:45; `bk-sleigh` part 1 from `features/sleigh-decode.md`: language loading, context database, decoder, disassembly text, the `pcodedump` harness. |
 | `decomp-types` | Opus | `ae9088c291801e2f1` | resumed 11:15 (nothing was on disk); D02, `features/decomp-types.md`. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
@@ -73,19 +73,20 @@ start a fresh agent briefed from the branch's files.
 ### Queue (start as slots free, in this order)
 
 0. Resume the two stopped agents above: `spec-pe`, then `store-spike`.
-0a. (running) **`spec-plugin`** (Opus 5.5 — all new agents are, `DIRECTION.md`; the owner asked for it on 2026-11-14) —
-   `inventory/05-extension-points.md` and `features/plugin-api.md` for
-   ADR-014 (Python through PyO3): Ghidra's extension surface
-   (`GhidraScript`/`FlatProgramAPI`, analyzers, loaders, exporters,
-   plugins and their services, PyGhidra, the bundled scripts), the Python
-   API's shape and versioning, plugin discovery and registration, the
-   embedded and the importable build, GIL and threading rules — and above
-   all **the binding constraints the crates being built now must meet**
-   (handles without lifetimes at the boundary, errors convertible to
-   exceptions, what the program trait and the decompiler's host trait must
-   expose), as a checklist the other specs and reviews can use. Start it
-   as soon as a slot frees, ahead of the resumes of `spec-pe` and
-   `store-spike`.
+0a. `spec-plugin` is merged (2026-11-14). From it, to do when the owner
+   has answered the Blocker: adopt its three ADRs; replace M9's items in
+   `PLAN.md` with its tracks P0–P7 (P0 reference fixtures, P1 host and
+   packaging and P3 flat layer can start at once; P2 and P4a wait for M4,
+   P4b for M5/M6, P5 for the decompiler wiring, P6 for a `bk-ui` change);
+   add `bk-plugin-ui` and `basilisk-py` to the crate map. Regardless of
+   the answer: (i) **move the monitor type (cancel and progress) out of
+   `bk-ui` into a low crate** before the M4/M5 specs — a small Opus
+   track; (ii) the next UI track lets the action registry and the view
+   kinds accept run-time entries (today a closed enum and a `const`
+   table); (iii) the program-model, storage, analysis and decompiler
+   D07/D17 specs state compliance with binding-constraint items 3, 6, 7,
+   9, 11 and 13 (origin and replaced value on model edits, stable
+   variable identity, decompiler results `Arc` + `Sync`).
 0a2. **`site-design`** (Opus, briefed as a designer; the owner asked for
    both the product site and the documentation on 2026-11-14: ADR-030,
    ADR-031) — one static Astro project under `site/`, **built only in a
@@ -242,7 +243,25 @@ start a fresh agent briefed from the branch's files.
 
 ## Blockers
 
-None. (The x86-64 reference build was read on 2026-11-14: ADR-029.)
+* **Owner decision: how Python hosts plugins (ADR-014 cannot work as
+  written).** The `spec-plugin` track measured that "`bk-plugin` embeds
+  CPython" and "basilisk is a single binary" cannot both hold: a binary
+  linked against libpython does not start where that libpython is missing
+  (macOS: dyld "Library not loaded", exit 134, even when Python is never
+  used) and is tied to one Python minor version and install path; linking
+  CPython statically makes Python mandatory, fixes its version, and on
+  Windows stops third-party C extensions from loading; PyO3 cannot load
+  libpython at run time. **Proposed instead**: basilisk is a Python
+  *extension module* hosted by the user's own CPython (`python -m
+  basilisk`, `import basilisk`; one abi3 build verified on CPython 3.10
+  to 3.14), and the `basilisk` binary stays free of Python and hands over
+  to a CPython it finds when plugins are wanted — the way Ghidra's own
+  PyGhidra works. The owner was asked on 2026-11-14. Until answered:
+  the plugin implementation tracks (P0–P7 in `features/plugin-api.md`)
+  do not start; the binding constraints
+  (`features/plugin-binding-constraints.md`) apply to other specs either
+  way. The track's proposed ADRs are in `docs/agents/spec-plugin.md`
+  (numbered 030–032 there; they become 032–034 here).
 
 ## Log
 
@@ -274,6 +293,16 @@ None. (The x86-64 reference build was read on 2026-11-14: ADR-029.)
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`spec-plugin` merged**: `inventory/05-extension-points.md` (335
+  bundled scripts counted and classified), `features/plugin-api.md` (all
+  225 public methods of `FlatProgramAPI` and `GhidraScript` mapped; nine
+  tracks) and `features/plugin-binding-constraints.md` (15 rules for the
+  other specs). Found: ADR-014's embedding cannot coexist with a single
+  binary (Blockers); Ghidra commits a script's changes even when it
+  throws (basilisk rolls back, with an opt-out); PyO3 0.30.1 needs no
+  `unsafe` in `bk-plugin`; 28 % of the bundled scripts port mechanically
+  once the program model is bound, 53 % with decompiler, data-type and
+  analysis bindings. Not verified: anything on Linux or Windows.
 * Owner, 2026-11-14 (later): the coordinator does no hands-on work, all
   of it goes to Opus 5.5 subagents; a static website and user
   documentation in the monorepo (Starlight, Mermaid, built in a
