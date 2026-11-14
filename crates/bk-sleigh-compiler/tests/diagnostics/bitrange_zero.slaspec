@@ -1,0 +1,3 @@
+@include "prelude.sinc"
+define bitrange bz=r0[3,0];
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

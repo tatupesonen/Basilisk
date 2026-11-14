@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning (line 2, located): Unreferenced table 'lonely'
+=> elaborated

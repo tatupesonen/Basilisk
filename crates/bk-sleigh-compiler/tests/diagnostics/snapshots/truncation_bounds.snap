@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3, located): Size restriction error in table 'instruction'
+  Problem in Copy(=) operator
+  Truncation operator out of bounds
+=> no output

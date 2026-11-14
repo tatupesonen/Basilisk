@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): in table "instruction" constructor starting at line 2
+error (line 2, located):    Cannot have export statement in root constructor
+=> no output

@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3, located): Invocation of macro 'm2' passes too few parameters
+error (line 3, located): Invocation of macro 'm2' passes too many parameters
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

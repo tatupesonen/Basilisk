@@ -1,0 +1,106 @@
+---
+source: crates/bk-sleigh-compiler/tests/features.rs
+expression: "render(stringify! (context_layout), &\nspec(LITTLE,\n\"define register offset=0x200 size=4 [ zctx ];\ndefine register offset=0x210 size=8 [ actx ];\ndefine context zctx zf=(0,3) zg=(2,5) zh=(10,10) noflow;\ndefine context actx aa=(0,20) ab=(21,40) ac=(41,41) signed ad=(40,40);\n:a r0 is op=1 & r0 & zf=1 [ zh = 1; aa = zg + 1; globalset(inst_next, zh); ] { r0 = 1; }\n\"),\nOptions :: default())"
+---
+ctor.instruction.00000.context.00 = op word=1 shift=4 mask=0x10 #1
+ctor.instruction.00000.context.01 = op word=0 shift=11 mask=0xfffff800 (plus ctx(sign=0,sb=55,eb=58,sby=6,eby=7,sh=5) #1)
+ctor.instruction.00000.context.02 = commit sym=2 word=1 mask=0x10 flow=0
+ctor.instruction.00000.first = 1
+ctor.instruction.00000.loc = test.slaspec:15 source=0
+ctor.instruction.00000.operands = [28]
+ctor.instruction.00000.print = "a" " " op28
+ctor.instruction.00000.tpl.main.head = delay=0 labels=0
+ctor.instruction.00000.tpl.main.numops = 1
+ctor.instruction.00000.tpl.main.op.0000 = COPY (space(register),#0x0,#0x4) <- (space(const),#0x1,#0x4)
+defaultspace = ram
+header.align = 2
+header.bigendian = 0
+header.maxdelay = 0
+header.numsections = 0
+header.uniqbase = 0x0
+header.uniqmask = 0x0
+scope.000000 = -
+scope.000001 = 0
+scopes = 2
+sourcefile.000 = test.slaspec
+space.01 = space_other OTHER be=0 delay=0 size=8 wordsize=1 physical=0
+space.02 = space_unique unique be=0 delay=0 size=4 wordsize=1 physical=1
+space.03 = space ram be=0 delay=1 size=4 wordsize=1 physical=1
+space.04 = space register be=0 delay=0 size=4 wordsize=1 physical=1
+symbol.0000000.body = numct=1
+symbol.0000000.id = instruction scope=0 subtable_sym
+symbol.0000001.body = 
+symbol.0000001.id = inst_start scope=0 start_sym
+symbol.0000002.body = 
+symbol.0000002.id = inst_next scope=0 end_sym
+symbol.0000003.body = 
+symbol.0000003.id = inst_next2 scope=0 next2_sym
+symbol.0000004.body = space=register off=0x0 size=4
+symbol.0000004.id = r0 scope=0 varnode_sym
+symbol.0000005.body = space=register off=0x4 size=4
+symbol.0000005.id = r1 scope=0 varnode_sym
+symbol.0000006.body = space=register off=0xc size=4
+symbol.0000006.id = r3 scope=0 varnode_sym
+symbol.0000007.body = space=register off=0x40 size=2
+symbol.0000007.id = h0 scope=0 varnode_sym
+symbol.0000008.body = space=register off=0x42 size=2
+symbol.0000008.id = h1 scope=0 varnode_sym
+symbol.0000009.body = space=register off=0x80 size=1
+symbol.0000009.id = c0 scope=0 varnode_sym
+symbol.0000010.body = space=register off=0x81 size=1
+symbol.0000010.id = c1 scope=0 varnode_sym
+symbol.0000011.body = space=register off=0x100 size=8
+symbol.0000011.id = q0 scope=0 varnode_sym
+symbol.0000012.body = tok(be=0,sign=0,sb=8,eb=15,sby=1,eby=1,sh=0)
+symbol.0000012.id = op scope=0 value_sym
+symbol.0000013.body = tok(be=0,sign=0,sb=0,eb=1,sby=0,eby=0,sh=0)
+symbol.0000013.id = reg scope=0 value_sym
+symbol.0000014.body = tok(be=0,sign=0,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000014.id = imm scope=0 value_sym
+symbol.0000015.body = tok(be=0,sign=1,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000015.id = simm scope=0 value_sym
+symbol.0000016.body = tok(be=0,sign=0,sb=0,eb=3,sby=0,eby=0,sh=0)
+symbol.0000016.id = low4 scope=0 value_sym
+symbol.0000017.body = tok(be=0,sign=0,sb=4,eb=7,sby=0,eby=0,sh=4)
+symbol.0000017.id = hi4 scope=0 value_sym
+symbol.0000018.body = index=0
+symbol.0000018.id = sync scope=0 userop
+symbol.0000019.body = space=register off=0x200 size=4
+symbol.0000019.id = zctx scope=0 varnode_sym
+symbol.0000020.body = space=register off=0x210 size=8
+symbol.0000020.id = actx scope=0 varnode_sym
+symbol.0000021.body = varnode=20 low=0 high=20 flow=1 ctx(sign=0,sb=0,eb=20,sby=0,eby=2,sh=3)
+symbol.0000021.id = aa scope=0 context_sym
+symbol.0000022.body = varnode=20 low=21 high=40 flow=1 ctx(sign=0,sb=32,eb=51,sby=4,eby=6,sh=4)
+symbol.0000022.id = ab scope=0 context_sym
+symbol.0000023.body = varnode=20 low=40 high=40 flow=1 ctx(sign=0,sb=51,eb=51,sby=6,eby=6,sh=4)
+symbol.0000023.id = ad scope=0 context_sym
+symbol.0000024.body = varnode=20 low=41 high=41 flow=1 ctx(sign=1,sb=52,eb=52,sby=6,eby=6,sh=3)
+symbol.0000024.id = ac scope=0 context_sym
+symbol.0000025.body = varnode=19 low=0 high=3 flow=1 ctx(sign=0,sb=53,eb=56,sby=6,eby=7,sh=7)
+symbol.0000025.id = zf scope=0 context_sym
+symbol.0000026.body = varnode=19 low=2 high=5 flow=1 ctx(sign=0,sb=55,eb=58,sby=6,eby=7,sh=5)
+symbol.0000026.id = zg scope=0 context_sym
+symbol.0000027.body = varnode=19 low=10 high=10 flow=0 ctx(sign=0,sb=59,eb=59,sby=7,eby=7,sh=4)
+symbol.0000027.id = zh scope=0 context_sym
+symbol.0000028.body = def=4 code=0
+symbol.0000028.id = r0 scope=1 operand_sym
+symbols = 29
+equation instruction[0] = (([PExprId(2) = PExprId(1)] & operand(r0)) & [PExprId(4) = PExprId(3)])
+xml instruction[0] main:
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>

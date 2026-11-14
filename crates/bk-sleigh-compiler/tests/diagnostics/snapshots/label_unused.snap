@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): in table "instruction" constructor starting at line 2
+error (line 2, located):    Main section:    Label <a> was placed but not used
+error (line 3, located): in table "instruction" constructor starting at line 3
+error (line 3, located):    Main section:    Label <b> was referenced but never placed
+=> no output

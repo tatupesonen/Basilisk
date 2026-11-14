@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3, located): in table "instruction" constructor starting at line 3
+error (line 3, located):    Main section: Duplicate BUILD statements
+error (line 4, located): in table "instruction" constructor starting at line 4
+error (line 4, located):    Main section: Unnecessary BUILD statements
+=> no output

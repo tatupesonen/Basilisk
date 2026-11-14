@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+sub: is op=2 { export q0; }
+:aw sub is op=2 & sub { sub[60,10] = 1; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

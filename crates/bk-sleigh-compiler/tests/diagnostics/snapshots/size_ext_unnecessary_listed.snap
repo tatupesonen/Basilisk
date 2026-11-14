@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning (line 3, located): Unnecessary Zero extension(zext)
+=> elaborated

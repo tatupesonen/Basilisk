@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Size of bitrange is zero
+error (line 2, located): Bitrange is bad
+error (line 9, located): Illegal masked bitrange producing varnode larger than 64 bits: q0
+=> no output

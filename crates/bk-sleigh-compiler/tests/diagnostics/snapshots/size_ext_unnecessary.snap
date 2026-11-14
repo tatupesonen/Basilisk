@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 1 unnecessary extensions/truncations were converted to copies
+warning: Use -u switch to list each individually
+=> elaborated

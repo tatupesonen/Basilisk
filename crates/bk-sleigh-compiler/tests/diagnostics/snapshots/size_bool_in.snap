@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Size restriction error in table 'instruction'
+  Problem in Boolean and(&&) operator
+  Input must be a boolean (size 1)
+=> no output

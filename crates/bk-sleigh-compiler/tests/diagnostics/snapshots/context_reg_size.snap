@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 6, located): Invalid size of context register 'ctx2': must be a multiple of 4 bytes
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

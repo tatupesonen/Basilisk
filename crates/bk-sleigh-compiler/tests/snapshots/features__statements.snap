@@ -1,0 +1,371 @@
+---
+source: crates/bk-sleigh-compiler/tests/features.rs
+expression: "render(stringify! (statements), &\nspec(LITTLE,\n\":a r0 is op=1 & r0 {\n  tmp = r1 + 1;\n  local t2:2 = h0;\n  local t3;\n  t3 = r1;\n  t4:4 = r1;\n  *[ram]:4 r0 = tmp;\n  *r1 = t3;\n  sync(r0);\n  if (r0 == 0) goto <skip>;\n  r0 = t3 + t4;\n  <skip>\n  if (t2 == 0) goto inst_next;\n  goto [r1];\n  call [r1];\n  call 0x1000;\n  goto 0x20[ram];\n  return [r0];\n}\n:b r0 is op=2 & r0 { goto r0; }\n:c is op=3 { delayslot(2); goto inst_start; }\n\"),\nOptions :: default())"
+---
+ctor.instruction.00000.first = 1
+ctor.instruction.00000.loc = test.slaspec:11 source=0
+ctor.instruction.00000.operands = [19]
+ctor.instruction.00000.print = "a" " " op19
+ctor.instruction.00000.tpl.main.head = delay=0 labels=1
+ctor.instruction.00000.tpl.main.numops = 18
+ctor.instruction.00000.tpl.main.op.0000 = INT_ADD (space(unique),#0x100,#0x4) <- (space(register),#0x4,#0x4), (space(const),#0x1,#0x4)
+ctor.instruction.00000.tpl.main.op.0001 = COPY (space(unique),#0x200,#0x2) <- (space(register),#0x40,#0x2)
+ctor.instruction.00000.tpl.main.op.0002 = COPY (space(unique),#0x300,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0003 = COPY (space(unique),#0x400,#0x4) <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0004 = STORE - <- (space(const),space(ram),#0x8), (space(register),#0x0,#0x4), (space(unique),#0x100,#0x4)
+ctor.instruction.00000.tpl.main.op.0005 = STORE - <- (space(const),space(ram),#0x8), (space(register),#0x4,#0x4), (space(unique),#0x300,#0x4)
+ctor.instruction.00000.tpl.main.op.0006 = CALLOTHER - <- (space(const),#0x0,#0x4), (space(register),#0x0,#0x4)
+ctor.instruction.00000.tpl.main.op.0007 = INT_EQUAL (space(unique),#0x500,#0x1) <- (space(register),#0x0,#0x4), (space(const),#0x0,#0x4)
+ctor.instruction.00000.tpl.main.op.0008 = CBRANCH - <- (space(const),rel(0),#0x4), (space(unique),#0x500,#0x1)
+ctor.instruction.00000.tpl.main.op.0009 = INT_ADD (space(register),#0x0,#0x4) <- (space(unique),#0x300,#0x4), (space(unique),#0x400,#0x4)
+ctor.instruction.00000.tpl.main.op.0010 = LABEL - <- (space(const),#0x0,#0x4)
+ctor.instruction.00000.tpl.main.op.0011 = INT_EQUAL (space(unique),#0x700,#0x1) <- (space(unique),#0x200,#0x2), (space(const),#0x0,#0x2)
+ctor.instruction.00000.tpl.main.op.0012 = CBRANCH - <- (curspace,next,curspace_size), (space(unique),#0x700,#0x1)
+ctor.instruction.00000.tpl.main.op.0013 = BRANCHIND - <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0014 = CALLIND - <- (space(register),#0x4,#0x4)
+ctor.instruction.00000.tpl.main.op.0015 = CALL - <- (curspace,#0x1000,curspace_size)
+ctor.instruction.00000.tpl.main.op.0016 = BRANCH - <- (space(ram),#0x20,#0x4)
+ctor.instruction.00000.tpl.main.op.0017 = RETURN - <- (space(register),#0x0,#0x4)
+ctor.instruction.00001.first = 1
+ctor.instruction.00001.loc = test.slaspec:30 source=0
+ctor.instruction.00001.operands = [20]
+ctor.instruction.00001.print = "b" " " op20
+ctor.instruction.00001.tpl.main.head = delay=0 labels=0
+ctor.instruction.00001.tpl.main.numops = 1
+ctor.instruction.00001.tpl.main.op.0000 = BRANCH - <- (space(register),#0x0,#0x4)
+ctor.instruction.00002.first = 1
+ctor.instruction.00002.loc = test.slaspec:31 source=0
+ctor.instruction.00002.operands = []
+ctor.instruction.00002.print = "c"
+ctor.instruction.00002.tpl.main.head = delay=2 labels=0
+ctor.instruction.00002.tpl.main.numops = 2
+ctor.instruction.00002.tpl.main.op.0000 = DELAY_SLOT - <- (space(const),#0x2,#0x4)
+ctor.instruction.00002.tpl.main.op.0001 = BRANCH - <- (curspace,start,curspace_size)
+defaultspace = ram
+header.align = 2
+header.bigendian = 0
+header.maxdelay = 2
+header.numsections = 0
+header.uniqbase = 0x800
+header.uniqmask = 0x0
+scope.000000 = -
+scope.000001 = 0
+scope.000002 = 0
+scopes = 3
+sourcefile.000 = test.slaspec
+space.01 = space_other OTHER be=0 delay=0 size=8 wordsize=1 physical=0
+space.02 = space_unique unique be=0 delay=0 size=4 wordsize=1 physical=1
+space.03 = space ram be=0 delay=1 size=4 wordsize=1 physical=1
+space.04 = space register be=0 delay=0 size=4 wordsize=1 physical=1
+symbol.0000000.body = numct=3
+symbol.0000000.id = instruction scope=0 subtable_sym
+symbol.0000001.body = 
+symbol.0000001.id = inst_start scope=0 start_sym
+symbol.0000002.body = 
+symbol.0000002.id = inst_next scope=0 end_sym
+symbol.0000003.body = 
+symbol.0000003.id = inst_next2 scope=0 next2_sym
+symbol.0000004.body = space=register off=0x0 size=4
+symbol.0000004.id = r0 scope=0 varnode_sym
+symbol.0000005.body = space=register off=0x4 size=4
+symbol.0000005.id = r1 scope=0 varnode_sym
+symbol.0000006.body = space=register off=0xc size=4
+symbol.0000006.id = r3 scope=0 varnode_sym
+symbol.0000007.body = space=register off=0x40 size=2
+symbol.0000007.id = h0 scope=0 varnode_sym
+symbol.0000008.body = space=register off=0x42 size=2
+symbol.0000008.id = h1 scope=0 varnode_sym
+symbol.0000009.body = space=register off=0x80 size=1
+symbol.0000009.id = c0 scope=0 varnode_sym
+symbol.0000010.body = space=register off=0x81 size=1
+symbol.0000010.id = c1 scope=0 varnode_sym
+symbol.0000011.body = space=register off=0x100 size=8
+symbol.0000011.id = q0 scope=0 varnode_sym
+symbol.0000012.body = tok(be=0,sign=0,sb=8,eb=15,sby=1,eby=1,sh=0)
+symbol.0000012.id = op scope=0 value_sym
+symbol.0000013.body = tok(be=0,sign=0,sb=0,eb=1,sby=0,eby=0,sh=0)
+symbol.0000013.id = reg scope=0 value_sym
+symbol.0000014.body = tok(be=0,sign=0,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000014.id = imm scope=0 value_sym
+symbol.0000015.body = tok(be=0,sign=1,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000015.id = simm scope=0 value_sym
+symbol.0000016.body = tok(be=0,sign=0,sb=0,eb=3,sby=0,eby=0,sh=0)
+symbol.0000016.id = low4 scope=0 value_sym
+symbol.0000017.body = tok(be=0,sign=0,sb=4,eb=7,sby=0,eby=0,sh=4)
+symbol.0000017.id = hi4 scope=0 value_sym
+symbol.0000018.body = index=0
+symbol.0000018.id = sync scope=0 userop
+symbol.0000019.body = def=4 code=0
+symbol.0000019.id = r0 scope=1 operand_sym
+symbol.0000020.body = def=4 code=1
+symbol.0000020.id = r0 scope=2 operand_sym
+symbols = 21
+equation instruction[0] = ([PExprId(2) = PExprId(1)] & operand(r0))
+xml instruction[0] main:
+
+<construct_tpl labels="1">
+  <null/>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x100"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x200"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x40"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x300"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x400"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="STORE">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="ram"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x100"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="STORE">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="ram"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x300"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CALLOTHER">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_EQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CBRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_relative val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x500"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x300"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x400"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LABEL">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_EQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x200"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CBRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_curspace/>
+      <const_next/>
+      <const_curspace_size/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x700"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BRANCHIND">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CALLIND">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CALL">
+    <null/>
+    <varnode_tpl>
+      <const_curspace/>
+      <const_real val="0x1000"/>
+      <const_curspace_size/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="ram"/>
+      <const_real val="0x20"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="RETURN">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>
+equation instruction[1] = ([PExprId(5) = PExprId(4)] & operand(r0))
+xml instruction[1] main:
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="BRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>
+equation instruction[2] = [PExprId(7) = PExprId(6)]
+xml instruction[2] main:
+
+<construct_tpl delay="2">
+  <null/>
+  <op_tpl code="DELAY_SLOT">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x2"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="BRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_curspace/>
+      <const_start/>
+      <const_curspace_size/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>

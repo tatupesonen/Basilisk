@@ -1,0 +1,5 @@
+@include "prelude.sinc"
+sub: r0 is op=2 & r0 { export r0; }
+sub: h0 is op=3 & h0 { export h0; }
+:ec sub is op=2 & sub { }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

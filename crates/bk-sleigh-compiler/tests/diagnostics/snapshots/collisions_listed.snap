@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning (line 6, located): Possible operand collision between symbols 'sub' and 's2'
+warning: 1 constructors with local collisions between operands
+=> elaborated

@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+macro m2(a, b) { a = b; }
+:mp r0 is op=2 & r0 { m2(r0); m2(r0, r1, r2); }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+:lu r0 is op=2 & r0 { <a> r0 = 1; }
+:lr r1 is op=3 & r1 { goto <b>; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

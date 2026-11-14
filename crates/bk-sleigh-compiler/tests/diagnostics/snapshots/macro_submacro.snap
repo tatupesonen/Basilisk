@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): In definition of macro 'bad':    Label <x> was placed but not used
+error (line 3, located): Could not expand submacro in definition of macro 'outer'
+=> no output
