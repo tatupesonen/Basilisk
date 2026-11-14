@@ -141,6 +141,20 @@ impl Options {
         self
     }
 
+    /// Sets [`Self::max_text_len`].
+    #[must_use]
+    pub const fn with_max_text_len(mut self, len: usize) -> Self {
+        self.max_text_len = len;
+        self
+    }
+
+    /// Sets [`Self::max_depth`].
+    #[must_use]
+    pub const fn with_max_depth(mut self, depth: u32) -> Self {
+        self.max_depth = depth;
+        self
+    }
+
     /// The truncated address size of a space, if it is truncated.
     pub(crate) fn truncation(&self, name: &str) -> Option<u32> {
         self.truncated_spaces

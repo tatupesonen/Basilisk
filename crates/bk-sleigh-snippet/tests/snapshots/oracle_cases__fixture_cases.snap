@@ -3781,4 +3781,303 @@ ignored error: Assigned bitrange is bad
       <const_real val="0x1"/>
     </varnode_tpl>
   </op_tpl>
-</construct_tpl>
+</construct_tpl>=== local t; AX = t; EAX = t;
+ok, next 0x10010
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== local t; EAX = zext(t); AX = t;
+ok, next 0x10020
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="INT_ZEXT">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== x = 1; AX = x; EAX = x;
+ok, next 0x10010
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== x = zext(AL); AX = x; EAX = x;
+ok, next 0x10020
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="INT_ZEXT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10010"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10010"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10010"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== local t; t = t + AX; EAX = t + 1;
+ok, next 0x10030
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== local t:2; EAX = zext(t) + t;
+ok, next 0x10030
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="INT_ZEXT">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== local t; EAX = t; AX = t:2; AL = t(1);
+ok, next 0x10030
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="SUBPIECE">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="SUBPIECE">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x10000"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== EAX = *[io]:4 &EBX; EAX = &:2 *[io] EBX;
+rejected: syntax error
+=== EAX = &ES;
+ok, next 0x10000
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x40"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== x = &io:2;
+rejected: syntax error
+=== goto 0x10[io];
+ok, next 0x10000
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="BRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="io"/>
+      <const_real val="0x10"/>
+      <const_real val="0x2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>=== local t; EAX = t; *:2 EBX = t;
+exception: Localtemp size mismatch
