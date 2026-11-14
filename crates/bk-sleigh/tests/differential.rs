@@ -14,14 +14,21 @@ use common::coverage::{Budget, Extra, LanguageResult, run_language};
 fn all_languages(reference: &bk_testkit::ReferenceDir) -> Vec<String> {
     let registry = common::registry(reference.root());
     let mut seen = BTreeSet::new();
+    // pcodedump looks for the `.sla` beside the `.ldefs` that names it
+    // (Ghidra searches every language directory); languages whose file lies
+    // elsewhere (RISC-V's `old/` definitions) cannot be run by the oracle.
     let mut ids: Vec<(String, std::path::PathBuf, std::path::PathBuf)> = registry
         .languages()
         .iter()
+        .filter(|d| {
+            let files = d.files();
+            let beside = files.ldefs.parent().zip(files.sla.file_name()).map(|(dir, name)| dir.join(name));
+            beside.is_some_and(|p| p.is_file())
+        })
         .map(|d| (d.id().to_string(), d.files().sla.clone(), d.files().pspec.clone()))
         .collect();
     ids.sort();
     ids.into_iter()
-        .filter(|(_, sla, _)| sla.is_file())
         .filter(|(_, sla, pspec)| seen.insert((sla.clone(), pspec.clone())))
         .map(|(id, _, _)| id)
         .collect()
@@ -54,6 +61,12 @@ fn run_all(ids: &[String], budget: Budget, extras: &BTreeMap<String, Vec<Extra>>
                     let none = Vec::new();
                     let result = run_language(&reference, &lang, &id, budget, extras.get(&id).unwrap_or(&none));
                     eprintln!("{}", result.row());
+                    for f in result.failures.iter().take(6) {
+                        eprintln!("FAIL {}: {f}", result.id);
+                    }
+                    for c in &result.oracle_crashes {
+                        eprintln!("CRASH {}: {c}", result.id);
+                    }
                     results.lock().unwrap().push(result);
                 }
             });

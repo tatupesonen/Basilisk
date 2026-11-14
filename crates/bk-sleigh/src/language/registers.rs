@@ -165,9 +165,11 @@ mod tests {
         assert_eq!(t.register_name(reg, 0, 3), Some("EAX"));
         assert_eq!(t.register_name(reg, 0, 8), Some("RAX"));
         assert_eq!(t.register_name(reg, 1, 1), Some("AH"));
-        // AH is the candidate for bytes 1..3; RAX contains them but starts at
-        // a lower offset than AH, so Ghidra does not find it.
-        assert_eq!(t.register_name(reg, 1, 2), None);
+        // For bytes 1..3 the candidate is AL (offset 0), and the walk back
+        // over offset 0 finds EAX.
+        assert_eq!(t.register_name(reg, 1, 2), Some("EAX"));
+        // For byte 2 the candidate is AH (offset 1); RAX contains it but
+        // starts at a lower offset than AH, so Ghidra does not find it.
         assert_eq!(t.register_name(reg, 2, 1), None);
         assert_eq!(t.register_name(reg, 9, 2), Some("RCX"));
         assert_eq!(t.register_name(SpaceId::new(3), 0, 1), None);

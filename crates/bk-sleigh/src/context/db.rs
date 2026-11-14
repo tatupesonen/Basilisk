@@ -258,3 +258,101 @@ impl ContextSink for ContextDb {
         Self::set_region(self, first, end, word, mask, value);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(offset: u64) -> Address {
+        Address::new(SpaceId::new(3), offset)
+    }
+
+    fn var() -> ContextVar {
+        ContextVar::new("v", 4, 7).unwrap()
+    }
+
+    #[test]
+    fn defaults_apply_before_any_split_point() {
+        let mut db = ContextDb::new(2);
+        db.set_variable_default(&var(), 0xa);
+        assert_eq!(db.default_words(), [0x0a00_0000, 0]);
+        assert_eq!(db.variable(&var(), at(0x1234)), 0xa);
+        let (words, range) = db.get_with_range(at(5));
+        assert_eq!(words, [0x0a00_0000, 0]);
+        assert_eq!(range, OffsetRange { first: 0, last: u64::MAX });
+        assert!(db.is_empty());
+    }
+
+    #[test]
+    fn a_flowing_set_stops_at_an_earlier_explicit_set() {
+        let mut db = ContextDb::new(1);
+        // Explicit region set at 0x200..0x300.
+        db.set_variable_region(&var(), at(0x200), Some(at(0x300)), 3);
+        // A flowing set from 0x100 changes 0x100..0x200 only.
+        db.set_variable(&var(), at(0x100), 5);
+        assert_eq!(db.variable(&var(), at(0x100)), 5);
+        assert_eq!(db.variable(&var(), at(0x1ff)), 5);
+        assert_eq!(db.variable(&var(), at(0x200)), 3);
+        // After the region, the value that was in force before it returns.
+        assert_eq!(db.variable(&var(), at(0x300)), 0);
+        // A flowing set of other bits passes the region.
+        let other = ContextVar::new("o", 0, 3).unwrap();
+        db.set_variable(&other, at(0x80), 1);
+        assert_eq!(db.variable(&other, at(0x2ff)), 1);
+        assert_eq!(db.variable(&other, at(0x400)), 1);
+        assert_eq!(db.variable(&other, at(0x7f)), 0);
+        // Ranges reflect the split points around an address.
+        let (_, range) = db.get_with_range(at(0x250));
+        assert_eq!(range, OffsetRange { first: 0x200, last: 0x2ff });
+        let points: Vec<u64> = db.split_points().map(|(a, _, _)| a.offset()).collect();
+        assert_eq!(points, [0x80, 0x100, 0x200, 0x300]);
+        let masks: Vec<u32> = db.split_points().map(|(_, _, m)| m[0]).collect();
+        assert_eq!(masks, [0xf000_0000, 0x0f00_0000, 0x0f00_0000, 0]);
+    }
+
+    #[test]
+    fn region_sets_cover_their_range_and_to_the_end() {
+        let mut db = ContextDb::new(1);
+        db.set_space_limits(vec![0, 0, 0, 0xffff]);
+        db.set_region(at(0x10), Some(at(0x20)), 0, 0xff, 0x12);
+        db.set_region(at(0x18), None, 0, 0xff00, 0x3400);
+        assert_eq!(db.get(at(0x0f)), [0]);
+        assert_eq!(db.get(at(0x10)), [0x12]);
+        assert_eq!(db.get(at(0x18)), [0x3412]);
+        assert_eq!(db.get(at(0x20)), [0x3400]);
+        let (_, range) = db.get_with_range(at(0x30));
+        assert_eq!(range, OffsetRange { first: 0x20, last: 0xffff });
+        // Another space starts from the default.
+        assert_eq!(db.get(Address::new(SpaceId::new(4), 0)), [0x3400]);
+        let (_, range) = db.get_with_range(Address::new(SpaceId::new(4), 7));
+        assert_eq!(range.first, 0);
+        assert!(db.change_count() >= 2);
+        // Words past the database's size are ignored.
+        db.set_region(at(0), None, 5, 1, 1);
+        db.set_change_point(at(0), 5, 1, 1);
+        db.set_default(5, 1, 1);
+        let mut out = [9u32; 2];
+        let _ = ContextSource::context_at(&db, at(0x18), &mut out);
+        assert_eq!(out, [0x3412, 0]);
+    }
+
+    #[test]
+    fn tracked_sets_replace_ranges() {
+        let mut db = ContextDb::new(0);
+        let reg = |value| TrackedValue {
+            space: SpaceId::new(4),
+            offset: 0x10,
+            size: 4,
+            big_endian: true,
+            value,
+        };
+        db.set_tracked(at(0x100), at(0x200), vec![reg(0x1122_3344)]);
+        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x150)), 0x1122_3344);
+        assert_eq!(db.tracked_value(SpaceId::new(4), 0x12, 2, at(0x150)), 0x3344);
+        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x200)), 0);
+        db.set_tracked(at(0x180), at(0x190), vec![reg(7)]);
+        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x185)), 7);
+        assert_eq!(db.tracked_value(SpaceId::new(4), 0x10, 4, at(0x190)), 0x1122_3344);
+        assert_eq!(db.tracked_set(at(0x50)).len(), 0);
+    }
+}
