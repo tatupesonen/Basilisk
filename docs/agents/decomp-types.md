@@ -17,10 +17,21 @@ Spec: `docs/features/decomp-types.md`. Crate: `crates/bk-decomp-types`.
   components, bitfield collection, `downChain`, `isPtrsubMatching`,
   `printRaw`).
 
+- XML encode/decode (`xml/`) with `TypeSource`, `SpacebaseScopes`,
+  `PrototypeCodec` hooks; C declaration parser (`cdecl/`).
+- Ported `type_ordering`, `enum_matching`, `enum_matching2`
+  (`tests/cpp_testtypes.rs`).
+- Oracle generator `tests/oracle/types_oracle.cc` + `regen.sh`; tables
+  `tests/data/types_oracle.txt.gz` (198,336 records, six languages) and
+  `types_orgs.txt.gz` (all language/compiler pairs). Replay
+  `tests/oracle_replay.rs`: all records equal except listed known
+  differences (prototype encoding, function-signature storage on 8051,
+  `<typegrp>` order). G tests `tests/oracle_dataorg.rs`: 294 pairs' data
+  organisation equal; 232 data-test `parse line` declarations parse.
+
 ## In progress
-- XML encode/decode (`xml/`), C declaration parser (`cdecl/`).
+- Property tests, fuzz targets.
 
 ## Next
-- Port `type_ordering`, `enum_matching`, `enum_matching2`.
-- Oracle generator under `tests/oracle/`, tables, replay tests.
-- Property tests, fuzz targets, benchmarks, PERF.md, spec Status.
+- Benchmarks + PERF.md; clippy (incl. Windows target); gate; spec Status
+  and Differences; inventory checklist note.
