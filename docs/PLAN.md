@@ -127,7 +127,7 @@ Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
 - [ ] `sleigh-language` — `bk-sleigh`, `bk-language`: registers as a model, flow and operand types, overrides, compile on demand (`features/sleigh-language.md`, a draft; later wave)
 
 ### M2 — SLEIGH compiler
-- [ ] `sleigh-compiler-front` — `bk-sleigh-compiler`: semantic analysis over `bk-sleigh-syntax` (symbols, tokens, constructors, macros, `with` blocks), p-code template compilation; symbols, print pieces, context changes and templates equal to Ghidra's for all 150 specifications (`features/sleigh-compiler-front.md`)
+- [x] `sleigh-compiler-front` — `bk-sleigh-compiler`: semantic analysis over `bk-sleigh-syntax` (symbols, tokens, constructors, macros, `with` blocks), p-code template compilation; symbols, print pieces, context changes and templates equal to Ghidra's for all 150 specifications (`features/sleigh-compiler-front.md`)
 - [ ] `sleigh-compiler-back` — `bk-sleigh-compiler`: pattern resolution, decision-tree construction, consistency checks, `basilisk sleigh compile`; all 150 specifications compile to the same inflated bytes as Ghidra's C++ compiler; `SleighCompileRegressionTest` ported as that equality (`features/sleigh-compiler-back.md`)
 - [ ] `sleigh-snippet` — `bk-sleigh-snippet`: p-code snippets of `.cspec`/`.pspec` (132 elements in 47 files) compile to Ghidra's template XML; reference tool `snippetdump`; `PcodeParserTest` ported (`features/sleigh-snippet.md`)
 - [ ] Compiler diagnostics equal to the C++ compiler's, one case per message (in `sleigh-compiler-front`/`-back`)

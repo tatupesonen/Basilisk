@@ -993,3 +993,39 @@ and ARM8m_le).
   reproduced the lent box's files exactly; the confirming command is in
   the research document, section 2); Ghidra's Java compiler was read and
   its shipped files measured, not run.
+
+## ADR-033 — `bk-pcode` follows x86-64 for NaN signs; float-to-integer truncation saturates
+(Coordinator, 2026-11-14, from the `x86-oracle` track; applies ADR-021
+and corrects ADR-029's last bullet.)
+
+* The checked-in oracle table for `bk-pcode`
+  (`crates/bk-pcode/tests/data/opbehavior_cpp.txt.gz`) is the one
+  generated on x86-64 Linux (GCC 14.4, the reference build there). The
+  generator now draws its random operands in a fixed order, so a table
+  made on any host has the same inputs line for line; regenerated on the
+  x86-64 box with the fixed generator, the text is identical to the
+  checked-in table (SHA-256 of the decompressed text `463b1dca…`,
+  2026-11-14).
+* **Two NaN inputs**: on x86-64 `FLOAT_ADD` and `FLOAT_MULT` return a NaN
+  with the sign of the second operand, `FLOAT_SUB` and `FLOAT_DIV` with
+  the sign of the first; AArch64 uses the first for all four. basilisk
+  computes x86-64's result from the inputs' bits on every host. With one
+  NaN input the result has that input's sign on both hosts; a NaN made
+  from non-NaN inputs is negative, as on x86-64. The wide and exact paths
+  follow Java's `BigFloat`, which has no NaN sign (always the positive
+  quiet NaN).
+* **`FLOAT_TRUNC` of a NaN or of a value outside `i64`** gives
+  `0x8000000000000000` cut to the output size in x86-64's C++, and
+  saturates in Ghidra's Java, where tests pin it
+  (`FloatFormatTest.testOpTruncLongInt`, `OpBehaviorFloatTruncTest`).
+  **basilisk saturates** (NaN gives 0): the Java behaviour is the tested
+  and the saner one. This is a documented difference from the C++ engine
+  (58 oracle rows, class `TruncSaturates`).
+* Correction: of the 161 rows that differ between the AArch64 and x86-64
+  tables on equal inputs, 111 are NaN signs and 50 are `FLOAT_TRUNC`
+  results, not all NaN signs as ADR-029 says.
+* `ceil`, `floor` and `round` go through `libm`, not the host's C library
+  (MinGW's `round()` is wrong for 0.49999999999999994).
+* A table of 188 directed cases with literal expected bits
+  (`tests/host_independence.rs`) runs on Linux x86-64, macOS AArch64 and
+  Windows in CI, so a host difference fails there.

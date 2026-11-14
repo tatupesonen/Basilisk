@@ -1,13 +1,14 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 15:07)
+## Now — RESUME HERE (2026-11-14 15:27)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-the GNU disassembler crates, `bk-sla` and `bk-decomp-types`
-(gate green, 1,747 tests). M0:
+the GNU disassembler crates, `bk-sla`, `bk-decomp-types`, `bk-sleigh`
+part 1, `bk-sleigh-compiler` part 1 and the website (gate green, 1,819
+tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
@@ -51,40 +52,32 @@ what the newer compiler and clippy report across the workspace, gate,
 Wine, CI on all three systems, merge. Check that 1.100.0 has been out for
 two weeks; if not, say so to the owner rather than deciding.
 
-**`sleigh-decode` is on `master`** (CI run 43587818592 green on all three
-systems; gate 1,781 tests). `PARITY.md` still has to be updated for it.
+**On `master` since 15:27 (CI run 43598927755 green on every job on all
+three systems, including the new `site` job; gate 1,819 tests):
+`bk-sleigh` part 1 (`sleigh-decode`), `bk-sleigh-compiler` part 1
+(`sleigh-compiler-front`), `bk-pcode` on the x86-64 oracle (`x86-oracle`,
+ADR-033; the regeneration on `kassini` with the fixed generator gave text
+identical to the checked-in table) and the website with the
+documentation's shell (`site/`, ADR-030, ADR-031). Their worktrees and
+branches are removed; `integration` is deleted.
 
-**Branch `integration` was rebuilt at 15:07** in its own worktree with
-`fuzz/Cargo.toml` resolved by hand (the earlier one had invalid TOML from
-a careless "keep both sides" resolution, which neither the gate nor CI
-notices because nothing builds the fuzz crate): it holds `x86-oracle`,
-`sleigh-compiler-front` and `site-design`; both lock files gain only
-`bk-sleigh-compiler`; `cargo metadata` parses the fuzz manifest. The gate
-is running there; green → push, `gh workflow run CI --ref integration`,
-and on a green run merge to `master` (make the merge commit in the
-integration worktree on a detached `master`, then fast-forward `master`
-in the main checkout, so the owner's staged file is not disturbed).
-After the merge: tick `sleigh-compiler-front` in `PLAN.md`; update
-`PARITY.md`; run the oracle regeneration on `kassini` (`x86-oracle`'s
-report in `docs/agents/pcode.md` has the two commands); tell the owner
-the Pages steps; start `docs-content`; correct ADR-029's last bullet (50
-of the 161 differing rows are `FLOAT_TRUNC`). Tooling follow-up for
-`win-local`: a gate step that parses the fuzz manifest.
+**For the owner, to publish the site**: GitHub → Settings → Pages →
+Build and deployment → Source "GitHub Actions"; then the `Pages` workflow
+is run (`gh workflow run Pages`). It goes live at
+`https://tatupesonen.github.io/basilisk/`, or at a custom domain if one
+is set in the same settings.
 
 ### Running (state at 2026-11-14 15:07)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | resumed 15:07 (nothing was on disk); `bk-sleigh` part 2 from `features/sleigh-pcode.md`. |
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 15:07 (three uncommitted files); D03, `bk-cspec`. |
 | `ref-nofma` | Opus | `a3f0f7e47fd87711a` | resumed 15:07. **The swap of `../reference` is complete and verified** (281 files replaced atomically; all 150 `.sla` equal x86-64 Linux's; Ghidra's tests, `pcodedump` on ten languages and the `decomp` console on all 93 data tests unchanged; old files in `../reference.aarch64-fused/`). Remaining: post-swap workspace test comparison, the edits to `features/sleigh-compiler-back.md`, `research/pcodedump-crashes.md`, Docker leftovers, gate, report. |
 
-Finished and in the `integration` branch: `x86-oracle`
-(`a6eeb040907dff5c6`), `sleigh-compiler-front` (`a657ab279c091c7b8`: all
-150 specifications match Ghidra's files in every compared category; 92
-diagnostic cases; parse + elaborate of all 150 in 1.03 s), `site-design`
-(`ad3bb266abb408203`: CI fix sizes the container from `docker info`).
-Their worktrees are kept until the merge.
+**Paused at the owner's cap of two, first to resume**: `sleigh-pcode`
+(`a392a8e6a16d0c340`; worktree kept; one commit, its status file
+`docs/agents/sleigh-pcode.md` with the findings of its reading phase and
+a six-step plan; no code yet).
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -216,9 +209,10 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `toolchain-1.100` (above),
-   `docs-content` (when the site is merged), `sleigh-compiler-back`
-   (when the front half and `ref-nofma` are merged), D01
+1. As slots free, in this order: resume `sleigh-pcode`,
+   `toolchain-1.100` (above), `docs-content` (the site is merged),
+   `sleigh-compiler-back` (the front half is merged; needs `ref-nofma`'s
+   spec edits), `sleigh-snippet` (needs only the front half), D01
    `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.
@@ -331,6 +325,31 @@ start a fresh agent briefed from the branch's files.
   binutils printed a stale operand (patch 0004). Both GNU disassembler
   crates pass on the real Windows runner. Merges now go through an
   `integration` branch with CI before `master`.
+* **`bk-sleigh` part 1 merged** (`sleigh-decode`): no `I`/`E`/`T` record
+  differs from `pcodedump` over 175 language configurations (99.33 % of
+  root pairs, 97.2 % of constructors); decode 3.25 M instructions/s
+  against 3.17 M for Ghidra, decode + text 2.41 M against 1.50 M; no
+  allocation per instruction. Missed target: 8-thread scaling 4.78×
+  against 6×, measured on a loaded machine. `pcodedump` crashes on a
+  delay-slot instruction with an `unimpl` body (36 cases).
+* **`bk-sleigh-compiler` part 1 merged** (`sleigh-compiler-front`): for
+  all 150 specifications the symbols, constructors, print pieces, context
+  changes and templates equal Ghidra's compiled files; three mutations
+  made the comparison fail on 133, 82 and 18 specifications; 92
+  diagnostic cases equal to Ghidra's compiler (which crashes on two
+  inputs); parse + elaborate of all 150 in 1.03 s against about 11.5 s
+  for Ghidra's whole compile.
+* **`bk-pcode` on the x86-64 oracle** (`x86-oracle`, ADR-033) and **the
+  website** (`site-design`; its CI job first failed on the runner's two
+  CPUs, fixed by sizing the container from `docker info`) merged.
+* Coordinator's mistake, 13:25: a "keep both sides" script produced
+  invalid TOML in `fuzz/Cargo.toml` on the integration branch, and
+  neither the gate nor CI builds the fuzz crate. Found by comparing bin
+  entries with target files; the branch was rebuilt and resolved by hand.
+  A gate step that parses the fuzz manifest is queued (`win-local`).
+* Owner, 2026-11-14 afternoon: Rust toolchain 1.100.0 (staged in the main
+  checkout, lands through track `toolchain-1.100`); two running workers
+  for now; existing work is never thrown away.
 * **`bk-decomp-types` merged** (D02, first decompiler crate; CI green on
   all three systems, gate on `master` 1,747 tests): every type kind, the
   factory, both orderings, XML, the C declaration parser, provenance and
