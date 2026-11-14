@@ -16,15 +16,16 @@ pub(crate) const CONST: u32 = 0;
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Handles<'p> {
     /// A node of a parse: operand `i` is the node's child `i`.
+    ///
+    /// Only the node's index is kept: a walk is rebuilt for every nested
+    /// `BUILD`, and the node's child range stored beside it as two 32-bit
+    /// fields was read back as one 64-bit load, which x86-64 cannot forward
+    /// from the two stores.
     Node {
         /// The parse.
         parse: &'p Parse,
         /// The node whose constructor's template is being built.
-        node: u32,
-        /// That node's first child and number of children (its operands).
-        first_child: u32,
-        /// The number of children.
-        num_children: u32,
+        node: usize,
     },
     /// Parameters of a free-standing template, by operand index.
     Params(&'p [(u32, VarnodeData)]),
@@ -58,7 +59,10 @@ impl<'p> Walk<'p> {
     /// The walk of `node` of `parse`, with constants from `parse` itself.
     pub(crate) fn of(parse: &'p Parse, node: u32, unique: u64) -> Self {
         Self {
-            handles: node_handles(parse, node),
+            handles: Handles::Node {
+                parse,
+                node: node as usize,
+            },
             start: parse.addr,
             next: parse.naddr,
             next2: parse.next2,
@@ -73,7 +77,10 @@ impl<'p> Walk<'p> {
     pub(crate) fn at(self, node: u32) -> Self {
         match self.handles {
             Handles::Node { parse, .. } => Self {
-                handles: node_handles(parse, node),
+                handles: Handles::Node {
+                    parse,
+                    node: node as usize,
+                },
                 ..self
             },
             Handles::Params(_) => self,
@@ -84,17 +91,11 @@ impl<'p> Walk<'p> {
     #[inline]
     pub(crate) fn handle(&self, index: u32) -> FixedHandle {
         match self.handles {
-            Handles::Node {
-                parse,
-                first_child,
-                num_children,
-                ..
-            } => {
-                if index >= num_children {
-                    return FixedHandle::UNSET;
-                }
-                parse.handle(first_child.wrapping_add(index))
-            }
+            Handles::Node { parse, node } => parse
+                .nodes
+                .get(node)
+                .and_then(|n| n.child(index))
+                .map_or(FixedHandle::UNSET, |child| parse.handle(child)),
             Handles::Params(params) => {
                 params
                     .iter()
@@ -108,19 +109,6 @@ impl<'p> Walk<'p> {
                     })
             }
         }
-    }
-}
-
-fn node_handles(parse: &Parse, node: u32) -> Handles<'_> {
-    let (first_child, num_children) = parse
-        .nodes
-        .get(node as usize)
-        .map_or((0, 0), |n| (n.first_child, n.num_children()));
-    Handles::Node {
-        parse,
-        node,
-        first_child,
-        num_children,
     }
 }
 

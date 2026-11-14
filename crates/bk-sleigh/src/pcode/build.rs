@@ -57,10 +57,9 @@ where
     /// The constructor at the walk's node.
     fn ctor_of(w: &Walk<'_>) -> Option<ConstructorId> {
         match w.handles {
-            Handles::Node { parse, node, .. } => parse
-                .nodes
-                .get(node as usize)
-                .and_then(crate::Node::constructor),
+            Handles::Node { parse, node } => {
+                parse.nodes.get(node).and_then(crate::Node::constructor)
+            }
             Handles::Params(_) => None,
         }
     }
@@ -164,10 +163,10 @@ where
     /// The node and constructor of operand `index` of the walk's node, when
     /// the operand is a subtable.
     fn subtable_child(&self, w: &Walk<'_>, index: u32) -> Option<(u32, ConstructorId)> {
-        let Handles::Node { parse, node, .. } = w.handles else {
+        let Handles::Node { parse, node } = w.handles else {
             return None;
         };
-        let n = parse.nodes.get(node as usize)?;
+        let n = parse.nodes.get(node)?;
         let info = self.lang.tables.ctor(n.constructor()?)?;
         let op = self.lang.tables.op(info, index)?;
         if !matches!(op.def, OpDef::Subtable(_)) {
@@ -186,7 +185,7 @@ where
         section: u32,
         slots: &mut [Parse],
     ) -> Result<(), LiftError> {
-        let Handles::Node { parse, node, .. } = w.handles else {
+        let Handles::Node { parse, node } = w.handles else {
             return Ok(());
         };
         if self.depth >= MAX_BUILD_DEPTH {
@@ -196,10 +195,7 @@ where
             });
         }
         self.depth += 1;
-        let num = parse
-            .nodes
-            .get(node as usize)
-            .map_or(0, crate::Node::num_children);
+        let num = parse.nodes.get(node).map_or(0, crate::Node::num_children);
         for i in 0..num {
             let Some((child, ctor)) = self.subtable_child(&w, i) else {
                 continue;
