@@ -66,9 +66,15 @@ declarative, 4.7.6); file systems, relocation handlers, ELF extensions,
 demanglers and correlators as plugin kinds (later; inv. 8 ranks them
 second); a Python debugger integration (PyGhidra's `debug_callback`).
 
-**Crates.** `bk-plugin` (new, the only crate with PyO3 and the only one
-whose `unsafe` comes from CPython: `unsafe-crates.txt` entry
-`bk-plugin no-miri:CPython FFI through PyO3`, ADR-020), a pure-Python tree
+**Crates.** `bk-plugin` (new, the only crate that depends on PyO3; the
+C dependency on CPython is the one ADR-014 allows). PyO3 0.30.1's macros
+emit no `unsafe` into the user's crate — verified by building the
+experiment under `#![forbid(unsafe_code)]` (*exp.* README) — so
+`bk-plugin` keeps the workspace's `unsafe_code = "forbid"` and needs no
+`unsafe-crates.txt` entry; the FFI's `unsafe` stays inside `pyo3` and
+`pyo3-ffi`, a widely used crate that encapsulates it, as ADR-020
+prefers. Miri cannot run CPython; the Python test suite also runs in a
+nightly AddressSanitizer build (section 6). A pure-Python tree
 `python/basilisk/` beside it, and a small `plugin` module in
 `crates/basilisk` (the hand-over). `bk-plugin` depends on the library
 crates it binds; nothing depends on `bk-plugin` except the extension
@@ -606,3 +612,435 @@ from the same JSON, runs the port, and writes the same dump. Outputs and
 dumps from Ghidra are checked in as goldens, so CI does not need Ghidra.
 Script 10's input is a fixture whose switch the reference decompiler
 resolves; it is accepted only once the jump-table track (D13) is.
+
+### 4.6 Plugin packages
+
+**What a plugin is.** A Python package that tells basilisk what it
+provides. It is found either as an installed distribution with an entry
+point in the group `basilisk.plugins`
+(`[project.entry-points."basilisk.plugins"] myplugin = "myplugin"` in its
+`pyproject.toml`), or as a directory `<settings>/plugins/<name>/` holding
+`plugin.toml` and the package. Its entry module declares:
+
+```python
+import basilisk
+from basilisk.plugin import PluginInfo, action, analyzer
+
+PLUGIN = PluginInfo(
+    name="thunk-tools",            # identifier: [a-z0-9][a-z0-9_-]*, unique
+    version="1.2.0",               # PEP 440
+    api=">=1.0,<2",                # PEP 440 specifier on basilisk.API_VERSION (4.10)
+    description="Names and comments thunks",
+    author="…",
+    requires=["string-tools>=0.3"],  # other plugins, optional
+)
+
+@action(id="rename-thunks", name="Rename Thunks", menu="Tools/Thunk Tools")
+def rename_thunks(ctx): ...
+
+def register(r):                   # optional; without it every decorated
+    r.add(rename_thunks)           # object in the module is registered
+```
+
+`plugin.toml` repeats `name`, `version`, `api`, `description`, `author`,
+`requires` and adds `entry = "package.module"`, so a directory plugin's
+API range is checked before any of its code runs; for an entry-point
+plugin the check uses `PLUGIN` right after import.
+
+**Discovery**, in this order (the first plugin of a name wins; a later
+one is listed as shadowed): plugins bundled in the package (the script
+ports, examples); entry points of the running environment
+(`importlib.metadata.entry_points(group="basilisk.plugins")`); the user's
+plugin directory; directories named in the setting `plugins.paths`.
+Script directories (4.3) are scanned separately; scripts are not plugins.
+
+**Enabling.** A plugin installed with `basilisk plugin install <wheel,
+zip, directory or package name>` is enabled. A plugin that discovery
+finds for the first time is listed as *new* and disabled until the user
+enables it in the Plugins window or with `basilisk plugin enable` —
+plugins are trusted code with the user's privileges (ADR-014), so code
+that appeared in an environment by other means does not run unasked.
+Headless runs load the enabled set, or exactly `--plugin <name>…`.
+State is kept in the settings (`plugins.enabled`, `plugins.disabled`).
+
+**Load order**: topological by `requires`, ties by name. A plugin whose
+API range excludes the running API, whose requirement is missing,
+disabled or failed, or whose import raises is not loaded; the Plugins
+window and `basilisk plugin list` show the reason and the traceback.
+
+**Registration** is recorded per plugin: every script, analyzer, loader,
+exporter, action, view and proposer carries its plugin's name, so errors
+are attributed and everything can be removed again.
+
+**Error isolation.** A plugin must not take basilisk down.
+- Import or `register` raises: everything that plugin registered so far
+  is removed; the plugin is marked failed.
+- A callback raises (any exception, including `SystemExit`): caught at
+  the boundary, logged to the Console and the log with the plugin name
+  and traceback; the operation it served fails and the rest carries on —
+  an analyzer's task fails with the error in the analysis log and
+  analysis continues; a loader's probe counts as "no load spec"; an
+  action shows a notification; a view shows the error in place of its
+  content; a proposer yields nothing. Three consecutive failures of the
+  same callback in one session disable that registration for the session,
+  with a notification (setting `plugins.failure_limit`).
+- `KeyboardInterrupt` in a plugin job cancels that job only.
+- What cannot be contained in process: a crash in native code a plugin
+  loads (a C extension), `os._exit`, and Python code that never returns
+  and never checks its monitor. For the last, Cancel first sets the
+  monitor; if the code has not returned after two seconds basilisk
+  raises `CancelledError` in that thread asynchronously
+  (`PyThreadState_SetAsyncExc`; **unverified** that it is usable under
+  abi3 — P1 checks, and without it Cancel only sets the monitor).
+
+**Reloading** for development: `basilisk.plugin.reload("name")`, the
+Plugins window's Reload, or `basilisk plugin reload`: remove every
+registration of the plugin (actions leave the menus, its analyzers'
+pending tasks are dropped, its views close), call its optional
+`unregister()`, remove its modules (its package prefix) from
+`sys.modules`, import and register again. Scripts need no reload: they
+are read afresh at every run (4.3). With the setting `plugins.watch`,
+a change to a file of an enabled directory plugin reloads it.
+
+### 4.7 Plugin kinds
+
+#### 4.7.1 Scripts
+4.3. A plugin can also register a function as a script:
+`r.script(fn, name=…, category=…, menupath=…, keybinding=…)`; it then runs
+as a script does (job, transaction, monitor, error isolation) with
+`fn(ctx)`.
+
+#### 4.7.2 Analyzers
+Ghidra's contract (inv. 4), in Python:
+
+```python
+from basilisk.analysis import Analyzer, AnalyzerKind, Priority, Option
+
+class StringXrefs(Analyzer):
+    name = "String Xrefs"            # no "." (the options key; AnalysisScheduler.java:42-47)
+    description = "Labels references to strings"
+    kind = AnalyzerKind.DATA         # BYTES, INSTRUCTIONS, FUNCTIONS, FUNCTION_MODIFIERS,
+                                     # FUNCTION_SIGNATURES, DATA (AnalyzerType.java:47-52)
+    priority = Priority.DATA.after() # FORMAT 100 … DATA_TYPE_PROPAGATION 900, HIGHEST, LOW;
+                                     # before()/after() shift by one (AnalysisPriority.java)
+    default_enabled = True
+    one_shot = True                  # offered under Analysis → One Shot
+    prototype = False
+    options = [Option("Minimum length", 4, "Shortest string to label")]
+
+    def can_analyze(self, program) -> bool: ...
+    def added(self, program, addresses, monitor, log) -> bool: ...
+    def removed(self, program, addresses, monitor, log) -> bool: ...   # optional
+    def options_changed(self, options, program) -> None: ...           # optional
+    def analysis_ended(self, program) -> None: ...                     # optional
+```
+
+- One instance per program, created when the analysis manager is
+  created for it, kept if `can_analyze` is true (as
+  `AutoAnalysisManager.java:169-172`).
+- The manager accumulates added and removed address sets for it from
+  change events of its kind while it is enabled, and queues one task at
+  its priority (as `AnalysisScheduler`). `added` runs on an analysis
+  worker thread inside the analysis transaction; writes default to
+  `Provenance.ANALYSIS`.
+- **Python analyzers are exclusive tasks**: the manager runs one at a
+  time, never while a Rust analyzer writes to the same program, and
+  holds no lock while it calls in (4.8). In Ghidra all analyzers run one
+  at a time, so this costs nothing against Ghidra [J].
+- Options appear in the Analysis Options dialog under the analyzer's
+  name and in `program.analysis.options` (4.4.2); a `.pspec` override of
+  default enablement applies as in Ghidra.
+- `basilisk analyze` and Analysis → Auto Analyze run enabled Python
+  analyzers with the built-in ones in one priority order.
+
+#### 4.7.3 Loaders
+Ghidra's contract (inv. 5), the `AbstractProgramWrapperLoader` shape:
+
+```python
+from basilisk.loaders import Loader, LoaderTier, LoadSpec
+
+class MyFormat(Loader):
+    name = "My Format"
+    tier = LoaderTier.SPECIALIZED_TARGET
+    tier_priority = 50
+    extensions = (".myf",)
+
+    def find_load_specs(self, provider) -> list[LoadSpec]:
+        if provider.read(0, 4) != b"MYF\0":
+            return []
+        pairs = basilisk.lang.query_opinions(self.name, primary="7", secondary=None)
+        return [LoadSpec(image_base=0x10000, language=p) for p in pairs]
+
+    def default_options(self, provider, spec) -> list: ...      # optional
+    def validate_options(self, provider, spec, options): ...    # optional; message or None
+    def load(self, provider, spec, options, program, monitor, log) -> None:
+        ...   # fill the program basilisk created for the spec
+```
+
+`find_load_specs` gets a read-only byte provider (`read(offset, n)`,
+`len()`), is called for every imported file, and must be cheap; Python
+loaders are ranked with the built-in ones by tier, tier priority and
+name (`Loader.java:293-298`). `basilisk.lang.query_opinions` is
+`bk-lang`'s `.opinion` query (`QueryOpinionService` is already ported).
+Loading into an existing program and multi-program results (Ghidra's
+`loadInto`, `LoadResults`) come later.
+
+#### 4.7.4 Exporters
+```python
+from basilisk.exporters import Exporter
+
+class MyExport(Exporter):
+    name = "My Format"
+    extension = "myf"
+    supports_address_restriction = True
+    def options(self) -> list: ...                            # optional
+    def export(self, program, path, addresses, options, monitor) -> None: ...
+```
+Offered in File → Export and `basilisk export --format "My Format"`
+(inv. 6).
+
+#### 4.7.5 UI actions
+Registered into `bk-ui`'s action registry, so menus, popup menus, the
+palette, key bindings and the Key Bindings options all list them:
+
+```python
+@action(id="rename-thunks", name="Rename Thunks",
+        description="Rename every thunk after its target",
+        menu="Tools/Thunk Tools", popup=("listing", "decompiler"),
+        keybinding="ctrl shift T", scope="program", requires=("function",))
+def rename_thunks(ctx): ...
+```
+
+- Ids are namespaced `<plugin>.<id>` and are what the key map stores.
+- Menus are Ghidra's top-level menus (File … Help) and paths below them.
+- A default key binding that clashes with a built-in one is dropped with
+  a warning; the user can still bind it.
+- Enablement is declarative — a `scope` (`global`, `program`,
+  `code-view`, `decompiler`) and `requires` facts the shell knows
+  (`function`, `selection`, `address`) — because the shell evaluates it
+  every frame on the UI thread, which never calls Python (4.8).
+- Invoking it runs `fn(ctx)` as a job on the plugin executor, inside a
+  transaction named after the action, with a monitor shown in the status
+  bar; never on the UI thread.
+
+#### 4.7.6 UI views
+Views are **declarative**: Python supplies data, `bk-ui` draws it.
+egui redraws every frame on the UI thread; a Python callback per frame
+would hold the GIL on that thread and tie the interface's frame rate to
+plugin code, which ADR-012 ("the UI never blocks") forbids. Kinds:
+
+- `TableView(columns, provider)`: typed columns (text, integer, address,
+  function, …); `provider.count()` and `provider.rows(start, count)` are
+  called on worker threads through the same paged client the built-in
+  tables use (`ui-shell.md` 4.2); sorting and filtering by basilisk; an
+  address column navigates. `createTableChooserDialog` is this view
+  (4.4.2).
+- `TextView(provider)`: lines of tokens with the token kinds and
+  referents of the listing and decompiler (`bk-ui` `model::token`), so
+  colouring, highlight-uses and navigation work as in built-in views.
+- `TreeView(provider)`: lazily expanded nodes with text, icon and an
+  optional location.
+- `view.refresh()` from any thread asks for new data.
+
+A view is registered with an id, a title and a Window menu entry, docks
+and detaches like built-in views, and keeps its place in the saved
+layout. **Built in when Python is active**: the Python console
+(Ghidra's interpreter window: statements run on the plugin executor, each
+top-level statement that changes the program runs in its own transaction
+"Python Console", completion of names), the Script Manager (Ghidra's
+layout: category tree, script table, run, edit, key binding), the
+Plugins window, and the Proposals view (4.7.7).
+
+#### 4.7.7 Decompiler hooks: proposers (ADR-025 item 6)
+A language model never edits decompiled code. A plugin can **propose**
+names, types and comments; basilisk validates and applies them with the
+program's ordinary rename, retype and comment operations, records their
+provenance and can remove them. Off by default.
+
+```python
+from basilisk.plugin import proposer, Proposal
+
+@proposer(name="llm-names", kinds={"name", "type", "comment"})
+def propose(result, monitor):          # result: DecompileResult, read-only
+    hf = result.high_function
+    yield Proposal.rename(hf.symbol("local_10"), "header_len",
+                          confidence=0.8, rationale="compared with 0x14 before memcpy")
+    yield Proposal.retype(hf.symbol("param_1"), "struct header *")
+    yield Proposal.rename_function(result.function, "parse_header")
+    yield Proposal.comment(result.function.entry, basilisk.CommentKind.PLATE, "Parses …")
+```
+
+1. **Switches.** `decompiler.proposers` = `off` (default) | `review` |
+   `apply`, plus a per-proposer enable. Turning proposers on starts in
+   `review`.
+2. **When.** After the Decompiler view decompiles a function, on the
+   action "Ask Proposers", or headless with `basilisk propose
+   --proposer <name> [--function …]`. The proposer runs on the plugin
+   executor with the finished, immutable result; decompilation never
+   waits for it.
+3. **Targets are program entities**, not per-decompilation ids: a
+   function; a parameter or local by function and storage (and first use
+   address for locals, as Ghidra identifies high symbols); a global
+   symbol; an address and comment kind. `hf.symbol(name)` and the
+   token's `high_symbol` give such targets.
+4. **Validation** against the current program: the target exists, the
+   name is legal and unique where required, the type parses with the
+   program's types. Invalid proposals are dropped and listed with the
+   reason.
+5. **Never above its rank.** A proposal may replace a value whose
+   provenance ranks no higher than `Provenance.MODEL` — `DEFAULT`,
+   `ANALYSIS`, `MODEL` — and never `USER`, `IMPORTED`, `DEBUG_INFO` or
+   `LIBRARY_SIGNATURE` (`bk-core` `Provenance::trust`; Ghidra ranks `AI`
+   with `ANALYSIS`, `SourceType.java:28-54`).
+6. **Review** keeps proposals pending in a per-program table (origin,
+   target, value, confidence, rationale), shown in the Proposals view and
+   as markers in the Decompiler; Accept or Reject one or many.
+7. **Apply** writes accepted proposals (in `apply` mode: all valid ones)
+   in one transaction "Proposals from <plugin>/<proposer> for <function>"
+   with `Provenance.MODEL` and the origin `<plugin>/<proposer>`; one undo
+   step. The decompiler shows the change at the next decompile, through
+   the program trait like any other name or type.
+8. **Removal**: "Remove Proposals from <origin>" for a function or the
+   program restores, for each applied proposal, the value it replaced —
+   only where the current value is still the proposal's (a later user
+   edit stays) — in one transaction. This needs the program model to keep
+   the origin and the replaced value of `MODEL` edits (binding
+   constraints, item 11).
+
+`program.decompiler.decompile(f, timeout=None, monitor=None)` and
+`decompile_many(functions, callback=None, workers=None)` (Ghidra's
+`ParallelDecompiler`: Rust workers decompile, the callback runs with the
+GIL for each finished result, in function order) give plugins and
+scripts the same results the proposers see: `c` (text), `lines` (tokens
+with kinds, referents and addresses), `high_function` (symbols with
+storage, type and provenance; p-code ops with sequence numbers and
+varnodes; blocks), `summary` (ADR-025 3d) and `error`.
+
+### 4.8 Threads, the GIL and long work
+
+1. **Long native work releases the GIL.** Every binding call that can
+   take more than about a millisecond — decompiling, analysis, import,
+   export, search, saving, undo and redo, and each page fetch of an
+   iterator — runs inside `py.detach`. Measured: two Python threads each
+   running 300 ms of native work take 600 ms when the GIL is held and
+   300 ms when it is released (*exp.*).
+2. **Where Python runs**: on the thread that called into basilisk
+   (library use); on the **plugin executor**, a small pool (two threads
+   by default) for scripts, actions, view providers, proposers and the
+   console; on analysis worker threads for Python analyzers. **The UI
+   thread never attaches to the interpreter.** In a Python-hosted GUI
+   `basilisk.main()` runs the event loop inside `py.detach`.
+3. **Callbacks from parallel Rust code**: a registration holds its
+   callable as `Py<PyAny>` (`Send + Sync`) in an `Arc`, and the Rust
+   worker calls it inside `Python::attach`; results and exceptions come
+   back as values. Measured: eight Rust threads calling one Python
+   callable while the caller is detached: correct ordered results, eight
+   distinct OS threads, 20–32 ms, and a Python exception in one callback
+   reaches the caller as that exception (*exp.*). Calls serialise on the
+   GIL; that is why Python analyzers are exclusive tasks (4.7.2).
+4. **No deadlock between the GIL and program locks.** Rule for every
+   binding and every Rust caller of Python: never attach while holding a
+   program or storage lock; never block on such a lock while attached —
+   detach first (`py.detach(|| program.write())`). The binding acquires
+   storage locks only inside `detach`. A test runs a Python analyzer that
+   writes while Rust analysis and a script read and write the same program
+   (section 6).
+5. **Cancellation and progress** use one monitor type shared by every
+   crate (binding constraints, item 7): a cancel flag and progress
+   counters behind an `Arc`, read without locks. `basilisk.task.Monitor`
+   wraps it: `cancelled`, `check()` (raises `CancelledError`), `message`,
+   `maximum`, `progress`, `increment(n=1)`, `indeterminate`; in the flat
+   layer, Ghidra's `TaskMonitor` names (`isCancelled`, `checkCancelled`
+   and the older `checkCanceled`, `setMessage`, `initialize`,
+   `setMaximum`, `setProgress`, `incrementProgress`, `setIndeterminate`,
+   `setShowProgressValue`, `getMessage`, `getProgress`, `getMaximum`,
+   `cancel`, `clearCancelled`; `TaskMonitor.java:55-209`). A script's
+   monitor is passed into the long calls it makes, so Cancel stops the
+   decompile it is waiting on. Measured: a cancel set from another
+   Python thread stops Rust work running without the GIL within one 10 ms
+   step, and the progress it wrote is visible from Python (*exp.*).
+6. **Headless interrupt**: in `python -m basilisk script …`, SIGINT
+   cancels the running job's monitor (Python only acts on SIGINT while
+   Python code runs on the main thread).
+7. **Free-threaded CPython**: open (4.1). Requirements fixed now: every
+   pyclass `frozen` and `Sync`; no Rust code uses the GIL as its lock;
+   nothing assumes callbacks are serialised except the documented
+   exclusive-task rule, which would then be relaxed deliberately.
+
+### 4.9 Transactions, undo and safety
+
+**Ghidra** (inv. 2.3): a script is one transaction named after its class,
+**committed even when `run` throws or is cancelled** (`end(true)` in a
+`finally`, `GhidraScript.java:457-466`); the prompt that would ask whether
+to keep the changes is never called. A nested transaction that ends
+without commit aborts the whole outer transaction
+(`Framework/Project/.../data/DomainObjectDBTransaction.java:151-163`).
+Writing without a transaction is an error (`db/NoTransactionException.java`).
+PyGhidra's `transaction()` context manager rolls back on an exception
+(`pyghidra/api.py:256-275`).
+
+**basilisk:**
+1. Every change happens inside a transaction; a write without one raises
+   `NoTransactionError`. Reads need none.
+2. The runner opens one transaction around each script, action, console
+   statement and proposal batch, named after it ("Script:
+   FindAndReplaceCommentScript"); analyzers run inside the analysis
+   transaction. One outermost transaction is one undo step with that
+   name.
+3. **Normal end commits. An exception — including `CancelledError`,
+   `KeyboardInterrupt` and `SystemExit` with a non-zero code — rolls the
+   transaction back**, and the error is reported. This departs from
+   Ghidra's script behaviour on purpose (section 8): a failed script
+   leaves no half-applied edits, as Python context managers and PyGhidra's
+   `transaction()` behave. A script that wants Ghidra's behaviour sets
+   `KEEP_CHANGES_ON_ERROR = True` at module level.
+4. `with program.transaction(name):` and the flat `start()`/`end(commit)`
+   give explicit control. Transactions nest: the outermost names the undo
+   step; an inner one that ends by exception or `end(False)` marks the
+   outermost aborted, as Ghidra does; further writes in it raise
+   `TransactionAbortedError`, and it rolls back when it ends.
+5. A transaction belongs to the thread that opened it; a write from
+   another thread needs its own transaction and waits for the single
+   writer (ADR-003: one writer, many readers).
+6. `program.undo()`, `redo()` and `save()` raise while a transaction is
+   open. Undo, redo and the UI's Edit → Undo act on the same per-program
+   stack of outermost transactions.
+7. Handles survive commit, rollback, undo and redo; an entity removed by
+   any of them makes its handles stale (4.2).
+
+**What plugins may not do** (each enforced by an error, not by
+convention): write without a transaction; write from a proposer (it gets
+a read-only program: `ReadOnlyError`) or from a loader's
+`find_load_specs`; start analysis from inside an analyzer; touch a closed
+program (`StaleObjectError`); run code on the UI thread (no API exists);
+undo, redo or save inside a transaction. Plugins are trusted code with
+the user's privileges (ADR-014); basilisk does not sandbox them, and says
+so where plugins are installed and enabled.
+
+### 4.10 Versioning and compatibility
+
+- `basilisk.API_VERSION` is a `(major, minor)` pair separate from the
+  application version. It is `(0, n)` while the M9 tracks build it —
+  any `0.n` may break — and becomes `(1, 0)` when M9 is accepted.
+- A plugin declares `api` as a PEP 440 specifier (`">=1.2,<2"`); without
+  one it is not loaded. The host checks it before importing a directory
+  plugin and right after importing an entry-point plugin.
+- **Breaking** means: removing or renaming a documented module, class,
+  function, method, property, parameter, keyword, enum member or
+  exception class; making an optional parameter required; accepting
+  fewer argument types; returning a type that is not compatible with the
+  documented one; changing documented semantics (iteration order, address
+  formatting, default provenance, transaction behaviour, which exception
+  a failure raises — except to a subclass of the documented one).
+  **Not breaking**: new names, new optional parameters, new enum members
+  (enums are documented as open), new exception subclasses, `repr` text,
+  performance, new Ghidra bean names (4.4.3).
+- The flat layer and `basilisk.ghidra` are part of the versioned surface
+  under Ghidra's names.
+- **Deprecation**: a name to be removed is deprecated in a minor release
+  (a `DeprecationWarning` when used, a note in its docstring, PEP 702
+  `@deprecated` in the stubs), kept for at least two further minor
+  releases, and removed only in the next major release.
+- **Drift is tested** (6.3): a manifest of the whole surface, generated
+  from the built module and checked in, plus `mypy.stubtest` comparing
+  the shipped type stubs with the runtime.
