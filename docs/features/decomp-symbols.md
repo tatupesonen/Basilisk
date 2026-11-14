@@ -1088,3 +1088,288 @@ names of at most 64 KiB; a string read of at most `maximumChars` bytes;
 symbols per scope (`nextUniqueId` and `catindex` are 32-bit in Basilisk,
 Ghidra uses `uint8`/`uint2` — `catindex` above 65,535 wraps in Ghidra,
 read database.hh:259; Basilisk errors); context of at most 64 words.
+
+## 5. Design
+
+### 5.1 Crate and dependencies
+
+`crates/bk-decomp-symbols`, depending on `bk-core` (addresses, spaces,
+`Range`, `RangeList`, `Provenance`), `bk-marshal` (codecs and ids),
+`bk-decomp-types` (`TypeId`, `TypeFactory`: `getExactPiece`,
+`getBase`, `getTypeCode`, pointers, arrays, stripped forms,
+`encodeRef`/`decodeType`), `bk-cspec` (`FuncProto` for prototype
+overrides, `FunctionSummary`, `CompilerSpec::globals()`), `bk-lang`
+(decoded pspec pieces: volatile, incidental copy, register data, default
+symbols) and `bk-sleigh` (`context::{ContextDb, ContextVar, TrackedValue}`
+only). Third-party: `thiserror`, `tracing`, `bitflags`, `smallvec`
+(all already in the workspace).
+
+**Why `bk-sleigh`**: ADR-026 puts the context store there and it exists;
+porting `ContextInternal` a second time would make two stores that must
+agree. The plan's dependency rule ("the top on `bk-sleigh`") predates
+ADR-026; open item 10.2 proposes moving `bk_sleigh::context` into its own
+small crate so that this edge carries no translator code. Until then the
+crate uses only the `context` module's public items.
+
+Modules (each under 600 lines): `ids` (typed ids, Ghidra ids, element and
+attribute ids), `flags`, `entrymap` (4.2), `partmap` (4.3), `entry`,
+`symbol`, `scope` (scope data and `ScopeInternal` behaviour, split into
+`scope/find.rs`, `scope/mutate.rs`, `scope/names.rs`), `database`
+(scopes, resolve map, properties, ids), `codec/` (4.11, one file per
+element family), `comment`, `strings`, `cpool`, `image/` (`xml.rs`,
+`raw.rs`, `hexdigits.rs`), `context` (4.16), `overrides`, `arch` (4.18),
+`host/` (the trait, the cache layer, the in-memory host, the test host),
+`overlay` (5.7), `error`.
+
+### 5.2 Data layout
+
+* **Ids.** `ScopeId(u32)`, `SymbolId(u32)`, `EntryId(u32)`: indices into
+  the database's arenas; slots of removed objects are kept dead until
+  `Database::compact` (never during a decompilation), so a stale id never
+  names a new object, as plan 3 item 4 asks of the IR. Ghidra's ids are
+  separate fields: `GhidraScopeId(u64)` (the `uniqueId`) and
+  `GhidraSymbolId(u64)` (`symbolId`, 0 = unassigned); look-up maps from
+  each to the arena id.
+* **`Database`**: `scopes: Vec<ScopeData>`, `symbols: Vec<SymbolSlot>`,
+  `entries: Vec<EntrySlot>`, `by_ghidra_scope: BTreeMap<u64, ScopeId>`
+  (`idmap`, which is iterated by `adjustCaches`), the resolve map (an
+  `EntryMap<ScopeId>` keyed by `Address`), the property map, `id_by_name_hash`.
+* **`ScopeData`**: name, display name, Ghidra id, parent, children as a
+  `BTreeMap<u64, ScopeId>` (id order is behaviour, 4.7), `RangeList`,
+  `ScopeKind { Global, Namespace, Function(SymbolId) }`, and the
+  `ScopeInternal` tables: per-space `Vec<Option<EntryMap<EntryId>>>`, the
+  name tree `BTreeMap<(Box<str>, u32), SymbolId>`, categories
+  `Vec<Vec<Option<SymbolId>>>`, the dynamic list (insertion order,
+  removal by id: a doubly linked list threaded through the entries),
+  `multi_entry: BTreeSet<(Box<str>, u32)>`, `next_unique_id: u64`.
+* **`SymbolData`**: kind (`Plain`, `Function { consume_size }`,
+  `Equate { value }`, `UnionFacet { field, addr_based }`, `Label`,
+  `ExternRef { ref_addr }`), scope, name, display name, `TypeId`,
+  `name_dedup`, flags, display flags, category, `catindex`, entries
+  (`SmallVec<[EntryId; 2]>`, insertion order), `whole_count`, the depth
+  cache, and `name_provenance`, `type_provenance` (5.4; never compared or
+  ordered).
+* **`EntryData`**: symbol, kind (`Map { addr, conflict_uniq: Option<u32>
+  }`, `Dynamic { hash }`, `Unassigned`), use limit (`RangeList`),
+  properties, extra flags, offset, size, and either its record handle in
+  the space's entry map or its link in the dynamic list.
+* **`EntryMap<R>`** (4.2): fragments in a `BTreeMap<FragKey, Bucket>`
+  where `FragKey = (last: u64, subsort: Subsort)` and `Bucket` is a
+  `SmallVec<[FragId; 2]>` holding the *equal* fragments in multiset order
+  (the hint rules of 4.2 become "insert before position k of the bucket",
+  "push front", "push back"); fragment data `{ first, last, a, b,
+  subsort, record }` in a slab; the record list as a doubly linked list
+  over record slots (insert-before is O(1) once the target record is
+  known). `Subsort` for the resolve map is a zero-sized type that compares
+  equal.
+* **Evaluation (ADR-011)**, crates.io figures of 2026-11-15:
+  `rangemap` 1.8.0 (50.7 million downloads) and `btree-range-map` 0.8.2
+  (6.8 million) store *disjoint* ranges and merge or split values on
+  insert — they cannot hold overlapping records; `intervaltree` 0.2.7
+  (3.3 million, last release 2021) and `rust-lapper` 2.0.1 (1.8 million)
+  are static or append-only interval sets without deletion or ordered
+  equal keys; `iset` 0.3.3 (0.6 million) has no ordered fragment walk.
+  None reproduces the fragment order and record-list order that Ghidra's
+  answers depend on, so `EntryMap` is written here; the property and
+  tracked maps are a `BTreeMap` (std) with the `partmap` operations on top.
+* **Strings**: names are `Box<str>`; no interner (scopes are small, and
+  names are compared byte-wise in tree keys).
+
+### 5.3 Public API (sketch)
+
+```rust
+pub struct Database { /* 5.2 */ }
+impl Database {
+    pub fn new(env: &ArchEnv, id_by_name_hash: bool) -> Self;      // with the empty global scope, id 0
+    pub fn global(&self) -> ScopeId;
+    pub fn attach_scope(&mut self, name: &str, ghidra_id: u64, parent: Option<ScopeId>, kind: ScopeKind) -> Result<ScopeId>;
+    pub fn find_create_scope(&mut self, ghidra_id: u64, name: &str, parent: ScopeId) -> Result<ScopeId>;
+    pub fn resolve_scope_from_symbol_name<'n>(&self, full: &'n str, start: Option<ScopeId>) -> Option<(ScopeId, &'n str)>;
+    pub fn find_create_scope_from_symbol_name<'n>(&mut self, full: &'n str, start: Option<ScopeId>) -> Result<(ScopeId, &'n str)>;
+    pub fn create_function_scope(&mut self, function: SymbolId) -> Result<ScopeId>;   // 3.3
+    pub fn map_scope(&self, from: ScopeId, addr: Address) -> ScopeId;
+    pub fn set_range / add_range / remove_range(...);
+    pub fn delete_scope / delete_sub_scopes / clear_unlocked(...);
+    pub fn property(&self, addr: Address) -> SymFlags;
+    pub fn set_property_range / clear_property_range(&mut self, flags: SymFlags, range: Range);
+    pub fn scope(&self, id: ScopeId) -> ScopeRef<'_>;               // queries (4.6, 4.8)
+    pub fn scope_mut(&mut self, id: ScopeId) -> ScopeMut<'_>;       // mutations (4.9)
+    pub fn symbol(&self, id: SymbolId) -> &SymbolData;
+    pub fn entry(&self, id: EntryId) -> &EntryData;
+}
+// ScopeRef: query_by_addr, query_container, query_properties, query_function,
+// query_code_label, query_external_ref_function, discover_scope, query_by_name,
+// find_* (4.6), is_name_used, build_variable_name, build_undefined_name,
+// make_name_unique, build_default_name, resolution_depth, entries_in_record_order(space),
+// dynamic_entries(), multi_entry(), category(..), print_entries (Ghidra's text), print_bounds.
+// ScopeMut: add_symbol, add_map_point, add_function, add_code_label, add_external_ref,
+// add_dynamic_symbol, add_equate_symbol, add_union_facet_symbol, add_symbol_with_conflict,
+// rename, retype, remove, remove_mappings, set/clear_attribute, set_display_format,
+// set_category, set_isolated, set_this_pointer, override/reset_size_lock_type, clear*,
+// category_sanity, assign_default_names.
+
+pub trait FunctionCodec {           // D07 implements: <function> inside <mapsym>
+    fn encode(&self, db: &Database, sym: SymbolId, enc: &mut dyn Encoder) -> Result<bool>; // false: write <functionshell>
+    fn decode(&self, db: &mut Database, scope: ScopeId, dec: &mut dyn Decoder<'_>) -> Result<SymbolId>;
+}
+pub trait RegisterNames { fn register_name(&self, space: SpaceId, offset: u64, size: u32) -> Option<&str>; }
+
+pub struct CommentDb; pub struct StringCache; pub struct ConstantPool;
+pub trait LoadImage { fn load_fill(&self, buf: &mut [u8], addr: Address) -> Result<(), DataUnavail>; /* symbols, readonly, arch, adjust_vma */ }
+pub struct XmlImage; pub struct RawImage;
+pub struct ContextNames;            // named variables over bk_sleigh::ContextDb (4.16)
+pub struct Overrides;               // 4.17
+pub mod arch { /* 4.18: apply_pspec_volatile, apply_incidental_copy, add_to_global_scope,
+                  add_other_space, build_default_symbols, fill_readonly_from_image,
+                  read_loader_symbols, globalify */ }
+```
+
+`ArchEnv` is what the crate needs of the architecture: the space manager
+(`bk_core::SpaceManager`: spaces, join records, the stack space, the
+OTHER space), the type factory, `min_funcsymbol_size`, the scope
+delimiter (`::`), and `RegisterNames`.
+
+Printing (`printEntries`, `printBounds`, `printEntry`) reproduces
+Ghidra's text exactly, for the `print map`-equivalent test (6.3) and for
+D09's console.
+
+### 5.4 The host trait
+
+```rust
+pub trait ProgramHost: Send + Sync {
+    fn mapped_symbol(&self, addr: Address) -> Result<HostReply, HostError>;          // getMappedSymbolsXML
+    fn external_ref(&self, addr: Address) -> Result<Option<HostSymbol>, HostError>;  // getExternalRef
+    fn namespace_path(&self, scope: u64) -> Result<Vec<HostNamespace>, HostError>;   // getNamespacePath
+    fn is_name_used(&self, name: &str, start: u64, stop: u64) -> Result<bool, HostError>;
+    fn code_label(&self, addr: Address) -> Result<Option<Sourced<String>>, HostError>;
+    fn comments(&self, function: Address, types: CommentTypes) -> Result<Vec<Comment>, HostError>;
+    fn bytes(&self, addr: Address, buf: &mut [u8]) -> Result<(), DataUnavail>;
+    fn string_data(&self, addr: Address, char_type: TypeId, max_bytes: usize) -> Result<Option<(Vec<u8>, bool)>, HostError>;
+    fn cpool_record(&self, refs: &[u64]) -> Result<CPoolRecord, HostError>;
+    fn tracked_registers(&self, addr: Address) -> Result<Vec<TrackedValue>, HostError>;
+    // ADR-025 3d, defaulted so that every data test behaves as before:
+    fn function_summary(&self, callee: Address) -> Option<FunctionSummary> { None }
+    fn call_returns(&self, call_site: Address, callee: Option<Address>) -> Option<bool> { None }
+}
+pub enum HostReply { Hole { range: Range, readonly: bool, volatile: bool }, Symbol(HostSymbol), Nothing }
+pub struct HostSymbol { pub scope: u64, pub record: SymbolRecord /* kind, name, type, flags, entries */,
+                        pub name_provenance: Provenance, pub type_provenance: Provenance }
+```
+
+* Types come through `bk_decomp_types::TypeSource` (exists); the host
+  object implements both traits.
+* **The cache layer** (`HostScope`, `HostComments`, `HostStrings`,
+  `HostConstantPool`, `HostImage`, `HostTracked`) follows 4.19's rules
+  exactly, so a host gives the same answers to the engine as Ghidra's
+  `ScopeGhidra` would from the same program — including what it does not
+  ask (holes, spaces without a global range, `FUN_`/`DAT_` names).
+* **The in-memory host** is the `Database` and the internal services
+  themselves (the data tests); no trait object in between.
+* **The test host** (`host::test::ScriptedHost`) answers from tables
+  given in the test and records every call, so tests can assert what was
+  asked, in which order.
+* **Errors**: a host error is a typed value carried up as
+  `SymbolError::Host`, never a panic; Ghidra's messages (`Could not
+  retrieve constant pool record for reference: 0x…`, `GHIDRA has no data
+  in the loadimage at …`, `DuplicateFunctionError, but could not recover
+  original symbol`) where Ghidra produces them.
+* **Provenance (3f)**: a decoded or host-supplied symbol keeps the
+  provenance it came with (XML without one: `Default` for names
+  generated by `buildUndefinedName`/`buildVariableName`, `Imported` for
+  loader symbols, `Model` for pspec default symbols — Ghidra has no
+  attribute, so the XML forms carry none and decode as `Analysis` unless
+  the name is a generated one); symbols the engine creates are `Analysis`;
+  renames and retypes take the provenance given with them. Provenance is
+  in no key, comparison, encoding or printing.
+* **3d**: the two methods have defaults returning `None` ("no opinion");
+  the engine then uses what it knows (the callee's prototype and
+  `noreturn` flag; flow overrides at the site). D09 asks `call_returns`
+  at every call site during flow (plan 8). D06's part ends at the trait
+  and the test host; the comparison with `override flow … callreturn`
+  needs flow following and belongs to D09's acceptance (open item 10.3).
+
+### 5.5 What this crate supplies to `bk-decomp-types` and `bk-cspec`
+
+* `SpacebaseScopes` (`bk-decomp-types`, xml/mod.rs:28): implemented by a
+  view of the `Database`: `frame_of_scope(id)` = the function symbol's
+  first entry address for a function scope, `None` for the global scope;
+  `scope_of_frame(addr)` = the function scope of the function at `addr`
+  (via `query_function` from the global scope) or the global scope's id;
+  `sub_type` = `TypeSpacebase::getSubType` through `queryContainer` in
+  that scope (D02's report: the entry is built with a `Spacebase`
+  constructor D02 must add when D06 needs it — this track needs it);
+  `nearest` likewise.
+* `TypeSource`: implemented by the host (5.4).
+* `TypeEnv::default_model` and `has_model` are `bk-cspec`'s and D07's,
+  not this crate's (the decomp-types report's follow-up names D06 for
+  `SpacebaseScopes` and `TypeSource` only).
+* `CompilerSpec::globals()` (decomp-cspec report): `arch::add_to_global_scope`
+  takes those `RangeProperties` and the space manager; `arch::add_other_space`
+  adds the OTHER space and its overlays (4.18).
+* `FunctionSummary` (`bk-cspec`) is the type the host trait returns.
+
+### 5.6 Errors
+
+One `thiserror` enum `SymbolError` with Ghidra's messages (4.4–4.17,
+4.21), each variant carrying what is needed to act (name, address,
+scope id, element); `DuplicateFunction { address, name }` as Ghidra's
+`DuplicateFunctionError`; `Retype` (`RecovError` in Ghidra) is distinct
+from the low-level errors because D07's callers catch it;
+`DataUnavail { addr, message }` for image reads; `Decode(bk_marshal::
+DecodeError)`; `Host(HostError)`. No panics on any input, including
+hostile `<scope>`, `<mapsym>`, `<binaryimage>`, `<commentdb>`,
+`<stringmanage>`, `<constantpool>`, `<context_points>`, `<override>` and
+host replies.
+
+### 5.7 Concurrency and per-function overlays
+
+* Shared by functions decompiled in parallel, frozen (`Send + Sync`,
+  behind `Arc`): the database as loaded (global scope, namespaces,
+  properties), the image, the comment database as loaded, the constant
+  pool as loaded, the context.
+* Per function: its function scope (created by D07), its overrides, its
+  warning comments, and an **overlay** on the frozen database for
+  everything a decompilation adds globally — symbols `ActionMapGlobals`
+  maps, namespaces created by name resolution, host replies cached by the
+  cache layer, strings read, cpool records fetched, property ranges set by
+  host holes. Overlay ids continue from the frozen database's counters
+  (scope `next_unique_id`s, arena lengths), so ids do not depend on other
+  functions.
+* `Overlay::commit(into: &mut Database)` applies an overlay's additions
+  in the order they were made. The data-test runner and the console
+  (D09) commit after every `decompile`, which is Ghidra's sequential
+  behaviour (a later function sees the `DAT_` symbols an earlier one
+  created; Ghidra's console keeps them); the parallel driver (D17) decides
+  whether and in which deterministic order to commit. Commit replays the
+  operations, so ids assigned on commit equal what a sequential Ghidra
+  session assigns.
+* Caches written during a query (`getStringData`, the host caches,
+  `getResolutionDepth`'s per-symbol cache) are overlay state too; the
+  frozen part has no interior mutability.
+
+### 5.8 Performance
+
+Look-ups are `O(log n)` in the fragments of one space plus the walk
+inside one piece (bounded by the overlap at that address); `print`
+walks are linear. No allocation per query (results are ids; names are
+borrowed). Benchmarks (`divan`, `#[ignore]` release tests, numbers to
+`PERF.md`): 100,000 global symbols inserted and 1,000,000 `query_by_addr`
+and `query_container` calls over them; loading all 93 data-test images;
+`print_entries` of a 10,000-entry scope; the context look-up. Budget:
+the 93 images load in less time than the reference console's
+`load test file` of the same files (measured by the test).
+
+### 5.9 Plugin binding constraints (ADR-037)
+
+The crate is engine-internal, but the host trait is the program model's
+face to the decompiler and its results reach plugins: rule 2 (`Send +
+Sync + 'static`: the frozen database and the host trait object), 4
+(typed errors: `SymbolError`, `HostError` map onto exception classes), 6
+(owned results: query answers are ids and owned records), 8 (extension
+points are object-safe traits: `ProgramHost`, `FunctionCodec`,
+`RegisterNames`, `LoadImage` are object-safe), 11 (provenance: every
+symbol carries it; a rename records the provenance it was given — the
+replaced value is the caller's to record, ADR-036), 12 (no generics in
+the trait surface), 14 (addresses are fully qualified: `bk_core::Address`
+with its space). Rules 1, 3, 5, 7, 9, 10, 13, 15 concern the program
+model and UI, not this crate.
