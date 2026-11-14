@@ -4,8 +4,8 @@
 
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
-pub mod corpus;
-pub mod oracle;
+pub(crate) mod corpus;
+pub(crate) mod oracle;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -16,7 +16,7 @@ use bk_testkit::{GhidraDir, ReferenceDir};
 
 /// The Ghidra tree and the reference build, or `None` after printing why the
 /// test is skipped.
-pub fn roots() -> Option<(GhidraDir, ReferenceDir)> {
+pub(crate) fn roots() -> Option<(GhidraDir, ReferenceDir)> {
     let ghidra = bk_testkit::skip::require_ghidra()?;
     let reference = bk_testkit::skip::require_reference()?;
     Some((ghidra, reference))
@@ -24,7 +24,7 @@ pub fn roots() -> Option<(GhidraDir, ReferenceDir)> {
 
 /// The `snippetdump` binary of the reference build, or `None` after printing
 /// why the test is skipped.
-pub fn snippetdump(reference: &ReferenceDir) -> Option<PathBuf> {
+pub(crate) fn snippetdump(reference: &ReferenceDir) -> Option<PathBuf> {
     let path = reference.root().join("bin").join("snippetdump");
     if path.is_file() {
         Some(path)
@@ -39,7 +39,7 @@ pub fn snippetdump(reference: &ReferenceDir) -> Option<PathBuf> {
 }
 
 /// A registry over the Ghidra tree with the reference `.sla` overlay.
-pub fn registry(ghidra: &Path, reference: &Path) -> LanguageRegistry {
+pub(crate) fn registry(ghidra: &Path, reference: &Path) -> LanguageRegistry {
     RegistryBuilder::default()
         .ghidra_root(ghidra)
         .sla_overlay(reference)
@@ -48,7 +48,7 @@ pub fn registry(ghidra: &Path, reference: &Path) -> LanguageRegistry {
 }
 
 /// The compiled language `id`, from the reference overlay.
-pub fn load_sla(registry: &LanguageRegistry, id: &str) -> Option<Arc<Sla>> {
+pub(crate) fn load_sla(registry: &LanguageRegistry, id: &str) -> Option<Arc<Sla>> {
     let id = LanguageId::new(id).ok()?;
     let path = registry.sla_file(&id).ok()??;
     Some(Arc::new(
@@ -57,7 +57,7 @@ pub fn load_sla(registry: &LanguageRegistry, id: &str) -> Option<Arc<Sla>> {
 }
 
 /// The `.sla` file of reference language `module`/`name` read directly.
-pub fn reference_sla(reference: &ReferenceDir, module: &str, name: &str) -> Option<Sla> {
+pub(crate) fn reference_sla(reference: &ReferenceDir, module: &str, name: &str) -> Option<Sla> {
     let path = reference.sla_file(module, name);
     if !path.is_file() {
         let line = format!("SKIPPED: {} missing\n", path.display());

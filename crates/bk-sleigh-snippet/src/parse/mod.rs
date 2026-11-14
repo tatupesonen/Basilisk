@@ -146,7 +146,11 @@ impl Parser<'_> {
         let t = self.peek();
         if let Tok::Int(value) = t.tok {
             self.bump();
-            Ok(IntLit::new(IntValue::from_u64(value), Radix::Decimal, t.span))
+            Ok(IntLit::new(
+                IntValue::from_u64(value),
+                Radix::Decimal,
+                t.span,
+            ))
         } else {
             Err(Fail::syntax())
         }

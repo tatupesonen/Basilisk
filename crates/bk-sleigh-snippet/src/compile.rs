@@ -151,7 +151,10 @@ impl SnippetCompiler {
         }
         *temps = resolver.temps;
         for warning in &messages {
-            tracing::debug!(warning, "p-code snippet compiled with an error Ghidra ignores");
+            tracing::debug!(
+                warning,
+                "p-code snippet compiled with an error Ghidra ignores"
+            );
         }
         Ok(Compiled {
             template: tpl.to_template(None),
