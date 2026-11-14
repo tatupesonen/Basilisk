@@ -128,7 +128,7 @@ overall=PASS; [ "$passed" -eq "$total" ] || overall=FAIL
     else
       new=$(cat "$f"); fixed=; since="(no earlier night to compare with)"
     fi
-    still=$(LC_ALL=C comm -12 "${p:-/dev/null}/$item.out/failures.txt" "$f" 2>/dev/null | wc -l)
+    still=0; [ -z "$p" ] || still=$(LC_ALL=C comm -12 "$p/$item.out/failures.txt" "$f" | wc -l)
     [ -z "$new" ] || { echo "$item: new failures $since:"; printf '%s\n' "$new" | head -n 40 | sed 's/^/  /'; }
     [ -z "$fixed" ] || { echo "$item: fixed $since:"; printf '%s\n' "$fixed" | head -n 40 | sed 's/^/  /'; }
     [ "$still" -eq 0 ] || echo "$item: $still failures unchanged $since"
