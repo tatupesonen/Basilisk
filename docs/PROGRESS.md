@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 21:04)
+## Now — RESUME HERE (2026-11-14 21:18)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`98537a8` plus docs) also has `bk-ui`, the GNU disassembler crates,
+(`60936c3` plus docs) also has `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,053 tests and the last CI run on the merged
-tree, 43627941051, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,056 tests and the last CI run on the merged
+tree, 43630477395, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 21:04)
+### Running (state at 2026-11-14 21:18)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,29 +139,28 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate green (2,056 tests, 0 new packages, advisories ok), in CI as run 43630477395 since 21:08:** `cspec-host`
-(`a85106d421cedbda2`) on branch `integration` (worktree
-`../basilisk-wt/cspec-host`, `e835e35`; job started 21:04). The
-`bk-cspec` oracle now exists for both C++ libraries
-(`cspec_oracle.{libcxx,libstdcxx}.txt.gz`), from a generator that is
-deterministic (pairs sorted by id; the uninitialised `ParamListMerged`
-fields set before use; 20 of 20 runs byte-identical on each machine,
-valgrind clean). The tables differ in 119 of 152,046 rows, all from
-`std::sort` on equal keys: 56 effect rows, 24 `hasEffect` answers, 39
-trial rows. Decision recorded as **ADR-040** (every such sort is stable:
-document order for effects, slot order for trials); `bk-cspec` already
-sorted stably, its trial sort is now an insertion sort that cannot panic
-on Ghidra's comparator (not a strict weak ordering); the replay compares
-with both tables and requires the counts A 56, B 24, C 38, D 1 exactly;
-`oracle_regen.rs` regenerates the host's table when the reference is
-present. The coordinator renumbered the agent's "ADR-038" citations to
-ADR-040 on `integration`. Both of its gates on the build host: 2,033
-tests. `GHIDRA-BUGS.md` entries 6, 15 and 17 carry its findings. Gap:
-Microsoft's library not run (a later third table). Gate green → push,
-CI (`gh workflow run CI --ref integration`), merge, delete the branch
-and worktree, `scripts/remote.sh clean --merged` (the host's
-`cspec-host` checkout still had a stale lock from a valgrind job the
-coordinator stopped at 21:02).
+**Merged: `cspec-host`** (`a85106d421cedbda2`; `60936c3`, CI run
+43630477395 green on all 8 jobs, integration gate on the build host
+2,056 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). The `bk-cspec` oracle exists
+for both C++ libraries (`cspec_oracle.{libcxx,libstdcxx}.txt.gz`), from
+a generator that is deterministic (pairs sorted by id; the
+uninitialised `ParamListMerged` fields set before use; 20 of 20 runs
+byte-identical on each machine, valgrind clean). The tables differ in
+119 of 152,046 rows, all from `std::sort` on equal keys: 56 effect
+rows, 24 `hasEffect` answers, 39 trial rows. **ADR-040**: every such
+sort is stable (document order for effects, slot order for trials);
+`bk-cspec` already sorted stably, and its trial sort is now an insertion
+sort that cannot panic on Ghidra's comparator (not a strict weak
+ordering); the replay compares with both tables and requires the counts
+A 56, B 24, C 38, D 1 exactly; `oracle_regen.rs` regenerates the host's
+table when the reference is present. The agent's "ADR-038" citations
+were renumbered to ADR-040 on `integration`. `GHIDRA-BUGS.md` entries
+6, 15 and 17 carry its findings. Open: Microsoft's library was not run
+(a third table, built with clang-cl or MSVC — a candidate job for the
+testbed's Wine set-up); `docs/agents/decomp-cspec.md` and
+`remote-build.md` still describe the single table (historical reports,
+left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
@@ -330,7 +329,7 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (two agents at a time; in this order)
 
-1. **`cspec-host` (Opus; finished about 21:00, merging)** — `bk-cspec`'s oracle table depends on the
+1. **`cspec-host` (merged 21:16; the text below is the brief it had)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
    where Ghidra's `hasEffect` answers 1 or 2 instead of 3 (so a lookup
@@ -471,7 +470,7 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 
 ### Coordinator's next steps
 
-1. `cspec-host`: integration gate → CI → merge (state above).
+1. `cspec-host` is merged (above).
 2. `testbed` reports → review; install the packages it lists on the
    build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
    read the first nightly report. Start `sleigh-perf-linux` in its slot
