@@ -46,6 +46,8 @@ and the coordinator adds it here.
 | 25 | Block structuring (`TraceDAG::selectBadEdge`, `blockaction.cc:749`) | `(*iter).exitproto` on `badedgelist.begin()` without a check that the list is not empty | A missing defensive check rather than a reachable defect: by reading, the list cannot be empty there (proof in `features/decomp-cfg.md` §10 item 4), and it never is in the property tests | read; unreachable | `agents/spec-decomp-wave1.md`, `agents/decomp-cfg.md` |
 | 26 | Block XML (`FlowBlock::decodeNextInEdge`, `block.cc:89–101`) | Out-edge slots that no in-edge names stay default-constructed, with an indeterminate pointer | `structure blocks` on a malformed document is undefined behaviour | read | `agents/spec-decomp-wave1.md` |
 | 29 | Block structuring (`TraceDAG::pushBranches`, `blockaction.cc:983–1014`, with `openBranch` 839 and `retireBranch` 900) | When the loop-DAG view of the graph contains a cycle, one trace alternately opens and retires a branch point for ever, allocating a `BranchPoint` on every turn. Such a cycle arises because `FlowBlock::eliminateInDups`/`eliminateOutDups` (`block.cc:450–476`, 492) OR a merged edge's label into one half of the edge only and `ruleBlockCat` reads the other half, so a list can absorb a back edge and leave a cycle of tree edges | The decompiler never finishes and its memory grows (1 of 4,000 generated graphs: 25 nodes, irreducible). Basilisk returns `CfgError::TraceCycle` once a trace has opened more than 2·nodes + 8 branch points | confirmed (the reference console ran at full CPU with growing memory until killed; Basilisk's port reproduces the loop) | `agents/decomp-cfg.md`; the test `rules::endless_trace_is_an_error` and the `hang` row of the crate's `structure_blocks.txt.gz` |
+| 30 | Function state (`Funcdata::blockRemoveInternal`, `funcdata_block.cc` about line 333; `deleteCallSpecs`, `funcdata.cc:521`) | Removing a block deletes its call specifications (`delete fc`), but the call's `fspec` varnode keeps the freed pointer as its offset; `print tree varnode` then dereferences it (`FspecSpace::printRaw`, `fspec.cc:2152`) | Use after free in the console's listing | read, and seen in the state dumps (`inline.xml`, decompiles 1 and 2, at the action after `start`: `fspec` varnodes whose call specification is no longer in `qlst`); not run under a memory checker. The oracle writes `call:-` and never dereferences it | `agents/decomp-oracle.md` |
+| 31 | Function state, uninitialised members | `Action::count` and `lcount` (`action.cc:27`) and `FuncProto::extrapop` until `setModel` are not initialised; `FuncCallSpecs::matchCallCount` (`fspec.hh:1678`) is never set (`countMatchingCalls` has no caller) | Ghidra does not read them before setting them; anything that prints them reads indeterminate values (zeros on macOS, flagged by valgrind on Linux). The oracle writes `-` until they are set and leaves `matchCallCount` out | confirmed (valgrind on the build host) | `agents/decomp-oracle.md` |
 
 ## Results that depend on the host
 
@@ -79,6 +81,17 @@ and the coordinator adds it here.
 * `defineBitrange` (`slgh_compile.cc` 2800–2822) computes
   `(size-bitoffset-numb)/8` in 32-bit unsigned arithmetic, wrapping like
   entry 13 (`agents/sleigh-fixups.md`).
+* `Funcdata::clear` does not clear `processing_complete`, so during a
+  second decompile of a function the flag is set at every stop and
+  `print C` there throws "No structure present" (seen in the dumps of
+  `pointerrel.xml`'s second decompile; `agents/decomp-oracle.md`).
+* The console's `list action` pads its numbers with whatever fill
+  character an earlier command left on the stream (spaces in a fresh
+  console), so its output depends on what ran before
+  (`agents/decomp-oracle.md`).
+* Two fragments of the research corpus fail in Ghidra's plain console
+  too: the symbol name `CSWTCH.4[40]` does not parse
+  (`a07_switch.{a64,x64}-gcc-O2`; `agents/decomp-oracle.md`).
 * The two halves of a merged block edge can carry different labels
   (`block.cc:463`, 492), and different structuring rules read different
   halves (`isDecisionOut`, `isLoopDAGIn`); the structurer's results
