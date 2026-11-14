@@ -1,6 +1,6 @@
 import subprocess, os, glob
 from PIL import Image, ImageDraw, ImageFont
-B='/Users/tatu/slop/basilisk-wt/logo/assets/brand/'; T='/Users/tatu/slop/basilisk-wt/logo/.tmp-brand/t.png'
+B=os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..'))+'/'; T=os.path.join(os.environ.get('TMPDIR','/tmp'),'basilisk-sheets-t.png')
 RES=os.path.expanduser('~/.cargo/bin/resvg'); SOOT='#150F0D'
 def r(src,w,bg=None):
     cmd=[RES,'-w',str(w)]

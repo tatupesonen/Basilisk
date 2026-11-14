@@ -44,4 +44,5 @@ def write_all():
     resvg('basilisk-logo-dark.svg','png/preview-logo-dark.png',1400,O)
     resvg('basilisk-logo.svg','png/preview-logo-light.png',1400,'#FFFFFF')
 if __name__=='__main__':
-    write_all()
+    # write_all() writes the green palette and renders PNGs before the ember recolour; build.py does the full chain.
+    sys.exit('brand2.py is a library here: run build.py')

@@ -1,6 +1,6 @@
 import sys, math, os, subprocess; sys.path.insert(0,'.')
 import word
-OUT='/Users/tatu/slop/basilisk-wt/logo/assets/brand'
+OUT=os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..'))  # assets/brand
 VENOM,MOSS,OBSIDIAN,BONE='#B8F03C','#4A8500','#0F1412','#E9EEE2'
 CX,CY,R=128,148,100
 def f(v):
@@ -86,16 +86,5 @@ def resvg(src,dst,size,bg=None):
     if bg: cmd+=['--background',bg]
     subprocess.run(cmd+[os.path.join(OUT,src),os.path.join(OUT,dst)],check=True)
 if __name__=='__main__':
-    os.makedirs(OUT+'/png',exist_ok=True); os.makedirs(OUT+'/concepts',exist_ok=True)
-    w('basilisk-mark.svg',mark(VENOM))
-    w('basilisk-mark-light.svg',mark(MOSS))
-    w('basilisk-mark-mono.svg',mark('currentColor'))
-    w('basilisk-logo.svg',logo(MOSS,OBSIDIAN,MOSS))
-    w('basilisk-logo-dark.svg',logo(VENOM,BONE,VENOM))
-    w('basilisk-icon.svg',icon(FULL,0.7,4))
-    w('basilisk-icon-small.svg',icon(SMALL,0.8,0,'  <!-- simplified artwork for 16-32 px: heavier ring, no head eye, pupil centred on the pixel grid -->\n'))
-    for sz in (16,32): resvg('basilisk-icon-small.svg',f'png/basilisk-icon-{sz}.png',sz)
-    for sz in (64,128,256,512,1024): resvg('basilisk-icon.svg',f'png/basilisk-icon-{sz}.png',sz)
-    resvg('basilisk-mark.svg','png/preview-mark.png',1024,OBSIDIAN)
-    resvg('basilisk-logo-dark.svg','png/preview-logo-dark.png',1400,OBSIDIAN)
-    resvg('basilisk-logo.svg','png/preview-logo-light.png',1400,'#FFFFFF')
+    # This block wrote the first (superseded) version of the set; build.py writes the current one.
+    sys.exit('brand.py is a library here: run build.py')

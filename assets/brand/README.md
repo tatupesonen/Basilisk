@@ -120,8 +120,23 @@ directory was gone):
 The ember palette was then applied with `sed` over the written SVGs
 (`#B8F03C`→`#FF6A2B`, `#0F1412`→`#150F0D`, `#E9EEE2`→`#F1ECE6`, and
 `#4A8500`→`#E8551A` in `basilisk-mark-light.svg` and `basilisk-logo.svg`).
-As committed here the scripts still carry the absolute paths of the `logo`
-worktree and its scratch directory; do not run them as they are.
+`tools/build.py` runs that whole chain, palette step included, and
+rewrites the SVGs, the icon PNGs and the previews in place (never
+`variants/` or `concepts/`):
+
+```sh
+python3 assets/brand/tools/build.py             # SVGs, PNGs and preview sheets
+python3 assets/brand/tools/build.py --svg-only  # SVGs only
+git status assets/brand                         # only what the edit changed
+```
+
+It needs Python 3 with Pillow, `resvg` (on `PATH` or in `~/.cargo/bin`) and,
+for the preview sheets, macOS's Helvetica. On an unchanged design every
+output comes out byte-identical to the committed file (checked with resvg
+0.49.0). Edit the drawing in `word.py`, `brand.py` or `brand2.py`, not in
+the SVGs; `brand.py` and `brand2.py` are libraries and refuse to run on
+their own. Then copy the logo paths into `site/src/components/Logo.astro`,
+which inlines the logo.
 
 ## Variants
 
