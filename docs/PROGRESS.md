@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 23:19)
+## Now — RESUME HERE (2026-11-14 23:31)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`5f3c417` plus docs) also has `bk-decomp-range`, `bk-ui`, the GNU disassembler crates,
+(`31c529e` plus docs) also has `bk-decomp-range`, `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,245 tests and the last CI run on the merged
-tree, 43638494204, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,254 tests and the last CI run on the merged
+tree, 43642488252, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 23:19)
+### Running (state at 2026-11-14 23:31)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,10 +139,12 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate green (2,254 tests, 0 new packages,
-advisories ok; `long differential sleigh-every-language` passes on the
-host now), in CI as run 43642488252 since 23:22:** `sleigh-perf-linux` (`a20fadd7bd1040732`) on branch
-`integration` (worktree `../basilisk-wt/sleigh-perf-linux`, `394b439`).
+**Merged: `sleigh-perf-linux`** (`a20fadd7bd1040732`; `31c529e`, CI run
+43642488252 green on all 8 jobs, integration gate on the build host
+2,254 tests, 0 new packages, advisories ok, and `long differential
+sleigh-every-language` passes on the host now; worktree and branches
+removed, the host cleaned and `master` published). M1's benchmark item
+is ticked in `PLAN.md`.
 `bk-sleigh` single-threaded against the g++ reference on the build host
 (host CPU model), Basilisk ÷ Ghidra, before → after: decode 0.86 →
 1.11; decode + text 1.24 → 1.50; decode + p-code 0.76 → **1.00**
@@ -163,9 +165,7 @@ tools in `crates/bk-sleigh/tests/reference_bench/` (`compare.sh`,
 (queue): a compiled form of p-code templates and exports for a clear
 margin in decode + p-code on x86-64 (Basilisk still runs about 8,260
 machine instructions per instruction to Ghidra's 6,300 there); a shared
-benchmark input across hosts. The integration job also runs `long
-differential sleigh-every-language`, the item that failed on the host
-before. Gate green → push, CI, merge, delete, clean, publish.
+benchmark input across hosts.
 
 **Merged: `spec-decomp-wave1`** (`a3e1e4fb110ba60cf`; `d702880`, merged
 directly at 23:08, docs only; worktree and branch removed).
@@ -513,7 +513,7 @@ start a fresh agent briefed from the branch's files.
    if Ghidra's reader does (read the source first); (e) the 8 cargo
    manifest warnings (unused `[workspace.dependencies]` entries, the
    unused `authors` field).
-4. **`sleigh-perf-linux` (finished 23:15, merging; the text below is the brief it had)** — on x86-64 Linux `bk-sleigh` is
+4. **`sleigh-perf-linux` (merged 23:30; the text below is the brief it had)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
@@ -614,7 +614,7 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `sleigh-perf-linux`: integration gate → CI → merge (state above).
+   `sleigh-perf-linux` is merged (above).
    `decomp-oracle` reports → check the before/after hashes of both
    reference directories, merge through `integration`, **message
    `decomp-cfg`** that the commands are on `master`, start queue item 7
