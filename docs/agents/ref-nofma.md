@@ -29,5 +29,13 @@ Reference build with `-ffp-contract=off` (ADR-032).
   workspace test run).
 
 ## State of `/Users/tatu/slop/reference`
-Untouched (old AArch64-fused build of 2026-11-12).
-`/Users/tatu/slop/reference.staging` holds the complete new build.
+SWAP IN PROGRESS (started 2026-11-14). Procedure: for each path in
+`/Users/tatu/slop/reference.aarch64-fused/SWAP-MANIFEST` (281 paths,
+relative to the reference root, `./STAMP` last), in order,
+`mv -f /Users/tatu/slop/reference.staging/<p> /Users/tatu/slop/reference/<p>`.
+Paths not in the manifest are byte-identical in both trees and are not
+touched. To find where it stopped: a manifest path still present under
+`reference.staging` was not moved yet. To finish: run the remaining
+moves in order. To undo: the old 14 `.sla` and old `STAMP` are in
+`/Users/tatu/slop/reference.aarch64-fused/` (same relative paths); the
+old tools and objects are not kept — undo by rebuilding without the flag.
