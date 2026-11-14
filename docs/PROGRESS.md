@@ -84,7 +84,7 @@ start a fresh agent briefed from the branch's files.
 
 0. Resume the three stopped agents above: `decomp-types` first (critical
    path), then `spec-pe`, then `store-spike`.
-0a. **`spec-plugin`** (Fable; the owner asked for it on 2026-11-14) —
+0a. **`spec-plugin`** (Opus 5.5 — all new agents are, `DIRECTION.md`; the owner asked for it on 2026-11-14) —
    `inventory/05-extension-points.md` and `features/plugin-api.md` for
    ADR-014 (Python through PyO3): Ghidra's extension surface
    (`GhidraScript`/`FlatProgramAPI`, analyzers, loaders, exporters,
@@ -102,7 +102,7 @@ start a fresh agent briefed from the branch's files.
    checked-in oracle, fix the 106 rows where basilisk does not follow
    x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
    provenance (ADR-029).
-0c. **`sla-host-diff`** (Fable, small; needs `bk-sla` merged for its
+0c. **`sla-host-diff`** (Opus, small; needs `bk-sla` merged for its
    structural diff): find why 14 `.sla` files differ between x86-64 Linux
    and macOS AArch64 (ADR-029), whether the variants decode identically,
    and what the compiler's acceptance test must be. Before

@@ -61,7 +61,17 @@ and a sane architecture in mind.
   subagents, which write the code from those docs. The coordinator spawns
   the agents, reviews and merges their branches. Rules for agents:
   `docs/agents/RULES.md`.
-* **Agent models** (owner, 2026-11-12; this replaces the several earlier
+* **The coordinator does not do the work itself; work goes to Opus 5.5
+  subagents** (owner, 2026-11-14: "Do not do work yourself, direct work
+  to opus 5.5 subagents"). Code, experiments, investigations, tooling and
+  measurements are briefed to a subagent, however small. The coordinator
+  briefs, reviews, merges, and keeps the documents of record
+  (`DIRECTION`, `PLAN`, `PROGRESS`, `PARITY`, `DECISIONS`). New subagents
+  are Opus 5.5 at medium effort, including specification and research
+  tracks, until the owner says otherwise; a Fable agent stopped mid-track
+  is resumed as it is, so its context is not lost.
+* **Agent models** (owner, 2026-11-12; superseded for new agents by the
+  entry above on 2026-11-14; this replaces the several earlier
   rules of the same day): **Fable 5.2 for all research, Opus 5.5 for all
   implementation.** Research means work whose product is knowledge — a
   survey, an investigation, an evaluation, a design study — written up as a
