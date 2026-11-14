@@ -5,7 +5,7 @@ builds of Ghidra's compiled SLEIGH files with `bk-sla`, and rebuilds
 Ghidra's C++ `sleigh` under controlled compilers, flags and patches.
 
 Standalone Cargo project (own `[workspace]`, own `Cargo.lock`): not a
-member of the basilisk workspace, not built by the gate.
+member of the Basilisk workspace, not built by the gate.
 
 ```sh
 cd tools/sla-host-diff

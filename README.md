@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="420"></p>
 
-# basilisk
+# Basilisk
 
 A reimplementation of [Ghidra](https://github.com/NationalSecurityAgency/ghidra)
 in Rust: loaders, SLEIGH, p-code, analysis, the decompiler and an egui user
@@ -35,6 +35,6 @@ Tests that compare against Ghidra expect its source tree at `../ghidra`
 
 ## Licence
 
-GPL-3.0-or-later (`LICENSE`). basilisk is derived from Ghidra, whose
+GPL-3.0-or-later (`LICENSE`). Basilisk is derived from Ghidra, whose
 Apache-2.0 code is included as that licence permits; see `NOTICE` and
 `LICENSE-APACHE`.

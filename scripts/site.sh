@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# basilisk's website and documentation, built only in a container
+# Basilisk's website and documentation, built only in a container
 # (ADR-030, ADR-031; docs/features/site.md). Node.js is never installed on
 # the host: every step below runs in the image defined by
 # site/container/Dockerfile, with the repository mounted at /repo.
