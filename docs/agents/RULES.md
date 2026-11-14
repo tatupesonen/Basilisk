@@ -42,6 +42,10 @@ rules so merges are clean and the result is shippable.
   that do not edit tracked files; generated files (snapshots a test
   tool writes, tables an oracle generator writes, `cargo fmt`) are
   written by their tools as before.
+- **Read files with the Read tool** (owner, 2026-11-14), not with `cat`,
+  `head`, `tail` or `sed -n` in the shell; give it the line range when
+  you know which part you need. Searching (`grep`, `rg`, `find`) and
+  reading the output of a command you ran stay in the shell.
 
 ## Ownership (avoid merge conflicts)
 
