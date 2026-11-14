@@ -1,7 +1,7 @@
 # Track `decomp-range` — report
 
 Spec: `docs/features/decomp-range.md` (D01). Crate: `crates/bk-decomp-range`.
-State: finished; both gate runs below.
+State: finished; both gate runs green (below).
 
 ## Built
 
@@ -93,8 +93,11 @@ All counts from `cargo test -p bk-decomp-range` (macOS) and the gate (Linux):
 
 ### Gate
 
-- `scripts/remote.sh gate` → see the last section.
-- `scripts/remote.sh gate --no-ref` → see the last section.
+- `scripts/remote.sh gate; echo $?` → `tests: 2206 passed, 0 failed`,
+  `remote: gate exit 0`, 0 (with the reference: `oracle_regen` ran there and
+  replayed all 592,213 extended rows of libstdc++ with no difference).
+- `scripts/remote.sh gate --no-ref; echo $?` → `tests: 2206 passed, 0
+  failed`, `remote: gate exit 0`, 0.
 - macOS: crate tests, clippy; Windows: `cargo clippy -p bk-decomp-range
   --all-targets --target x86_64-pc-windows-msvc -- -D warnings` clean (no
   run: rests on CI). `scripts/check-dep-age.py master`: 0 new packages.
