@@ -427,6 +427,61 @@ resolved last node first instead of the depth-first walk with re-entry,
 precomputed main-template ids, varnode symbols and space classes, operand
 varnodes resolved with one handle look-up, and no `Arc` clone per lift.
 
+### `bk-sleigh` thread scaling on an idle x86-64 Linux virtual machine (track `remote-build`)
+
+Machine: QEMU/KVM virtual machine, 20 vCPUs (1 thread per core, one
+socket, one NUMA node), 32 GB, Debian 13, Rust 1.100.0; idle apart from
+the benchmark (load average below 1 before each run). Virtual CPUs share
+the physical host with whatever else runs on it, so this shows scaling
+on an otherwise idle 20-core machine, not on bare metal. Code at master
+12056c8. Input: the Mac's `build.sh` output copied over (same 538,553
+bytes, 147,953 instructions). The thread lists in `tests/bench.rs` and
+`tests/bench_pcode.rs` were widened to `[2, 4, 8, 16]` in the remote
+checkout only (not committed). The reference is `slabench` built on the
+machine with `build.sh`'s flags (g++ 14.2 -O2) against the reference
+build there. Commands, in a checkout with `target/bench` filled:
+
+    scripts/remote.sh run -- bash -c 'cargo test --release -p bk-sleigh --test bench -- --ignored --nocapture --test-threads=1'
+    scripts/remote.sh run -- bash -c 'cargo test --release -p bk-sleigh --test bench_pcode -- --ignored --nocapture --test-threads=1'
+
+Speed-up over one thread, each thread sweeping the whole input with its
+own `Decoder` on one shared `Language` (best of 3 against the best of 5
+single-thread sweeps), three runs on 2026-11-14:
+
+| Threads | decode only (`bench`) | decode only (`bench_pcode`) | decode + lift (`bench_pcode`) |
+|---:|---|---|---|
+| 1 | 1.00× | 1.00× | 1.00× |
+| 2 | 2.04 / 1.96 / 1.93× | 1.90 / 1.82 / 1.84× | 1.87 / 1.84 / 1.93× |
+| 4 | 4.01 / 3.63 / 3.78× | 3.54 / 3.60 / 3.71× | 3.87 / 3.57 / 3.77× |
+| 8 | **7.88 / 6.71 / 7.26×** | **6.85 / 7.06 / 6.89×** | **7.25 / 6.91 / 7.14×** |
+| 16 | 15.18 / 12.62 / 13.31× | 13.75 / 13.04 / 14.56× | 14.06 / 13.99 / 13.57× |
+
+**The 8-thread target of 6× is met** on an idle machine (6.7–7.9×), and
+scaling stays nearly linear to 16 threads (12.6–15.2×). This supports the
+track's reading that the 4.7–5.7× on the Mac was the machine's load and
+its efficiency cores, not shared state in the code.
+
+Single-thread figures from the same runs, for the record. They differ
+from the Mac's in an important way: here the C++ reference is faster.
+
+| | basilisk | Ghidra C++ (`slabench`, g++ 14.2 -O2, same session) |
+|---|---:|---:|
+| `Language::load` x86-64 | 25.7–28.7 ms | 28.7–31.3 ms |
+| decode only | 2.98–3.30 M instructions/s | 4.01–4.19 M/s |
+| decode + text | 2.28–2.40 M/s | 1.93–2.01 M/s |
+| decode + lift, counting emitter | 1.46–1.50 M/s, 6.01–6.15 M ops/s | 2.08–2.12 M/s, 8.61–8.71 M ops/s |
+| decode + text + lift | 1.27–1.29 M/s | 1.32–1.37 M/s |
+| end to end `--quiet`, 778 kB | 0.177–0.180 s | `pcodedump --quiet` 0.159–0.173 s |
+| end to end, full listing to a null device | 0.357–0.362 s | `pcodedump` 0.480–0.496 s |
+
+On this host basilisk's decode-only and decode + lift rates are 25–30 %
+below the reference built by g++, where on the M1 Pro (against Apple
+clang) they were equal or ahead; `--quiet` end to end is 3–12 % slower.
+Requirement "≥ reference" is therefore **not met on x86-64 Linux** for
+decode only, decode + lift and `--quiet`. Text and full listings remain
+ahead. Not investigated in this track (it changes no crate); a follow-up
+for `bk-sleigh`.
+
 ### `bk-cspec`
 
 Command: `BASILISK_GHIDRA_DIR=../ghidra CARGO_BUILD_JOBS=2 cargo test -p

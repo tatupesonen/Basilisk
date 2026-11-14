@@ -3,6 +3,7 @@
 /fuzz/corpus
 /fuzz/artifacts
 /gate.log
+/gate-remote.log
 .DS_Store
 /.claude/
 *.swp
