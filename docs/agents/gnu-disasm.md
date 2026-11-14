@@ -65,7 +65,7 @@ were building at the same time throughout (load average 9–16).
   `Long.decode`.
 - Thread safety: one process-wide lock in `bk-binutils-sys`; types `Send`.
 
-**Vendored tree**: `vendor/binutils-2.41/`, 474 files, 30 MB, now with three
+**Vendored tree**: `vendor/binutils-2.41/`, 474 files, 30 MB, now with four
 patches (`crates/bk-binutils-sys/patches/`, applied by
 `scripts/vendor-binutils.sh`, listed in `MANIFEST`); `--check` against
 `/Users/tatu/slop/binutils` reports a match **[ran]**.
@@ -290,6 +290,17 @@ clang-cl), and the prelude renames `static_assert` for every compiler, not
 only in MSVC mode. Verified after the fix **[ran]**: macOS; Ubuntu 26.04
 GCC 15.2 on arm64 and on emulated amd64 (full test suites of both crates);
 Debian 13 GCC 14; Debian 13 clang 19 under ASan.
+
+### Also found: CR16 stale operand (patch 0004)
+
+The gate's property test then found a new case: CR16 `storm`/`loadm` with
+bit 7 of the first word set get an operand `cr16-dis.c` never decodes, and
+it printed the static instruction record as an earlier instruction (any
+request, any disassembler) had left it — `loadm $0x1,(sp)` or
+`loadm $0x1,r10` for the same bytes **[ran]**. Patch `0004` clears the
+record per instruction; a test fails without it and passes with it
+**[ran]**; the proptest seed is kept. (`crx-dis.c` has the same record
+but not the extra operand **[read]**.)
 
 ## 11. Gate and commits
 

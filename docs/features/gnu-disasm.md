@@ -251,7 +251,8 @@ Added by the track:
   descriptor cache (13 targets) keyed on instruction byte order and
   updated on a switch back (m16c big-endian after little-endian used the
   wrong descriptor); `0003` xgate and CRIS sequence state reset per
-  `disassemble_info`.
+  `disassemble_info`; `0004` CR16 `storm`/`loadm` (bit 7 set) no longer
+  print an operand left over from an earlier instruction.
 - **binutils' `abort()`/`exit()`/`assert` do not end the process**; the
   call fails and the architecture family is not used again in the process.
 - **`0x18:0x5` (Hexagon) is m9s12x.** Upstream binutils has no Hexagon;
@@ -264,7 +265,7 @@ Implemented (track `gnu-disasm`, 2026-11-12); the full report is
 `docs/agents/gnu-disasm.md`.
 
 - `vendor/binutils-2.41/`: 474 files, 30 MB, produced by
-  `scripts/vendor-binutils.sh` from tag `binutils-2_41` with three patches
+  `scripts/vendor-binutils.sh` from tag `binutils-2_41` with four patches
   (section 8); `--check` reproduces it. Never line-ending-converted
   (`.gitattributes`).
 - `bk-binutils-sys`: every libopcodes disassembler, compiled with `cc`
