@@ -344,9 +344,16 @@ mod tests {
             stop: 242,
         };
         let lines = dumps_script(&script(), &p, Path::new("/out")).unwrap();
-        assert_eq!(lines[1], "bk pcode record /out/t.pcoderec");
+        let out = Path::new("/out");
+        assert_eq!(
+            lines[1],
+            format!("bk pcode record {}", out.join("t.pcoderec").display())
+        );
         assert_eq!(lines.iter().filter(|l| *l == "continue").count(), 4);
-        assert!(lines.contains(&"bk dump state /out/t.0.end.state".to_owned()));
+        assert!(lines.contains(&format!(
+            "bk dump state {}",
+            out.join("t.0.end.state").display()
+        )));
         assert_eq!(lines.last().map(String::as_str), Some("bk pcode stop"));
         assert!(arg(Path::new("/a b")).is_err());
     }
