@@ -40,16 +40,23 @@ point, keep worktrees and branches until their content is on `master`.
 `sleigh-pcode` was asked at 15:07 to pause cleanly (commit, clean status,
 stop) and is **first to resume** when a slot frees.
 
-**Rust 1.100.0 is on `master`** (`144859f`, committed directly at the
-owner's choice, 15:48). The gate was started on `master` in the main
-checkout right after, to see what the newer compiler and clippy report,
-and CI runs on the push. **If either is red**: start track
-`toolchain-1.100` (Opus) at once, ahead of everything else — fix the
-warnings across the workspace on a branch, gate, Wine, CI, merge. The two
-running agents were told to set their worktrees' `rust-toolchain.toml` to
-1.100.0 so their gates match `master`. The main checkout is clean again;
-docs can be committed normally, and integration work may use it or its
-own worktree.
+**`master` is RED on Rust 1.100.0** (`144859f`, committed directly at the
+owner's choice on 2026-11-14 at 15:50; released 2026-11-09). The gate on
+`master` fails at its format step: rustfmt 1.100 formats six places in
+`crates/bk-elf` differently (macro invocations in
+`src/constants/mod.rs` and others). The gate stops at the first failing
+step, so what clippy, rustdoc and the tests say on 1.100.0 is not known
+yet; CI on the push will show the lint job red at least. **Nothing is
+merged to `master` until this is fixed.** Track `toolchain-1.100` (Opus)
+takes the slot of `decomp-cspec`, which was asked to pause cleanly at
+16:00: on a branch from `master`, `cargo fmt`, then fix everything clippy
+(`-D warnings`, all targets), rustdoc and the tests report on 1.100.0
+across the workspace and the fuzz crate, without weakening lints; check
+the Windows target and Wine; gate; integration branch; CI; merge. The
+running agents keep their worktrees on 1.97.1 until then (they were NOT
+told to change it); after the merge each is told to set
+`rust-toolchain.toml` to 1.100.0, run `cargo fmt` and clippy on its own
+crate, and continue.
 
 **On `master` since 15:27 (CI run 43598927755 green on every job on all
 three systems, including the new `site` job; gate 1,819 tests):
