@@ -402,6 +402,22 @@ Appended by `sleigh-compiler-back` (2026-11-14):
   Patterns as parent" were not reached by any input tried (the latter is
   unreachable by the reasoning in inventory 10 c.7).
 
+Note of 2026-11-14 (track `sleigh-fixups`): **the byte-order mark is a
+difference, not parity.** Both of Ghidra's compilers reject a source file
+that starts with a UTF-8 byte-order mark. The C++ lexer (`slghscan.l`, the
+`INITIAL` rules, lines 491-504) has no rule for the bytes EF BB BF, so the
+catch-all `.` returns each byte as a token and the parser reports `syntax
+error`; the reference `sleigh` prints `a.slaspec:1 - ERROR syntax error`
+and "No output produced" for a BOM at the start of the main file, before a
+preprocessor line, and at the start of an included file (`inc.sinc:1`).
+The Java compiler reads sources as ISO-8859-1 (`SleighPreprocessor`
+line 105), so the mark becomes three characters that its `@`-line test
+does not skip and its lexer's `UNKNOWN` rule (`BaseLexer.g` 349) reports
+as errors. Basilisk keeps ignoring the mark (spec 4.7, ADR-022: a file
+saved by a Windows editor compiles), in `driver::compile` only;
+`bk-sleigh-syntax`'s loaders and preprocessor still read it as a
+character, like Ghidra's.
+
 ## 9. Status
 
 Done (2026-11-14), track `sleigh-compiler-back`; report in
