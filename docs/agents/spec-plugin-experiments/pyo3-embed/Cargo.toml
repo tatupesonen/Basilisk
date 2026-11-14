@@ -1,0 +1,11 @@
+[package]
+name = "bkembed"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Standalone throwaway experiment: not a member of the basilisk workspace.
+[workspace]
+
+[dependencies]
+pyo3 = { version = "=0.30.1", features = ["auto-initialize"] }
