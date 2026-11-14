@@ -951,7 +951,8 @@ varnodes; blocks), `summary` (ADR-025 3d) and `error`.
    wraps it: `cancelled`, `check()` (raises `CancelledError`), `message`,
    `maximum`, `progress`, `increment(n=1)`, `indeterminate`; in the flat
    layer, Ghidra's `TaskMonitor` names (`isCancelled`, `checkCancelled`
-   and the older `checkCanceled`, `setMessage`, `initialize`,
+   — and `checkCanceled`, which Ghidra removed from `TaskMonitor` but its
+   own `ghidra_basics.py:75` still calls — `setMessage`, `initialize`,
    `setMaximum`, `setProgress`, `incrementProgress`, `setIndeterminate`,
    `setShowProgressValue`, `getMessage`, `getProgress`, `getMaximum`,
    `cancel`, `clearCancelled`; `TaskMonitor.java:55-209`). A script's
@@ -1044,3 +1045,295 @@ so where plugins are installed and enabled.
 - **Drift is tested** (6.3): a manifest of the whole surface, generated
   from the built module and checked in, plus `mypy.stubtest` comparing
   the shipped type stubs with the runtime.
+
+## 5. Design
+
+### 5.1 Crates and build
+
+| Crate / tree | Kind | Contents | Depends on |
+|---|---|---|---|
+| `crates/bk-plugin` | rlib | PyO3 bindings of the library crates, the plugin host, the script runner's Rust side, the monitor and error mapping | `pyo3` (`abi3-py310`), the bound `bk-*` crates; never `bk-ui` |
+| `crates/bk-plugin-ui` | rlib | Python-facing UI hooks: actions into the registry, declarative views, console, Script Manager, Plugins and Proposals views | `bk-plugin`, `bk-ui` |
+| `crates/basilisk-py` | cdylib, module `basilisk._native` | the `#[pymodule]` assembling the two crates above and `basilisk::run` (the application entry) | `bk-plugin`, `bk-plugin-ui`, `basilisk` (lib target) |
+| `python/basilisk/` | pure Python | `__init__.py` (re-exports `_native`), `flat.py`, `ghidra.py`, `plugin.py` (decorators, `PluginInfo`), `__main__.py`, `py.typed`, `*.pyi` stubs, `api-manifest.json` | — |
+| `crates/basilisk` | bin + lib | adds a lib target exposing `run(args) -> ExitCode` so the extension runs the same application; adds `plugin.rs` (interpreter search, hand-over) | as today |
+
+- The wheel is built with **maturin** (PyO3's standard build tool;
+  ADR-011 evaluation to record: alternatives `setuptools-rust`, plain
+  cargo plus a hand-written wheel; maturin is the industry standard) in a
+  mixed Rust/Python layout: `pyproject.toml` at `python/`, module
+  `basilisk._native`. Wheels: `cp310-abi3` for `macosx_11_0_arm64`,
+  `macosx_10_12_x86_64`, `manylinux_2_28_x86_64`, `manylinux_2_28_aarch64`,
+  `win_amd64`, `win_arm64`. A plain `cargo build` of the cdylib needs
+  `build.rs` to call `pyo3_build_config::add_extension_module_link_args()`
+  (*exp.*); maturin does this itself.
+- `bk-plugin` is not in the default members of `cargo test` without a
+  Python: its Rust tests that need an interpreter skip with a printed
+  reason when `PYO3_PYTHON` cannot be found, as reference-tool tests do
+  (ADR-007's rule). CI provides Python 3.10 and 3.14.
+- Lints: the workspace set, including `unsafe_code = "forbid"` (5.1 note
+  in section 3).
+
+### 5.2 `bk-plugin` modules
+
+`py/` — one module per bound area: `address`, `program`, `memory`,
+`listing`, `symbols`, `references`, `functions`, `types`, `lang`, `pcode`,
+`decompiler`, `analysis`, `loaders`, `exporters`, `task`, `errors` (the
+error table), `iter` (the paged iterator), `compat` (bean rule, alias
+tables). `host/` — `discover`, `metadata` (plugin.toml, `PluginInfo`,
+API check), `registry` (registrations by plugin), `isolate` (boundary
+calls, failure counting), `reload`, `executor` (the plugin thread pool).
+`script/` — `header` (tags), `runner` (globals, `sys.argv`, `sys.path`,
+module cleanup, transaction), `ask` (resolution order, properties
+files). `embed` — `main()`, the GIL-released event loop, SIGINT.
+
+### 5.3 Rust shapes (sketch)
+
+```rust
+/// A handle Python holds: shared program state plus a stable id.
+#[pyclass(frozen, module = "basilisk.functions", name = "Function")]
+pub struct PyFunction { program: ProgramHandle, id: FunctionId }
+
+#[pymethods]
+impl PyFunction {
+    #[getter] fn name(&self, py: Python<'_>) -> PyResult<String> {
+        py.detach(|| self.program.read(|p| p.functions().get(self.id).map(|f| f.name().to_owned())))
+            .map_err(to_py)        // FunctionError::Stale -> StaleObjectError, …
+    }
+}
+
+/// A Python analyzer as the analysis manager sees it.
+pub struct PyAnalyzer { plugin: PluginId, obj: Arc<Py<PyAny>>, meta: AnalyzerMeta }
+impl bk_analysis::Analyzer for PyAnalyzer {
+    fn added(&self, cx: &mut AnalysisCx<'_>, set: &AddressSet, mon: &Monitor) -> Result<bool, AnalyzerError> {
+        // the manager guarantees: no program lock held here (4.8 rule 4)
+        Python::attach(|py| isolate::call(py, self.plugin, &self.obj, "added", (/* handles */)))
+    }
+}
+
+pub struct Registry { by_plugin: BTreeMap<PluginId, Vec<Registration>> }
+pub enum Registration { Script(..), Analyzer(..), Loader(..), Exporter(..), Action(..), View(..), Proposer(..) }
+```
+
+`ProgramHandle`, `FunctionId`, `AddressSet`, `Monitor`, `AnalysisCx` and
+the error types are what the program, analysis and decompiler specs
+define; `plugin-binding-constraints.md` lists what they must satisfy for
+this to be written as shown.
+
+### 5.4 Performance
+- Iteration pages of 256 items, one GIL release per page; no Python
+  object is created for items the caller does not reach.
+- Budget (measured by P2, recorded in `PERF.md`): iterating 1,000,000
+  instructions from Python reading address and mnemonic in at most 2 s
+  on the development Mac; a call that does no work (a property read on a
+  handle) under 1 µs plus the model's own cost; `decompile` from Python
+  within 5 % of the same call from Rust.
+- Python never sits on a hot path the user did not put it on: built-in
+  analysis, decompilation and UI never call Python unless a plugin
+  registered something there.
+
+## 6. Tests
+
+### 6.1 Ghidra tests (checklist ids; inv. 14)
+
+| Checklist id (file) | Tests | Track | How |
+|---|---:|---|---|
+| `ghidra.app.script.GhidraScriptTest` (features-base) | 28 | P3, P2 | flat-layer behaviour on fixture programs: bookmarks, functions, data, the five comment kinds, typed memory reads, `toHexString`, analysis options set/reset/invalid, `askChoice(s)` defaults; `testCreateTableChooserDialog` in P6 |
+| `ghidra.app.script.GhidraScriptAskMethodsTest` (features-base) | 16 | P1 | `ask*` resolution with arguments, properties files (including the alternate location) and defaults, headless and as dialogs (`egui_kittest`) |
+| `ghidra.app.script.GhidraScriptRealProgramTest` (features-base) | 11 | P2 | `findBytes` (four forms), `find` text, next/previous symbol, equates, memory, external and stack references, `createData` |
+| `ghidra.app.script.GhidraScriptUtilTest` (test-integrationtest) | 7 | P1 | script directories and lookup by name |
+| `ghidra.app.plugin.core.script.GhidraScriptMgrPlugin1Test`, `…2Test`, `…3Test` (features-base) | 56 | P6 | the Script Manager view (`egui_kittest`); OSGi-bundle cases marked not applicable (no bundles) |
+| `ghidra.app.plugin.core.script.JavaScriptInfoTest` (features-base), `ghidra.pyghidra.PythonScriptInfoTest` (features-pyghidra), `ghidra.jython.JythonScriptInfoTest` (extensions-jython) | 15 | P1 | header tags of `.py` scripts; Java-source specifics not applicable |
+| `ghidra.app.plugin.core.script.BundleHostTest`, `BundleStatusManagerTest` (features-base) | 12 | — | not applicable: OSGi bundles (proposed mark) |
+| `ghidra.jython.JythonScriptTest` (extensions-jython) | 2 | P1 | a Python script's globals and output |
+| `ghidra.jython.JythonInterpreterTest`, `JythonCodeCompletionTest`, `JythonPluginTest` (extensions-jython), `ghidra.app.plugin.core.interpreter.InterpreterPanelTest` (features-base) | 16 | P6 | the Python console view |
+| `AutoRenameLabelsScriptTest`, `DeleteFunctionDefaultPlatesScriptTest`, `EditBytesScriptTest`, `FindAndReplaceCommentScriptTest` (features-base) | 30 | P2 | with the ported scripts (4.5) |
+| `ExportFunctionInfoScriptTest`, `FixOffcutInstructionScriptTest`, `PasteCopiedListingBytesScriptTest` (features-base), `WindowsResourceReferenceScriptTest` (test-integrationtest) | 11 | P7 | with those scripts' ports |
+| `ghidra.app.plugin.core.AutoAnalysisWorkerTest`, `ghidra.app.plugin.core.analysis.AnalysisOptionsTest`, `AnalysisOptions2Test` (features-base) | 22 | P4b | analysis modes `SUSPENDED`/`DISABLED`, options of Python analyzers |
+| `ghidra.framework.project.extensions.ExtensionInstallerTest` (framework-project) | 19 | P1 | `basilisk plugin install` from zip and directory, replacing an installed version, the API check in place of the version-equality warning |
+| `ghidra.framework.plugintool.PluginManagerTest` (test-integrationtest), `ghidra.framework.plugintool.dialog.ManagePluginsTest`, `ManagePlugins2Test` (features-base) | 26 | P1, P6 | enable, disable, dependencies, failure (host in P1, the window in P6) |
+| `ghidra.util.classfinder.ClassSearcherTest` (framework-generic) | 2 | P1 | its intent (only declared extensions are found) through entry-point and directory discovery |
+| `ghidra.framework.plugintool.AutoServiceTest` (debug-proposedutils) | 5 | — | not applicable: service framework (ADR-001) (proposed mark) |
+| `ghidra.util.task.TimeoutTaskMonitorTest`, `UnknownProgressWrappingTaskMonitorTest` (framework-gui), `TaskMonitorSplitterTest` (framework-docking) | 6 | owner of the monitor type (constraints item 7); Python side in P1 | |
+| `help.screenshot.GhidraScriptMgrPluginScreenShots` (test-integrationtest) | 12 | P6 | kittest snapshots of the Script Manager |
+
+### 6.2 PyGhidra's pytest suite
+`PYG/src/main/py/tests` (47 tests, not in the JUnit checklist):
+`test_core` (19: opening programs, running scripts, analysis, project
+handling) → P1/P2 equivalents for `basilisk.open`, `run_script`,
+`analyze`; `test_argparser` (21) → `python -m basilisk` arguments, P1;
+`test_plugin` (4) → plugin host, P1; `test_version` (3) → version and
+plugin metadata, P1. Project-only cases are not applicable until M8.
+
+### 6.3 API drift
+`python/basilisk/api-manifest.json` lists every public module, class,
+function, method, property, parameter (name, kind, default), enum member
+and exception base, generated by `python -m basilisk._manifest` from the
+built module. The test regenerates it and fails on any difference;
+removals and incompatible changes also fail unless `API_VERSION`'s major
+changed (or the minor, while it is 0). `python -m mypy.stubtest
+basilisk` compares the stubs with the runtime. Every public name has a
+docstring (test).
+
+### 6.4 The flat-layer table
+`python/basilisk/tests/flat_api_table.tsv` has one row per Ghidra
+overload (166 + 128): name, Ghidra signature, status, Pythonic name — the
+tables of 4.4 in machine form. The test asserts: every row whose status
+is not `none` exists on `FlatAPI` with a docstring; every `later` row
+raises `UnsupportedError` naming its milestone; every `none` row is
+absent; and, when `../ghidra` is present, the list of Ghidra's public
+methods regenerated from `FlatProgramAPI.java` and `GhidraScript.java`
+equals the table's (skipped with a printed reason otherwise).
+
+### 6.5 Differential tests
+The ten scripts of 4.5 against Ghidra's goldens (track P0 builds them):
+output text equal line for line; program-state dump equal. Script 10
+when D13 is accepted.
+
+### 6.6 Behaviour tests (pytest, run against the built wheel)
+- Threads: the four *exp.* checks as tests (GIL release, Rust-thread
+  callbacks, cancellation crossing, exception propagation), plus the
+  deadlock test of 4.8 rule 4 under a 60 s bound.
+- Transactions: commit, rollback on each exception kind,
+  `KEEP_CHANGES_ON_ERROR`, nesting and inner abort, cross-thread writes,
+  undo/redo labels, stale handles.
+- Isolation: a plugin that fails to import, fails in `register`, raises
+  in each callback kind, raises three times, calls `sys.exit`, never
+  returns (Cancel).
+- Discovery and order: entry points, directories, shadowing, `requires`
+  cycles and missing requirements, API ranges.
+- Reload: an action and an analyzer disappear and come back; old
+  callbacks are not called after reload.
+- Proposers: off by default; rank rule against each provenance;
+  review/accept/reject; apply as one undo step; removal restores only
+  untouched values.
+
+### 6.7 Benchmarks and sanitizers
+The 5.4 budgets as `#[ignore]` release tests driving Python, numbers in
+`PERF.md`. Nightly: the pytest suite against a wheel built with
+AddressSanitizer (`RUSTFLAGS=-Zsanitizer=address`, Linux), since Miri
+cannot run CPython.
+
+## 7. Acceptance and tracks
+
+Each track has disjoint crates, is finishable by one agent, and is done
+when its checks pass on all three systems in CI (ADR-022) and the gate is
+green. "Fixture" means a JSON fixture program of 4.5.
+
+| Track | Owns | Can start | Needs |
+|---|---|---|---|
+| **P0** reference fixtures | `tools/reference/ghidra_scripts/`, `tests/data/plugin-fixtures/` | now | a Ghidra installation (`GHIDRA_INSTALL_DIR`; in the x86-64 container or on the lent box) |
+| **P1** host and packaging | `bk-plugin` (`host/`, `script/`, `task`, `errors`, `address`, `lang`, `embed`), `basilisk-py`, `python/basilisk/{__init__,__main__,plugin}.py`, `crates/basilisk` lib target and `plugin.rs` | now (binds `bk-core`, `bk-lang`) | — |
+| **P3** flat layer | `python/basilisk/{flat,ghidra}.py`, `python/basilisk/testing/fake.py` (a pure-Python fake implementing the 4.2 API for tests) | now | P1's package skeleton (or a stub `basilisk` package it replaces) |
+| **P6** UI hooks | `bk-plugin-ui` | after the UI change in constraints item 10 is merged; works against the demo `ProgramSource` | P1 |
+| **P2** program bindings | `bk-plugin` `py/{program,memory,listing,symbols,references,functions,types,iter,compat}` | when M4's `bk-program`, `bk-store`, `bk-datatypes` APIs are merged | P1, P3 |
+| **P4a** loaders | `bk-plugin` `py/loaders` | with `bk-loader` (M4) | P2 |
+| **P4b** analyzers and exporters | `bk-plugin` `py/{analysis,exporters}` | with `bk-analysis` (M5) and the exporter framework (M6) | P2 |
+| **P5** decompiler and proposers | `bk-plugin` `py/{decompiler,pcode}`, the proposal store's binding | with D17 (M3) and the decompiler wired to the program (M5) | P2, P6 for the Proposals view |
+| **P7** further script ports | `python/basilisk/scripts/` | after P2–P5 | — |
+
+Acceptance checks (no check depends on the implementer's judgement):
+
+- **P0**: for each of the ten scripts, `analyzeHeadless` with
+  `RunOnFixture.java` and the original script produces output and a state
+  dump; both checked in; rerunning reproduces them byte for byte; the
+  fixture schema is documented in `tests/data/plugin-fixtures/README.md`.
+- **P1**: (1) maturin builds the six wheels in CI; the Linux ones pass
+  `auditwheel show` as `manylinux_2_28`. (2) In CI on each system, a fresh
+  virtual environment with Python 3.10 and one with 3.14 install the
+  wheel, and `python -c "import basilisk; print(basilisk.API_VERSION)"`
+  prints the version. (3) `python -m basilisk --version` and `basilisk
+  --version` print the same version. (4) An integration test runs
+  `basilisk --python …` with `BASILISK_PYTHON` pointing at the test
+  environment and sees the marker printed by `python -m basilisk`; with
+  no interpreter available it sees the documented message and exit code;
+  with an interpreter whose `basilisk` version differs, the version
+  message. (5) The UI self-test (`BASILISK_UI_SELF_TEST=run`, then
+  `restore`) passes when started as `python -m basilisk` on macOS,
+  Linux and Windows. (6) The pytest suites of 6.6 for discovery, order,
+  isolation, reload and threads pass. (7) The tests of 6.1 assigned to P1
+  are ported and marked. (8) The manifest test of 6.3 exists and passes.
+  (9) A script that only prints, asks and checks its monitor runs from
+  `basilisk script` and from `python -m basilisk script`, with identical
+  output.
+- **P3**: the table test of 6.4 passes (all 294 rows); `GhidraScriptTest`
+  cases that need only the flat layer pass against the fake; the
+  compatibility names of 4.4.3 for the 179 tier A/B scripts are generated
+  from `census.tsv` and each has a test.
+- **P6**: a plugin action appears in its menu, the palette and Key
+  Bindings, runs as a job, and its failure shows a notification
+  (`egui_kittest`); table, text and tree views render provider data and
+  navigate on the demo program; the console runs statements; Script
+  Manager tests of 6.1 pass; a view or action removed by reload leaves no
+  trace in menus or layout.
+- **P2**: scripts 1–9 of 4.5 produce output and state dumps equal to P0's
+  goldens; P3's tests pass against the real bindings; `GhidraScriptRealProgramTest`
+  and the four script tests of 6.1 are ported and marked; the 5.4 budgets
+  are met and recorded.
+- **P4a**: a Python loader for a toy format imports its fixture with the
+  same memory map and symbols as the equivalent Rust loader would; it is
+  ranked by tier with the built-ins; a raising probe does not stop import.
+- **P4b**: a Python analyzer runs at its priority between named built-in
+  analyzers (order recorded and asserted), receives exactly the added
+  sets the manager accumulated (asserted against a recording Rust
+  analyzer), and its options round-trip; `AutoAnalysisWorkerTest` and the
+  two options tests are ported; a Python exporter appears in `basilisk
+  export`.
+- **P5**: script 10 matches P0's golden; `decompile_many` returns results
+  in function order; the proposer tests of 6.6 pass.
+
+Order: P0, P1 and P3 now; P6 when the UI registry change lands; P2 with
+M4; P4a with M4's loaders; P4b with M5; P5 after M5's decompiler wiring;
+P7 last. M9 in `PLAN.md` is complete when P1–P6 are accepted.
+
+## 8. Differences from Ghidra
+
+- Python 3 (CPython ≥ 3.10) only; no Java scripts, no Jython (ADR-005).
+  Ports keep Ghidra's flat and bean names (4.4).
+- A failed or cancelled script's transaction is rolled back; Ghidra
+  commits it (4.9). `KEEP_CHANGES_ON_ERROR = True` restores Ghidra's
+  behaviour per script.
+- `show` and `createTableChooserDialog` print their rows headless instead
+  of raising `ImproperUseException`.
+- `getReferencesTo` keeps Ghidra's 4,096 limit only in the flat layer; the
+  object model's `references.to` is unbounded and lazy.
+- Plugins declare an API range; Ghidra extensions must equal the Ghidra
+  version (`ExtensionInstaller.java:89,142-161`).
+- Newly discovered plugins are disabled until the user enables them.
+- Views are declarative; plugins do not draw UI code (Ghidra plugins
+  build Swing components).
+- No service locator, events or tool configuration: plugins register
+  kinds; program events reach Python as callbacks on the registered kinds
+  (ADR-001).
+- Language-model proposals carry an origin and the replaced value and can
+  be removed per origin; Ghidra's `SourceType.AI` records only the source.
+- Python analyzers run as exclusive tasks (Ghidra runs every analyzer one
+  at a time anyway).
+- The interactive console runs each changing statement in its own
+  transaction.
+
+(Implementing tracks append here.)
+
+## 9. Status
+
+Specification written 2026-11-14 (track `spec-plugin`); not implemented.
+
+### 9.1 Decisions to confirm
+
+- **A. The interpreter hosts basilisk** (4.1): the binary stays free of
+  Python; Python support is the `basilisk` extension module, run by
+  `python -m basilisk` or imported, with the binary handing over to a
+  found interpreter. This reads ADR-014's "embeds CPython" as "CPython
+  and basilisk share one process, with CPython's executable as the host",
+  because linking libpython into the binary breaks the single binary on
+  every platform (measured on macOS). The wheel ships beside the binary in
+  release archives (not inside it); embedding its bytes in the binary is
+  the alternative, at roughly twice the binary's size.
+- **B. abi3, CPython 3.10+**, one wheel per platform; free-threaded
+  builds deferred.
+- **C. Scripts roll back on error** (4.9), opt-out per script.
+- **D. Views are declarative** (4.7.6).
+- **E. API versioning** separate from the application version, `(0, n)`
+  until M9 is accepted (4.10).
+- **F. Plugin tracks P0, P1, P3 start now**; P6 after the UI registry
+  change; the rest with M4–M5 (section 7).
