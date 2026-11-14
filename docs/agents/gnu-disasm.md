@@ -14,7 +14,7 @@ not verified.
 | | |
 |---|---|
 | Done | everything in the spec's acceptance list: `bk-binutils-sys` reviewed and hardened; `bk-gnu-disasm` built; goldens against GNU objdump; coverage of Ghidra's names; fuzzing and sanitizers on Linux; macOS, Linux and Windows (MinGW and MSVC, cross-built, tests under Wine) verified; benchmarks; feature doc; full gate green |
-| Rests on CI | a real Windows machine (`windows-latest`), x86_64 Linux and macOS on GitHub's runners |
+| Rests on CI | macOS on GitHub's runner; the next CI run after the C23 fix (section 12) |
 | Next | merge (coordinator); follow-ups in section 10 |
 
 Machine: Apple silicon (8 cores, 16 GB), macOS 25.5, Apple clang 17,
@@ -126,11 +126,12 @@ on Windows.
 | Platform | Status |
 |---|---|
 | macOS arm64 (Apple clang 17) | builds, all tests pass, gate green **[ran]** |
-| Linux aarch64 (Debian 13; GCC 14 and clang 19) | builds, all tests pass, also under ASan and UBSan **[ran]** (container) |
+| Linux aarch64 (Debian 13; GCC 14 and clang 19) | builds, all tests pass, also under ASan and UBSan **[ran]** (container); rerun after the C23 fix with GCC 14 and with clang 19 under ASan **[ran]** |
+| Linux aarch64, Ubuntu 26.04, GCC 15.2 (C23 default) | builds, all tests of both crates pass **[ran]** (container, after the fix) |
 | Windows x86_64, `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14) | **cross-compiled here, all tests pass under Wine 10.0** **[ran]** (emulated linux/amd64 container) |
 | Windows x86_64, `x86_64-pc-windows-msvc` (clang-cl 19 + MSVC CRT/SDK via cargo-xwin) | **cross-compiled here, all tests pass under Wine 10.0** **[ran]** |
-| Windows on a real Windows machine; with MSVC's `cl.exe` | would be exercised by CI (`windows-latest`), **not seen running**; `cl.exe` is not supported (section 6) |
-| Linux x86_64 | not run here; CI's `ubuntu-latest` would exercise it |
+| Windows on a real machine: CI `windows-latest` (image windows-2025-vs2026), run 43456260254 | **both crates built and every test passed** (25, and 40 + 1 ignored; coverage skips without a Ghidra tree), compiled with clang-cl — inferred: no `CC` in the job, and build.rs stops with an error when `clang-cl` is not on `PATH` **[read from the CI log]**. MSVC's `cl.exe` is not supported (section 6) |
+| Linux x86_64, Ubuntu 26.04, GCC 15.2 (what CI's `ubuntu-latest` now is) | **failed to compile in CI** before the fix (section 12); after it, builds and all tests of both crates pass **[ran]** (emulated linux/amd64 container, full suite in under 40 min) |
 
 ## 5. Tests (bk-binutils-sys 25, bk-gnu-disasm 44 + 1 ignored benchmark)
 
@@ -183,7 +184,7 @@ local verification; nothing from it is committed or redistributed).
 | `cargo test --target x86_64-pc-windows-gnu -p bk-binutils-sys -p bk-gnu-disasm` under Wine | all pass: 25 + 44 (1 ignored benchmark), including the **abort-trap tests** (`longjmp` out of binutils works) and the child-process state tests **[ran]** |
 | `cargo xwin build/test --target x86_64-pc-windows-msvc` (clang-cl, MSVC CRT `-MD`) under Wine | all pass, same counts, trap tests included (`longjmp` through the MSVC runtime, which unwinds with SEH, crosses only C frames) **[ran]** |
 | Golden snapshots on both | all 37 identical byte for byte (`long` being 32-bit changes no output; binutils 2.41 uses `uint64_t`/`PRIx64` for `bfd_vma`) **[ran]**. Under Wine a cross-built `.exe` cannot run `cargo metadata`, so insta needs `INSTA_WORKSPACE_ROOT`; on real Windows it does not |
-| A real Windows machine; CI's `windows-latest` | not seen running; CI would exercise it |
+| A real Windows machine; CI's `windows-latest` | built and all tests passed in CI run 43456260254 (section 4) **[read from the CI log]** |
 | `build.rs` choosing clang-cl by itself (no `CC` set) | not exercised here (cargo-xwin sets `CC_x86_64_pc_windows_msvc`); CI would exercise it |
 | MSVC's `cl.exe` | not attempted (no `cl.exe` off Windows). Not supported, by evidence: clang `-std=c11 -pedantic` over the 302 units finds GNU case ranges (`aarch64-dis.c`, 5), arithmetic on `void *` (`elfxx-riscv.c`), zero-size arrays (`xtensa-modules.c`) and C23 empty initializers (`aarch64-opc-2.c`, 36) **[ran]**, which `cl` rejects [read: MSVC documentation knowledge, not tried] |
 
@@ -237,10 +238,9 @@ parse.
 
 ## 9. Gaps
 
-- Windows not seen on a real Windows machine (Wine only); MSVC's `cl.exe`
-  not supported (clang-cl required for MSVC targets); `build.rs`'s own
-  clang-cl selection not exercised here.
-- Linux x86_64 not run; sanitizers and fuzzing ran only on Linux aarch64.
+- MSVC's `cl.exe` not supported (clang-cl required for MSVC targets). The
+  clang-cl version CI used is not in its log.
+- Sanitizers and fuzzing ran only on Linux aarch64.
 - Text truncation at 1,024 bytes is bounded by construction but never
   triggered by a test.
 - binutils' writes to stderr are not captured.
@@ -259,10 +259,37 @@ parse.
 - If fuzz build time matters for other targets, `bk-binutils-sys` could be
   an optional feature of the fuzz crate (every `cargo fuzz build` now
   compiles binutils: 2 min 7 s instrumented, Linux, 3 CPUs).
-- CI: make sure `clang-cl` is on `PATH` in the `windows-latest` job (LLVM's
-  `bin`), or the Windows tests fail with the build script's message.
+- CI: `clang-cl` was on `PATH` in `windows-latest` (the build succeeded);
+  if a future image drops it, add LLVM's `bin` to `PATH` in the workflow.
 - Proposed ADR: Windows builds of `bk-binutils-sys` need clang-cl, not
   `cl.exe` (section 6).
+
+## 12. Fix after the merge: GCC 15 and C23 (2026-11-14)
+
+CI run 43456260254 after the merge: `bk-binutils-sys` did not compile on
+`ubuntu-latest`, failing in `opcodes/mips-formats.h` ("expected identifier
+or '(' before 'static_assert'") for `micromips-opc.c`, `mips-opc.c` and
+`mips16-opc.c`. Found by running, not reasoning:
+
+- the runner image is **Ubuntu 26.04** (`ubuntu-26.04`, version
+  20261111.196.1 in the job's setup log), not 24.04;
+- its GCC is **15.2.0, which compiles C23 by default**
+  (`__STDC_VERSION__ 202311L`), and in C23 `static_assert` is a keyword;
+  `mips-formats.h` declares `typedef char static_assert[…]` as its
+  compile-time check **[ran: ubuntu:26.04 container]**;
+- the same compiler with `-std=gnu17` compiles the file with no error
+  **[ran]**; Ubuntu 24.04's GCC 13.3 (default `gnu17`) compiles it unchanged
+  **[ran, arm64]**; glibc's `<assert.h>` is not involved (those units do
+  not include it; the shim's `assert.h` shadows it anyway) **[ran: -E]**;
+- my earlier Linux runs used Debian 13's GCC 14 and clang 19, and macOS
+  Apple clang 17, all defaulting to `gnu17`.
+
+Fix (`3a8059c`, no change to the vendored tree): `build.rs` pins the
+language standard for every compiler (`-std=gnu17`, `/std:c17` for
+clang-cl), and the prelude renames `static_assert` for every compiler, not
+only in MSVC mode. Verified after the fix **[ran]**: macOS; Ubuntu 26.04
+GCC 15.2 on arm64 and on emulated amd64 (full test suites of both crates);
+Debian 13 GCC 14; Debian 13 clang 19 under ASan.
 
 ## 11. Gate and commits
 
