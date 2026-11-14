@@ -131,7 +131,7 @@ ignored recorder); `fixture_oracle` 1 (+1); `recorded` 2 (+1); `differential`
 * Ran with both variables unset (oracle tests print SKIPPED and pass), with
   `/Users/tatu/slop/reference`, and part 1's non-canonical spelling check
   is unchanged.
-* Gate: see the final message (run after the master merge).
+* Gate (after the master merge, Rust 1.100.0): `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` printed 0, last line `tests: 1861 passed, 0 failed` (second run; the first failed on a redundant intra-doc link in `pcode/mod.rs`, fixed; the `bk-ui` flake did not occur).
 
 ## Benchmarks
 
