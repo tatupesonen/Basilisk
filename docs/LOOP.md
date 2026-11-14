@@ -16,6 +16,7 @@ contract every session follows.
 | `docs/DECISIONS.md` | Architecture decision records (ADR-NNN). Append; never silently rewrite. |
 | `docs/PARITY.md` | Status of every Ghidra module against Basilisk. |
 | `docs/PERF.md` | Performance budgets, benchmark commands and measured numbers. |
+| `docs/GHIDRA-BUGS.md` | Defects found in Ghidra itself, with their evidence, to report or fix upstream later. The coordinator adds what tracks report. |
 | `docs/features/*.md` | One document per feature: the spec before it is built, the reference after. |
 | `docs/inventory/*.md` | What Ghidra contains, by area. `inventory/tests/` is the test-parity checklist. |
 | `docs/agents/RULES.md` | Rules for implementation agents; `docs/agents/<track>.md` is each track's status report. |

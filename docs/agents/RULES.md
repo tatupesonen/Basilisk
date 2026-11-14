@@ -24,7 +24,11 @@ rules so merges are clean and the result is shippable.
    performance work and test tooling as well as to new features: when
    something behaves unexpectedly, look at what Ghidra's code does there
    first. On the build host the same tree is at `$BASILISK_GHIDRA_DIR`
-   (read-only too).
+   (read-only too). **A defect you find in Ghidra itself** (a crash,
+   undefined behaviour, a result that depends on the host or on stale
+   state) goes into your report under Follow-ups with the file, function
+   and line, how you confirmed it, and what Basilisk does instead; the
+   coordinator records it in `docs/GHIDRA-BUGS.md`.
 
 ## Your worktree
 
