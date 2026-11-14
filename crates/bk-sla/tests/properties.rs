@@ -1,6 +1,15 @@
 //! Property tests (`features/sla.md` section 6): generated models round-trip
 //! through both forms; arbitrary and damaged input never panics.
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
@@ -42,7 +51,12 @@ fn text() -> impl Strategy<Value = String> {
 
 fn tree(depth: u32) -> BoxedStrategy<TreeSpec> {
     let leaf = proptest::collection::vec(
-        (0u32..4, 0u8..3, proptest::collection::vec((any::<u32>(), any::<u32>()), 0..3), 0i32..8),
+        (
+            0u32..4,
+            0u8..3,
+            proptest::collection::vec((any::<u32>(), any::<u32>()), 0..3),
+            0i32..8,
+        ),
         0..3,
     )
     .prop_map(TreeSpec::Leaf);
@@ -64,12 +78,21 @@ fn model_spec() -> impl Strategy<Value = ModelSpec> {
         0usize..4,
         proptest::collection::vec((any::<bool>(), text()), 0..5),
         proptest::collection::vec(
-            (0u8..72, any::<bool>(), proptest::collection::vec((0u8..9, any::<u64>()), 0..4)),
+            (
+                0u8..72,
+                any::<bool>(),
+                proptest::collection::vec((0u8..9, any::<u64>()), 0..4),
+            ),
             0..5,
         ),
         0i32..3,
     )
-        .prop_map(|(operands, print, ops, labels)| CtorSpec { operands, print, ops, labels });
+        .prop_map(|(operands, print, ops, labels)| CtorSpec {
+            operands,
+            print,
+            ops,
+            labels,
+        });
     (
         any::<bool>(),
         any::<u32>(),
@@ -77,13 +100,15 @@ fn model_spec() -> impl Strategy<Value = ModelSpec> {
         proptest::collection::vec(ctor, 4..6),
         tree(2),
     )
-        .prop_map(|(big_endian, unique_base, registers, ctors, tree)| ModelSpec {
-            big_endian,
-            unique_base,
-            registers,
-            ctors,
-            tree,
-        })
+        .prop_map(
+            |(big_endian, unique_base, registers, ctors, tree)| ModelSpec {
+                big_endian,
+                unique_base,
+                registers,
+                ctors,
+                tree,
+            },
+        )
 }
 
 fn constant(kind: u8, value: u64, operands: usize, labels: i32) -> ConstTpl {
@@ -114,14 +139,20 @@ fn lower_tree(spec: &TreeSpec, ctors: u32) -> DecisionDef {
                     let block = BlockDef {
                         offset: *offset,
                         nonzero: (words.len() * 4) as i32,
-                        words: words.iter().map(|&(mask, value)| MaskWord { mask, value }).collect(),
+                        words: words
+                            .iter()
+                            .map(|&(mask, value)| MaskWord { mask, value })
+                            .collect(),
                     };
                     let pattern = match kind {
                         0 => PatternDef::Instruction(block),
                         1 => PatternDef::Context(block),
                         _ => PatternDef::Combine(block.clone(), block),
                     };
-                    PairDef { constructor: ct % ctors, pattern }
+                    PairDef {
+                        constructor: ct % ctors,
+                        pattern,
+                    }
                 })
                 .collect(),
             ..DecisionDef::default()
@@ -162,30 +193,63 @@ fn build(spec: &ModelSpec) -> Sla {
     let root = b.symbol("instruction", global, SymbolDef::Start);
     let first_register = SymbolId::new(1);
     for (i, &(offset, size)) in spec.registers.iter().enumerate() {
-        b.symbol(&format!("r{i}"), global, SymbolDef::Varnode { space: 3, offset, size });
+        b.symbol(
+            &format!("r{i}"),
+            global,
+            SymbolDef::Varnode {
+                space: 3,
+                offset,
+                size,
+            },
+        );
     }
-    let field = b.field(Field { big_endian: spec.big_endian, sign_bit: false, start_bit: 0, end_bit: 3, start_byte: 0, end_byte: 0, shift: 0 });
+    let field = b.field(Field {
+        big_endian: spec.big_endian,
+        sign_bit: false,
+        start_bit: 0,
+        end_bit: 3,
+        start_byte: 0,
+        end_byte: 0,
+        shift: 0,
+    });
     let mut ctors = Vec::new();
     for (ct, c) in spec.ctors.iter().enumerate() {
         let scope = b.scope(Some(global));
         let mut operands = Vec::new();
         for index in 0..c.operands {
-            let local = b.expr(Expr::Operand { index: index as i32, table: root, ct: ct as u32 });
+            let local = b.expr(Expr::Operand {
+                index: index as i32,
+                table: root,
+                ct: ct as u32,
+            });
             let (defining_symbol, defining_expr) = if index % 2 == 0 {
                 (Some(first_register), None)
             } else {
                 (None, Some(b.expr(Expr::TokenField(field))))
             };
-            operands.push(b.symbol(&format!("op{index}"), scope, SymbolDef::Operand(Operand {
-                index: index as i32, offset: 0, base: -1, min_length: 0, code: false,
-                defining_symbol, local_expr: local, defining_expr,
-            })));
+            operands.push(b.symbol(
+                &format!("op{index}"),
+                scope,
+                SymbolDef::Operand(Operand {
+                    index: index as i32,
+                    offset: 0,
+                    base: -1,
+                    min_length: 0,
+                    code: false,
+                    defining_symbol,
+                    local_expr: local,
+                    defining_expr,
+                }),
+            ));
         }
         let mut template = Template::new();
         template.set_header(None, 0, c.labels);
         for (opcode, output, inputs) in &c.ops {
             let opcode = OpCode::from_u8(*opcode).filter(|op| {
-                !matches!(op, OpCode::MultiEqual | OpCode::Indirect | OpCode::PtrAdd | OpCode::PtrSub)
+                !matches!(
+                    op,
+                    OpCode::MultiEqual | OpCode::Indirect | OpCode::PtrAdd | OpCode::PtrSub
+                )
             });
             let Some(opcode) = opcode else { continue };
             let vn = |k: u8, v: u64| VarnodeTpl {
@@ -220,10 +284,13 @@ fn build(spec: &ModelSpec) -> Sla {
         });
     }
     let count = ctors.len() as u32;
-    b.set_symbol(root, SymbolDef::Subtable(TableDef {
-        constructors: ctors,
-        decision: lower_tree(&spec.tree, count),
-    }));
+    b.set_symbol(
+        root,
+        SymbolDef::Subtable(TableDef {
+            constructors: ctors,
+            decision: lower_tree(&spec.tree, count),
+        }),
+    );
     b.finish().unwrap()
 }
 

@@ -57,6 +57,11 @@ pub(crate) trait Source<'a> {
     fn trailing(&self) -> Option<usize>;
 }
 
+/// A string with a NUL character, which the packed form cannot hold.
+fn nul() -> Fail {
+    Fail::invalid("string attribute contains a NUL character")
+}
+
 /// The name of an element id, for messages.
 pub(crate) fn element_text(id: u32) -> String {
     ids::element_name(id).map_or_else(|| format!("element id {id}"), |name| format!("<{name}>"))
@@ -309,6 +314,9 @@ impl<'a> Source<'a> for PackedCursor<'a> {
         let start = self.pos;
         self.advance(length)?;
         let bytes = self.bytes.get(start..self.pos).unwrap_or_default();
+        if bytes.contains(&0) {
+            return Err(nul());
+        }
         std::str::from_utf8(bytes).map_err(|_| StreamError::InvalidUtf8.into())
     }
 
@@ -448,7 +456,11 @@ impl<'a, D: Decoder<'a>> Source<'a> for MarshalSource<D> {
     }
 
     fn string(&mut self) -> Result<&'a str, Fail> {
-        Ok(self.decoder.read_string()?)
+        let text = self.decoder.read_string()?;
+        if text.contains('\0') {
+            return Err(nul());
+        }
+        Ok(text)
     }
 
     fn space(&mut self) -> Result<SpaceAttr<'a>, Fail> {

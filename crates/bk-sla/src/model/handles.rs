@@ -154,6 +154,10 @@ impl Strings {
         self.text.get(id.range()).unwrap_or_default()
     }
 
+    pub(crate) fn has_nul(&self) -> bool {
+        self.text.contains('\0')
+    }
+
     pub(crate) fn capacity(&self) -> usize {
         self.text.capacity()
     }

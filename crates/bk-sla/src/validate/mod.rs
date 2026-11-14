@@ -287,6 +287,9 @@ impl<'s> Validator<'s> {
                 );
             }
         }
+        if sla.a.strings.has_nul() {
+            return fail("sleigh", "a string contains a NUL character");
+        }
         let mut globals: HashSet<&str> = HashSet::new();
         let mut root = None;
         for (index, symbol) in sla.a.symbols.iter().enumerate() {

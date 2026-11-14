@@ -480,6 +480,10 @@ fn builder_violations_are_rejected() {
         operand: later,
     });
     expect_error("forward expression", b.finish(), "refers to a later node");
+    // A string the packed form cannot hold.
+    let (mut b, _) = common::full_builder();
+    b.source_file("nul\0.sinc");
+    expect_error("nul", b.finish(), "NUL character");
     // A decision node with the wrong number of children.
     let (mut b, ids) = common::full_builder();
     b.set_symbol(ids.dst, SymbolDef::Start);
