@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates tests/data/circlerange_oracle.txt.gz from Ghidra's compiled
+# Regenerates tests/data/circlerange_oracle.<lib>.txt.gz from Ghidra's compiled
 # CircleRange (rangeutil.cc), using the reference build's objects
 # (scripts/build-reference.sh: its source copy and src/cpp/com_opt).
 #
