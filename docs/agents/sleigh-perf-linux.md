@@ -80,8 +80,57 @@ more instructions, at a higher IPC that does not make up for it.
 p-code `Builder::build` 19 %, `resolve_handles` 14 %, `choose` 10 %,
 `set_constructor` 7 %, `eval` 6 %.
 
+### Changes so far (build host, 5–7 rounds each, median basilisk / Ghidra)
+
+| After commit | decode | decode + lift |
+|---|---|---|
+| before (12f1705) | 3.87 / 4.52 (0.86) | 1.69 / 2.22 (0.76) |
+| `Env` by reference, handles apart from nodes (b9653a1) | 4.21 / 4.60 (0.92) | 1.75 / 2.24 (0.78) |
+| laid-out decision trees, context changes per constructor (6eb8370) | 4.09 / 4.17 (0.98) | 1.68 / 2.04 (0.82) |
+| handle and varnode helpers inlined (62d6baf) | 4.39 / 4.59 (0.96) | 1.88 / 2.26 (0.83) |
+| window loaded in place, `fix`/`locate` forced inline (ce170a4) | 4.33 / 4.32 (1.00) | 1.86 / 2.17 (0.86) |
+| exports beside the constructor tables, walk keeps a node index (d2c50c2) | 4.48 / 4.61 (0.97) | 1.95 / 2.27 (0.86) |
+| two-byte `Fault` for inner decode functions (09cbe2b) | 4.69 / 4.63 (1.01) | 2.09 / 2.26 (0.93) |
+| decision nodes in 16 bytes (889fac8) | 4.95 / 4.50 (1.10) | 2.12 / 2.22 (0.96) |
+| fixed-varnode fast path, leaf evaluation, no handle refill (d7a9eb9) | 4.85 / 4.54 (1.07) | 2.16 / 2.23 (0.97) |
+| tree walk with plain branches (8374b87) | 5.11 / 4.64 (1.10) | 2.15 / 2.24 (0.96) |
+| walks share the instruction's constants (b634fe0) | 4.75 / 4.62 (1.03) | 2.16 / 2.24 (0.97) |
+
+The host's speed drifts by a few per cent between runs even at load
+average below 1 (another tenant of the physical machine); only the
+ratio within one run is meaningful.
+
+The main x86-64-specific finding: several hot values were written field
+by field and read back with a wider load (the node vector's header copied
+into `Env` right after it grew; `FixedHandle` and `VarnodeData` returned
+through memory and copied with 16-byte loads; a walk's 32-bit child range
+read as one 64-bit load; the 16-byte window assembled byte by byte and
+copied). x86-64 cannot forward a load from several smaller stores and
+stalls until they retire; the M1 is far more forgiving, which is most of
+why the Mac was ahead and the Linux host behind. The rest is less work
+per instruction: decision trees, constructor exports and context changes
+laid out for the decoder, `Result`s that fit in registers.
+
+Mac (M1 Pro) after d2c50c2: decode 3.68 / 3.28, decode + lift 1.86 /
+1.62 (both up from 3.32 and 1.62 before).
+
+## Corrections
+
+- (a) Label numbers are 32 bits (ce11410): `pcode/build.rs`
+  `label_number`, used by `LABEL` and by `resolve_relatives`; tests
+  `pcode_units::label_numbers_are_32_bits` (both sides of 2³², the bound
+  below and above it).
+- (b) The coverage snapshot holds `unset-or-crash` (unset-handle records
+  plus oracle crashes) instead of the two host-dependent counts; the run
+  prints both and a summary; thresholds are asserted before the snapshot
+  (f1c70e8, 9b132aa). Passed on the build host (every_language, 175
+  languages, 0 differing records, 36 oracle crashes).
+
 ## Done / in progress / next
 
 - Done: measurement tooling (`build.sh` on Linux, `compare.sh`,
-  `slabench` modes, `BK_PROFILE_MODE`, `hot.py`); re-measured gap.
-- In progress: reducing instructions per decode.
+  `slabench` modes, `BK_PROFILE_MODE`, `hot.py`); re-measured gap; the
+  changes above; corrections (a) and (b).
+- In progress: decode + lift is within noise of the reference (0.96–0.99);
+  the remaining time is spread over the p-code builder.
+- Next: Mac measurements and tests, PERF.md, feature-doc notes, gates.
