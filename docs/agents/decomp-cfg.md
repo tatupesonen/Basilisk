@@ -2,9 +2,9 @@
 
 D04 of `docs/features/decomp-plan.md`: crate `bk-decomp-cfg` (block graph,
 analyses, structured hierarchy, structurer). Contract:
-`docs/features/decomp-cfg.md`. Status: **done except the parts that wait
-for D00** (listed under Gaps); the coordinator resumes the track when D00
-is merged.
+`docs/features/decomp-cfg.md`. Status: **done**, the oracle acceptance included (second part, branch
+`decomp-cfg-oracle`, on D00's console and readers; see "Oracle acceptance"
+below). The first part (the crate) is on `master`.
 
 ## State (kept current; continue from here)
 
@@ -16,7 +16,8 @@ is merged.
 - [x] 6.3/6.4 oracle tests written against D00's formats; they skip until
       `decomp_bk` and the table exist.
 - [x] Testbed checks and both gates (results under Verification).
-- [ ] **When D00 lands** (coordinator's message, or `bin/decomp_bk` in the
+- [x] Oracle acceptance on D00's `decomp_bk` (second part, below).
+- [x] ~~When D00 lands~~ (done; kept for the record) (coordinator's message, or `bin/decomp_bk` in the
       reference directories and D00 on `master`): `git merge master`;
       replace `tests/support/dump.rs` and the console runner in
       `tests/oracle_bk.rs` by `bk-testkit`'s readers, writers and
@@ -30,6 +31,81 @@ is merged.
       top-level nodes for libstdc++, 119 of 4+ for libc++) if they differ;
       replay; then the corpus captures of 6.3.2 with D00's capture driver
       and the `R` record comparison of 6.4; confirm `CaseDetached` (below).
+
+## Oracle acceptance (second part, branch `decomp-cfg-oracle`)
+
+Done on the integration branch `master` + `decomp-oracle`, with
+`bk-testkit`'s readers, writers and `decomp_bk` runner; the local helpers
+are gone (`tests/support/dump.rs` deleted; `tests/support/oracle.rs`
+converts between this crate's types and `bk_testkit::oracle`'s and writes
+Basilisk's dumps with `bk-testkit`'s writers, which also parse them back).
+
+**6.3.1, generated graphs** (`tests/oracle_bk.rs`,
+`tests/oracle/regen.sh`): 12,000 graphs (4,000 function-like, 4,000
+arbitrary, 2,000 reducible, 2,000 irreducible; up to 64 nodes; 10 % with
+random facts and input labels), four dumps each for function-like graphs
+and three otherwise — 40,000 rows: `bk cfg analyze`, `bk structure bare
+trace`, `bare finish`, `asgiven trace` (on the graph file written from the
+analysis; the regeneration checks that Basilisk's and Ghidra's analyses of
+every function-like graph agree, so the input is Ghidra's). Generated twice
+on the Mac (libc++) and twice on the build host (libstdc++): each pair
+byte-identical. Replay: **libc++ 39,999 rows equal, 1 recognised;
+libstdc++ 39,985 equal, 15 recognised**; the builds differ in exactly
+those 15 rows. Every recognised row is an `orderBlocks` RETURN tie (≥ 2
+top-level nodes ending in `RETURN` on a top level of ≥ 4; all 15
+libstdc++ rows on 17+ nodes, where it stops using insertion sort);
+checked by hand on the libc++ row (`arb` 1794: 34 top-level nodes, the
+five RETURN nodes reversed by libc++, kept in list order by Basilisk).
+Counts pinned per library (ADR-040's form). Among the rows: 291 + 291 `Could
+not finish collapsing block structure`, **46 + 46 `Case block has become
+detached from switch` — Ghidra's result too, which settles that question**,
+and 2 + 2 + 2 rows where the reference never finishes (Basilisk:
+`TraceCycle`). Tables 533 kB each.
+
+**6.3.2, corpus** (`tests/corpus.rs`, `tests/oracle/regen_corpus.sh`):
+`bk capture structure` at each `decompile` of the 93 data tests and 74
+research fragments (2 fragments skipped: `a07_switch.{a64,x64}-gcc-O2` fail
+in Ghidra's own console, as D00 found) — **767 structuring runs over 607
+decompilations**. For every run Ghidra's structurer is also run on the
+captured graph with `bk structure … asgiven trace`. Basilisk
+(`structure(…, AsGiven)` on the captured graph with its real facts and
+labels) equals **all 767**: the captured hierarchy (`S`/`P` records), and
+`bk structure`'s flips, goto marks, change count and rule sequence (485
+flips, 147 goto marks, 2,477 rule applications compared). **Final
+hierarchies**: the last run of each decompilation finished with the case
+labels from the final state dump (`block2addr` and `label`, as
+`JumpTable::getIndexByBlock` reads them): 321 equal byte for byte; 173
+differ only by `f_final_transform` (0x100000, set on every structured node
+by `ActionStructureTransform`, D15); 113 also by `preferComplement`'s
+swapped bodies of if/else and if-no-exit nodes (D15) — compared on a
+canonical form that keeps kinds, indices, flags, kind data (case order,
+goto targets and types, overflow) and component order up to those swaps;
+counts pinned; 0 unexplained. Checked in: the whole table, graphs
+included, 49 kB per build; the two builds' tables are byte-identical, and
+two runs on each build are too.
+
+**6.4, trace**: the `R` records are part of every compared `bare trace`
+and `asgiven trace` dump and of every corpus run's dump: all equal.
+
+**Benchmark, largest corpus graph**: `datatests/elseif` (42 nodes, 61
+edges): 7 µs, 798 steps (build host). Every corpus run is far below the
+step default; it stays `2·(n+e)² + 10⁶`.
+
+**Formats: where `bk-testkit` differs from what I had written from the
+spec text** (the README and code are right):
+1. `goto`/`ifgoto` kind data is `<target>,<goto type hex>` (comma; I wrote
+   `target:type`), with `-` for a missing target.
+2. `multigoto` kind data is `<target>,…,<default|->` (the flag as the last
+   list item; I wrote `targets:default`).
+3. Digests are `bk-testkit`'s 64-bit FNV-1a, not my 128-bit pair.
+4. A graph file's `s` fact must come with the switch flag 0x10 in `flags`.
+5. Fact blocks are `t_plain`; `bk dump structure` names leaves by block
+   position (= graph-file id) — no effect on the comparison.
+6. Corpus graphs must carry the switch-default labels (`bk capture
+   structure` installs them); a plain `bk dump blocks` lacks them.
+
+**Should `decomp-cfg.md` 6.3 item 2 take D00's proposed text?** Yes
+(appended to spec section 10 as item 9, with the final-hierarchy causes).
 
 ## Built
 
@@ -91,7 +167,7 @@ the `&mut dyn GotoSelector` trait object.
 
 ## Tests
 
-104 tests run in the gate (rstest cases counted), 7 ignored (regeneration
+105 tests run in the gate (rstest cases counted), 9 ignored (regeneration
 and benchmarks):
 
 | Kind | File | Count |
@@ -100,7 +176,8 @@ and benchmarks):
 | Unit: every rule positive and negative, flips and change count, overflow, goto/if-goto/multigoto, `checkSwitchSkips` and `ruleCaseFallthru` reporting applied with only goto marks, selected gotos, the five reachable seed-1 graphs ending in `Could not finish collapsing block structure`, the endless-trace graph, input untouched, as-given = recompute | `tests/rules.rs` | 34 |
 | API: edits and their errors, analyses, dominators, reachability, queries, every Ghidra message, limits, XML round trip and every decode error, encoding, `orderBlocks`, `finish`, `print tree`, plugin constraints | `tests/api.rs` | 47 |
 | Differential S (6.2): 4,000 graphs replayed against `structure blocks` | `tests/structure_blocks.rs` | 1 (+ `regen`, L) |
-| Oracle S (6.3/6.4, waits for D00), dump determinism, RETURN-tie counts | `tests/oracle_bk.rs` | 3 (+ `regen`, L) |
+| Oracle S (6.3.1/6.4): 40,000 rows per build, dump determinism and reader round trip, RETURN-tie counts | `tests/oracle_bk.rs` | 3 (+ `regen`, L) |
+| Corpus S (6.3.2/6.4): 767 structuring runs, 607 final hierarchies | `tests/corpus.rs` | 1 (+ `capture`, L; corpus benchmark) |
 | Properties (6.5): repeatability, input untouched, every leaf once, parents, edge halves, isolated top level, goto count = marks, finish, loop edges cut every cycle, as-given = recompute, no rebuild, no `NoBadEdge`, dominators = naive on function-like graphs, graphs of up to 1,000 nodes within the default limit | `tests/properties.rs` | 3 (256 / 24 cases; 3,000 cases run clean) |
 | Benchmarks (6.7) | `tests/bench.rs` | 4 ignored |
 | Fuzz (6.6) | `fuzz/fuzz_targets/bk_decomp_cfg_{structure,xml}.rs` | 2 targets |
@@ -120,8 +197,7 @@ Java program-graph tests).
   (libstdc++): all four byte-identical. Earlier scratch run of
   `gen_graphs.py 1 3000 40`: 3,000 of 3,000 equal, the 161 errors included.
 - **`bk cfg` / `bk structure` (6.3.1), corpus graphs (6.3.2), trace (6.4)**:
-  not run — D00's `decomp_bk` does not exist yet. The tests and both
-  regeneration scripts are in place.
+  done in the second part — see "Oracle acceptance".
 
 ## Benchmarks
 
@@ -145,19 +221,23 @@ oracle table.
 
 ## Gaps
 
-- Everything that needs D00's `decomp_bk`: the 6.3.1 table and its replay
+Second part: none open. The items below were the first part's gaps; all
+are now done (see "Oracle acceptance") except that the final hierarchy is
+compared up to D15's two actions, which are D15's to port.
+
+- (done) Everything that needs D00's `decomp_bk`: the 6.3.1 table and its replay
   (acceptance 2, second half, 4 and 6 for `bk structure`), the corpus
   captures and comparisons of 6.3.2 (acceptance 3), the `R`-record trace
   comparison of 6.4, the corpus benchmark (largest corpus function) and the
   corpus count of `orderBlocks` RETURN ties (open item 1).
-- Not confirmed against Ghidra: `Case block has become detached from
+- (settled: Ghidra raises it too, 46 generated graphs) Not confirmed against Ghidra: `Case block has become detached from
   switch` on graphs with an input default-switch label (generated arbitrary
   and reducible graphs with facts). The trigger cannot be expressed in
   block XML; by reading, Ghidra raises the same (a multigoto collects a
   goto to itself through the self-edge `forceOutputNum` adds, and
   `addCase` finds no edge from the switch block to its own original). The
   6.3.1 table will settle it.
-- Test helpers for D00's formats are local (`tests/support/dump.rs`) and
+- (done) Test helpers for D00's formats are local (`tests/support/dump.rs`) and
   written from the spec text; the field spellings will follow D00's
   `bk-testkit` when it lands.
 
