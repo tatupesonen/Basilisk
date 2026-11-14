@@ -253,6 +253,24 @@ pub(crate) fn locate(
             dynamic,
         ));
     }
+    // The next most common: a fixed varnode (a register, a unique
+    // temporary, a constant, a label), nothing to look up.
+    if let (
+        ConstTpl::Space(space),
+        ConstTpl::Real(offset) | ConstTpl::Relative(offset),
+        ConstTpl::Real(size),
+    ) = (vn.space, vn.offset, vn.size)
+    {
+        let size = size as u32;
+        return Ok((
+            VarnodeData::new(
+                SpaceId::new(space),
+                place(lang, space, offset, size, w.unique),
+                size,
+            ),
+            false,
+        ));
+    }
     let space = fix_space(&vn.space, w)?;
     let size = fix(lang, &vn.size, w)? as u32;
     let offset = fix(lang, &vn.offset, w)?;
