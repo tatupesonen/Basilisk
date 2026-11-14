@@ -4,7 +4,7 @@
 //! `fixSpace`, `fillinSpace`, `fillinOffset`).
 
 use bk_core::Address;
-use bk_sla::{ConstTpl, HandleSelect, HandleTpl, SymbolKind};
+use bk_sla::{ConstTpl, HandleSelect, HandleTpl};
 
 use super::expr::{Env, Point};
 use super::fault::{Fault, What};
@@ -353,24 +353,26 @@ pub(crate) fn operand_handle(env: &Env<'_>, def: OpDef, n: u32) -> Result<FixedH
             FixedHandle::fixed(CONST, env.value(expr, point)? as u64, 0)
         }
         OpDef::Table {
-            symbol, expr, kind, ..
+            expr, kind, table, ..
         } => {
+            // `table` is the symbol's own span (`tables::definition`), so
+            // the symbol itself need not be read.
             let value = env.value(expr, point)?;
             let missing = || Fault::NoTableEntry(kind);
-            match (kind, env.sla.symbol(symbol).map(|s| &s.kind)) {
-                (TableKind::ValueTable, Some(SymbolKind::ValueMap { table, .. })) => {
+            match kind {
+                TableKind::ValueTable => {
                     let entry = env
                         .sla
-                        .value_table(*table)
+                        .value_table(table)
                         .get(value as u32 as usize)
                         .copied()
                         .ok_or_else(missing)?;
                     FixedHandle::fixed(CONST, entry as u64, 0)
                 }
-                (TableKind::VarnodeList, Some(SymbolKind::VarnodeList { table, .. })) => {
+                TableKind::VarnodeList => {
                     let register = env
                         .sla
-                        .varnode_table(*table)
+                        .varnode_table(table)
                         .get(value as u32 as usize)
                         .copied()
                         .flatten()
@@ -382,7 +384,7 @@ pub(crate) fn operand_handle(env: &Env<'_>, def: OpDef, n: u32) -> Result<FixedH
                         _ => return Err(missing()),
                     }
                 }
-                _ => FixedHandle::fixed(CONST, value as u64, 0),
+                TableKind::NameTable => FixedHandle::fixed(CONST, value as u64, 0),
             }
         }
         OpDef::Varnode {
