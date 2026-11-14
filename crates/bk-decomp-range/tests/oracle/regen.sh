@@ -18,7 +18,7 @@
 #     row is appended as ` #ub=<kind>@<file>:<line>`;
 #   - under valgrind with the fields of every empty range left
 #     uninitialised: a row whose result depends on them gets ` #uninit`;
-# and the marked table is written to <output-dir>/circlerange_oracle.txt.gz.
+# and the marked table is written to <output-dir>/circlerange_oracle.<lib>.txt.gz.
 #
 # With --extended the full case set of the spec (section 6.2: a 300-range
 # sample squared, 200,000 random pairs, ...) is also written, bare, to
@@ -114,7 +114,7 @@ for f in ub uninit; do
   [ "$(wc -l < "$work/$f.txt")" = "$n" ] || { echo "regen: $f marks have the wrong number of rows" >&2; exit 1; }
 done
 paste -d '' "$work/table.txt" "$work/ub.txt" "$work/uninit.txt" > "$work/marked.txt"
-out="$data/circlerange_oracle.txt.gz"
+out="$data/circlerange_oracle.$lib.txt.gz"
 gzip -9n < "$work/marked.txt" > "$out"
 echo "wrote $out ($n lines, bare sha256 $(sum "$work/table.txt"))"
 echo "ub rows: $(grep -c '#ub=' "$work/marked.txt" || true), uninit rows: $(grep -c '#uninit' "$work/marked.txt" || true)"

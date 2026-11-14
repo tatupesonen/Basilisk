@@ -1,18 +1,24 @@
-//! Replays the oracle table, `tests/data/circlerange_oracle.txt.gz`: the
-//! results of Ghidra's compiled `CircleRange` (`rangeutil.cc`, reference
-//! build) for 176,000 cases over every method in scope, produced by
-//! `tests/oracle/circlerange_oracle.cc` (`tests/oracle/regen.sh`; format
-//! and provenance in `tests/data/README.md`). Kind S: runs everywhere.
+//! Replays the oracle tables: the results of Ghidra's compiled
+//! `CircleRange` (`rangeutil.cc`, reference build) for 156,000 cases over
+//! every method in scope, produced by `tests/oracle/circlerange_oracle.cc`
+//! (`tests/oracle/regen.sh`; format and provenance in
+//! `tests/data/README.md`). Kind S: runs everywhere.
 //!
-//! Each row's results are computed again with `bk-decomp-range`, written
-//! in the table's format, and compared as text. Every row must agree,
-//! including the rows marked as depending on undefined behaviour in the C++
-//! (` #ub=…`: Basilisk computes what both reference builds compute) and on
-//! uninitialised fields of an empty range (` #uninit`: Basilisk's empty
-//! range has zero fields, and the table was generated with those). The
-//! marks are counted by kind and the counts are pinned, so a regenerated
-//! table that changes them is noticed (`docs/features/decomp-range.md`,
-//! section 8).
+//! There are two tables, one per reference host: x86-64 Linux (g++,
+//! libstdc++), which Basilisk follows, and macOS AArch64 (Apple clang,
+//! libc++). Each row's results are computed again with `bk-decomp-range`,
+//! written in the table's format, and compared as text:
+//!
+//! - every row of the x86-64 table must agree, including the rows marked
+//!   as depending on undefined behaviour in the C++ (` #ub=…`: Basilisk
+//!   computes what the reference builds compute) or on the uninitialised
+//!   fields of an empty range (` #uninit`: Basilisk's empty range has zero
+//!   fields, and the table was generated with those); the marks are
+//!   counted by kind and the counts pinned;
+//! - a row of the macOS table equals the x86-64 row, or differs for a
+//!   cause `common/host.rs` recognises; those are counted and pinned.
+//!
+//! `docs/features/decomp-range.md`, section 8, lists both.
 
 #![allow(
     clippy::unwrap_used,
@@ -29,40 +35,71 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use common::oracle::{compute, gunzip, split};
+use common::host::{Cause, recognise};
+use common::oracle::{compute, gunzip, second_inputs, split};
 
-const TABLE: &[u8] = include_bytes!("data/circlerange_oracle.txt.gz");
+const X86_64: &[u8] = include_bytes!("data/circlerange_oracle.libstdcxx.txt.gz");
+const AARCH64: &[u8] = include_bytes!("data/circlerange_oracle.libcxx.txt.gz");
 
-/// Replays every row of `text`; returns the rows per tag and the marks per
-/// kind (kind = the mark up to `@`, with the source line after it).
-pub(crate) fn replay(text: &str) -> (BTreeMap<String, usize>, BTreeMap<String, usize>) {
+/// Marks of the x86-64 table by kind (`ub=<check>@<file>:<line>`,
+/// `uninit`), as `regen.sh --marks` wrote them.
+const MARKS: &[(&str, usize)] = &[];
+
+/// Rows of the macOS table that differ, by cause.
+const HOST_ROWS: &[(Cause, usize)] = &[(Cause::NeonShiftLeft, 0)];
+
+#[test]
+fn every_x86_64_row_agrees_with_basilisk() {
+    let text = gunzip(X86_64);
     let mut tags = BTreeMap::new();
-    let mut marks = BTreeMap::new();
+    let mut marks: BTreeMap<String, usize> = BTreeMap::new();
     let mut bad = Vec::new();
     for (n, line) in text.lines().enumerate() {
         let row = split(line);
-        *tags.entry(row.tag.to_owned()).or_insert(0) += 1;
+        *tags.entry(row.tag).or_insert(0usize) += 1;
         for m in &row.marks {
-            *marks.entry((*m).to_owned()).or_insert(0) += 1;
+            *marks.entry((*m).to_owned()).or_default() += 1;
         }
         let ours = compute(&row);
         if ours != row.results {
             bad.push(format!("line {}: {line}\n  basilisk: {ours}", n + 1));
         }
     }
+    eprintln!("rows: {tags:?}");
+    eprintln!("marks: {marks:?}");
     for b in bad.iter().take(20) {
         eprintln!("{b}");
     }
     assert!(bad.is_empty(), "{} of {} rows differ from Ghidra", bad.len(), text.lines().count());
-    (tags, marks)
+    let pinned: BTreeMap<String, usize> = MARKS.iter().map(|(k, v)| ((*k).to_owned(), *v)).collect();
+    assert_eq!(marks, pinned, "the marks of the table changed: update MARKS and section 8");
 }
 
 #[test]
-fn every_row_agrees_with_ghidra() {
-    let text = gunzip(TABLE);
-    let (tags, marks) = replay(&text);
-    eprintln!("rows: {tags:?}");
-    eprintln!("marks: {marks:?}");
-    let rows: usize = tags.values().sum();
-    assert_eq!(rows, text.lines().count());
+fn the_macos_table_differs_only_for_known_causes() {
+    let x86 = gunzip(X86_64);
+    let arm = gunzip(AARCH64);
+    assert_eq!(x86.lines().count(), arm.lines().count(), "the tables have different row counts");
+    let mut causes: BTreeMap<Cause, usize> = BTreeMap::new();
+    let mut unexplained = Vec::new();
+    for (n, (x, a)) in x86.lines().zip(arm.lines()).enumerate() {
+        let (x, a) = (split(x), split(a));
+        assert_eq!((x.tag, &x.inputs), (a.tag, &a.inputs), "line {}: the inputs differ", n + 1);
+        if x.results == a.results {
+            continue;
+        }
+        match recognise(&a, &second_inputs(&a)) {
+            Some(cause) => *causes.entry(cause).or_default() += 1,
+            None => unexplained.push(format!("line {}\n  x86-64:  {}\n  aarch64: {}", n + 1, x.results, a.results)),
+        }
+    }
+    for u in unexplained.iter().take(10) {
+        eprintln!("{u}");
+    }
+    assert!(unexplained.is_empty(), "{} rows differ for no known cause", unexplained.len());
+    for (cause, count) in &causes {
+        eprintln!("{}: {count} rows", cause.name());
+    }
+    let pinned: BTreeMap<Cause, usize> = HOST_ROWS.iter().copied().filter(|(_, n)| *n > 0).collect();
+    assert_eq!(causes, pinned, "the host differences changed: update HOST_ROWS and section 8");
 }

@@ -331,9 +331,14 @@ impl CircleRange {
             return false;
         }
         self.empty = false;
-        let sa = (in2.left as i32).wrapping_mul(8);
+        // `int4 sa = (int4)in2.left * 8` overflows for offsets of 2^28 and
+        // more. Both reference builds then test `sa == 0` as "the offset is
+        // 0" (the compiler assumes no overflow) but shift by the wrapped
+        // product; so does this.
+        let offset = in2.left as i32;
+        let sa = offset.wrapping_mul(8);
         self.mask = mask_of(out_size);
-        self.step = if sa == 0 { in1.step } else { 1 };
+        self.step = if offset == 0 { in1.step } else { 1 };
         let range = in1.left.abs_diff(in1.right);
         if range == 0 || shr(range, count(sa)) > self.mask {
             self.left = 0; // Everything is covered.

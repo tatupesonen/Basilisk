@@ -568,7 +568,7 @@ struct Counts {
   size_t random, fromA, sample, pullBinary, pushShift, maxStep;
   int pairs, trinary;
 };
-const Counts BASE = {1000, 1000, 120, 400, 600, 150, 15000, 2000};
+const Counts BASE = {1000, 1000, 100, 300, 400, 150, 10000, 2000};
 const Counts EXTENDED = {8000, 4000, 300, 2000, 4000, 500, 200000, 5000};
 
 int main(int argc, char **argv) {

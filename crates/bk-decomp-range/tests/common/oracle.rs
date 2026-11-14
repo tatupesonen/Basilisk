@@ -101,6 +101,17 @@ fn size_of(r: &CircleRange) -> u32 {
     (1..=8).find(|&s| bk_core::bits::calc_mask(s) == r.mask()).unwrap_or(8)
 }
 
+/// The second inputs of an `F` row: `shiftInputs`, or for the step-bound
+/// rows (24 results) only the shifts up to 128 and the range that is not
+/// single.
+pub(crate) fn second_inputs(row: &Row<'_>) -> Vec<CircleRange> {
+    let mut inputs = shift_inputs();
+    if row.results.split(' ').count() == 24 {
+        inputs.drain(23..29);
+    }
+    inputs
+}
+
 /// The second inputs of the shift-like push-forwards (`shiftInputs`).
 fn shift_inputs() -> Vec<CircleRange> {
     let vals: [u64; 29] = [
@@ -268,7 +279,7 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
         }
         "F" => {
             let (r, opc, inn, out, max) = (range(i[0]), op(i[1]), int(i[2]), int(i[3]), int(i[4]));
-            for b in shift_inputs() {
+            for b in second_inputs(row) {
                 let mut c = CircleRange::empty();
                 if !o.is_empty() {
                     o.push(' ');
