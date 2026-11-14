@@ -49,8 +49,11 @@ worktree when its content is on `master`. Check `df -h
 /System/Volumes/Data` before starting a gate or an agent; keep 15 GB
 free. If no command can start at all (the harness cannot create its
 output file), empty a regenerable log with the Write tool (a `gate.log`,
-a fuzz log) to get the first megabyte back. Docker stops when the disk
-fills: `open -g -a Docker`.
+a fuzz log) to get the first megabyte back. Docker's engine crashes when
+the disk fills and Docker Desktop then hangs at "engine stopping": quit
+does not work, so `pkill -9 -f '/Applications/Docker.app/'`, then `open
+-a Docker` and wait for `docker version` to answer (done at 17:52 on
+2026-11-14: images, volumes and build cache were intact).
 
 **`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 16:34; CI
 run 43605009924 on `integration`, every job green on Linux, macOS and
