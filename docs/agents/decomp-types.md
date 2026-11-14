@@ -60,8 +60,11 @@ State: **done**, pending the coordinator's review and merge.
   properties at 1,024 cases: interning idempotent, `compare` antisymmetric,
   `compareDependency` + id a total order, dependency order, fork equals a
   flat factory and dropping it leaves the parent's encoding, provenance
-  changes nothing, decoders and parser never panic; plus nesting limits and
-  fork rules).
+  changes nothing, decoders and parser never panic; plus nesting limits,
+  fork rules and two directed fork tests from proptest's regressions file
+  `tests/properties.proptest-regressions`). `PROPTEST_CASES` raises the
+  count above 1,024: every property passed at 100,000 and at 1,000,000
+  cases (2026-11-14, release, 8 s and 87 s).
 - Fuzz: `bk_decomp_types_xml`, `bk_decomp_types_cdecl` in `fuzz/`, each
   60 s without a finding (3.4 million runs each).
 - Run with `BASILISK_GHIDRA_DIR` set, unset (G tests print `SKIPPED`), and
@@ -81,6 +84,27 @@ the reference build's `-fsigned-char` (so `hashName` is x86-64's). Only the
 order of `<typegrp>` (`dependentOrder`, pointer-keyed in Ghidra) may
 differ on x86-64 Linux, and the replay already compares it up to order.
 Regenerating on the x86-64 box would confirm this.
+
+## Fix after the first merge attempt (2026-11-14)
+
+The integration gate found a counter-example to
+`fork_answers_as_a_flat_factory`: the base factory left a structure stub
+incomplete (its field list was refused), and the fork completed it. The
+fork was wrong, not the test: Ghidra has one factory and completes a stub
+in place (`TypeFactory::setFields`, also reached from `decodeStruct` when a
+host supplies a type during decompilation), keeping its id, and spec 4.10
+requires the fork to answer as that flat factory. The fork refused with
+`FrozenParent`, a restriction of my own. Now a fork copies a parent entry
+it changes into its own layer under the same `TypeId`, masks the parent's
+index entries for it and indexes the copy; the parent never changes. A
+second counter-example then showed that raising a found parent type's
+provenance made such a copy without indexing it (duplicate on the next
+look-up); fixed. Both seeds are in the checked-in regressions file, and
+both cases have directed tests
+(`fork_completes_a_parent_stub_under_the_same_id`,
+`fork_finds_a_parent_type_whose_provenance_it_raised`). The first gate run
+had not hit the case because proptest draws new cases each run and the
+regressions file was not checked in.
 
 ## Benchmarks
 

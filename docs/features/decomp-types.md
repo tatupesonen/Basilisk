@@ -555,9 +555,13 @@ Appended by the implementing track (D02):
 - `compare`'s `level` is clamped to 64 (Ghidra always passes 10).
 - `destroyType` keeps the slot as a tombstone; a stale `TypeId` never names
   a new type.
-- **Forks.** A fork cannot change an entry of its frozen parent
-  (`TypeError::FrozenParent`: completing a parent's stub, renaming it); a
-  fork of a fork is refused. New entries get `Provenance::Analysis` unless
+- **Forks.** A fork that changes a parent entry (completes a stub, renames
+  it, raises its provenance, destroys it) copies the entry into its own
+  layer under the **same `TypeId`** and masks the parent's index entries for
+  it (copy on write), so it answers exactly as a flat factory would, where
+  Ghidra changes the one entry in place; the parent is never changed
+  (`shadowed_ids` lists such entries, `overlay_ids` the new ones). A fork
+  of a fork is refused. New entries get `Provenance::Analysis` unless
   the caller sets another. Provenance is set through the factory's current
   provenance (`set_provenance`); a type found again keeps the more trusted
   of the two.

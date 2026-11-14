@@ -469,10 +469,10 @@ impl TypeFactory {
     fn merge_provenance(&mut self, id: TypeId) {
         let p = self.provenance;
         let current = self.entry(id).provenance;
-        if current.or_more_trusted(p) != current {
-            if let Ok(e) = self.entry_mut(id) {
-                e.provenance = p;
-            }
+        if current.or_more_trusted(p) != current
+            && let Ok(e) = self.entry_mut(id)
+        {
+            e.provenance = p;
         }
     }
 
