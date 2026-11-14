@@ -81,6 +81,23 @@ log file:
 `cargo check`, `cargo clippy -p <crate>` and the changed crates' tests
 while iterating; run the full gate before every merge to `master`.
 
+### The build host
+
+When a build host is configured (`~/.config/basilisk/remote` or
+`BK_REMOTE`; see `docs/agents/remote-build.md`), the gate runs there:
+`scripts/remote.sh gate; echo $?`. It sends the worktree's committed
+`HEAD` (commit first; uncommitted changes are not sent) to the Linux
+x86-64 build host, runs `scripts/gate.sh` there with
+`BASILISK_GHIDRA_DIR` and `BASILISK_REFERENCE_DIR` set to the host's
+copies, writes the whole log to `gate-remote.log` (git-ignored), prints
+its tail and exits with the gate's status; `--no-ref` runs it with both
+unset. Whole-workspace builds, long tests, fuzzing and benchmarks go
+there too: `scripts/remote.sh run -- <command>`. Exit 2 means no build
+host is configured: run `scripts/gate.sh` locally. A green remote gate
+is a Linux x86-64 result; platform-specific code still needs the Mac or
+CI as well. The coordinator's integration gate before a merge runs there
+too, followed by CI on the three systems as before.
+
 ## Lint configuration
 
 Lint levels live in the root `Cargo.toml` under `[workspace.lints]` and

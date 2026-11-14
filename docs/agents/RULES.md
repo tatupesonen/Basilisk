@@ -66,6 +66,23 @@ rules so merges are clean and the result is shippable.
   had to run on the Mac and why. On the Mac (8 cores, 16 GB, shared with other agents)
   cargo's default parallelism is fine for the small builds you do while
   developing.
+- **How to use the build host.** It sends committed work only: commit,
+  then `scripts/remote.sh gate; echo $?` (the gate with the Ghidra and
+  reference directories set; the log comes back as `gate-remote.log`)
+  and `scripts/remote.sh gate --no-ref; echo $?` (both unset) — these
+  two are the gate runs your report needs. Anything else:
+  `scripts/remote.sh run -- <command>` (`run -- bash -c '…'` for a shell
+  line): `cargo test -p <crate>`, clippy, fuzz runs, benchmarks. Exit 2:
+  no build host configured (run `scripts/gate.sh` locally and say so);
+  75: your branch already has a job there (wait); 124: the job hit its
+  time bound; 255: the connection dropped (the job goes on;
+  `scripts/remote.sh log` reattaches). `scripts/remote.sh status` shows
+  disk and load; run `scripts/remote.sh clean <branch>` when your track
+  is done. Use nothing on the host outside `~/bk`, and write no host
+  name, user name or key path into any file. A green remote gate is a
+  Linux x86-64 result: Windows and macOS still need the cross-check
+  clippy and what your brief says. Benchmarks measured there are
+  labelled with the machine type (a 20-vCPU x86-64 Linux VM).
 - While developing, build and test only your crates
   (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
 - Before your final commit run the full gate exactly as
