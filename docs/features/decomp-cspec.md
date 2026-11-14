@@ -485,6 +485,75 @@ live reference tools (`decomp-plan.md` 4.5).
 
 (The implementing agent appends further differences here.)
 
+Appended by the implementing agent (D03, 2026-11-15):
+
+- **Prototype before `<stackpointer>`.** Ghidra's `ProtoModel` constructor
+  computes default ranges from the stack space and crashes (null pointer)
+  when there is none; basilisk decodes the model with empty default ranges.
+- **Stable sorts.** Ghidra sorts effect lists and trials with `std::sort`,
+  which leaves equal keys in a library-dependent order (libc++ and
+  libstdc++ differ); basilisk sorts stably. Seen once in the oracle table:
+  output trials that match no entry (x86-64 golang), compared up to their
+  order.
+- **Hostile values refused.** A `<pentry>` with a negative or zero size or
+  a negative alignment is an error ("ParamEntry sizes must not be
+  negative"); Ghidra divides by or counts with such values. Recursion
+  through rules that convert to pointers or assign per primitive is cut
+  at depth 32 (Ghidra recurses until the stack overflows when `pointermax`
+  is below the pointer size). Primitive extraction stops at depth 64.
+- **Unknown elements are errors** in `<input>`/`<output>` lists,
+  `<segmentop>`, `<jumpassist>` and `<prototype>` (FuncProto XML) too, where
+  Ghidra's loops never consume them; an element other than `<model>` in
+  `<resolveprototype>` and another element before `<body>` in `<pcode>`
+  are errors (Ghidra leaves them open and fails on the enclosing close).
+- **`separatefloat="false"`.** Ghidra's `separateSections` and
+  `fillinMap` read past the end of `resourceStart` for such a list;
+  basilisk treats the list as one section with group start 0 (no shipped
+  file uses the attribute).
+- **Merged lists.** Ghidra leaves `numgroup`, `maxdelay`, `thisbeforeret`
+  and `autoKilledByCall` of a `ParamListMerged` uninitialised; basilisk
+  sets the largest group + 1, the largest folded delay, and false.
+- **`FuncProto::decode` skips `<retparam>`.** Ghidra's
+  `ProtoStoreInternal::decode` reads the `<retparam>` its own encoder writes
+  first as one more input parameter, so its round trip of an internal store
+  does not hold; basilisk skips it (the return value comes from
+  `<returnsym>`). What Ghidra's form does not carry is lost as in Ghidra: a
+  return value's `indirectstorage`, and the type lock of a return without
+  storage (decoded as an unlocked void).
+- **Entries by index, rules without back-pointers.** Ghidra's alias models
+  clone their rules pointing into the parent's list (the copy constructor
+  passes `&op2`); basilisk's rules name entries by index in their own list.
+  Behaviour is the same because an alias's entries equal its parent's.
+- **Reproduced Ghidra behaviour worth knowing** (not differences): the
+  default model when none is named is the first by *name* (Ghidra's
+  `std::map`), not the first in the file; prefer-split records are sorted
+  (`PreferSplitManager::initialize`); an alias's `<sharestack>` settings are
+  reset to their defaults (shared actions are cloned through their
+  constructors), which changes x86-64 golang `__thiscall`;
+  `MultiSlotAssign::checkFit` tests only the register at its start;
+  `getBiggestContainedInputParam` with locked parameters answers "found"
+  exactly when no locked parameter is inside the range; a merged model's
+  output list is a standard-output copy of the first model's even when that
+  is a register-output list.
+- **Payload ids continue after the `.pspec`'s.** `ReadOptions::injects`
+  takes payloads declared before the `.cspec`; ids are indices in
+  declaration order as in `PcodeInjectLibrary`.
+- **`<data_organization>`, `<enum>`, `<context_data>`** are kept as
+  `KeptElement`s (name, position, offset) with the whole source text, which
+  `bk-decomp-types`' `DataOrganization::from_cspec` reads.
+
 ## 9. Status
 
-Not started.
+Done (2026-11-15), track D03, branch `decomp-cspec`. See
+`docs/agents/decomp-cspec.md` for the report. Built: `bk-cspec` with the
+reader, entries, the five list kinds, model rules, models (merged,
+scoring, aliases), `FuncProto` with internal store and XML, trials,
+payload declarations, `FunctionSummary`/`CallSite`, provenance, and the
+`ParamTypes` trait. Tests: `testfuncproto.cc` (21, S), `testparamstore.cc`
+(5, G), the nine Java classes (12 tests — the spec's "13" counts one too
+many; G, no exceptions), the oracle replay (G: 294 pairs, 106 readable
+`.cspec` files, 127,088 rows, 0 unexplained differences), a corpus count
+check (G), 50 derived tests (S), 4 properties (S), fuzz target
+`bk_cspec_decode`, benchmarks (`PERF.md`). Gaps: see the report (no
+`.sla`-backed register source yet, so the G tests take registers from the
+checked-in table; the oracle has no `FuncProto` encode records).

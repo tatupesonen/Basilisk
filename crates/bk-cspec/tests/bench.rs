@@ -31,10 +31,15 @@ use common::cparse;
 #[test]
 #[ignore = "benchmark; run in release with --ignored"]
 fn bench_decode_largest_cspec() {
-    let Some(ghidra) = bk_testkit::require_ghidra() else { return };
+    let Some(ghidra) = bk_testkit::require_ghidra() else {
+        return;
+    };
     let table = oracle_common::table();
     let (pairs, _) = oracle_common::pairs(&table);
-    let pair = pairs.iter().find(|p| p.id == "x86:LE:64:default:golang").unwrap();
+    let pair = pairs
+        .iter()
+        .find(|p| p.id == "x86:LE:64:default:golang")
+        .unwrap();
     let files = oracle_common::cspec_files(&ghidra.processors_dir());
     let text = std::fs::read_to_string(&files[&pair.cspec]).unwrap();
     let n = 2000;
@@ -58,7 +63,9 @@ fn bench_decode_largest_cspec() {
 #[test]
 #[ignore = "benchmark; run in release with --ignored"]
 fn bench_one_million_assignments_x86_64_gcc() {
-    let Some(ghidra) = bk_testkit::require_ghidra() else { return };
+    let Some(ghidra) = bk_testkit::require_ghidra() else {
+        return;
+    };
     let (spec, m, mut types) = oracle_common::arch(&ghidra, "x86:LE:64:default:gcc");
     let model = spec.model_by_name("__stdcall").unwrap();
     cparse::structure(&mut types, "struct sld { int8 a; float8 b; };");
