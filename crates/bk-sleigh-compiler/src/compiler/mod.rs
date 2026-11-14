@@ -149,6 +149,8 @@ pub(crate) struct Compiler<'a> {
     pub(crate) cur_macro: Option<MacroId>,
     /// Set by an error that aborts Ghidra's whole compile.
     pub(crate) fatal: bool,
+    /// Patterns, operand layouts and decision trees (the back half).
+    pub(crate) back: Option<crate::build::BackHalf>,
     env: Option<Arc<BuildEnv>>,
 }
 
@@ -194,6 +196,7 @@ impl<'a> Compiler<'a> {
             cur_ctor: None,
             cur_macro: None,
             fatal: false,
+            back: None,
             env: None,
         }
     }

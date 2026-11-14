@@ -149,7 +149,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.pcode.emu.jit.gen.FoldingJitCodeGeneratorTest` (slow, 9 tests)
 - [ ] `ghidra.pcode.emu.jit.gen.X86JitCodeGeneratorTest` (slow, 2 tests)
 - [ ] `ghidra.pcode.emu.jit.gen.tgt.JitRuntimeLibraryTest` (slow, 6 tests)
-- [ ] `ghidra.pcodeCPort.slgh_compile.regression.SleighCompileRegressionTest` (slow, 1 tests)
+- [x] `ghidra.pcodeCPort.slgh_compile.regression.SleighCompileRegressionTest` (slow, 1 tests) → `crates/bk-sleigh-compiler/tests/reference_sla.rs` (Basilisk in place of the Java compiler; packed stream byte-equal and full `-y` text equal, no skipped lines, all 150)
 - [ ] `ghidra.program.database.sourcemap.GetSourceFilesTest` (slow, 2 tests)
 - [ ] `ghidra.program.database.sourcemap.MappingSourceFilesTest` (slow, 40 tests)
 - [ ] `ghidra.program.database.sourcemap.ModifyingMemoryMappingSourceFilesTest` (slow, 29 tests)

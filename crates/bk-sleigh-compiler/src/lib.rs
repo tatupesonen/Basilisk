@@ -20,12 +20,17 @@
 //! - [`canon`]: the canonical form used to compare an elaboration with a
 //!   compiled `.sla` file.
 
+mod build;
 pub mod canon;
 mod check;
 mod compiler;
+pub mod decision;
 pub mod diag;
+mod driver;
 pub mod elaborated;
+mod equation;
 pub mod ids;
+pub mod lower;
 pub mod options;
 pub mod pattern;
 pub mod pcode;
@@ -35,6 +40,7 @@ pub mod symbols;
 pub mod template;
 
 pub use diag::{Diagnostic, Severity};
+pub use driver::{Compiled, compile, compile_parsed};
 pub use elaborated::{Constructor, ContextChange, Elaborated, Outcome, PrintPiece, Table};
 pub use options::Options;
 

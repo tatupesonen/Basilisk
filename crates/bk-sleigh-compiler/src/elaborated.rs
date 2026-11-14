@@ -4,6 +4,8 @@
 
 use bk_sleigh_syntax::{Interner, Span};
 
+pub use crate::build::OperandLayout;
+use crate::decision::DecisionTree;
 use crate::diag::Diagnostic;
 use crate::ids::{CtorId, EquationId, OperandId, ScopeId, SymbolId, TableId};
 use crate::pattern::PatternArena;
@@ -29,6 +31,8 @@ pub struct Table {
     pub symbol: SymbolId,
     /// Its constructors, in index order.
     pub constructors: Vec<CtorId>,
+    /// Its decision tree.
+    pub decision: DecisionTree,
 }
 
 /// A constructor.
@@ -56,6 +60,12 @@ pub struct Constructor {
     pub main: Option<Tpl>,
     /// Named-section templates by section number.
     pub sections: Vec<Option<Tpl>>,
+    /// Minimum length of its pattern in bytes.
+    pub length: i32,
+    /// The decoding position of each operand, by parse index
+    /// (`orderOperands`): templates, print pieces and operand expressions
+    /// are written with these indices.
+    pub handmap: Vec<u32>,
 }
 
 /// A specification after elaboration.
@@ -96,6 +106,9 @@ pub struct Elaborated {
     pub constructors: Vec<Constructor>,
     /// Pattern expressions and equations.
     pub patterns: PatternArena,
+    /// Offsets and minimum lengths of operands, by [`OperandId`]
+    /// (default for macro parameters and purged operands).
+    pub operand_layout: Vec<OperandLayout>,
 }
 
 impl Elaborated {

@@ -175,7 +175,9 @@ dependencies = [
  "bk-pcode",
  "bk-sla",
  "bk-sleigh-syntax",
+ "libm",
  "rustc-hash",
+ "thiserror",
 ]
 
 [[package]]

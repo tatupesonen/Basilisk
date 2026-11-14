@@ -35,7 +35,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.app.util.SymbolPathTest` (unit, 9 tests)
 - [x] `ghidra.pcode.floatformat.BigFloatTest` (unit, 26 tests) → `crates/bk-pcode/tests/java_bigfloat.rs`
 - [x] `ghidra.pcode.floatformat.FloatFormatTest` (unit, 58 tests) → `crates/bk-pcode/tests/java_floatformat_{encoding,roundtrip,ops_long,ops_big,valueof}.rs`
-- [ ] `ghidra.pcodeCPort.slghpatexpress.EqualEquationTest` (unit, 3 tests)
+- [x] `ghidra.pcodeCPort.slghpatexpress.EqualEquationTest` (unit, 3 tests) → `crates/bk-sleigh-compiler/src/equation/generate.rs` (`equal_equation_test`)
 - [ ] `ghidra.program.database.SpecExtensionTest` (unit, 2 tests)
 - [ ] `ghidra.program.database.code.StringDiffTest` (unit, 15 tests)
 - [ ] `ghidra.program.database.data.BitFieldDBDataTypeTest` (unit, 1 tests)
@@ -101,7 +101,7 @@ Swing UI, so it is ported as an `egui_kittest` test of the equivalent basilisk f
 - [ ] `ghidra.util.UnionAddressSetViewTest` (unit, 14 tests)
 - [ ] `ghidra.util.charset.CharsetInfoManagerTest` (unit, 2 tests)
 - [ ] `ghidra.app.plugin.processors.sleigh.SleighLanguageProviderTest` (slow, 4 tests)
-- [ ] `ghidra.pcodeCPort.slgh_compile.SleighCompileOptionsTest` (slow, 5 tests)
+- [x] `ghidra.pcodeCPort.slgh_compile.SleighCompileOptionsTest` (slow, 5 tests) → `crates/basilisk/src/cmd/sleigh_compile/args.rs` (`sleigh_compile_options_test`)
 - [ ] `ghidra.program.database.data.DataTypeUtilities2Test` (slow, 2 tests)
 - [ ] `ghidra.program.database.data.DataTypeUtilitiesTest` (slow, 5 tests)
 - [ ] `ghidra.program.model.data.DataTypeWriterTest` (slow, 24 tests)

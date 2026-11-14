@@ -24,3 +24,12 @@ U.S. copyright protections under 17 U.S.C.
 The remaining portions are copyright their respective authors and have been
 contributed under the terms of one or more open source licenses, and made
 available to you under the terms of those licenses. (See LICENSE)
+
+----------------------------------------------------------------------------------------------
+Arm optimized-routines
+
+crates/bk-sleigh-compiler/src/decision/log.rs and log_data.rs are a port of math/log.c and
+math/log_data.c of Arm's optimized-routines (https://github.com/ARM-software/optimized-routines,
+revision 20859d3fd9e797dde592c489c8ef7d383f778620).
+Copyright (c) 2018-2026, Arm Limited.
+SPDX-License-Identifier: MIT OR Apache-2.0 WITH LLVM-exception

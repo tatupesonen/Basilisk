@@ -1,0 +1,4 @@
+#! -l
+@include "prelude.sinc"
+:a is op=1 { }
+:b is reg=1 { }

@@ -265,6 +265,31 @@ back half within the reference compiler's 11.5–11.8 s; measured 1.03 s.
 Peak memory not measured separately.
 None yet.
 
+### `bk-sleigh-compiler` (whole compile, back half included)
+
+2026-11-14, Apple M1 Pro, macOS, rustc 1.100.0, `--release`, one test
+thread; load average 3.6–4.5 (one other agent on the machine, indicative).
+"Basilisk" is parse + elaborate + patterns + decision trees + lowering +
+encoding and writing the compressed `.sla`; "reference" is
+`REF/bin/sleigh` (built with `-ffp-contract=off`) on the same file with
+the module's options, timed in the same session. Command:
+
+    BASILISK_REFERENCE_DIR=../reference cargo test --release -p bk-sleigh-compiler --test bench -- --ignored --nocapture --test-threads=1
+
+| Input | Basilisk | Reference `sleigh` |
+|---|---:|---:|
+| x86-64 (best of 3) | 195 ms | 378 ms |
+| AARCH64 (best of 3) | 156 ms | 319 ms |
+| `RISCV/andestar_v5` (best of 3) | 103 ms | 1,670 ms |
+| All 150, one after another | 3.83 s | 11.21 s |
+
+Spec 6.5's figures are met (each faster than the reference; all 150 in
+under the reference's total). The same run's split for the front-half
+benchmark: x86-64 parse 13.0 ms, elaborate (now including patterns and
+trees) 128.7 ms; all 150 parse 291 ms, elaborate 2.42 s. The decision trees
+read pattern bits through `Block::mask`/`value` on every candidate field;
+caching flattened bits per pattern is the obvious next step if it matters.
+
 ### bk-ui
 
 **Scrolling a ten-million-row listing** (budget: 60 frames per second,

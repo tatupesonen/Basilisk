@@ -67,3 +67,62 @@ fn bench_largest_and_all() {
         start.elapsed().as_secs_f64() * 1e3
     );
 }
+
+/// Spec 6.5: the whole compile (parse to written bytes) against the
+/// reference compiler, timed in the same session. Prints a table; asserts
+/// nothing about timing (the machine may be shared).
+#[test]
+#[ignore = "benchmark"]
+fn bench_compile_against_reference() {
+    let Some(reference) = bk_testkit::skip::require_tool(bk_testkit::Tool::Sleigh) else {
+        return;
+    };
+    let specs = common::reference_specs(&reference);
+    let out_dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("bench-sla");
+    std::fs::create_dir_all(&out_dir).unwrap();
+    let ours = |spec: &common::Spec| {
+        let options = Options::from_switches(
+            common::module_options(&reference, &spec.module)
+                .iter()
+                .map(String::as_str),
+        );
+        let start = Instant::now();
+        let parsed = common::parse(&spec.slaspec);
+        let compiled = bk_sleigh_compiler::compile_parsed(&parsed, options);
+        let bytes = compiled.sla.unwrap().write().unwrap();
+        std::fs::write(out_dir.join("ours.sla"), bytes).unwrap();
+        start.elapsed()
+    };
+    let theirs = |spec: &common::Spec| {
+        let mut sleigh = reference.sleigh();
+        for s in common::module_options(&reference, &spec.module) {
+            if let Some(c) = s.strip_prefix('-').and_then(|s| s.chars().next()) {
+                sleigh = sleigh.switch(c);
+            }
+        }
+        let start = Instant::now();
+        sleigh
+            .compile(&spec.slaspec, &out_dir.join("theirs.sla"))
+            .unwrap();
+        start.elapsed()
+    };
+    let ms = |d: Duration| d.as_secs_f64() * 1e3;
+    for name in ["x86-64", "AARCH64", "andestar_v5"] {
+        let spec = specs.iter().find(|s| s.name == name).unwrap();
+        let a = (0..3).map(|_| ours(spec)).min().unwrap();
+        let b = (0..3).map(|_| theirs(spec)).min().unwrap();
+        eprintln!(
+            "{name}: Basilisk {:.0} ms, reference {:.0} ms (best of 3)",
+            ms(a),
+            ms(b)
+        );
+    }
+    let a: Duration = specs.iter().map(ours).sum();
+    let b: Duration = specs.iter().map(theirs).sum();
+    eprintln!(
+        "all {}: Basilisk {:.2} s, reference {:.2} s (one after another)",
+        specs.len(),
+        a.as_secs_f64(),
+        b.as_secs_f64()
+    );
+}

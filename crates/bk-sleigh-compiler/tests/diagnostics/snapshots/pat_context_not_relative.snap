@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+warning: 2 NOP constructors found
+warning: Use -n switch to list each individually
+error: Error: x8: cannot be used in context expression: for table "instruction" constructor starting at line 4
+=> no output

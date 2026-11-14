@@ -112,6 +112,9 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
     let map_symbol =
         |id: SymbolId| SymbolId::new(symbol_map.get(id.slot()).copied().unwrap_or(GONE));
 
+    let back = c.back.as_ref();
+    let mut ctor_map = vec![GONE; c.ctors.len()];
+    let mut operand_layout = vec![crate::build::OperandLayout::default(); c.operands.len()];
     let mut table_map = vec![GONE; c.tables.len()];
     let mut tables = Vec::new();
     let mut constructors = Vec::new();
@@ -128,8 +131,26 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
             let Some(data) = c.ctors.get(ctor.slot()) else {
                 continue;
             };
+            if let Some(m) = ctor_map.get_mut(ctor.slot()) {
+                *m = constructors.len() as u32;
+            }
             list.push(CtorId::new(constructors.len() as u32));
+            let built = back
+                .and_then(|b| b.state.ctors.get(ctor.slot()))
+                .and_then(Option::as_ref);
+            if let Some(built) = built {
+                for (op, layout) in data.operands.iter().zip(&built.layout) {
+                    if let Some(slot) = operand_layout.get_mut(op.slot()) {
+                        *slot = *layout;
+                    }
+                }
+            }
             constructors.push(Constructor {
+                length: built.map_or(0, |b| b.min_length),
+                handmap: built.map_or_else(
+                    || (0..data.operands.len() as u32).collect(),
+                    |b| b.handmap.clone(),
+                ),
                 table: new_table,
                 source: data.source,
                 line: data.line,
@@ -163,6 +184,10 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
         tables.push(Table {
             symbol: map_symbol(table.symbol),
             constructors: list,
+            decision: back
+                .and_then(|b| b.trees.get(i))
+                .and_then(Option::clone)
+                .unwrap_or_default(),
         });
     }
 
@@ -210,6 +235,11 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
             let mut o = o.clone();
             o.symbol = map_symbol(o.symbol);
             o.def_symbol = o.def_symbol.map(map_symbol);
+            o.ctor = o
+                .ctor
+                .and_then(|ct| ctor_map.get(ct.slot()).copied())
+                .filter(|&n| n != GONE)
+                .map(CtorId::new);
             o
         })
         .collect();
@@ -231,5 +261,6 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
         tables,
         constructors,
         patterns: c.patterns.clone(),
+        operand_layout,
     }
 }

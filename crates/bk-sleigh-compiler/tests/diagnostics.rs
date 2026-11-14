@@ -62,8 +62,30 @@ fn normalize(message: &str) -> String {
     {
         text = rest.to_owned();
     }
+    // Ghidra prints two token pointers here, Basilisk the token names.
+    let marker = "Mismatched tokens when combining patterns -- ";
+    while let Some(at) = text.find(marker) {
+        let start = at + marker.len();
+        let end = text
+            .get(start..)
+            .and_then(|t| t.find(':'))
+            .map_or(text.len(), |e| start + e);
+        text.replace_range(at..end, "Mismatched tokens <normalized>");
+    }
     text
 }
+
+/// Cases not compared with Ghidra's C++ compiler, and why.
+const NOT_COMPARED: &[(&str, &str)] = &[
+    (
+        "pat_unused_field",
+        "-f is an option of Ghidra's Java compiler only",
+    ),
+    (
+        "pat_div_zero",
+        "division by zero in a constraint is undefined behaviour in Ghidra's C++ (SIGFPE on x86-64); Basilisk reports an error",
+    ),
+];
 
 /// Our diagnostics for a case: success, and (severity, message) pairs.
 fn ours(path: &Path) -> (bool, Vec<(String, String)>, String) {
@@ -194,7 +216,10 @@ fn diagnostics_match_snapshots_and_ghidra() {
         let name = case.file_stem().unwrap().to_string_lossy().into_owned();
         let (ok, mut list, rendered) = ours(&case);
         insta::assert_snapshot!(name.clone(), rendered);
-        if let Some(reference) = &reference {
+        if let Some(reference) = reference
+            .as_ref()
+            .filter(|_| !NOT_COMPARED.iter().any(|(n, _)| *n == name))
+        {
             let (their_ok, mut their_list, crashed) = theirs(reference, &case);
             list.sort();
             their_list.sort();
@@ -331,6 +356,30 @@ const MESSAGES: &[&str] = &[
     "Unreferenced table",
     "Duplicate (offset,size) pair for registers",
     "syntax error",
+    // The back half (inventory 10 a–c).
+    "Impossible pattern",
+    "Equal constraint is impossible to match",
+    "Less than constraint is impossible to match",
+    "Less than or equal constraint is impossible to match",
+    "Greater than constraint is impossible to match",
+    "Greater than or equal constraint is impossible to match",
+    "Interior ellipsis in pattern",
+    "Double ellipsis in pattern",
+    "Right/left ellipsis",
+    "Left/right ellipsis",
+    "Mismatched pattern sizes -- ",
+    "Pattern size cannot vary (missing '...'?)",
+    "Mismatched tokens when combining patterns -- ",
+    "Operand used in pattern expression",
+    "Unable to resolve operand offsets",
+    "cannot be used in context expression",
+    "Problem in table '",
+    "Constructor has identical pattern to constructor at ",
+    "Constructor pattern cannot be distinguished from constructor at ",
+    "There are no constructors in table: ",
+    "token field 'imm' defined but never used",
+    "Division by zero in pattern expression",
+    "Illegal recursion",
 ];
 
 #[test]

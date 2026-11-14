@@ -11,9 +11,12 @@ license.workspace = true
 bk-pcode.workspace = true
 bk-sla.workspace = true
 bk-sleigh-syntax.workspace = true
+libm.workspace = true
+thiserror.workspace = true
 rustc-hash.workspace = true
 
 [dev-dependencies]
+flate2.workspace = true
 bk-testkit.workspace = true
 insta.workspace = true
 proptest.workspace = true

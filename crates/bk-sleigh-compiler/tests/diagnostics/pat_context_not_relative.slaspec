@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+define token extra(8) x8=(0,7);
+sub: "s" is (op=1 ...) { }
+:a sub x8 is op=2 ; sub ; x8 [ mode = x8; ] { }
