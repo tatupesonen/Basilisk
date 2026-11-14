@@ -4,6 +4,7 @@
 //! Type names are whatever the factory knows; prototype-model names come
 //! from a callback, because models belong to the compiler specification.
 
+mod actions;
 mod ast;
 mod lexer;
 mod parser;

@@ -2,6 +2,7 @@
 //! through which other crates supply what this one does not own.
 
 mod decode;
+mod decode_composite;
 mod encode;
 pub mod ids;
 mod proto;
