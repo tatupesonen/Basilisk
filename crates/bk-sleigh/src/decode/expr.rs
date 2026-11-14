@@ -6,8 +6,9 @@ use bk_core::Address;
 use bk_sla::{BinaryOp, ConstructorId, Expr, ExprId, Field, Sla, UnaryOp};
 
 use super::bytes::WINDOW;
+use super::fault::{Fault, What};
 use super::tree::{NONE, Parse};
-use crate::error::{DecodeError, Limit};
+use crate::error::Limit;
 use crate::language::Language;
 use crate::language::tables::{OpDef, sign_extend, zero_extend};
 
@@ -39,19 +40,6 @@ pub(crate) struct Env<'a> {
 }
 
 impl Env<'_> {
-    pub(crate) fn model(&self, what: &'static str) -> DecodeError {
-        DecodeError::Model {
-            address: self.parse.addr,
-            what,
-        }
-    }
-
-    fn too_long(&self) -> DecodeError {
-        DecodeError::TooLong {
-            address: self.parse.addr,
-        }
-    }
-
     pub(crate) fn offset_of(&self, point: Point) -> u32 {
         match point {
             Point::Node(n) => self
@@ -71,10 +59,10 @@ impl Env<'_> {
         start: i32,
         size: u32,
         node_offset: u32,
-    ) -> Result<u32, DecodeError> {
+    ) -> Result<u32, Fault> {
         let pos = node_offset.wrapping_add(start as u32);
         if pos as usize >= WINDOW {
-            return Err(self.too_long());
+            return Err(Fault::TooLong);
         }
         if pos as usize + size as usize > WINDOW {
             self.parse.overhang.set(true);
@@ -90,10 +78,10 @@ impl Env<'_> {
         start: i32,
         node_offset: u32,
         mask: u32,
-    ) -> Result<u32, DecodeError> {
+    ) -> Result<u32, Fault> {
         let pos = node_offset.wrapping_add(start as u32);
         if pos as usize >= WINDOW {
-            return Err(self.too_long());
+            return Err(Fault::TooLong);
         }
         let inside = WINDOW as u32 - pos;
         if inside < 4 && mask & (u32::MAX >> (8 * inside)) != 0 {
@@ -149,7 +137,7 @@ impl Env<'_> {
         res
     }
 
-    fn token_field(&self, field: &Field, node_offset: u32) -> Result<i64, DecodeError> {
+    fn token_field(&self, field: &Field, node_offset: u32) -> Result<i64, Fault> {
         let size = field
             .end_byte
             .wrapping_sub(field.start_byte)
@@ -190,21 +178,18 @@ impl Env<'_> {
     }
 
     /// The value of an expression at `point`.
-    pub(crate) fn eval(&self, id: ExprId, point: Point, depth: u32) -> Result<i64, DecodeError> {
+    pub(crate) fn eval(&self, id: ExprId, point: Point, depth: u32) -> Result<i64, Fault> {
         if depth > MAX_EXPR_DEPTH {
-            return Err(DecodeError::Limit {
-                address: self.parse.addr,
-                limit: Limit::ExpressionDepth,
-            });
+            return Err(Fault::Limit(Limit::ExpressionDepth));
         }
-        let expr = self.sla.expr(id).ok_or_else(|| self.model("expression"))?;
+        let expr = self.sla.expr(id).ok_or(Fault::Model(What::Expression))?;
         Ok(match *expr {
             Expr::TokenField(field) => {
-                let field = self.sla.field(field).ok_or_else(|| self.model("field"))?;
+                let field = self.sla.field(field).ok_or(Fault::Model(What::Field))?;
                 self.token_field(field, self.offset_of(point))?
             }
             Expr::ContextField(field) => {
-                let field = self.sla.field(field).ok_or_else(|| self.model("field"))?;
+                let field = self.sla.field(field).ok_or(Fault::Model(What::Field))?;
                 self.context_field(field)
             }
             Expr::Constant(value) => value,
@@ -213,23 +198,19 @@ impl Env<'_> {
                     .sla
                     .subtable(table)
                     .and_then(|t| t.constructor(ct))
-                    .ok_or_else(|| self.model("operand_exp constructor"))?;
+                    .ok_or(Fault::Model(What::OperandExpConstructor))?;
                 self.operand_value(ctor, index, point, depth)?
             }
             Expr::Start => self.unit_offset(self.parse.addr),
             Expr::End => self.unit_offset(self.naddr.unwrap_or(self.parse.addr)),
             Expr::Next2 => {
-                let next2 = self.parse.next2.ok_or(DecodeError::Next2Unavailable {
-                    address: self.parse.addr,
-                })?;
+                let next2 = self.parse.next2.ok_or(Fault::Next2Unavailable)?;
                 self.unit_offset(next2)
             }
             Expr::Binary { op, left, right } => {
                 let a = self.eval(left, point, depth + 1)?;
                 let b = self.eval(right, point, depth + 1)?;
-                binary(op, a, b).ok_or(DecodeError::DivisionByZero {
-                    address: self.parse.addr,
-                })?
+                binary(op, a, b).ok_or(Fault::DivisionByZero)?
             }
             Expr::Unary { op, operand } => {
                 let a = self.eval(operand, point, depth + 1)?;
@@ -259,30 +240,28 @@ impl Env<'_> {
         index: i32,
         point: Point,
         depth: u32,
-    ) -> Result<i64, DecodeError> {
+    ) -> Result<i64, Fault> {
         let info = self
             .lang
             .tables
             .ctor(ctor)
-            .ok_or_else(|| self.model("constructor"))?;
+            .ok_or(Fault::Model(What::Constructor))?;
         let op = self
             .lang
             .tables
             .op(info, index.max(0) as u32)
             .filter(|_| index >= 0)
-            .ok_or_else(|| self.model("operand"))?;
+            .ok_or(Fault::Model(What::Operand))?;
         let expr = match op.def {
             OpDef::Expr(expr) | OpDef::Value(expr) | OpDef::Table { expr, .. } => expr,
             OpDef::Start => return Ok(self.unit_offset(self.parse.addr)),
             OpDef::End => return Ok(self.unit_offset(self.naddr.unwrap_or(self.parse.addr))),
             OpDef::Next2 => {
-                let next2 = self.parse.next2.ok_or(DecodeError::Next2Unavailable {
-                    address: self.parse.addr,
-                })?;
+                let next2 = self.parse.next2.ok_or(Fault::Next2Unavailable)?;
                 return Ok(self.unit_offset(next2));
             }
             OpDef::Varnode { .. } | OpDef::Zero => return Ok(0),
-            OpDef::Subtable(_) => return Err(self.model("Cannot use subtable in expression")),
+            OpDef::Subtable(_) => return Err(Fault::Model(What::SubtableInExpression)),
         };
         let target = self.out_of_band(ctor.index(), index, op.base, op.offset, point);
         self.eval(expr, target, depth + 1)

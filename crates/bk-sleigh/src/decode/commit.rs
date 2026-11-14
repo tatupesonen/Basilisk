@@ -30,7 +30,8 @@ pub(crate) fn apply_commits<S: ContextSink + ?Sized>(
                 .get(commit.node as usize)
                 .and_then(|node| node.child(operand.index.max(0) as u32))
                 .map_or(FixedHandle::UNSET, |child| parse.handle(child)),
-            _ => operand_handle(&env, symbol_def(sla, commit.symbol), 0)?,
+            _ => operand_handle(&env, symbol_def(sla, commit.symbol), 0)
+                .map_err(|fault| fault.at(lang, parse.addr))?,
         };
         let space = parse.addr.space();
         let addr = if hand.space == 0 {

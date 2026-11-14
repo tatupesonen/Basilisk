@@ -7,6 +7,7 @@ use bk_sla::{ConstructorId, ContextChange, SymbolId};
 
 use super::bytes::ByteSource;
 use super::expr::{Env, Point};
+use super::fault::{Fault, What};
 use super::tree::{Commit, NONE, Node, Parse, ParseState};
 use crate::context::ContextSource;
 use crate::error::{DecodeError, Limit, TableKind};
@@ -70,15 +71,13 @@ where
     parse.context.resize(lang.context_words(), 0);
     context.context_at(addr, &mut parse.context);
 
-    walk(lang, parse, operand_limit)?;
+    walk(lang, parse, operand_limit).map_err(|fault| fault.at(lang, addr))?;
     parse.naddr = add(lang, addr, u64::from(parse.length()));
     parse.state = ParseState::Resolved;
     Ok(())
 }
 
-fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), DecodeError> {
-    let address = parse.addr;
-    let model = |what| DecodeError::Model { address, what };
+fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), Fault> {
     parse.nodes.push(Node::new(NONE));
     let root = env(lang, parse, None).choose(lang.sla().root(), 0)?;
     set_constructor(lang, parse, 0, root)?;
@@ -87,43 +86,40 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), De
     let mut depth = 0usize;
     let mut cur = 0u32;
     loop {
-        let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
+        let node = *parse
+            .nodes
+            .get(cur as usize)
+            .ok_or(Fault::Model(What::Node))?;
         let ctor_id = node
             .constructor()
-            .ok_or_else(|| model("node constructor"))?;
+            .ok_or(Fault::Model(What::NodeConstructor))?;
         let info = *lang
             .tables
             .ctor(ctor_id)
-            .ok_or_else(|| model("constructor"))?;
+            .ok_or(Fault::Model(What::Constructor))?;
         let mut oper = crumbs.get(depth).copied().unwrap_or(0);
         let mut descended = false;
         while oper < info.num_ops {
             let op = *lang
                 .tables
                 .op(&info, oper)
-                .ok_or_else(|| model("operand"))?;
+                .ok_or(Fault::Model(What::Operand))?;
             let base = if op.base < 0 {
                 node.offset
             } else {
                 let child = node
                     .child(op.base as u32)
                     .and_then(|c| parse.nodes.get(c as usize))
-                    .ok_or_else(|| model("operand base"))?;
+                    .ok_or(Fault::Model(What::OperandBase))?;
                 child.offset.wrapping_add(child.length)
             };
             let offset = base.wrapping_add(op.offset as u32);
             // Ghidra `allocateOperand`.
             if oper >= operand_limit {
-                return Err(DecodeError::Limit {
-                    address: parse.addr,
-                    limit: Limit::Operands,
-                });
+                return Err(Fault::Limit(Limit::Operands));
             }
             if depth > MAX_DEPTH - 2 {
-                return Err(DecodeError::Limit {
-                    address: parse.addr,
-                    limit: Limit::Depth,
-                });
+                return Err(Fault::Limit(Limit::Depth));
             }
             if let Some(crumb) = crumbs.get_mut(depth) {
                 *crumb = oper + 1;
@@ -132,12 +128,12 @@ fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), De
             if let Some(crumb) = crumbs.get_mut(depth) {
                 *crumb = 0;
             }
-            let child = node.child(oper).ok_or_else(|| model("operand node"))?;
+            let child = node.child(oper).ok_or(Fault::Model(What::OperandNode))?;
             {
                 let slot = parse
                     .nodes
                     .get_mut(child as usize)
-                    .ok_or_else(|| model("operand node"))?;
+                    .ok_or(Fault::Model(What::OperandNode))?;
                 slot.offset = offset;
                 slot.visited = true;
             }
@@ -200,10 +196,11 @@ fn set_constructor(
     parse: &mut Parse,
     n: u32,
     ct: ConstructorId,
-) -> Result<(), DecodeError> {
-    let address = parse.addr;
-    let model = |what| DecodeError::Model { address, what };
-    let info = *lang.tables.ctor(ct).ok_or_else(|| model("constructor"))?;
+) -> Result<(), Fault> {
+    let info = *lang
+        .tables
+        .ctor(ct)
+        .ok_or(Fault::Model(What::Constructor))?;
     if let Some(node) = parse.nodes.get_mut(n as usize) {
         node.ctor = ct.index();
     }
@@ -248,10 +245,7 @@ fn set_constructor(
     }
     let first = parse.nodes.len();
     if first + info.num_ops as usize > MAX_NODES {
-        return Err(DecodeError::Limit {
-            address,
-            limit: Limit::Nodes,
-        });
+        return Err(Fault::Limit(Limit::Nodes));
     }
     parse.max_operands = parse.max_operands.max(info.num_ops);
     parse
@@ -273,16 +267,12 @@ fn check_entry(
     symbol: SymbolId,
     expr: bk_sla::ExprId,
     kind: TableKind,
-) -> Result<(), DecodeError> {
+) -> Result<(), Fault> {
     let value = env(lang, parse, None).eval(expr, Point::Node(n), 0)?;
     if entry_usable(lang, symbol, value) {
         Ok(())
     } else {
-        Err(DecodeError::NoTableEntry {
-            address: parse.addr,
-            at: lang.raw_text(parse.addr),
-            table: kind,
-        })
+        Err(Fault::NoTableEntry(kind))
     }
 }
 

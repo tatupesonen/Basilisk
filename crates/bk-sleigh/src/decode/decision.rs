@@ -7,23 +7,19 @@ use bk_sla::{ConstructorId, SymbolId};
 
 use super::bytes::WINDOW;
 use super::expr::Env;
-use crate::error::DecodeError;
+use super::fault::{Fault, What};
 use crate::language::decide::{Block, Step, Trees};
 
 impl Env<'_> {
     /// The constructor of subtable `table` that the bytes at `node_offset`
     /// and the local context select.
-    pub(crate) fn choose(
-        &self,
-        table: SymbolId,
-        node_offset: u32,
-    ) -> Result<ConstructorId, DecodeError> {
+    pub(crate) fn choose(&self, table: SymbolId, node_offset: u32) -> Result<ConstructorId, Fault> {
         let trees = &self.lang.tables.trees;
         let root = trees
             .roots
             .get(table.index() as usize)
             .filter(|root| root.decision != crate::decode::tree::NONE)
-            .ok_or_else(|| self.model("subtable"))?;
+            .ok_or(Fault::Model(What::Subtable))?;
         let mut id = root.decision;
         // A validated tree is at most 64 levels deep; the bound only keeps a
         // malformed one from looping.
@@ -44,13 +40,10 @@ impl Env<'_> {
                                         root.first_constructor.wrapping_add(pair.constructor),
                                     )
                                 })
-                                .ok_or_else(|| self.model("decision pair constructor"));
+                                .ok_or(Fault::Model(What::DecisionPairConstructor));
                         }
                     }
-                    return Err(DecodeError::NoConstructor {
-                        address: self.parse.addr,
-                        at: self.lang.raw_text(self.parse.addr),
-                    });
+                    return Err(Fault::NoConstructor);
                 }
                 Step::Bits {
                     byte,
@@ -63,9 +56,7 @@ impl Env<'_> {
                     // `Env::instruction_bits` with the arithmetic done.
                     let pos = node_offset.wrapping_add(byte as u32);
                     if pos as usize >= WINDOW {
-                        return Err(DecodeError::TooLong {
-                            address: self.parse.addr,
-                        });
+                        return Err(Fault::TooLong);
                     }
                     if pos as usize + byte_size as usize > WINDOW {
                         self.parse.overhang.set(true);
@@ -79,28 +70,23 @@ impl Env<'_> {
                     children,
                     first,
                 } => (self.context_bits(start_bit, size), children, first),
-                Step::Missing => return Err(self.model("decision node")),
+                Step::Missing => return Err(Fault::Model(What::DecisionNode)),
             };
             if value >= children {
-                return Err(self.model("decision child"));
+                return Err(Fault::Model(What::DecisionChild));
             }
             id = first.wrapping_add(value);
         }
-        Err(self.model("decision tree too deep"))
+        Err(Fault::Model(What::DecisionTreeTooDeep))
     }
 
     /// Ghidra `PatternBlock::isInstructionMatch`.
     #[inline]
-    fn block_matches(
-        &self,
-        trees: &Trees,
-        block: Block,
-        node_offset: u32,
-    ) -> Result<bool, DecodeError> {
+    fn block_matches(&self, trees: &Trees, block: Block, node_offset: u32) -> Result<bool, Fault> {
         match block {
             Block::True => Ok(true),
             Block::False => Ok(false),
-            Block::Missing => Err(self.model("pattern block")),
+            Block::Missing => Err(Fault::Model(What::PatternBlock)),
             Block::Words {
                 offset,
                 first,
@@ -125,11 +111,11 @@ impl Env<'_> {
 
     /// Ghidra `PatternBlock::isContextMatch`.
     #[inline]
-    fn context_block_matches(&self, trees: &Trees, block: Block) -> Result<bool, DecodeError> {
+    fn context_block_matches(&self, trees: &Trees, block: Block) -> Result<bool, Fault> {
         match block {
             Block::True => Ok(true),
             Block::False => Ok(false),
-            Block::Missing => Err(self.model("pattern block")),
+            Block::Missing => Err(Fault::Model(What::PatternBlock)),
             Block::Words {
                 offset,
                 first,

@@ -7,6 +7,7 @@ use bk_core::Address;
 use bk_sla::{ConstTpl, HandleSelect, HandleTpl, SymbolKind};
 
 use super::expr::{Env, Point};
+use super::fault::{Fault, What};
 use super::resolve::{MAX_DEPTH, env};
 use super::tree::{FixedHandle, NONE, Parse, ParseState};
 use crate::error::{DecodeError, Limit, TableKind};
@@ -35,32 +36,33 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
         parse.state = ParseState::Handles;
         return Ok(());
     }
-    resolve_in_order(lang, parse)
+    resolve_in_order(lang, parse).map_err(|fault| fault.at(lang, parse.addr))
 }
 
 /// The fast order: nodes from last to first.
-fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
-    let address = parse.addr;
-    let model = |what| DecodeError::Model { address, what };
+fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
     let naddr = Some(parse.naddr);
     for cur in (0..parse.nodes.len() as u32).rev() {
-        let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
+        let node = *parse
+            .nodes
+            .get(cur as usize)
+            .ok_or(Fault::Model(What::Node))?;
         let Some(ctor_id) = node.constructor() else {
             continue;
         };
         let info = *lang
             .tables
             .ctor(ctor_id)
-            .ok_or_else(|| model("constructor"))?;
+            .ok_or(Fault::Model(What::Constructor))?;
         for oper in 0..info.num_ops {
             let op = *lang
                 .tables
                 .op(&info, oper)
-                .ok_or_else(|| model("operand"))?;
+                .ok_or(Fault::Model(What::Operand))?;
             if let OpDef::Subtable(_) = op.def {
                 continue;
             }
-            let child = node.child(oper).ok_or_else(|| model("operand node"))?;
+            let child = node.child(oper).ok_or(Fault::Model(What::OperandNode))?;
             let handle = operand_handle(&env(lang, parse, naddr), op.def, child)?;
             if let Some(slot) = parse.handles.get_mut(child as usize) {
                 *slot = handle;
@@ -78,34 +80,32 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErr
 
 /// Ghidra's order (`Sleigh::resolveHandles`): depth first, operands in
 /// order, each constructor's export after its operands.
-fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
-    let address = parse.addr;
-    let model = |what| DecodeError::Model { address, what };
+fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
     let naddr = Some(parse.naddr);
     let mut crumbs = [0u32; MAX_DEPTH];
     let mut depth = 0usize;
     let mut cur = 0u32;
     loop {
-        let node = *parse.nodes.get(cur as usize).ok_or_else(|| model("node"))?;
+        let node = *parse
+            .nodes
+            .get(cur as usize)
+            .ok_or(Fault::Model(What::Node))?;
         let ctor_id = node
             .constructor()
-            .ok_or_else(|| model("node constructor"))?;
+            .ok_or(Fault::Model(What::NodeConstructor))?;
         let info = *lang
             .tables
             .ctor(ctor_id)
-            .ok_or_else(|| model("constructor"))?;
+            .ok_or(Fault::Model(What::Constructor))?;
         let mut oper = crumbs.get(depth).copied().unwrap_or(0);
         let mut descended = false;
         while oper < info.num_ops {
             let op = *lang
                 .tables
                 .op(&info, oper)
-                .ok_or_else(|| model("operand"))?;
+                .ok_or(Fault::Model(What::Operand))?;
             if depth > MAX_DEPTH - 2 {
-                return Err(DecodeError::Limit {
-                    address,
-                    limit: Limit::Depth,
-                });
+                return Err(Fault::Limit(Limit::Depth));
             }
             if let Some(crumb) = crumbs.get_mut(depth) {
                 *crumb = oper + 1;
@@ -114,7 +114,7 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
             if let Some(crumb) = crumbs.get_mut(depth) {
                 *crumb = 0;
             }
-            let child = node.child(oper).ok_or_else(|| model("operand node"))?;
+            let child = node.child(oper).ok_or(Fault::Model(What::OperandNode))?;
             if let OpDef::Subtable(_) = op.def {
                 cur = child;
                 descended = true;
@@ -164,10 +164,8 @@ impl Env<'_> {
     }
 
     #[inline]
-    fn address_handle(&self, addr: Option<Address>) -> Result<FixedHandle, DecodeError> {
-        let addr = addr.ok_or(DecodeError::Next2Unavailable {
-            address: self.parse.addr,
-        })?;
+    fn address_handle(&self, addr: Option<Address>) -> Result<FixedHandle, Fault> {
+        let addr = addr.ok_or(Fault::Next2Unavailable)?;
         let space = self.cur_space();
         Ok(FixedHandle::fixed(
             space,
@@ -182,32 +180,26 @@ impl Env<'_> {
     }
 
     #[inline]
-    fn child_handle(&self, n: u32, index: u32) -> Result<FixedHandle, DecodeError> {
+    fn child_handle(&self, n: u32, index: u32) -> Result<FixedHandle, Fault> {
         let node = self
             .parse
             .nodes
             .get(n as usize)
-            .ok_or_else(|| self.model("node"))?;
+            .ok_or(Fault::Model(What::Node))?;
         let child = node
             .child(index)
-            .ok_or_else(|| self.model("const_handle operand"))?;
+            .ok_or(Fault::Model(What::ConstHandleOperand))?;
         Ok(self.handle_of(child))
     }
 
     /// Ghidra `ConstTpl::fix`: the value of a template constant at node `n`.
     #[inline]
-    fn fix_const(&self, c: &ConstTpl, n: u32) -> Result<u64, DecodeError> {
+    fn fix_const(&self, c: &ConstTpl, n: u32) -> Result<u64, Fault> {
         Ok(match *c {
             ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
             ConstTpl::Start => self.parse.addr.offset(),
             ConstTpl::Next => self.naddr.unwrap_or(self.parse.addr).offset(),
-            ConstTpl::Next2 => self
-                .parse
-                .next2
-                .ok_or(DecodeError::Next2Unavailable {
-                    address: self.parse.addr,
-                })?
-                .offset(),
+            ConstTpl::Next2 => self.parse.next2.ok_or(Fault::Next2Unavailable)?.offset(),
             ConstTpl::CurSpace => u64::from(self.cur_space()),
             ConstTpl::CurSpaceSize => u64::from(self.space_size(self.cur_space())),
             ConstTpl::Space(space) => u64::from(space),
@@ -253,7 +245,7 @@ impl Env<'_> {
 
     /// Ghidra `ConstTpl::fixSpace`.
     #[inline]
-    fn fix_space(&self, c: &ConstTpl, n: u32) -> Result<u32, DecodeError> {
+    fn fix_space(&self, c: &ConstTpl, n: u32) -> Result<u32, Fault> {
         match *c {
             ConstTpl::CurSpace => Ok(self.cur_space()),
             ConstTpl::Space(space) => Ok(space),
@@ -269,9 +261,7 @@ impl Env<'_> {
                     hand.space
                 })
             }
-            _ => Err(DecodeError::NotASpace {
-                address: self.parse.addr,
-            }),
+            _ => Err(Fault::NotASpace),
         }
     }
 }
@@ -282,7 +272,7 @@ impl Env<'_> {
     reason = "returned through memory, the handle is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
 )]
 #[inline(always)]
-fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeError> {
+fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, Fault> {
     let mut hand = FixedHandle::UNSET;
     if matches!(tpl.ptr_space, ConstTpl::Real(_)) {
         // fillinSpace: the raw space of another handle, not its temporary.
@@ -295,9 +285,7 @@ fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeErro
                 ..
             } => env.child_handle(n, index)?.space,
             _ => {
-                return Err(DecodeError::NotASpace {
-                    address: env.parse.addr,
-                });
+                return Err(Fault::NotASpace);
             }
         };
         hand.size = env.fix_const(&tpl.size, n)? as u32;
@@ -351,11 +339,7 @@ fn wrap(env: &Env<'_>, space: u32, offset: u64) -> u64 {
     reason = "returned through memory, the handle is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
 )]
 #[inline(always)]
-pub(crate) fn operand_handle(
-    env: &Env<'_>,
-    def: OpDef,
-    n: u32,
-) -> Result<FixedHandle, DecodeError> {
+pub(crate) fn operand_handle(env: &Env<'_>, def: OpDef, n: u32) -> Result<FixedHandle, Fault> {
     let point = Point::Node(n);
     Ok(match def {
         OpDef::Expr(expr) | OpDef::Value(expr) => {
@@ -365,11 +349,7 @@ pub(crate) fn operand_handle(
             symbol, expr, kind, ..
         } => {
             let value = env.eval(expr, point, 0)?;
-            let missing = || DecodeError::NoTableEntry {
-                address: env.parse.addr,
-                at: env.lang.raw_text(env.parse.addr),
-                table: kind,
-            };
+            let missing = || Fault::NoTableEntry(kind);
             match (kind, env.sla.symbol(symbol).map(|s| &s.kind)) {
                 (TableKind::ValueTable, Some(SymbolKind::ValueMap { table, .. })) => {
                     let entry = env

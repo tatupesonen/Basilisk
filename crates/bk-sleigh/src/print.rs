@@ -53,7 +53,15 @@ pub(crate) fn hex(out: &mut String, value: i64) {
 
 impl<'a> Printer<'a, '_> {
     fn model(&self, what: &'static str) -> DecodeError {
-        self.env.model(what)
+        DecodeError::Model {
+            address: self.env.parse.addr,
+            what,
+        }
+    }
+
+    /// The error of a failed evaluation.
+    fn fault(&self, fault: crate::decode::fault::Fault) -> DecodeError {
+        fault.at(self.env.lang, self.env.parse.addr)
     }
 
     /// The constructor at node `n`, its print pieces and its `first`.
@@ -153,11 +161,14 @@ impl<'a> Printer<'a, '_> {
         let sla = self.env.sla;
         match op.def {
             OpDef::Subtable(_) => self.all(child)?,
-            OpDef::Expr(expr) | OpDef::Value(expr) => hex(self.out, self.env.eval(expr, point, 0)?),
+            OpDef::Expr(expr) | OpDef::Value(expr) => hex(
+                self.out,
+                self.env.eval(expr, point, 0).map_err(|f| self.fault(f))?,
+            ),
             OpDef::Table {
                 symbol, expr, kind, ..
             } => {
-                let value = self.env.eval(expr, point, 0)?;
+                let value = self.env.eval(expr, point, 0).map_err(|f| self.fault(f))?;
                 let slot = value as u32 as usize;
                 let missing = || DecodeError::NoTableEntry {
                     address: self.env.parse.addr,
