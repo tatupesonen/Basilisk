@@ -54,5 +54,14 @@ print("M instructions/s over %d rounds: best / median" % max(len(v) for v in row
 for key in sorted(rows):
     v = rows[key]
     print("%-45s %8.3f / %8.3f" % (key, max(v), statistics.median(v)))
+print("basilisk / Ghidra, per round (the two run back to back): median [min, max]")
+for key in sorted(rows):
+    if not key.startswith("bk decode"):
+        continue
+    ref = rows.get("ref" + key[2:])
+    if not ref:
+        continue
+    ratios = [a / b for a, b in zip(rows[key], ref) if b]
+    print("%-45s %6.3f [%5.3f, %5.3f]" % (key[3:], statistics.median(ratios), min(ratios), max(ratios)))
 EOF
 rm -f "$log"
