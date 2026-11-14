@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 21:26)
+## Now — RESUME HERE (2026-11-14 21:31)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 21:26)
+### Running (state at 2026-11-14 21:31)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -190,7 +190,7 @@ left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33. The build host as testbed, on top of `scripts/remote.sh`: the Windows GNU target under Wine natively, the GCC 15 container for the C-binding crates, Miri, sanitizers, fuzzing and property tests at length, the full differential runs, a nightly scheduled run with a report (`remote.sh report`), `clean --target`. Findings in crates are reported, not fixed. |
+| `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33; handed back partial work at 21:27 and was sent on at 21:30 to finish. Built: `remote.sh` subcommands `wine`, `ubuntu`, `long miri\|fuzz\|proptest\|sanitizers\|differential\|all`, `publish`, `nightly install\|remove\|run\|status`, `report`, `clean --target`, with the work in `tools/testbed/`. Proven so far on the build host: Wine (gnu target, whole workspace) 2,036 passed in 2 min 11 s; ASan and UBSan on the binutils crates (two known UBSan sites); 16 fuzz targets × 600 s, no finding; the whole suite with the reference required, 2,030 passed and none skipped. Still owed: the 1,000,000-case property run's results, `ubuntu`, `wine --msvc`, the nightly installed and run once with its report, the `remote-build` regression checks, a `git merge master` (allowed once), dep-age and both gates. Findings for other owners: (1) `bk-sleigh`'s `every_language` coverage snapshot holds an oracle-crash count that differs by host (ARM v8-m: 5 on macOS, 4 on Linux) — keep those counts out of the snapshot (`sleigh-perf-linux`'s brief); (2) `PROPTEST_CASES` has no effect in 11 property-test files that fix their case count (`followups`). The coordinator installed `qemu-user-static` on the host at 21:29 (arm64 containers run). |
 | `decomp-range` (worktree `../basilisk-wt/decomp-range`, cut from `master` `4891f37`) | Opus | `a8550db77f2254819` | started 21:24. D01: `bk-decomp-range` from `features/decomp-range.md` (`CircleRange`; 117 `testcirclerange` tests, oracle table generated on both C++ libraries and compared, UBSan and valgrind on the oracle, properties, fuzz target, benchmark). Adds lines to the root `Cargo.toml`, which `sleigh-fixups` also changed (removals): resolve by reading. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
@@ -469,7 +469,7 @@ Side work for the other slot, in this order:
    registry, CLI help from the binary, the Python API reference from
    the plugin package when it exists; adds the rule to `RULES.md` that
    a track changing user-visible behaviour updates its page.
-12. **`followups`** (Opus): `bk-lang` and `bk-testkit` XML reading onto
+12. **`followups`** (Opus): the 11 property-test files that fix their case count and so ignore `PROPTEST_CASES` (list in `docs/agents/testbed.md`); `bk-lang` and `bk-testkit` XML reading onto
    `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in
    place of local "find Ghidra" helpers; a differential test of
    `bk-marshal`'s encoders against Ghidra's binary; `windows_spelling`
@@ -502,8 +502,9 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
    build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
    read the first nightly report. Start `sleigh-perf-linux` in its slot
    (tell it to measure when no other job runs — `scripts/remote.sh
-   status` — and to truncate label numbers to 32 bits as Ghidra does
-   while it is in `bk-sleigh`). `decomp-range` reports → merge; start
+   status` — and, while it is in `bk-sleigh`, to truncate label numbers
+   to 32 bits as Ghidra does and to keep host-dependent oracle-crash
+   counts out of the `every_language` snapshot). `decomp-range` reports → merge; start
    the D00/D04 spec agent.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
