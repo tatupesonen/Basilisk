@@ -120,7 +120,7 @@ it is reached; later milestones are intentionally coarse.
 
 ### M1 — SLEIGH runtime
 Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
-- [ ] `sla` — `bk-sla`: the compiled-language model, validating reader, byte-exact writers; all 150 reference files round-trip (`features/sla.md`)
+- [x] `sla` — `bk-sla`: the compiled-language model, validating reader, byte-exact writers; all 150 reference files round-trip (`features/sla.md`)
 - [ ] `sleigh-decode` — `bk-sleigh`: loading, context database, instruction decoding, operand printing; `I`/`E`/`T` records equal to `pcodedump` for every language (`features/sleigh-decode.md`)
 - [ ] `sleigh-pcode` — `bk-sleigh`: p-code generation (templates, handles, delay slots, crossbuild, user ops), `Translate`, `basilisk disasm`; every record equal to `pcodedump`, the 20-operand exception aside (`features/sleigh-pcode.md`)
 - [ ] Benchmarks: language load time, decode and lift throughput at or above the reference (`PERF.md`)

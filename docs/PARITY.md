@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-13 (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
+Last updated: 2026-11-14 (`bk-sla` merged; CI green on Linux, macOS and Windows). 2026-11-13: (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -21,7 +21,7 @@ Last updated: 2026-11-13 (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk
 |---|---|---|---|---|
 | SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
-| SoftwareModeling: SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | In progress | Specified (ADR-023, ADR-024; `features/sla.md`, `sleigh-decode.md`, `sleigh-pcode.md`). Track `sla` running; nothing on `master` yet. |
+| SoftwareModeling: SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | `bk-sla` on `master`: the compiled-language model, validating reader, byte-exact packed and XML writers, builder, structural diff; all 150 reference `.sla` round-trip. Missing: decoding, printing and p-code generation (`bk-sleigh`; tracks `sleigh-decode`, `sleigh-pcode`). |
 | SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | Partial | Front end done: preprocessor, lexer, parser, checked against Ghidra's compiled output for all 150 specs. Semantic analysis and `.sla` output are M2 |
 | SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
 | SoftwareModeling: disassembler | `bk-disasm` | M5 | Missing | |
@@ -39,7 +39,7 @@ Last updated: 2026-11-13 (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk
 | Ghidra part | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
-| SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | In progress | Specified (ADR-023, ADR-024; `features/sla.md`, `sleigh-decode.md`, `sleigh-pcode.md`). Track `sla` running; nothing on `master` yet. |
+| SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | `bk-sla` on `master`: the compiled-language model, validating reader, byte-exact packed and XML writers, builder, structural diff; all 150 reference `.sla` round-trip. Missing: decoding, printing and p-code generation (`bk-sleigh`; tracks `sleigh-decode`, `sleigh-pcode`). |
 | SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
 | Decompiler engine (DECCORE) | `bk-decomp`, `bk-decomp-print` | M3 | Missing | |
 | Ghidra pipe protocol (GHIDRA) | trait in `bk-decomp` | M5 | Replaced | In process (ADR-004) |

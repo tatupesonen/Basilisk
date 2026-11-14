@@ -1,13 +1,13 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14, 11:15)
+## Now — RESUME HERE (2026-11-14, 11:30)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-and the GNU disassembler crates
-(gate green, 1,677 tests). M0:
+the GNU disassembler crates and `bk-sla`
+(gate green, 1,708 tests). M0:
 `bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
 `bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
 reference tools in `../reference/`. Per-track history is in the log below.
@@ -18,42 +18,27 @@ specs, Opus 5.5 (medium) for implementation.
 **Hard cap: three running workers** (owner, 2026-11-14; replaces the four
 above).
 
-**`master` is red in CI on Linux and Windows** (run 43456260254, the push
-of 2026-11-13 18:00; macOS, miri and `cargo-deny` green). Fixing it comes
-before any other merge:
+**`master` is green in CI on Linux, macOS and Windows** since the merge
+of branch `integration` on 2026-11-14 11:30 (CI run 43578142514 on the
+branch: every job green; local gate 1,708 tests). It holds `bk-sla`, the
+GCC 15 build fix for `bk-binutils-sys` and the Windows path fixes.
 
-* **Linux (and the lint and rustdoc jobs, which run on Linux)**:
-  `bk-binutils-sys` does not compile with GCC on `ubuntu-latest` —
-  `vendor/binutils-2.41/opcodes/mips-formats.h:52: error: expected
-  identifier or '(' before 'static_assert'`. The track had verified Linux
-  only with clang on aarch64, and the local gate runs on macOS.
-* **Windows**: three Windows-only tests added by `windows-ci` fail
-  (`windows_spellings` in `bk-lang` cases 02 and 03 and in
-  `bk-sleigh-syntax`): a lower-case drive letter is not upper-cased
-  (left `c:\a\b`, right `C:\a\b`). The three tests that failed before
-  now pass. `bk-binutils-sys` showed no error on Windows in that run; the
-  `gnu-disasm` agent is asked to confirm from the log that it built and
-  ran there.
+**How merges are done now** (owner allows pushing tested feature
+branches, 2026-11-14): finished branches are merged into a branch
+`integration` cut from `master`; the gate, `scripts/check-dep-age.py
+master` and `cargo deny check advisories` run on it; it is pushed and CI
+started with `gh workflow run CI --ref integration`; it is merged to
+`master` (`--no-ff`) only when every job is green on all three systems,
+and then deleted. A red job goes back to the agent whose crate it is.
+A report that says "not run" for a platform is not a reason to skip this.
 
-Lesson for merges: a branch with C code, or with platform-specific code,
-is run on Linux x86-64 with GCC (container) and for Windows under Wine
-before it is merged; "not run" on a platform in an agent's report is a
-reason to send it back, not a note.
-
-### Running (state at 2026-11-14 11:15)
+### Running (state at 2026-11-14 11:30)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `windows-ci2` (worktree `../basilisk-wt/windows-ci`) | Opus | `af713570d2e64dbed` | 5 commits (drive-letter case fixed, Wine runs, a `bk-pcode` rounding fix); waiting on its own final run, report not in yet. |
+| `sla-host-diff` | Opus | `ad76d2a046de2d2d9` | started 10:55; why 14 `.sla` files differ between hosts (ADR-029): `research/sla-host-dependence.md`, container builds, `bk-sla`'s structural diff. |
 | `spec-plugin` | Opus | `a0c2d046fd7132d8c` | started 10:50; `inventory/05-extension-points.md`, `features/plugin-api.md`, `features/plugin-binding-constraints.md` (ADR-014; the owner asked for it). |
 | `decomp-types` | Opus | `ae9088c291801e2f1` | resumed 11:15 (nothing was on disk); D02, `features/decomp-types.md`. |
-
-Finished, waiting for the integration branch (below):
-
-| Branch | Agent id | Result |
-|---|---|---|
-| `gnu-disasm` (2nd round, 5 commits) | `a5b2605fa521b5dd2` | GCC 15 on Ubuntu 26.04 (the runner) defaults to C23, where `static_assert` is a keyword: the build now pins `gnu17`. Full suites of both crates pass in an emulated amd64 Ubuntu 26.04 container. Patch 0004 to the vendored tree: CR16 printed a stale operand (found by the gate's property test). Both crates passed every test on the real Windows runner in run 43456260254. Own gate green, 1,681 tests. |
-| `sla` (14 commits) | `a10095edf70216b9d` | `bk-sla` meets `features/sla.md` section 7: all 150 reference files round-trip byte for byte through two decoders, XML equals `sleigh -y`, 16 mutations tried; `x86-64.sla` reads in 17.9 ms against 30.8 ms for Ghidra's loader; model heap 13.4 MB. Own gate green. Windows compile-checked only; Linux not run. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -68,24 +53,19 @@ start a fresh agent briefed from the branch's files.
 
 ### In the coordinator's hands
 
-* **Integration branch before `master`** (the owner allows pushing tested
-  feature branches, 2026-11-14): when `windows-ci2` reports, make branch
-  `integration` from `master`, merge `gnu-disasm`, `windows-ci2` and `sla`
-  into it (`--no-ff` each), run the gate, `scripts/check-dep-age.py
-  master` and `cargo deny check advisories`, push the branch,
-  `gh workflow run CI --ref integration`, and merge it to `master` only
-  when every job is green on all three systems. Red job → the exact
-  failure goes to the agent whose crate it is. Then start `sleigh-decode`
-  and `sleigh-compiler-front` (both need `sla` on `master`).
-* **Windows tests can be run locally under Wine**, as `gnu-disasm` did
-  (MinGW and MSVC targets, cross-compiled; `cargo-xwin` for the MSVC CRT
-  and SDK). Its container scripts are scratch files in
-  `../basilisk-wt/gnu-disasm/target/windows/` and `target/linux/`
-  (sanitizers), not committed. Queue item `win-local` turns them into
-  committed tooling. Do not remove that worktree before then.
-* ADR to write once CI shows the build working on Windows: builds of
-  `bk-binutils-sys` for MSVC targets use `clang-cl`, not `cl.exe`
-  (amends ADR-019).
+* **Windows tests can be run locally under Wine** (MinGW target; it
+  reproduced the three CI failures of 2026-11-13, but it is not MSVC and
+  its symbolic links differ, so CI stays the final check). The scripts
+  are scratch files, not committed: `../basilisk-wt/windows-ci/target/windows/`
+  (`dock.sh`, `run.sh`: any crate without C code, Ghidra tree mounted),
+  `../basilisk-wt/gnu-disasm/target/windows/` (C crates, MSVC through
+  `cargo-xwin`), `target/linux/` (sanitizers) and `target/ubuntu2604/`
+  (GCC 15, both architectures) there. Queue item `win-local` turns them
+  into committed tooling. Do not remove those two worktrees before then.
+* ADR to write: builds of `bk-binutils-sys` for MSVC targets use
+  `clang-cl`, not `cl.exe`, and every compiler is pinned to `gnu17`
+  (amends ADR-019). CI has shown both crates passing on the Windows
+  runner.
 * `cargo-xwin` downloaded Microsoft's CRT and SDK to this Mac
   (Microsoft's licence terms accepted on the machine's behalf); the owner
   was told on 2026-11-13.
@@ -203,14 +183,18 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. Get CI green on all three systems (above).
-2. `sla` reports → review against `features/sla.md` section 7, merge,
-   start `sleigh-decode` and `sleigh-compiler-front`.
-3. `decomp-types` reports → review against `features/decomp-types.md`,
-   merge; with D00 and D04 merged, start D05.
-4. `store-spike` reports → decide ADR-003's engine; then
+1. As slots free, in this order: `sleigh-decode` and
+   `sleigh-compiler-front` (both can start: `bk-sla` is on `master`),
+   `site-design`, `x86-oracle`, `win-local`, then the rest of the queue.
+2. `decomp-types` reports → review against `features/decomp-types.md`,
+   integration branch, merge; with D00 and D04 merged, start D05.
+3. `spec-plugin` reports → read critically, merge the docs, ADRs; give
+   `features/plugin-binding-constraints.md` to the tracks it concerns.
+4. `sla-host-diff` reports → revise ADR-029 and
+   `features/sleigh-compiler-back.md`.
+5. `store-spike` reports → decide ADR-003's engine; then
    `spec-program-model`.
-5. `features/sleigh-language.md` is a draft with open `[to verify]` items
+6. `features/sleigh-language.md` is a draft with open `[to verify]` items
    (nothing Java was run); complete it before its wave.
 
 ### Working notes
@@ -276,8 +260,24 @@ None. (The x86-64 reference build was read on 2026-11-14: ADR-029.)
   after local testing; the usage pace is fine; `cargo-xwin` may be used;
   the merged UI "looks great"; the plugin system (ADR-014) is to be worked
   on now — `spec-plugin` queued first.
-* CI on `master` is red on Linux (GCC build of `bk-binutils-sys`) and
-  Windows (three new path tests); two fix agents are running.
+* **`bk-sla` merged** (first SLEIGH track, M1): all 150 reference files
+  round-trip byte for byte through two decoders; XML equals `sleigh -y`;
+  `x86-64.sla` reads in 17.9 ms against 30.8 ms for Ghidra's loader;
+  model heap 13.4 MB; 16 mutations tried, one caught only by a unit
+  test; a fuzz finding (NUL in strings) fixed.
+* **CI green on all three systems** after two fix rounds: GitHub's
+  `ubuntu-latest` is Ubuntu 26.04 whose GCC 15 defaults to C23
+  (`static_assert` is a keyword) — `bk-binutils-sys` now pins `gnu17`;
+  Rust's `Prefix::Disk` already upper-cases the drive letter, so the
+  lower-case check never fired; under MinGW the C library's `round()` is
+  wrong for 0.49999999999999994 — `bk-pcode` rounds with `libm`; CR16 in
+  binutils printed a stale operand (patch 0004). Both GNU disassembler
+  crates pass on the real Windows runner. Merges now go through an
+  `integration` branch with CI before `master`.
+* Owner, 2026-11-14 (later): the coordinator does no hands-on work, all
+  of it goes to Opus 5.5 subagents; a static website and user
+  documentation in the monorepo (Starlight, Mermaid, built in a
+  container, basilisk's own style: ADR-030, ADR-031).
 
 ### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH and decompiler specs, decompiler research merged
 * **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
