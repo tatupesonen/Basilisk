@@ -4,7 +4,7 @@
 //!
 //! [`Decoder::lift`] prepares the instruction (part 1), builds its root
 //! template into the decoder's op buffer, resolves relative branches and
-//! hands the ops to a [`PcodeEmit`](crate::PcodeEmit). Nothing reaches the
+//! hands the ops to a [`PcodeEmit`]. Nothing reaches the
 //! emitter unless the whole instruction built.
 //! [`Decoder::build_template`] builds a free-standing template with
 //! parameter handles, for injection.
