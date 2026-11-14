@@ -30,6 +30,7 @@ bk-sleigh-compiler = { path = "crates/bk-sleigh-compiler" }
 bk-cspec = { path = "crates/bk-cspec" }
 bk-sleigh-snippet = { path = "crates/bk-sleigh-snippet" }
 bk-decomp-range = { path = "crates/bk-decomp-range" }
+bk-decomp-cfg = { path = "crates/bk-decomp-cfg" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"
@@ -77,6 +78,9 @@ tempfile = "3.27.0"
 object = { version = "0.40.0", default-features = false, features = ["read_core", "elf", "std"] }
 # Heap measurement in tests (bk-elf allocation bound; ADR-011 evaluation in docs/agents/bin-elf.md).
 dhat = "0.3.3"
+# Seeded graph generation in bk-decomp-cfg tests (ADR-011 evaluation in docs/agents/decomp-cfg.md); already in Cargo.lock through proptest.
+rand = "0.8.8"
+rand_chacha = "0.3.1"
 egui_kittest = { version = "0.36.2", features = ["wgpu", "snapshot"] }
 
 [workspace.lints.rust]

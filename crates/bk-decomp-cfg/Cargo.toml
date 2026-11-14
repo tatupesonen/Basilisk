@@ -1,0 +1,23 @@
+[package]
+name = "bk-decomp-cfg"
+description = "Basilisk: the decompiler's block graph, its analyses, the structured-block hierarchy and the control-flow structurer (Ghidra block.cc, blockaction.cc)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-marshal.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+bk-testkit.workspace = true
+flate2.workspace = true
+proptest.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true

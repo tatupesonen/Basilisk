@@ -563,6 +563,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-decomp-cfg"
+version = "0.0.1"
+dependencies = [
+ "bk-marshal",
+ "bk-testkit",
+ "flate2",
+ "proptest",
+ "rand 0.8.8",
+ "rand_chacha",
+ "rstest",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "bk-decomp-range"
 version = "0.0.1"
 dependencies = [
