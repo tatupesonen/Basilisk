@@ -307,7 +307,9 @@ but not the extra operand **[read]**.)
 Full gate, as RULES.md says (`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log
 2>&1; echo $?`, `BASILISK_GHIDRA_DIR` unset): exit 0, last lines
 `bans ok, licenses ok, sources ok` and **`tests: 401 passed, 0 failed`**
-**[ran, macOS]**. (The coverage tests skip there: no `../ghidra` beside
+**[ran, macOS]** at the first finish; after the post-merge fixes, on
+current `master` plus this branch: exit 0, **`tests: 1681 passed, 0 failed`**
+**[ran, macOS, 2026-11-14]**. (The coverage tests skip there: no `../ghidra` beside
 this worktree; they pass with the variable set to the tree, either spelling.)
 
 `git log --oneline master..HEAD` lists this track's commits (and the two
