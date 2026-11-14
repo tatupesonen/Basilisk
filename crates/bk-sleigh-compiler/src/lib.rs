@@ -23,6 +23,7 @@
 pub mod canon;
 mod check;
 mod compiler;
+mod decision;
 pub mod diag;
 pub mod elaborated;
 pub mod ids;

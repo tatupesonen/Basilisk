@@ -683,7 +683,9 @@ dependencies = [
  "bk-sla",
  "bk-sleigh-syntax",
  "bk-testkit",
+ "flate2",
  "insta",
+ "libm",
  "proptest",
  "rustc-hash 2.1.3",
 ]
