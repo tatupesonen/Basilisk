@@ -424,6 +424,14 @@ impl FuncProto {
             proto.first_vararg = dec.read_signed()? as i32;
         }
         while let Some(sub) = dec.open_element()? {
+            if sub == ELEM_RETPARAM {
+                // Ghidra's decoder reads <retparam>, which its own encoder
+                // writes first, as one more input parameter, so its round
+                // trip of an internal store does not hold; basilisk skips
+                // it (the return value comes from <returnsym>).
+                dec.close_element_skipping(sub)?;
+                continue;
+            }
             let mut name = String::new();
             let mut flags = PieceFlags::empty();
             let mut prov = bk_core::Provenance::Default;
