@@ -574,8 +574,8 @@ and B rows of `census.tsv`): a Perl pass over those files counting
 names, comments stripped.
 
 **The ten acceptance scripts** (chosen to cover both tiers, both Java and
-Jython, every major flat-API group, and every bundled script that has its
-own Ghidra test and is tier A or B):
+Jython, every major flat-API group, and four of the five tier A or B
+scripts that have their own Ghidra test):
 
 | # | Script (module, lines, tier) | What it exercises | What the port needs | Ghidra test |
 |---|---|---|---|---|
