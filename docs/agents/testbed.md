@@ -95,6 +95,42 @@ Fuzz table (first run, corpora empty except the checked-in regressions):
 The corpora persist on the host (`~/bk/testbed/fuzz/corpus/<target>`), so
 each later run (the nightly one included) starts where the last ended.
 
+### Differential runs (`long differential`, 6 min 29 s for all four)
+
+Found in the status reports: the only differential test still `#[ignore]`d
+is bk-sleigh's `every_language` (sleigh-decode/sleigh-pcode: 131–186 s on
+the Mac with three threads); the `regen`/`record_*` tests rewrite
+checked-in data and are not checks; bk-sleigh-compiler's and bk-sla's
+all-150 comparisons already run in every gate (with the reference set). The
+one entry point therefore runs:
+
+| Item | Result | Wall |
+|---|---|---|
+| `sleigh-every-language` (175 pairs, `BK_THREADS=12`) | **FAIL, snapshot only**: 0 record differences from pcodedump; the coverage-table snapshot differs in one row (below) | 33 s (+1 min release build) |
+| `require-reference` (whole suite, release, `BASILISK_REQUIRE_REFERENCE=1`) | **2,030 passed, 0 failed, 33 ignored, 0 SKIPPED**: every differential test of the gate really ran | 3 min 48 s |
+| `gnu-objdump` (bk-gnu-disasm goldens + GNU objdump 2.41 built from the GNU tarball, sha256 pinned, cached) | **2 passed**: all 37 goldens agree with objdump 2.41 | 58 s (first time incl. building binutils) |
+| `cspec-oracle` (bk-cspec's generator rerun on Linux/libstdc++) | completed on the first try; 152,046 records, as checked in; 5,362 records differ each way (EFF 3,076, ASSIGN 2,976, Q 2,840, TRES 766, TSET 688, JOIN 228, SPLITQ 138, PAIR 12) | 57 s |
+
+**Finding, bk-sleigh (not mine to fix): `every_language`'s coverage
+snapshot is host-dependent.** `ARM:LE:32:v8-m` records `oracle-crashes 5`,
+`tolerated …/145/0` (macOS, where it was recorded) but gives
+`oracle-crashes 4`, `…/146/0` on Linux x86-64, the same in two runs. One
+directed input crashes pcodedump (Ghidra's C++) on macOS and not on Linux;
+the four that crash here are `79ee01df`@0x8, `71fe4def`@0x2 (`cond_mask` 8,
+`itmode` 1), `45fe095f`@0x1c, `73fe457f`@0x2 (`itmode` 1). Because the
+snapshot is asserted first, the record and threshold assertions after it
+were not reached — the printed output shows no record difference. Suggested
+fix: leave oracle-crash counts (and what they shift into "tolerated") out
+of the snapshot, or assert them separately per host. Reproduce:
+`scripts/remote.sh long differential sleigh-every-language` (the `.snap.new`
+comes back under `target/testbed/<job>/snapshots/`). The oracle also
+crashes on 13 random inputs for MIPS:BE:32:micro / sparc 32 and 64 here.
+
+The cspec-oracle differences are those `docs/agents/remote-build.md`
+already explains (pair order, the "heavy" pair per `.cspec` chosen by
+readdir order, `std::sort` tie orders in libstdc++ against libc++); the
+generator did not abort this time (it aborted in 3 of 4 runs there).
+
 ## Proposed text (not edited by this track)
 
 For `docs/LOOP.md`, a subsection after "The build host":
