@@ -1,17 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 20:39)
+## Now — RESUME HERE (2026-11-14 20:50)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Milestone M0 is complete and on `master`**; `master` (`a961ff3` plus
-docs) also has `bk-ui`, the GNU disassembler crates, `bk-sla`,
-`bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2 (decoding and
-p-code generation, `basilisk disasm`), `bk-sleigh-compiler` part 1 and
-the website; the gate is green on Rust 1.100.0 with 1,966 tests and the
-last CI run on the merged tree, 43610564062, is green on every job on
-Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+**Milestones M0 and M2 are complete and on `master`**; `master`
+(`98537a8` plus docs) also has `bk-ui`, the GNU disassembler crates,
+`bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
+(decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
+compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
+`bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
+green on Rust 1.100.0 with 2,053 tests and the last CI run on the merged
+tree, 43627941051, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -103,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 20:39)
+### Running (state at 2026-11-14 20:50)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -114,27 +115,29 @@ coordinator to work alone). The Mac must stay awake: `caffeinate` runs,
 but a closed lid needs `sudo pmset -a disablesleep 1`, which only the
 owner can run (told at 20:38).
 
-**Finished, integration gate running on the build host:**
-`sleigh-snippet` (`af1bd08864645b02b`) on branch `integration` (worktree
-`../basilisk-wt/sleigh-snippet`, `12f1dec`). New crate
-`bk-sleigh-snippet`: all 137 shipped snippet elements (130 `<pcode>`
-outside XML comments plus 7 jump-table `*_pcode`) compiled for every
-language that uses each file — 116 languages, 588 compilations, no
-difference from Ghidra's template; 236 hand-written cases and 200,000
-generated ones against the new oracle `snippetdump` (456 counted
-bit-range cases, 4 octal cases on the Mac only); `PcodeParserTest`
-ported; both gates on the build host 2,053 tests. `scripts/remote.sh`
-worked from its worktree. Follow-ups: **a bug in `bk-sleigh-compiler`'s
-shared builder** (`pcode/bitrange.rs`: Ghidra does the bit-range
-arithmetic in 32 bits and wraps; ours does not; then remove
-`wraps_32_bits` from the snippet crate's `tests/oracle_random.rs`) — a
-small track; `bk-testkit` should own `Tool::Snippetdump`; `bk-sla`'s
-template reader refuses a branch to a label that is never placed, which
-Ghidra compiles; the decompiler uses one compiler per program and
-carries the temporary allocator in payload order. On the Mac it added
+**Merged: `sleigh-snippet`** (`af1bd08864645b02b`; `98537a8`, CI run
+43627941051 green on all 8 jobs, integration gate on the build host
+2,053 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's checkouts cleaned). **M2 (the SLEIGH compiler) is
+complete.** New crate `bk-sleigh-snippet`: all 137 shipped snippet
+elements (130 `<pcode>` outside XML comments plus 7 jump-table
+`*_pcode`) compiled for every language that uses each file — 116
+languages, 588 compilations, no difference from Ghidra's template; 236
+hand-written cases and 200,000 generated ones against the new oracle
+`snippetdump` (456 counted bit-range cases, 4 octal cases on the Mac
+only); `PcodeParserTest` ported. Follow-ups, all still open: **a bug in
+`bk-sleigh-compiler`'s shared builder** (`pcode/bitrange.rs`: Ghidra
+does the bit-range arithmetic in 32 bits and wraps; ours does not; then
+remove `wraps_32_bits` from the snippet crate's
+`tests/oracle_random.rs`); `bk-testkit` should own `Tool::Snippetdump`
+(the wrapper is in the snippet crate's `tests/common/oracle.rs`);
+`bk-sla`'s template reader refuses a branch to a label that is never
+placed, which Ghidra compiles; the decompiler's injection library (D18)
+uses one compiler per program and carries the temporary allocator in
+payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
+queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
-`bin/pcodedump` from the same source and rewrote `STAMP`). Gate green →
-push, CI, merge, PLAN (`sleigh-snippet` ✔; M2 complete) and PARITY.
+`bin/pcodedump` from the same source and rewrote `STAMP`).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
@@ -167,7 +170,7 @@ each; jobs survive a dropped connection; a job refuses to start under
 1,966 tests, 174 s cold, about 64 s warm, peak memory 8.5 GB. Thread
 scaling of `bk-sleigh` there: 6.7–7.9× at 8 threads, 12.6–15.2× at 16
 (the 6× target is met). `LOOP.md` and `RULES.md` have the build-host
-text. The two findings of its report are queue items 1 and 3 below.
+text. The two findings of its report are queue items 1 and 4 below.
 Small things left: `cargo deny --offline` needs `cargo fetch --locked`
 first on a fresh machine (the script does it; the gate could);
 `remote.sh clean` has no "build output only" option; `miri.sh` and the
@@ -333,7 +336,25 @@ start a fresh agent briefed from the branch's files.
    between its platforms.)
 2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
-3. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
+3. **`sleigh-fixups` (Opus) — next, when a slot frees** (before
+   `sleigh-perf-linux`, whose measurements need the build host quiet,
+   which it is not while `testbed` runs its long jobs). Small
+   corrections left by the SLEIGH tracks, each checked against Ghidra's
+   source: (a) `bk-sleigh-compiler` `src/pcode/bitrange.rs` computes bit
+   ranges in 64 bits where Ghidra's `uint4` wraps (`pcodecompile.cc`
+   `createBitRange`, `assignBitRange`, `buildTruncatedVarnode`) — follow
+   Ghidra, then remove `wraps_32_bits` from
+   `crates/bk-sleigh-snippet/tests/oracle_random.rs` and rerun the
+   200,000 generated cases with no tolerated row; (b) `bk-testkit` gets
+   `Tool::Snippetdump` and the oracle wrapper now in the snippet crate's
+   `tests/common/oracle.rs` (ADR-007), and `module_options`; (c)
+   `bk-sla`'s template reader accepts a branch to a label that is never
+   placed (Ghidra compiles it), and the skip in the snippet crate's
+   property test goes; (d) `bk-sleigh-syntax` strips a byte-order mark
+   if Ghidra's reader does (read the source first); (e) the 8 cargo
+   manifest warnings (unused `[workspace.dependencies]` entries, the
+   unused `authors` field).
+4. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
@@ -345,7 +366,7 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-4. D01 `bk-decomp-range`, then the rest of the order below.
+5. D01 `bk-decomp-range`, then the rest of the order below.
 
 -2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
    idea of 2026-11-14: kassini as the project's testbed, since it has

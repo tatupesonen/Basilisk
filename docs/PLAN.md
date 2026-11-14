@@ -129,7 +129,7 @@ Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
 ### M2 — SLEIGH compiler
 - [x] `sleigh-compiler-front` — `bk-sleigh-compiler`: semantic analysis over `bk-sleigh-syntax` (symbols, tokens, constructors, macros, `with` blocks), p-code template compilation; symbols, print pieces, context changes and templates equal to Ghidra's for all 150 specifications (`features/sleigh-compiler-front.md`)
 - [x] `sleigh-compiler-back` — `bk-sleigh-compiler`: pattern resolution, decision-tree construction, consistency checks, `basilisk sleigh compile`; all 150 specifications compile to the same inflated bytes as Ghidra's C++ compiler; `SleighCompileRegressionTest` ported as that equality (`features/sleigh-compiler-back.md`)
-- [ ] `sleigh-snippet` — `bk-sleigh-snippet`: p-code snippets of `.cspec`/`.pspec` (132 elements in 47 files) compile to Ghidra's template XML; reference tool `snippetdump`; `PcodeParserTest` ported (`features/sleigh-snippet.md`)
+- [x] `sleigh-snippet` — `bk-sleigh-snippet`: p-code snippets of `.cspec`/`.pspec` (137 elements in 49 files; 588 compilations over 116 languages) compile to Ghidra's template with no difference; reference tool `snippetdump`; `PcodeParserTest` ported (`features/sleigh-snippet.md`)
 - [ ] Compiler diagnostics equal to the C++ compiler's, one case per message (in `sleigh-compiler-front`/`-back`)
 
 ### M3 — Decompiler core, standalone
