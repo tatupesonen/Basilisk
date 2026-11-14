@@ -5,6 +5,7 @@
 #![allow(dead_code, reason = "shared by several test crates, each using a part")]
 
 pub(crate) mod describe;
+pub(crate) mod host;
 
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -17,15 +18,55 @@ use bk_cspec::types::{Metatype, ParamTypes, TypeHandle};
 use crate::common::TableRegisters;
 use crate::common::testtypes::{CSizes, TestTypes};
 
-/// The oracle table, decompressed.
-pub(crate) fn table() -> String {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/cspec_oracle.txt.gz");
+/// The C++ standard library an oracle table was generated with; Ghidra's
+/// answers depend on it in counted rows (`tests/data/README.md`, ADR-038).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Lib {
+    /// LLVM libc++ (macOS, Apple clang).
+    Libcxx,
+    /// GNU libstdc++ (x86-64 Linux, g++).
+    Libstdcxx,
+}
+
+impl Lib {
+    pub(crate) const ALL: [Self; 2] = [Self::Libcxx, Self::Libstdcxx];
+
+    /// The name `regen.sh` gives it, as in the table's file name.
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::Libcxx => "libcxx",
+            Self::Libstdcxx => "libstdcxx",
+        }
+    }
+
+    /// The checked-in table's path.
+    pub(crate) fn path(self) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/data")
+            .join(format!("cspec_oracle.{}.txt.gz", self.name()))
+    }
+}
+
+/// A gzip file, decompressed.
+pub(crate) fn gunzip(path: &Path) -> String {
     let bytes = std::fs::read(path).unwrap();
     let mut out = String::new();
     flate2::read::GzDecoder::new(&bytes[..])
         .read_to_string(&mut out)
         .unwrap();
     out
+}
+
+/// One library's oracle table, decompressed.
+pub(crate) fn table_of(lib: Lib) -> String {
+    gunzip(&lib.path())
+}
+
+/// The libc++ table. The decode records (everything but `EFFECT` order in
+/// 28 lists) and all heavy records but 63 rows are the same in both tables;
+/// the tests that read only those use this one.
+pub(crate) fn table() -> String {
+    table_of(Lib::Libcxx)
 }
 
 /// The records of one pair, by record kind, each as its fields after the

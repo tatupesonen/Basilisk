@@ -222,6 +222,32 @@ impl ParamTrial {
     }
 }
 
+/// Stable insertion sort: each element moves left past every earlier
+/// element it is `less` than. Ghidra's trial comparator
+/// (`ParamTrial::operator<`) is not a strict weak ordering in two corner
+/// cases (the reverse-stack test reads only the left trial's entry; the
+/// offset test applies only within one exclusive entry), and Rust's
+/// `sort_by` may panic on such a comparator. This sort never panics, gives
+/// one defined order for any comparator, equals every stable sort when the
+/// comparator is a strict weak ordering, and is the algorithm libstdc++'s
+/// `std::sort` uses for up to 16 elements. Trial lists are short (tens), so
+/// the quadratic worst case does not matter.
+fn insertion_sort_by<T>(v: &mut [T], mut less: impl FnMut(&T, &T) -> bool) {
+    for i in 1..v.len() {
+        let mut j = i;
+        while j > 0 {
+            let (Some(cur), Some(prev)) = (v.get(j), v.get(j - 1)) else {
+                break;
+            };
+            if !less(cur, prev) {
+                break;
+            }
+            v.swap(j - 1, j);
+            j -= 1;
+        }
+    }
+}
+
 /// The trials of one function or call site (Ghidra `ParamActive`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ParamActive {
@@ -400,22 +426,30 @@ impl ParamActive {
         self.numpasses += 1;
     }
 
-    /// Sorts in formal parameter order (Ghidra `sortTrials`; stable, where
-    /// `std::sort` leaves equal trials in a library-dependent order).
+    /// Sorts in formal parameter order (Ghidra `sortTrials`). Trials that
+    /// compare equal keep their current order, where Ghidra's `std::sort`
+    /// leaves them in an order chosen by the C++ library (ADR-038): two
+    /// trials of one entry at one address and size, and trials without an
+    /// entry, which therefore stay in registration (slot) order.
     pub fn sort_trials(&mut self, list: &ParamList) {
-        self.trials.sort_by(|a, b| a.cmp_formal(b, list));
+        insertion_sort_by(&mut self.trials, |a, b| {
+            a.cmp_formal(b, list) == Ordering::Less
+        });
     }
 
     /// Sorts by fixed position, then formally (Ghidra
-    /// `sortFixedPosition`).
+    /// `sortFixedPosition`); equal trials keep their order as in
+    /// [`ParamActive::sort_trials`].
     pub fn sort_fixed_position(&mut self, list: &ParamList) {
-        self.trials
-            .sort_by(|a, b| match (a.fixed_position, b.fixed_position) {
+        insertion_sort_by(&mut self.trials, |a, b| {
+            let o = match (a.fixed_position, b.fixed_position) {
                 (-1, -1) => a.cmp_formal(b, list),
                 (-1, _) => Ordering::Greater,
                 (_, -1) => Ordering::Less,
                 (x, y) => x.cmp(&y),
-            });
+            };
+            o == Ordering::Less
+        });
     }
 
     /// Removes trials that are not parameters, renumbering slots (Ghidra
@@ -488,5 +522,42 @@ impl ParamActive {
     /// Number of leading used trials (Ghidra `getNumUsed`).
     pub fn num_used(&self) -> usize {
         self.trials.iter().take_while(|t| t.is_used()).count()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::insertion_sort_by;
+
+    #[test]
+    fn insertion_sort_is_stable() {
+        // (key, registration index): equal keys keep registration order.
+        let mut v: Vec<(u8, usize)> =
+            [3u8, 1, 3, 2, 1, 3, 0, 2, 1, 3, 3, 0, 2, 1, 1, 0, 3, 2, 2, 1]
+                .iter()
+                .enumerate()
+                .map(|(i, k)| (*k, i))
+                .collect();
+        let mut want = v.clone();
+        want.sort_by_key(|e| e.0);
+        insertion_sort_by(&mut v, |a, b| a.0 < b.0);
+        assert_eq!(v, want);
+    }
+
+    #[test]
+    fn insertion_sort_survives_a_comparator_that_is_no_order() {
+        // Rock-paper-scissors: no strict weak ordering. Must not panic and
+        // must give the same result every time.
+        let beats = |a: &u8, b: &u8| (a + 1) % 3 == *b;
+        let input: Vec<u8> = (0..200u32).map(|i| (i * 7 % 3) as u8).collect();
+        let mut a = input.clone();
+        let mut b = input.clone();
+        insertion_sort_by(&mut a, beats);
+        insertion_sort_by(&mut b, beats);
+        assert_eq!(a, b);
+        let mut sorted_in = input;
+        sorted_in.sort_unstable();
+        a.sort_unstable();
+        assert_eq!(a, sorted_in);
     }
 }
