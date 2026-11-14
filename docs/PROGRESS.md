@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 22:35)
+## Now — RESUME HERE (2026-11-14 22:47)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`1cf2735` plus docs) also has `bk-ui`, the GNU disassembler crates,
+(`5f3c417` plus docs) also has `bk-decomp-range`, `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,095 tests and the last CI run on the merged
-tree, 43632387623, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,245 tests and the last CI run on the merged
+tree, 43638494204, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 22:35)
+### Running (state at 2026-11-14 22:47)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,9 +139,10 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate green (2,245 tests, 0 new packages,
-advisories ok), in CI as run 43638494204 since 22:37:** `decomp-range` (`a8550db77f2254819`) on branch `integration`
-(worktree `../basilisk-wt/decomp-range`, `8932173`). New crate
+**Merged: `decomp-range`** (`a8550db77f2254819`; `5f3c417`, CI run
+43638494204 green on all 8 jobs, integration gate on the build host
+2,245 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host cleaned and `master` published). New crate
 `bk-decomp-range`: `CircleRange` (D01), a 32-byte `Copy` value, no
 allocation, no panic on any field values. All 117 `testcirclerange`
 tests ported and passing; oracle tables from both reference builds
@@ -159,8 +160,7 @@ checked-in table is smaller than the spec's counts (the full set runs
 only with the reference); Microsoft's compiler not run. Follow-up for
 `followups`: `bk_core::bits::sign_extend` treats narrowing as
 truncation, which is not what Ghidra's builds compute (undefined in
-Ghidra, `address.cc:1003`); the crate has its own copy. Gate green →
-push, CI, merge, delete, clean, `scripts/remote.sh publish`.
+Ghidra, `address.cc:1003`); the crate has its own copy.
 
 **Merged: `testbed`** (`ab8ffc5547650775f`; `1cf2735`, merged directly
 at 22:04 — scripts, `tools/testbed/` and docs only; both gates green on
@@ -470,7 +470,7 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-5. **D01 `decomp-range` (finished 22:31, merging)** — `bk-decomp-range` from
+5. **D01 `decomp-range` (merged 22:46)** — `bk-decomp-range` from
    `features/decomp-range.md` (117 `testcirclerange` tests); spec
    complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
    027, 028) is the main line from here on: one slot stays on it.
@@ -553,7 +553,7 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
-   `decomp-range`: integration gate → CI → merge (state above).
+   `decomp-range` is merged (above).
    `sleigh-perf-linux` reports → merge; start queue item 7 (the monitor
    type). `spec-decomp-wave1` reports → review both specs, amend
    `decomp-plan.md` where it found the plan wrong, merge directly (docs
