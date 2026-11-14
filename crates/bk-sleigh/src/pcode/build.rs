@@ -57,10 +57,9 @@ where
     /// The constructor at the walk's node.
     fn ctor_of(w: &Walk<'_>) -> Option<ConstructorId> {
         match w.handles {
-            Handles::Node { parse, node, .. } => parse
-                .nodes
-                .get(node as usize)
-                .and_then(crate::Node::constructor),
+            Handles::Node { parse, node } => {
+                parse.nodes.get(node).and_then(crate::Node::constructor)
+            }
             Handles::Params(_) => None,
         }
     }
@@ -100,7 +99,7 @@ where
             });
         }
         self.depth += 1;
-        let ctor = Self::ctor_of(&w);
+        let ctor = if O::WATCHES { Self::ctor_of(&w) } else { None };
         self.obs.template(ctor, section);
         if section.is_some() {
             self.obs.feature(BuildFeature::NamedSection);
@@ -116,9 +115,11 @@ where
                 OpCode::MultiEqual => self.append_build(tpl, op, section, w, slots)?,
                 OpCode::Indirect => self.delay_slot(w, slots)?,
                 OpCode::PtrAdd => {
+                    // Ghidra `setLabel` hands the sum to `addLabel(uint4)`:
+                    // the label number is its low 32 bits (the Java engine's
+                    // `(int)` cast agrees below 2^31).
                     let id = Self::real(tpl, op, 0).wrapping_add(u64::from(self.label_base));
-                    let id = u32::try_from(id).unwrap_or(u32::MAX);
-                    self.buf.place_label(id, self.address)?;
+                    self.buf.place_label(label_number(id), self.address)?;
                 }
                 OpCode::PtrSub => self.cross_build(tpl, op, section, w, slots)?,
                 _ => self.dump(tpl, op, &w)?,
@@ -164,10 +165,10 @@ where
     /// The node and constructor of operand `index` of the walk's node, when
     /// the operand is a subtable.
     fn subtable_child(&self, w: &Walk<'_>, index: u32) -> Option<(u32, ConstructorId)> {
-        let Handles::Node { parse, node, .. } = w.handles else {
+        let Handles::Node { parse, node } = w.handles else {
             return None;
         };
-        let n = parse.nodes.get(node as usize)?;
+        let n = parse.nodes.get(node)?;
         let info = self.lang.tables.ctor(n.constructor()?)?;
         let op = self.lang.tables.op(info, index)?;
         if !matches!(op.def, OpDef::Subtable(_)) {
@@ -186,7 +187,7 @@ where
         section: u32,
         slots: &mut [Parse],
     ) -> Result<(), LiftError> {
-        let Handles::Node { parse, node, .. } = w.handles else {
+        let Handles::Node { parse, node } = w.handles else {
             return Ok(());
         };
         if self.depth >= MAX_BUILD_DEPTH {
@@ -196,10 +197,7 @@ where
             });
         }
         self.depth += 1;
-        let num = parse
-            .nodes
-            .get(node as usize)
-            .map_or(0, crate::Node::num_children);
+        let num = parse.nodes.get(node).map_or(0, crate::Node::num_children);
         for i in 0..num {
             let Some((child, ctor)) = self.subtable_child(&w, i) else {
                 continue;
@@ -370,6 +368,11 @@ where
         }
         Ok(())
     }
+}
+
+/// A label number as Ghidra keeps it: the low 32 bits (`uint4`).
+pub(crate) const fn label_number(value: u64) -> u32 {
+    (value & 0xffff_ffff) as u32
 }
 
 /// The template of `ctor` for `section` (`None` = main).

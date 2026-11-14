@@ -63,7 +63,39 @@ impl LanguageResult {
         self.exercised.len() as f64 / self.constructors.max(1) as f64
     }
 
-    /// One row of the coverage table.
+    /// One row of the coverage table as the snapshot holds it: only what is
+    /// the same on every host. Where Ghidra reads a stale handle (ADR-038)
+    /// what it does depends on memory contents: on one host it prints a
+    /// record the harness recognises as an unset handle, on another the
+    /// same input crashes `pcodedump` (ARM v8-m: 145 + 5 on macOS, 146 + 4
+    /// on x86-64 Linux). The snapshot therefore holds the sum of the two,
+    /// `unset-or-crash`, in place of the unset-handle count and the crash
+    /// count; [`LanguageResult::row`] prints both.
+    pub(crate) fn snapshot_row(&self) -> String {
+        format!(
+            "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}/{}/-/{}\tunset-or-crash {}\tshadowed {}\tno-hit {}\t{}",
+            self.id,
+            self.constructors,
+            self.exercised.len(),
+            self.targeted,
+            self.confirmed.len(),
+            self.inexpressible,
+            self.over_20,
+            self.over_20_decoded,
+            self.tolerated.over_20_operands,
+            self.tolerated.past_byte_16,
+            self.tolerated.next2_and_commit,
+            self.tolerated.cross_uncached,
+            self.tolerated.cache_clobbered,
+            self.tolerated.unset_handle + self.oracle_crashes.len() as u64,
+            self.shadowed,
+            self.no_hit,
+            self.templates.columns(),
+        )
+    }
+
+    /// One row of the coverage table as the run prints it, with the
+    /// host-dependent unset-handle and oracle-crash counts apart.
     pub(crate) fn row(&self) -> String {
         format!(
             "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}/{}/{}/{}\tshadowed {}\tno-hit {}\toracle-crashes {}\t{}",

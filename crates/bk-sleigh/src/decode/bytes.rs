@@ -42,6 +42,14 @@ impl<'a> SliceBytes<'a> {
 impl ByteSource for SliceBytes<'_> {
     fn load(&self, addr: Address, buf: &mut [u8; WINDOW]) {
         let start = addr.offset().wrapping_sub(self.base);
+        // The common case, all 16 bytes inside the slice, as one copy.
+        if let Some(bytes) = usize::try_from(start)
+            .ok()
+            .and_then(|at| self.data.get(at..at.checked_add(WINDOW)?))
+        {
+            buf.copy_from_slice(bytes);
+            return;
+        }
         for (i, byte) in buf.iter_mut().enumerate() {
             let at = start.wrapping_add(i as u64);
             *byte = usize::try_from(at)
@@ -77,10 +85,12 @@ impl Default for Window {
 
 impl Window {
     pub(crate) fn fill<B: ByteSource + ?Sized>(&mut self, source: &B, addr: Address) {
-        let mut head = [0u8; WINDOW];
-        source.load(addr, &mut head);
+        // Loaded in place: bytes stored one by one and then copied with a
+        // wide load would stall store-to-load forwarding on x86-64.
         let (first, rest) = self.bytes.split_at_mut(WINDOW);
-        first.copy_from_slice(&head);
+        if let Ok(head) = <&mut [u8; WINDOW]>::try_from(first) {
+            source.load(addr, head);
+        }
         rest.fill(0);
     }
 

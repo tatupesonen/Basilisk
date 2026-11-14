@@ -432,6 +432,15 @@ Appended by the `sleigh-decode` track:
   zero-length instruction (Ghidra's loop would not end).
 * `ContextDb::change_point` and `region` combine the value with a bitwise
   OR without masking it, as Ghidra does; the by-variable forms mask.
+* **The coverage snapshot of `every_language` holds only what every host
+  gives** (track `sleigh-perf-linux`, 2026-11-14). Where `pcodedump` reads
+  a stale handle (ADR-038) it prints a record on one host and crashes on
+  another (ARM v8-m little-endian: 145 unset-handle records and 5 crashes
+  on macOS, 146 and 4 on x86-64 Linux), so the snapshot row has
+  `unset-or-crash` (their sum) where it had the unset-handle count and
+  `oracle-crashes`; the run prints both counts and a summary, and the
+  threshold assertions run before the snapshot. Not a difference in
+  decoding, only in what the test asserts.
 
 ## 9. Status
 
@@ -468,3 +477,10 @@ commit with a cap of 200; the `T` record's error count is compared without
 `U` records (part 2); recordings of real languages need Ghidra's `.sla`
 and are skipped in CI, where the self-contained `bkfix` fixture's
 recording runs instead.
+
+**Performance on x86-64 Linux** (track `sleigh-perf-linux`, 2026-11-14):
+decode only is now 11 % ahead of the g++-built reference on an AMD Zen 4
+virtual machine (it was 14 % behind) and 32 % ahead on the M1 Pro;
+decode + text 50 % and 95 % ahead. `docs/PERF.md` has the numbers,
+`docs/agents/sleigh-perf-linux.md` the changes. `Node::handle` moved to
+`Parse::handle(n)`.

@@ -83,6 +83,26 @@ pub(crate) struct CtorInfo {
     pub(crate) has_main: bool,
     /// The main template's id (meaningful when `has_main`).
     pub(crate) main: bk_sla::TemplateId,
+    /// First context change in [`Tables::changes`].
+    pub(crate) changes: u32,
+    /// Number of context changes.
+    pub(crate) num_changes: u32,
+    /// The main template's export in [`Tables::exports`], or `NONE`.
+    pub(crate) export: u32,
+}
+
+/// An expression that is a leaf, with its field copied in, so that the
+/// common operand values (a token field, a constant) are one look-up.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Leaf {
+    /// `Expr::TokenField` with its field.
+    Token(bk_sla::Field),
+    /// `Expr::ContextField` with its field.
+    Context(bk_sla::Field),
+    /// `Expr::Constant`.
+    Constant(i64),
+    /// Anything else (evaluated by `Env::eval`).
+    Other,
 }
 
 /// The precomputed tables of a language.
@@ -98,6 +118,15 @@ pub(crate) struct Tables {
     /// For each symbol, its varnode (space, offset, size) when it is a
     /// varnode symbol: what a varnode-list operand resolves to.
     pub(crate) varnodes: Vec<Option<(u32, u64, u32)>>,
+    /// The decision trees.
+    pub(crate) trees: super::decide::Trees,
+    /// Every constructor's context changes, in order ([`CtorInfo::changes`]).
+    pub(crate) changes: Vec<bk_sla::ContextChange>,
+    /// The exports of the constructors' main templates ([`CtorInfo::export`]),
+    /// side by side so that handle resolution need not reach the templates.
+    pub(crate) exports: Vec<bk_sla::HandleTpl>,
+    /// Every expression as a [`Leaf`], indexed by expression id.
+    pub(crate) leaves: Vec<Leaf>,
 }
 
 impl Tables {
@@ -115,6 +144,7 @@ impl Tables {
                     _ => None,
                 })
                 .collect(),
+            trees: super::decide::Trees::build(sla),
             ..Self::default()
         };
         for ctor in sla.constructors() {
@@ -171,7 +201,12 @@ impl Tables {
                     })
                 });
             tables.next2_anywhere |= export_next2 || commit_next2 || template_next2;
+            let changes = tables.changes.len() as u32;
+            tables.changes.extend_from_slice(sla.context_changes(ctor));
             tables.ctors.push(CtorInfo {
+                export: crate::decode::tree::NONE,
+                changes,
+                num_changes: tables.changes.len() as u32 - changes,
                 ops: start,
                 num_ops,
                 length: ctor.length,
@@ -188,7 +223,34 @@ impl Tables {
             });
         }
         tables.next2_anywhere |= tables.uses_next2;
+        let mut id = 0u32;
+        while let Some(expr) = sla.expr(ExprId::new(id)) {
+            let field = |f: bk_sla::FieldId| sla.field(f).copied();
+            tables.leaves.push(match *expr {
+                Expr::TokenField(f) => field(f).map_or(Leaf::Other, Leaf::Token),
+                Expr::ContextField(f) => field(f).map_or(Leaf::Other, Leaf::Context),
+                Expr::Constant(value) => Leaf::Constant(value),
+                _ => Leaf::Other,
+            });
+            id += 1;
+        }
+        for index in 0..tables.ctors.len() {
+            let id = ConstructorId::new(index as u32);
+            let export = tables
+                .main_template(sla, id)
+                .and_then(|template| template.result().copied());
+            if let (Some(export), Some(info)) = (export, tables.ctors.get_mut(index)) {
+                info.export = tables.exports.len() as u32;
+                tables.exports.push(export);
+            }
+        }
         tables
+    }
+
+    /// The export of a constructor's main template (`None` when it has no
+    /// main template or the template exports nothing).
+    pub(crate) fn export(&self, ctor: &CtorInfo) -> Option<&bk_sla::HandleTpl> {
+        self.exports.get(ctor.export as usize)
     }
 
     /// The main template of constructor `id` (`None` for `unimpl`).
@@ -207,6 +269,20 @@ impl Tables {
 
     pub(crate) fn ctor(&self, id: ConstructorId) -> Option<&CtorInfo> {
         self.ctors.get(id.index() as usize)
+    }
+
+    /// The context changes of a constructor.
+    pub(crate) fn changes(&self, ctor: &CtorInfo) -> &[bk_sla::ContextChange] {
+        self.changes
+            .get(ctor.changes as usize..ctor.changes.wrapping_add(ctor.num_changes) as usize)
+            .unwrap_or_default()
+    }
+
+    /// All operands of a constructor.
+    #[inline]
+    pub(crate) fn ops_of(&self, ctor: &CtorInfo) -> Option<&[OpInfo]> {
+        self.ops
+            .get(ctor.ops as usize..ctor.ops.wrapping_add(ctor.num_ops) as usize)
     }
 
     pub(crate) fn op(&self, ctor: &CtorInfo, index: u32) -> Option<&OpInfo> {

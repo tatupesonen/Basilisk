@@ -80,7 +80,6 @@ pub struct Node {
     pub(crate) length: u32,
     pub(crate) num_children: u16,
     pub(crate) visited: bool,
-    pub(crate) handle: FixedHandle,
 }
 
 impl Node {
@@ -93,7 +92,6 @@ impl Node {
             length: 0,
             num_children: 0,
             visited: false,
-            handle: FixedHandle::UNSET,
         }
     }
 
@@ -110,11 +108,6 @@ impl Node {
     /// The node's length in bytes.
     pub fn length(&self) -> u32 {
         self.length
-    }
-
-    /// The resolved handle (after [`Decoder::resolve_handles`](crate::Decoder::resolve_handles)).
-    pub fn handle(&self) -> &FixedHandle {
-        &self.handle
     }
 
     /// The number of operand children.
@@ -176,6 +169,9 @@ pub struct Parse {
     pub(crate) window: Window,
     pub(crate) context: Vec<u32>,
     pub(crate) nodes: Vec<Node>,
+    /// The handle of each node, parallel to `nodes`; filled by handle
+    /// resolution (kept apart so that decoding writes small nodes).
+    pub(crate) handles: Vec<FixedHandle>,
     pub(crate) commits: Vec<Commit>,
     pub(crate) overhang: std::cell::Cell<bool>,
     pub(crate) max_operands: u32,
@@ -200,6 +196,7 @@ impl Parse {
             window: Window::default(),
             context: Vec::new(),
             nodes: Vec::new(),
+            handles: Vec::new(),
             commits: Vec::new(),
             overhang: std::cell::Cell::new(false),
             max_operands: 0,
@@ -236,6 +233,16 @@ impl Parse {
     /// run ([`Node::child`]).
     pub fn nodes(&self) -> &[Node] {
         &self.nodes
+    }
+
+    /// The resolved handle of node `n` (after
+    /// [`Decoder::resolve_handles`](crate::Decoder::resolve_handles));
+    /// [`FixedHandle::UNSET`] for a node nothing resolved.
+    pub fn handle(&self, n: u32) -> FixedHandle {
+        self.handles
+            .get(n as usize)
+            .copied()
+            .unwrap_or(FixedHandle::UNSET)
     }
 
     /// The root node.
@@ -300,7 +307,7 @@ mod tests {
 
     #[test]
     fn hot_structs_are_small() {
-        assert!(size_of::<Node>() <= 64, "{}", size_of::<Node>());
+        assert!(size_of::<Node>() <= 24, "{}", size_of::<Node>());
         assert!(
             size_of::<FixedHandle>() <= 40,
             "{}",
