@@ -273,44 +273,6 @@ impl Gen {
     }
 }
 
-/// The value of a number token as the snippet lexer reads it.
-fn number(text: &str) -> Option<u64> {
-    if let Some(hex) = text.strip_prefix("0x") {
-        return u64::from_str_radix(hex, 16).ok();
-    }
-    if text.len() > 1 && text.starts_with('0') {
-        let digits: String = text
-            .chars()
-            .take_while(|c| ('0'..='7').contains(c))
-            .collect();
-        return u64::from_str_radix(&digits, 8).ok();
-    }
-    text.parse().ok()
-}
-
-/// Whether `body` has a bit range `[low,width]` whose arithmetic wraps in
-/// Ghidra's 32-bit unsigned integers: `createBitRange`, `assignBitRange`
-/// and `buildTruncatedVarnode` (`pcodecompile.cc` 702–916) take both as
-/// `uint4` (`pcodeparse.y` 114, 187) and compute `(numbits+7)/8`,
-/// `bitoffset+numbits` and `byteoffset+numbytes` in 32 bits, while
-/// `bk_sleigh_compiler`'s builder computes them without wrapping (a
-/// follow-up for that crate).
-fn wraps_32_bits(body: &str) -> bool {
-    body.split('[').skip(1).any(|part| {
-        let inside = part.split(']').next().unwrap_or("");
-        let Some((a, b)) = inside.split_once(',') else {
-            return false;
-        };
-        let (Some(low), Some(width)) = (number(a.trim()), number(b.trim())) else {
-            return false;
-        };
-        let (low, width) = (low as u32, width as u32);
-        low.checked_add(width).is_none()
-            || width.checked_add(7).is_none()
-            || (low / 8).checked_add(width / 8).is_none()
-    })
-}
-
 #[test]
 fn generated_snippets_match_ghidra() {
     let Some(reference) = bk_testkit::skip::require_reference() else {
@@ -352,15 +314,10 @@ fn generated_snippets_match_ghidra() {
     let expected = run_oracle(&tool, &root, common::fixture::LANGUAGE_ID, &records);
     let actual = run_basilisk(&compiler, 0x1_0000, &records);
     let mut accepted = 0;
-    let mut wrapped = 0;
     let mut differences = Vec::new();
     for ((body, exp), act) in bodies.iter().zip(&expected).zip(&actual) {
         if matches!(exp, common::oracle::Outcome::Ok { .. }) {
             accepted += 1;
-        }
-        if exp != act && wraps_32_bits(body) {
-            wrapped += 1;
-            continue;
         }
         if exp != act {
             differences.push(format!(
@@ -370,8 +327,7 @@ fn generated_snippets_match_ghidra() {
         }
     }
     eprintln!(
-        "generated: {count} bodies, {accepted} compiled by Ghidra, {} differ, {wrapped} \
-         tolerated (bit range arithmetic that wraps at 32 bits in Ghidra)",
+        "generated: {count} bodies, {accepted} compiled by Ghidra, {} differ",
         differences.len()
     );
     for d in differences.iter().take(15) {

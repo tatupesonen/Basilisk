@@ -1,5 +1,9 @@
 //! Bit ranges (`PcodeCompile::createBitRange`, `assignBitRange`,
 //! `buildTruncatedVarnode`, `pcodecompile.cc` 702-916).
+//!
+//! Offsets, widths and the sizes derived from them are `uint4` in Ghidra,
+//! and its sums and roundings wrap at 32 bits before any comparison with a
+//! 64-bit size; the arithmetic here does the same (`wrapping_*` on `u32`).
 
 use bk_pcode::OpCode;
 use bk_sla::{ConstTpl, HandleSelect};
@@ -28,13 +32,16 @@ impl<R: SymbolResolver> Builder<'_, R> {
     ) -> Result<Option<Vn>, Stop> {
         let byte_offset = bit_offset / 8;
         let num_bytes = bits / 8;
+        // `byteoffset + numbytes` is a `uint4` sum: it wraps before it is
+        // widened for the comparison with the 64-bit size.
+        let end = u64::from(byte_offset.wrapping_add(num_bytes));
         let mut full = 0_u64;
         if let ConstTpl::Real(size) = base.size {
             full = size;
             if full == 0 {
                 return Ok(None);
             }
-            if u64::from(byte_offset) + u64::from(num_bytes) > full {
+            if end > full {
                 return Err(Stop::Fatal("Requested bit range out of bounds".to_owned()));
             }
         }
@@ -54,7 +61,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
                     ));
                 }
                 let plus = if self.env.default_big_endian() {
-                    full.wrapping_sub(u64::from(byte_offset) + u64::from(num_bytes))
+                    full.wrapping_sub(end)
                 } else {
                     u64::from(byte_offset)
                 };
@@ -82,7 +89,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
         if bits == 0 {
             message = Some("Size of bitrange is zero".to_owned());
         }
-        let final_size = bits.div_ceil(8);
+        let final_size = bits.wrapping_add(7) / 8;
         let mut trunc_shift = 0;
         let mut mask_needed = !bits.is_multiple_of(8);
         let mut trunc_needed = true;
@@ -164,7 +171,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
         if bits == 0 {
             message = Some("Size of bitrange is zero");
         }
-        let small_size = bits.div_ceil(8);
+        let small_size = bits.wrapping_add(7) / 8;
         let shift_needed = bit_offset != 0;
         let mut zext_needed = true;
         let mask = !(low_mask(bits).wrapping_shl(bit_offset));
@@ -198,7 +205,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
             });
             rhs.ops
         } else {
-            if u64::from(bit_offset) + u64::from(bits) > 64 {
+            if bit_offset.wrapping_add(bits) > 64 {
                 late = Some("Assigned bitrange extends past first 64 bits");
             }
             let mut res = ExprTree::leaf(vn);

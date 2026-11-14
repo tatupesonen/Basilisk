@@ -1,0 +1,5 @@
+@include "prelude.sinc"
+define bitrange bw=r0[8,0xFFFFFFF8];
+sub: is op=2 { export q0; }
+:wr sub is op=2 & sub { r1 = sub[0,0xFFFFFFFF]; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }
