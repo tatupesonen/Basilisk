@@ -14,6 +14,7 @@
 //! (ADR-025 3e). Every entry carries a [`Provenance`](bk_core::Provenance)
 //! (ADR-025 3f) that takes no part in identity or ordering.
 
+pub mod cdecl;
 pub mod compare;
 pub mod entry;
 pub mod error;
