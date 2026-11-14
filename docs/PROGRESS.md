@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 20:50)
+## Now — RESUME HERE (2026-11-14 21:12)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 20:50)
+### Running (state at 2026-11-14 21:12)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -139,10 +139,34 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
+**Finished, integration gate running on the build host:** `cspec-host`
+(`a85106d421cedbda2`) on branch `integration` (worktree
+`../basilisk-wt/cspec-host`, `e835e35`; job started 21:11). The
+`bk-cspec` oracle now exists for both C++ libraries
+(`cspec_oracle.{libcxx,libstdcxx}.txt.gz`), from a generator that is
+deterministic (pairs sorted by id; the uninitialised `ParamListMerged`
+fields set before use; 20 of 20 runs byte-identical on each machine,
+valgrind clean). The tables differ in 119 of 152,046 rows, all from
+`std::sort` on equal keys: 56 effect rows, 24 `hasEffect` answers, 39
+trial rows. Decision recorded as **ADR-040** (every such sort is stable:
+document order for effects, slot order for trials); `bk-cspec` already
+sorted stably, its trial sort is now an insertion sort that cannot panic
+on Ghidra's comparator (not a strict weak ordering); the replay compares
+with both tables and requires the counts A 56, B 24, C 38, D 1 exactly;
+`oracle_regen.rs` regenerates the host's table when the reference is
+present. The coordinator renumbered the agent's "ADR-038" citations to
+ADR-040 on `integration`. Both of its gates on the build host: 2,033
+tests. `GHIDRA-BUGS.md` entries 6, 15 and 17 carry its findings. Gap:
+Microsoft's library not run (a later third table). Gate green → push,
+CI (`gh workflow run CI --ref integration`), merge, delete the branch
+and worktree, `scripts/remote.sh clean --merged` (the host's
+`cspec-host` checkout still had a stale lock from a valgrind job the
+coordinator stopped at 21:04).
+
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33. The build host as testbed, on top of `scripts/remote.sh`: the Windows GNU target under Wine natively, the GCC 15 container for the C-binding crates, Miri, sanitizers, fuzzing and property tests at length, the full differential runs, a nightly scheduled run with a report (`remote.sh report`), `clean --target`. Findings in crates are reported, not fixed. |
-| `cspec-host` (worktree `../basilisk-wt/cspec-host`, cut from `master` `3e43909`) | Opus | `a85106d421cedbda2` | started 20:17. Queue item 1 below: make the `bk-cspec` oracle generator deterministic and crash-free, generate the libc++ (Mac) and libstdc++ (build host) tables, trace every differing row to its cause in Ghidra's source, propose per cause the result Basilisk gives (ADR text comes back in its report; the coordinator records it), implement it and make the replay strict against both tables. |
+| `sleigh-fixups` (worktree `../basilisk-wt/sleigh-fixups`, cut from `master` `739b393`) | Opus | `a729d10fd3ad89e8d` | started 21:05. Queue item 3 below: the bit-range 32-bit wrap in `bk-sleigh-compiler` (then no tolerated row in the snippet crate's generated comparison), `Tool::Snippetdump` and `module_options` in `bk-testkit`, `bk-sla` reading a branch to an unplaced label, the BOM (after reading what Ghidra does), the cargo manifest warnings. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -306,7 +330,7 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (two agents at a time; in this order)
 
-1. **`cspec-host` (Opus; running)** — `bk-cspec`'s oracle table depends on the
+1. **`cspec-host` (Opus; finished 21:00, merging)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
    where Ghidra's `hasEffect` answers 1 or 2 instead of 3 (so a lookup
@@ -336,7 +360,7 @@ start a fresh agent briefed from the branch's files.
    between its platforms.)
 2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
    merged.
-3. **`sleigh-fixups` (Opus) — next, when a slot frees** (before
+3. **`sleigh-fixups` (Opus; running since 21:05)** (before
    `sleigh-perf-linux`, whose measurements need the build host quiet,
    which it is not while `testbed` runs its long jobs). Small
    corrections left by the SLEIGH tracks, each checked against Ghidra's
@@ -447,14 +471,13 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 
 ### Coordinator's next steps
 
-1. `cspec-host` reports → review; its ADR text is recorded as ADR-040
-   (its report calls it ADR-038, which is taken); integration branch,
-   gate on the build host, CI, merge; `GHIDRA-BUGS.md` entry 15 gets
-   the causes. Start `sleigh-fixups` in the freed slot.
+1. `cspec-host`: integration gate → CI → merge (state above).
 2. `testbed` reports → review; install the packages it lists on the
    build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
-   read the first nightly report. Start `sleigh-perf-linux` (the host is
-   quiet then), or D01 if `sleigh-fixups` is still running.
+   read the first nightly report. Start `sleigh-perf-linux` in its slot
+   (the host is quiet then apart from `sleigh-fixups`' gates; tell it to
+   measure when no other job runs — `scripts/remote.sh status`).
+   `sleigh-fixups` reports → merge; start D01.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
