@@ -139,7 +139,7 @@ queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
 
-**Finished, integration gate running on the build host:** `cspec-host`
+**Finished, integration gate green (2,056 tests, 0 new packages, advisories ok), in CI as run 43630477395 since 21:08:** `cspec-host`
 (`a85106d421cedbda2`) on branch `integration` (worktree
 `../basilisk-wt/cspec-host`, `e835e35`; job started 21:04). The
 `bk-cspec` oracle now exists for both C++ libraries
