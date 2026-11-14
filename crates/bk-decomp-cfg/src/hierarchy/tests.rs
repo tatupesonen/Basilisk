@@ -39,12 +39,8 @@ fn consistent(g: &Graph) -> bool {
 
 #[test]
 fn sizes() {
-    assert_eq!(std::mem::size_of::<Edge>(), 12);
-    assert!(
-        std::mem::size_of::<Node>() <= 168,
-        "{}",
-        std::mem::size_of::<Node>()
-    );
+    assert_eq!(size_of::<Edge>(), 12);
+    assert!(size_of::<Node>() <= 168, "{}", size_of::<Node>());
 }
 
 #[test]

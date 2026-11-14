@@ -337,6 +337,13 @@ impl Graph {
     }
 }
 
+/// Bytes of one node of a graph or hierarchy, without its edge and
+/// component lists (each edge half is [`EDGE_HALF_BYTES`], each component
+/// 4 bytes).
+pub const NODE_BYTES: usize = size_of::<Node>();
+/// Bytes of one half of an edge; an edge has two.
+pub const EDGE_HALF_BYTES: usize = size_of::<Edge>();
+
 /// Converts a slot or count to Ghidra's `int4`.
 #[inline]
 pub(crate) fn to_i32(v: usize) -> Result<i32, CfgError> {

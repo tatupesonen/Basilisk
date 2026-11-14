@@ -227,6 +227,18 @@ enum Stmt {
 }
 
 fn gen_stmt(rng: &mut ChaCha8Rng, depth: u32, budget: &mut i32, in_loop: bool) -> Stmt {
+    gen_stmt_with(rng, depth, budget, in_loop, false)
+}
+
+/// `clean`: no `break`, `continue`, `return` or goto, so that every node is
+/// reachable and the graph structures without gotos.
+fn gen_stmt_with(
+    rng: &mut ChaCha8Rng,
+    depth: u32,
+    budget: &mut i32,
+    in_loop: bool,
+    clean: bool,
+) -> Stmt {
     *budget -= 1;
     if *budget <= 0 || depth > 5 {
         return Stmt::Basic;
@@ -237,29 +249,40 @@ fn gen_stmt(rng: &mut ChaCha8Rng, depth: u32, budget: &mut i32, in_loop: bool) -
             let k = 2 + below(rng, 3);
             Stmt::Seq(
                 (0..k)
-                    .map(|_| gen_stmt(rng, depth + 1, budget, in_loop))
+                    .map(|_| gen_stmt_with(rng, depth + 1, budget, in_loop, clean))
                     .collect(),
             )
         }
-        25..=37 => Stmt::If(Box::new(gen_stmt(rng, depth + 1, budget, in_loop))),
+        25..=37 => Stmt::If(Box::new(gen_stmt_with(
+            rng,
+            depth + 1,
+            budget,
+            in_loop,
+            clean,
+        ))),
         38..=49 => Stmt::IfElse(
-            Box::new(gen_stmt(rng, depth + 1, budget, in_loop)),
-            Box::new(gen_stmt(rng, depth + 1, budget, in_loop)),
+            Box::new(gen_stmt_with(rng, depth + 1, budget, in_loop, clean)),
+            Box::new(gen_stmt_with(rng, depth + 1, budget, in_loop, clean)),
         ),
-        50..=57 => Stmt::While(Box::new(gen_stmt(rng, depth + 1, budget, true))),
-        58..=64 => Stmt::DoWhile(Box::new(gen_stmt(rng, depth + 1, budget, true))),
+        50..=57 => Stmt::While(Box::new(gen_stmt_with(rng, depth + 1, budget, true, clean))),
+        58..=64 => Stmt::DoWhile(Box::new(gen_stmt_with(rng, depth + 1, budget, true, clean))),
         65..=70 => {
             let k = 3 + below(rng, 4);
             Stmt::Switch(
                 (0..k)
-                    .map(|_| (gen_stmt(rng, depth + 1, budget, in_loop), chance(rng, 0.25)))
+                    .map(|_| {
+                        (
+                            gen_stmt_with(rng, depth + 1, budget, in_loop, clean),
+                            chance(rng, 0.25),
+                        )
+                    })
                     .collect(),
             )
         }
-        71..=74 if in_loop => Stmt::Break,
-        75..=77 if in_loop => Stmt::Continue,
-        78..=80 => Stmt::Return,
-        81..=82 => Stmt::Goto,
+        71..=74 if in_loop && !clean => Stmt::Break,
+        75..=77 if in_loop && !clean => Stmt::Continue,
+        78..=80 if !clean => Stmt::Return,
+        81..=82 if !clean => Stmt::Goto,
         _ => Stmt::Basic,
     }
 }
@@ -440,13 +463,19 @@ pub(crate) fn generate(class: Class, seed: u64, max_nodes: usize, facts: bool) -
     g
 }
 
+/// A function-like graph of exactly `n` nodes (benchmarks).
+pub(crate) fn generate_func_sized(seed: u64, n: usize) -> GenGraph {
+    let mut rng = ChaCha8Rng::seed_from_u64(seed);
+    gen_func(&mut rng, n)
+}
+
 /// A large structured graph of about `nodes` nodes (benchmarks).
 pub(crate) fn generate_large_reducible(seed: u64, nodes: usize) -> GenGraph {
     let mut rng = ChaCha8Rng::seed_from_u64(seed);
     let parts: Vec<Stmt> = (0..(nodes / 40).max(1))
         .map(|_| {
             let mut budget = 80;
-            gen_stmt(&mut rng, 0, &mut budget, false)
+            gen_stmt_with(&mut rng, 0, &mut budget, false, true)
         })
         .collect();
     let mut big = GenGraph::default();

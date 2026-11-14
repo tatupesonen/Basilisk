@@ -42,7 +42,7 @@ pub use facts::{BlockFacts, Fact};
 pub use finish::{CaseLabels, FinishMeasure, finish};
 pub use flags::{CondOp, Kind, edge_labels, node_flags};
 pub use gotos::selector::{CollapseView, GhidraGotoSelector, GotoSelector, LoopInfo, loop_bodies};
-pub use graph::NodeId;
+pub use graph::{EDGE_HALF_BYTES, NODE_BYTES, NodeId};
 pub use hierarchy::{CaseOrder, EdgeView, Hierarchy};
 pub use limits::Limits;
 pub use structure::{
