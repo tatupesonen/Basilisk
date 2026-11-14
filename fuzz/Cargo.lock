@@ -25,11 +25,14 @@ name = "basilisk-fuzz"
 version = "0.0.0"
 dependencies = [
  "bk-bin",
+ "bk-binutils-sys",
  "bk-core",
  "bk-elf",
  "bk-lang",
  "bk-marshal",
+ "bk-pcode",
  "bk-sla",
+ "bk-sleigh",
  "bk-sleigh-syntax",
  "libfuzzer-sys",
 ]
@@ -57,6 +60,14 @@ name = "bk-bin"
 version = "0.0.1"
 dependencies = [
  "memchr",
+ "thiserror",
+]
+
+[[package]]
+name = "bk-binutils-sys"
+version = "0.0.1"
+dependencies = [
+ "cc",
  "thiserror",
 ]
 
@@ -116,6 +127,17 @@ dependencies = [
  "bk-marshal",
  "bk-pcode",
  "flate2",
+ "thiserror",
+]
+
+[[package]]
+name = "bk-sleigh"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+ "bk-lang",
+ "bk-pcode",
+ "bk-sla",
  "thiserror",
 ]
 
