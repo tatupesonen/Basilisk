@@ -200,12 +200,10 @@ fn set_constructor(
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
     let info = *lang.tables.ctor(ct).ok_or_else(|| model("constructor"))?;
-    let sla = lang.sla();
-    let ctor = sla.constructor(ct).ok_or_else(|| model("constructor"))?;
     if let Some(node) = parse.nodes.get_mut(n as usize) {
         node.ctor = ct.index();
     }
-    for change in sla.context_changes(ctor) {
+    for change in lang.tables.changes(&info) {
         match *change {
             ContextChange::Op {
                 word,

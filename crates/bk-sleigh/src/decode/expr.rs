@@ -102,29 +102,6 @@ impl Env<'_> {
         Ok(self.parse.window.read(pos, 4))
     }
 
-    /// `size` bits at `start_bit` from `node_offset`, most significant first
-    /// (Ghidra `getInstructionBits`).
-    #[inline]
-    pub(crate) fn instruction_bits(
-        &self,
-        start_bit: i32,
-        size: u32,
-        node_offset: u32,
-    ) -> Result<u32, DecodeError> {
-        let pos = node_offset.wrapping_add((start_bit / 8) as u32);
-        if pos as usize >= WINDOW {
-            return Err(self.too_long());
-        }
-        let bit = (start_bit % 8) as u32;
-        let byte_size = (bit + size).saturating_sub(1) / 8 + 1;
-        if pos as usize + byte_size as usize > WINDOW {
-            self.parse.overhang.set(true);
-        }
-        let raw = self.parse.window.read(pos, byte_size.min(4));
-        let raw = raw.wrapping_shl(8 * (4 - byte_size.min(4)) + bit);
-        Ok(raw.wrapping_shr(32u32.wrapping_sub(size)))
-    }
-
     /// `size` (1..=4) context bytes at `start`, reading across at most two
     /// words; words past the end read as zero (Ghidra `getContextBytes`).
     #[inline]

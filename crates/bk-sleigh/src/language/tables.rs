@@ -83,6 +83,10 @@ pub(crate) struct CtorInfo {
     pub(crate) has_main: bool,
     /// The main template's id (meaningful when `has_main`).
     pub(crate) main: bk_sla::TemplateId,
+    /// First context change in [`Tables::changes`].
+    pub(crate) changes: u32,
+    /// Number of context changes.
+    pub(crate) num_changes: u32,
 }
 
 /// The precomputed tables of a language.
@@ -98,6 +102,10 @@ pub(crate) struct Tables {
     /// For each symbol, its varnode (space, offset, size) when it is a
     /// varnode symbol: what a varnode-list operand resolves to.
     pub(crate) varnodes: Vec<Option<(u32, u64, u32)>>,
+    /// The decision trees.
+    pub(crate) trees: super::decide::Trees,
+    /// Every constructor's context changes, in order ([`CtorInfo::changes`]).
+    pub(crate) changes: Vec<bk_sla::ContextChange>,
 }
 
 impl Tables {
@@ -115,6 +123,7 @@ impl Tables {
                     _ => None,
                 })
                 .collect(),
+            trees: super::decide::Trees::build(sla),
             ..Self::default()
         };
         for ctor in sla.constructors() {
@@ -171,7 +180,11 @@ impl Tables {
                     })
                 });
             tables.next2_anywhere |= export_next2 || commit_next2 || template_next2;
+            let changes = tables.changes.len() as u32;
+            tables.changes.extend_from_slice(sla.context_changes(ctor));
             tables.ctors.push(CtorInfo {
+                changes,
+                num_changes: tables.changes.len() as u32 - changes,
                 ops: start,
                 num_ops,
                 length: ctor.length,
@@ -207,6 +220,13 @@ impl Tables {
 
     pub(crate) fn ctor(&self, id: ConstructorId) -> Option<&CtorInfo> {
         self.ctors.get(id.index() as usize)
+    }
+
+    /// The context changes of a constructor.
+    pub(crate) fn changes(&self, ctor: &CtorInfo) -> &[bk_sla::ContextChange] {
+        self.changes
+            .get(ctor.changes as usize..ctor.changes.wrapping_add(ctor.num_changes) as usize)
+            .unwrap_or_default()
     }
 
     pub(crate) fn op(&self, ctor: &CtorInfo, index: u32) -> Option<&OpInfo> {

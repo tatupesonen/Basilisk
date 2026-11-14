@@ -2,6 +2,7 @@
 //! once, shared by every decoder (Ghidra `Sleigh`/`SleighBase` after
 //! `initialize`, plus the language set-up `SleighArchitecture` applies).
 
+pub(crate) mod decide;
 mod load;
 mod registers;
 mod setup;
