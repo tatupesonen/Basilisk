@@ -5,6 +5,14 @@ def letters(W=16):
     h=W/2; r=50-h
     out=[]
     def b(x): return [('s',f'M{f(x+h)} 0 V140'),('s',f'M{f(x+h)} 90 a{f(r)} {f(r)} 0 1 0 {f(2*r)} 0 a{f(r)} {f(r)} 0 1 0 {f(-2*r)} 0')],100
+    def B(x):
+        # capital B: stem as tall as l and k (cap height = ascender, y 0..140); two
+        # bowls of a horizontal bar and a half circle each, the lower one wider
+        mid=66; r1=(mid-h)/2; r2=(140-h-mid)/2; ru,rl=78,84  # bar centre, bowl right edges
+        c1,c2=x+ru-r1,x+rl-r2
+        return [('s',f'M{f(x+h)} 0 V140'),
+                ('s',f'M{f(x+h)} {f(h)} H{f(c1)} A{f(r1)} {f(r1)} 0 0 1 {f(c1)} {f(mid)} H{f(x+h)}'),
+                ('s',f'M{f(x+h)} {f(mid)} H{f(c2)} A{f(r2)} {f(r2)} 0 0 1 {f(c2)} {f(140-h)} H{f(x+h)}')],rl+h
     def a(x): return [('s',f'M{f(x+100-h)} 40 V140'),('s',f'M{f(x+h)} 90 a{f(r)} {f(r)} 0 1 0 {f(2*r)} 0 a{f(r)} {f(r)} 0 1 0 {f(-2*r)} 0')],100
     def s(x):
         sk=[(65,62),(60,54),(50,50),(38,50),(22,50),(11,58),(11,69),(11,82),(24,86),(38,90),(52,94),(65,98),(65,111),(65,122),(54,130),(38,130),(26,130),(16,126),(10,117)]
@@ -27,7 +35,7 @@ def letters(W=16):
         ax,ay,bx,by=sx+18,84,sx+54,140; dx,dy=bx-ax,by-ay; L=math.hypot(dx,dy); nx,ny=dy/L*h,-dx/L*h; hc=W/(dy/L)
         leg=f'M{f(ax+nx)} {f(ay+ny)} L{f(bx+hc/2)} 140 H{f(bx-hc/2)} L{f(ax-nx)} {f(ay-ny)} Z'
         return [('s',f'M{f(x+h)} 0 V140'),('f',arm),('f',leg)],W+54+hc/2
-    seq=[(b,14),(a,20),(s,18),(i,24),(l,24),(i,18),(s,18),(k,0)]
+    seq=[(B,14),(a,20),(s,18),(i,24),(l,24),(i,18),(s,18),(k,0)]
     x=0
     for fn,gap in seq:
         parts,w=fn(x); out+=parts; x+=w+gap

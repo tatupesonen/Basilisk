@@ -68,7 +68,7 @@ For a README that follows the viewer's theme:
 ```html
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/basilisk-logo-dark.svg">
-  <img src="assets/brand/basilisk-logo.svg" alt="basilisk" width="360">
+  <img src="assets/brand/basilisk-logo.svg" alt="Basilisk" width="360">
 </picture>
 ```
 

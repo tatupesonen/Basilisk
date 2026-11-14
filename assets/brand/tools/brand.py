@@ -71,8 +71,8 @@ def icon(parts, scale, dy, note=''):
 def logo(markc, ink, dot, s=0.74, wx=244, W=16):
     wy=CY-90*s
     w,ww=word.word_svg(ink,dot,'    ',W)
-    Wd=round(wx+ww*s+12)
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {Wd} 256" role="img" aria-label="basilisk">
+    Wd=max(round(wx+ww*s+12),711)  # keep the published 711 width (Logo.astro, preview sizes); grow only to avoid clipping
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {Wd} 256" role="img" aria-label="Basilisk">
   <g fill="{markc}" transform="translate(-16 0)">
 {mark_paths(FULL,'    ')}  </g>
   <!-- wordmark: monoline letters drawn as strokes (no font needed); the i-dots repeat the slit pupil -->
