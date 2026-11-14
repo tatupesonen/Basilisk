@@ -27,6 +27,7 @@
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
 pub(crate) mod pcode;
+mod pcode_parts;
 
 use bk_sla::{
     BlockDef, ConstructorDef, ContextChange, DecisionDef, Expr, ExprId, Field, Header, MaskWord,
