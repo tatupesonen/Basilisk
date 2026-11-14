@@ -112,7 +112,13 @@ start a fresh agent briefed from the branch's files.
    awaiting a yes: **Starlight (Astro)** — Markdown/MDX content, built-in
    search, light and dark themes, static output for GitHub Pages; Node is
    needed only to build the site, never the product. (Alternative if no
-   non-Rust tooling is wanted: mdBook, plainer.) The track: (1) a short
+   non-Rust tooling is wanted: mdBook, plainer.) **Mermaid diagrams are
+   required** (owner, 2026-11-14: "we also want graphs"): fenced
+   `mermaid` blocks render as diagrams in both themes, preferably to SVG
+   at build time so pages work without scripts; the "How it works" pages
+   use them for the data flow, the SLEIGH and decompiler pipelines and
+   the crate map, and the link-check job fails on a diagram that does not
+   parse. The track: (1) a short
    spec `features/docs-site.md` and an ADR for the tooling; (2) the site
    under `site/` with the brand's palette and fonts (`assets/brand/`,
    `features/ui-design.md`); (3) the structure — Getting started, the
