@@ -1,0 +1,22 @@
+[package]
+name = "bk-decomp-range"
+description = "Basilisk: circle ranges, the strided modular integer intervals of Ghidra's decompiler (rangeutil.cc, CircleRange)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-core.workspace = true
+bk-pcode.workspace = true
+
+[dev-dependencies]
+bk-testkit.workspace = true
+dhat.workspace = true
+flate2.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true
