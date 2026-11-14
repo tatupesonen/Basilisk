@@ -1,0 +1,27 @@
+[package]
+name = "bk-sleigh"
+description = "basilisk: the SLEIGH runtime: loaded languages, the context database, instruction decoding and disassembly text"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-core.workspace = true
+bk-lang.workspace = true
+bk-pcode.workspace = true
+bk-sla.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+bk-elf.workspace = true
+bk-testkit.workspace = true
+dhat.workspace = true
+flate2.workspace = true
+insta.workspace = true
+proptest.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true
