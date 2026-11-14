@@ -182,8 +182,11 @@ the published pages, compatible with GPL-3.0-or-later); fonts SIL OFL 1.1.
   (now a block diagram), tiny diagrams on phones (now scroll), the
   renderer's black margins, Mermaid's drop shadows, the bright phone menu
   button.
+- `scripts/site.sh serve`: preview answered 200 on `/` and `/docs/`, 404
+  on a missing page; container stopped afterwards.
 - Rust gate: `CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?`
-  → see the final line below. The gate's file-size and unsafe checks scan
+  → `0` (`tests: 1708 passed, 0 failed`; cargo-deny bans, licences,
+  sources ok). The gate's file-size and unsafe checks scan
   only `crates/`, so `site/` needed no exclusion.
 
 ## What the owner must do to deploy
@@ -224,4 +227,12 @@ the published pages, compatible with GPL-3.0-or-later); fonts SIL OFL 1.1.
 
 ## Commits
 
-See `git log --oneline master..HEAD` in the final message.
+```
+df6346a docs(site): spec status and track report
+4bfc4ae feat(site): phone layout polish; screenshots of the site in docs/features/site-screenshots
+8a705ca ci(site): build and check the site in its container; manual GitHub Pages deployment
+4aab6c5 feat(site): link, external-request and diagram checks; diagram and gallery refinements
+eb15f6b feat(site): Astro + Starlight project, container build, design system, product pages and docs shell
+2e1dfe2 docs(site): spec for the website and documentation site
+```
+(plus this report's final commit)
