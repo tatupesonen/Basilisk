@@ -77,3 +77,42 @@ pub fn compile(
     let compiled = compile_parsed(&parsed, options);
     (parsed, compiled)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Plugin binding constraints 2 and 6: the results can be held and
+    /// moved across threads.
+    #[test]
+    fn results_are_send_and_sync() {
+        fn check<T: Send + Sync + 'static>() {}
+        check::<Compiled>();
+        check::<Sla>();
+        check::<Diagnostic>();
+        check::<Parsed>();
+        check::<crate::lower::LowerError>();
+    }
+
+    #[test]
+    fn a_byte_order_mark_is_ignored() {
+        let text = "define endian=little;\ndefine space ram type=ram_space size=2 default;\ndefine token t(8) op=(0,7);\n:nop is op=0 { }\n";
+        let mut plain = bk_sleigh_syntax::MemoryLoader::new().with("a.slaspec", text);
+        let mut bom = bk_sleigh_syntax::MemoryLoader::new()
+            .with("a.slaspec", format!("\u{feff}{text}").as_str());
+        let (_, a) = compile(
+            Path::new("a.slaspec"),
+            &Defines::new(),
+            Options::default(),
+            &mut plain,
+        );
+        let (_, b) = compile(
+            Path::new("a.slaspec"),
+            &Defines::new(),
+            Options::default(),
+            &mut bom,
+        );
+        let (a, b) = (a.sla.unwrap(), b.sla.unwrap());
+        assert_eq!(a.encode_packed().unwrap(), b.encode_packed().unwrap());
+    }
+}
