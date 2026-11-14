@@ -208,6 +208,22 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (start as slots free, in this order)
 
+-2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
+   idea of 2026-11-14: kassini as the project's testbed, since it has
+   the cores and memory the Mac lacks. On top of `scripts/remote.sh`:
+   (a) the Windows build and tests under Wine and the Ubuntu 26.04 / GCC
+   15 container run natively there (on the Mac both run under x86-64
+   emulation), as `remote.sh` subcommands, with the scratch scripts kept
+   in `../basilisk-wt/windows-ci/target/windows*` and
+   `../basilisk-wt/gnu-disasm/target/{windows,linux,ubuntu2604}` turned
+   into committed ones (this replaces the old `win-local` item); (b)
+   the long runs that are too heavy for the Mac: the full differential
+   over every language, fuzz targets for minutes rather than seconds,
+   property tests at high case counts, on a schedule there with a
+   summary the coordinator reads; (c) Ghidra itself, built and run
+   headless there, as the oracle the decompiler and analysis tracks will
+   need (D00 oracle tooling: state dumps, recorded p-code) — to be
+   specified with the D00 spec. Nothing of it changes what CI runs.
 -1. Second `name-case` pass (after `sleigh-pcode` and `decomp-cspec`
    merge): the files the first pass skipped, and a second look at what
    it left.
