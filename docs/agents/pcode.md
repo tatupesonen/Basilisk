@@ -204,7 +204,7 @@ Make the x86-64 Linux table of Ghidra's C++ results the oracle and make
 ## Status
 
 Done: classification, product fix, table replaced, generator fixed, host
-independence test, docs. Gate: see "Gate" below. Next (coordinator):
+independence test, docs. Gate green (exit 0). Next (coordinator):
 regenerate the table on x86-64 with the fixed generator (command below).
 
 ## What was measured (ran)
@@ -390,4 +390,7 @@ Linux x86-64 and Windows test runs rest on CI. Not run on x86-64 hardware.
 
 ## Gate
 
-(filled in below)
+`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` (ran, on
+commit `49c0e1d`): exit **0**; `bans ok, licenses ok, sources ok`; last
+line `tests: 1711 passed, 0 failed`. No dependency added (`Cargo.lock`
+unchanged).
