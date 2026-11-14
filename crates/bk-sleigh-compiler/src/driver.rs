@@ -1,0 +1,60 @@
+//! The whole compile: parse, elaborate, build patterns and decision trees,
+//! lower to `bk_sla` (`SleighCompile::run_compilation` up to writing).
+
+use std::path::Path;
+
+use bk_sla::Sla;
+use bk_sleigh_syntax::{Defines, FileLoader, Parsed, parse_file};
+
+use crate::diag::Diagnostic;
+use crate::options::Options;
+
+/// What [`compile`] and [`compile_parsed`] return.
+#[derive(Debug)]
+pub struct Compiled {
+    /// The compiled language, if there was no error.
+    pub sla: Option<Sla>,
+    /// The diagnostics of the compiler (the parser's are in the
+    /// [`Parsed`] value).
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Compiles a parsed specification.
+pub fn compile_parsed(parsed: &Parsed, options: Options) -> Compiled {
+    let outcome = crate::elaborate(parsed, options);
+    let mut diagnostics = outcome.diagnostics;
+    let sla = match outcome.spec {
+        Some(spec) => match crate::lower::lower(&spec) {
+            Ok(sla) => Some(sla),
+            Err(e) => {
+                diagnostics.push(Diagnostic::error(None, format!("Unrecoverable error: {e}")));
+                None
+            }
+        },
+        None => None,
+    };
+    Compiled { sla, diagnostics }
+}
+
+/// Reads, preprocesses (with `defines`), parses and compiles a
+/// specification. Returns the parse too: its diagnostics come first, and
+/// its sources locate every diagnostic's span.
+pub fn compile(
+    path: &Path,
+    defines: &Defines,
+    options: Options,
+    loader: &mut dyn FileLoader,
+) -> (Parsed, Compiled) {
+    let parsed = parse_file(path, defines, loader);
+    if parsed.has_errors() {
+        return (
+            parsed,
+            Compiled {
+                sla: None,
+                diagnostics: Vec::new(),
+            },
+        );
+    }
+    let compiled = compile_parsed(&parsed, options);
+    (parsed, compiled)
+}

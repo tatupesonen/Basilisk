@@ -1,5 +1,8 @@
-//! Spec 6.2: for every shipped specification, the elaboration equals
-//! Ghidra's compiled `.sla` in the canonical form (`bk_sleigh_compiler::canon`).
+//! Spec 6.2: for every shipped specification, the compiled language is
+//! byte for byte Ghidra's: the inflated packed stream equals the reference
+//! `.sla`'s. On a mismatch the test prints `bk_sla::diff` of the two models
+//! and the differing categories of the canonical form
+//! (`bk_sleigh_compiler::canon`).
 
 #![allow(
     clippy::unwrap_used,
@@ -19,7 +22,7 @@ use std::sync::Mutex;
 
 use bk_sla::{Limits, Sla};
 use bk_sleigh_compiler::canon::{self, category};
-use bk_sleigh_compiler::{Options, elaborate};
+use bk_sleigh_compiler::{Options, compile_parsed, elaborate};
 
 /// The result of comparing one specification.
 struct Report {
@@ -67,7 +70,39 @@ fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report 
         report.total = 1;
         return report;
     };
-    let sla = Sla::read_file(&spec.sla, &Limits::default()).unwrap();
+    let reference_bytes = std::fs::read(&spec.sla).unwrap();
+    let reference_stream = bk_sla::inflate(&reference_bytes, &Limits::default()).unwrap();
+    let sla = Sla::decode_packed(&reference_stream, &Limits::default()).unwrap();
+    let compiled = compile_parsed(&parsed, options);
+    match &compiled.sla {
+        None => {
+            let errors: Vec<&str> = compiled
+                .diagnostics
+                .iter()
+                .filter(|d| d.is_error())
+                .take(5)
+                .map(|d| d.message.as_str())
+                .collect();
+            report.differences.push(format!("compile failed: {errors:?}"));
+            report.total += 1;
+        }
+        Some(mine) => {
+            let stream = mine.encode_packed().unwrap();
+            if stream != reference_stream {
+                report.total += 1;
+                let diffs = bk_sla::diff(mine, &sla, 12);
+                report.differences.push(format!(
+                    "packed stream differs ({} vs {} bytes); model differences: {}",
+                    stream.len(),
+                    reference_stream.len(),
+                    diffs.len()
+                ));
+                report
+                    .differences
+                    .extend(diffs.iter().map(|d| format!("  {d}")));
+            }
+        }
+    }
     let ours = canon::of_elaborated(&ours);
     let theirs = canon::of_sla(&sla);
     for (path, _) in theirs.iter() {
@@ -77,13 +112,15 @@ fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report 
     for d in &diffs {
         report.categories.entry(category(&d.path)).or_default().1 += 1;
     }
-    report.total = total;
-    report.differences = diffs.iter().take(12).map(ToString::to_string).collect();
+    report.total += total;
+    report
+        .differences
+        .extend(diffs.iter().take(12).map(ToString::to_string));
     report
 }
 
 #[test]
-fn every_shipped_spec_matches_the_reference_elaboration() {
+fn every_shipped_spec_compiles_to_the_reference_bytes() {
     let Some(reference) = bk_testkit::skip::require_reference() else {
         return;
     };

@@ -27,8 +27,10 @@ mod compiler;
 pub mod decision;
 mod equation;
 pub mod diag;
+mod driver;
 pub mod elaborated;
 pub mod ids;
+pub mod lower;
 pub mod options;
 pub mod pattern;
 pub mod pcode;
@@ -38,6 +40,7 @@ pub mod symbols;
 pub mod template;
 
 pub use diag::{Diagnostic, Severity};
+pub use driver::{Compiled, compile, compile_parsed};
 pub use elaborated::{Constructor, ContextChange, Elaborated, Outcome, PrintPiece, Table};
 pub use options::Options;
 
