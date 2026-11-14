@@ -189,12 +189,25 @@ fn every_language() {
             eprintln!("{}: oracle crashed on {crash}", r.id);
         }
     }
+    let crashes: usize = results.iter().map(|r| r.oracle_crashes.len()).sum();
+    eprintln!(
+        "summary: {} languages, {failures} differing records, {crashes} inputs crash the oracle",
+        results.len()
+    );
+    for r in results.iter().filter(|r| !r.oracle_crashes.is_empty()) {
+        eprintln!(
+            "summary: {} oracle crashes {}, unset handles tolerated {}",
+            r.id,
+            r.oracle_crashes.len(),
+            r.tolerated.unset_handle
+        );
+    }
     let exceptions = exceptions();
     let mut table = String::new();
     let (mut targeted, mut confirmed) = (0usize, 0usize);
     let mut below = Vec::new();
     for r in &results {
-        table.push_str(&r.row());
+        table.push_str(&r.snapshot_row());
         table.push('\n');
         targeted += r.targeted;
         confirmed += r.confirmed.len() + r.over_20_decoded;
@@ -233,7 +246,8 @@ fn every_language() {
         .join("sleigh-coverage.txt");
     std::fs::write(&out, &table).unwrap();
     eprintln!("coverage table written to {}", out.display());
-    insta::assert_snapshot!("coverage_table", table);
+    // The thresholds first: the snapshot is the most detailed check and the
+    // one most likely to show a difference, and it must not hide them.
     assert_eq!(failures, 0, "records differ from pcodedump");
     assert!(
         overall >= 0.99,
@@ -244,4 +258,5 @@ fn every_language() {
         below.is_empty(),
         "below threshold without an exception: {below:#?}"
     );
+    insta::assert_snapshot!("coverage_table", table);
 }
