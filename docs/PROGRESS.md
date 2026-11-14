@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 22:05)
+## Now — RESUME HERE (2026-11-14 22:35)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 22:05)
+### Running (state at 2026-11-14 22:35)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,29 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Finished, integration gate running on the build host (started
+22:33):** `decomp-range` (`a8550db77f2254819`) on branch `integration`
+(worktree `../basilisk-wt/decomp-range`, `8932173`). New crate
+`bk-decomp-range`: `CircleRange` (D01), a 32-byte `Copy` value, no
+allocation, no panic on any field values. All 117 `testcirclerange`
+tests ported and passing; oracle tables from both reference builds
+(152,913 rows each, checked in; the full-size set of 592,213 rows is
+regenerated and replayed wherever the reference exists); 11 properties;
+fuzz 44 M runs, no finding; 5.8–8.0 ns per call. The two builds differ
+in 834 rows, one cause (an undefined `INT_LEFT` shift that g++ and
+Apple clang compile differently); UBSan marks 13,085 rows at 18 sites
+and valgrind 2,777 rows with uninitialised reads, all of which Basilisk
+matches. **ADR-041** records the rule (undefined arithmetic as x86-64
+Linux computes it; empty ranges have defined fields; a defined result
+where Ghidra crashes or hangs; Ghidra's unsound results kept).
+`GHIDRA-BUGS.md` entries 19–23. Its gates: 2,206 tests. Gap: the
+checked-in table is smaller than the spec's counts (the full set runs
+only with the reference); Microsoft's compiler not run. Follow-up for
+`followups`: `bk_core::bits::sign_extend` treats narrowing as
+truncation, which is not what Ghidra's builds compute (undefined in
+Ghidra, `address.cc:1003`); the crate has its own copy. Gate green →
+push, CI, merge, delete, clean, `scripts/remote.sh publish`.
 
 **Merged: `testbed`** (`ab8ffc5547650775f`; `1cf2735`, merged directly
 at 22:04 — scripts, `tools/testbed/` and docs only; both gates green on
@@ -224,7 +247,7 @@ left as they are).
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `sleigh-perf-linux` (worktree `../basilisk-wt/sleigh-perf-linux`, cut from `master` `12f1705`) | Opus | `a20fadd7bd1040732` | started 22:03. Queue item 4 below: re-measure `bk-sleigh` against the reference on the build host's new CPU model, profile both with `perf`, close the single-thread gap without `unsafe` or output changes, numbers on both machines; plus label numbers truncated to 32 bits as in Ghidra and the host-dependent oracle-crash count taken out of the `every_language` snapshot. May touch `bk-sla` if the profile points there. |
-| `decomp-range` (worktree `../basilisk-wt/decomp-range`, cut from `master` `4891f37`) | Opus | `a8550db77f2254819` | started 21:24. D01: `bk-decomp-range` from `features/decomp-range.md` (`CircleRange`; 117 `testcirclerange` tests, oracle table generated on both C++ libraries and compared, UBSan and valgrind on the oracle, properties, fuzz target, benchmark). Adds lines to the root `Cargo.toml`, which `sleigh-fixups` also changed (removals): resolve by reading. |
+| `spec-decomp-wave1` (worktree `../basilisk-wt/spec-decomp-wave1`, cut from `master` `6f8d705`) | Opus | `a3e1e4fb110ba60cf` | started 22:33. Queue item 6 below: writes `features/decomp-oracle.md` (D00: the reference console and its extension, dump formats, state loading, recorded p-code, determinism and both reference builds, Ghidra headless as a later oracle) and `features/decomp-cfg.md` (D04: `bk-decomp-cfg`, the block graph and structuring, ADR-025 item 3b); docs only; every statement read or run. It was told the next ADR number is 041, which `decomp-range`'s decision has since taken: renumber its proposals when recording. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -447,11 +470,11 @@ start a fresh agent briefed from the branch's files.
    FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
    CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
    Measure again first and say which CPU model each number is for.
-5. **D01 `decomp-range` (Opus; running since 21:24)** — `bk-decomp-range` from
+5. **D01 `decomp-range` (finished 22:31, merging)** — `bk-decomp-range` from
    `features/decomp-range.md` (117 `testcirclerange` tests); spec
    complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
    027, 028) is the main line from here on: one slot stays on it.
-6. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** — an
+6. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** (running since 22:33) — an
    Opus agent writes `features/decomp-oracle.md` and
    `features/decomp-cfg.md`; the plan's sections 4.2, 6 and 9.1 are the
    briefs (the earlier spec agent `a0c25da932de14a37` was Fable; its
@@ -501,7 +524,7 @@ Side work for the other slot, in this order:
    registry, CLI help from the binary, the Python API reference from
    the plugin package when it exists; adds the rule to `RULES.md` that
    a track changing user-visible behaviour updates its page.
-12. **`followups`** (Opus): the 11 property-test files that fix their case count and so ignore `PROPTEST_CASES` (list in `docs/agents/testbed.md`); `bk-lang` and `bk-testkit` XML reading onto
+12. **`followups`** (Opus): `bk_core::bits::sign_extend` on narrowing against what Ghidra's builds compute (`docs/agents/decomp-range.md`, Follow-ups 8); the 11 property-test files that fix their case count and so ignore `PROPTEST_CASES` (list in `docs/agents/testbed.md`); `bk-lang` and `bk-testkit` XML reading onto
    `bk-marshal`'s document (ADR-011); crates adopt `bk-testkit` in
    place of local "find Ghidra" helpers; a differential test of
    `bk-marshal`'s encoders against Ghidra's binary; `windows_spelling`
@@ -530,9 +553,12 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
-   `decomp-range` reports → merge; start the D00/D04 spec agent (queue
-   item 6). `sleigh-perf-linux` reports → merge; start queue item 7
-   (the monitor type). After each merge: `scripts/remote.sh publish`.
+   `decomp-range`: integration gate → CI → merge (state above).
+   `sleigh-perf-linux` reports → merge; start queue item 7 (the monitor
+   type). `spec-decomp-wave1` reports → review both specs, amend
+   `decomp-plan.md` where it found the plan wrong, merge directly (docs
+   only), start D00 `decomp-oracle` and then D04 `decomp-cfg`. After
+   each merge: `scripts/remote.sh publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 

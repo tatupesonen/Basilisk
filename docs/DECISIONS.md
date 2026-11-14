@@ -1281,3 +1281,61 @@ insertion sort up to 32 elements, so on paper it equals the rule for
 the 32-record RISC-V lists and the tricore and Loongarch rows; NDS32 (35
 effects), the 64-record RISC-V lists and the golang row are unknown. A
 third table would enter the harness as one more library.
+
+## ADR-041 — Undefined arithmetic in `CircleRange` is computed as the x86-64 Linux build computes it
+
+*2026-11-14. Proposed by track `decomp-range`; evidence in
+`docs/agents/decomp-range.md` and
+`crates/bk-decomp-range/tests/data/README.md`.*
+
+**Context.** Ghidra's `CircleRange` (`rangeutil.cc`) does arithmetic
+that C++ leaves undefined for some inputs: shifts by 64 or more or by a
+negative count, an `int4` step shifted past 31 bits, signed overflow
+(`valRight + 1`, line 1331; `(int4)in2.left * 8`, line 1283), reads of
+the bounds of an empty range that no constructor initialised. The
+oracle was generated from the same Ghidra commit by Apple clang on
+AArch64 and by g++ on x86-64 Linux, and run on x86-64 under
+UndefinedBehaviorSanitizer (with handlers that record every event
+against its row) and under valgrind: 13,085 of 152,913 rows hit
+undefined arithmetic at 18 sites, and 2,777 rows read uninitialised
+bounds. On all of those the two builds give the same result, with one
+exception: the `INT_LEFT` push-forward with a shift amount of 64 or
+more (`rangeutil.cc:1269–1270`), where g++ on x86-64 shifts modulo 64
+and Apple clang on AArch64 turns the two shifts into one vector `USHL`
+that reads the amount's low byte as a signed count — 834 rows (5,185 in
+the extended case set). Two more inputs make Ghidra crash or hang: a
+step bound above 2³⁰ in the `INT_LEFT` push-forward (the step doubles to
+0 and `normalize` divides by it, SIGFPE on x86-64) and in the `INT_MULT`
+push-forward with a constant whose low 32 bits are 0 (the doubling loop
+never ends).
+
+**Decision.** `bk-decomp-range` defines every such case, by these rules:
+
+* Undefined arithmetic is computed as the x86-64 Linux build computes
+  it (ADR-021's platform): shift counts modulo 64, the `int4` step shift
+  modulo 32, wrapping signed arithmetic, and the `SUBPIECE` offset case
+  as both compilers compile it. Where the AArch64 build differs
+  (`INT_LEFT`), Basilisk follows x86-64; each differing row of the
+  macOS table is recognised by recomputing the `USHL` result and the
+  count is pinned (ADR-040's form, for a compiler instead of a library).
+* An empty range has defined fields (bounds 0, mask 0, step 1), and the
+  methods that read them compute with those; the oracle is generated
+  with the same values, so its rows are comparable.
+* Where Ghidra crashes or hangs, Basilisk returns: a division by a zero
+  step gives `x / 0 = 0`, `x % 0 = x`; the `INT_MULT` loop returns
+  `false`. The oracle stays below those bounds and the results are
+  pinned by the crate's own edge-case tests.
+
+Logic defects that are not undefined behaviour — the unsound results
+listed in `docs/GHIDRA-BUGS.md` entry 21 — are **kept as Ghidra has
+them**, since the decompiler's output depends on them (ADR-001); the
+soundness properties exclude each by name.
+
+**Consequences.** Every row of the x86-64 table equals Basilisk's
+result; the macOS table equals it except in the counted `INT_LEFT`
+rows. The rows that depend on undefined behaviour are marked in the
+table (` #ub=…`, ` #uninit`), so a change in either compiler shows as a
+moved count, not as a silent difference. Microsoft's compiler was not
+run; a third table would enter as one more host. Ghidra's own callers
+bound the step at 32, so none of the crash or hang inputs is reachable
+from the decompiler today; they matter because the type is public API.
