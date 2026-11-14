@@ -97,6 +97,41 @@ Ghidra's C++ snippet compiler is `PcodeSnippet` (`CPP/pcodeparse.y`), a
 
 ## Done / in progress / next
 
-* Done: reading, oracle source.
-* In progress: crate skeleton.
-* Next: lexer.
+Paused by the coordinator (usage limit), 2026-11-14.
+
+* Done: reading; oracle `tools/reference/snippetdump.cc` (format: input
+  `S<TAB>source<TAB>base<TAB>body[<TAB>index:name]...`, base `continue` |
+  `0x…` (start carried base) | `fixed:0x…` (executable, carried base
+  untouched), fields escaped `\\ \t \n \r \0`; output `H`, then per record
+  `O source base next errcount first-error xml` or `F source base
+  rejected|exception message`, then `T ok failed`). Built by hand into
+  `target/snip/snippetdump` and checked: PcodeParserTest body gives the
+  expected template (step 16); `010` = 8, `09` = 0, `0x` = BADINTEGER;
+  non-fatal errors leave the template in place.
+* Done (crate `bk-sleigh-snippet`, builds, clippy clean, 4 unit tests):
+  `lex.rs` (PcodeLexer), `scope.rs` (Language/Locals/Resolver, name
+  mangling for the builder's extra keywords), `options.rs` (Parameter,
+  TempAllocator, ExtraSpace, Options with truncations, limits),
+  `parse/{mod,stmt,expr}.rs` (grammar per the bison automaton, pending
+  expressions for message order), `error.rs` (Rejected/Aborted/TooLong,
+  `ghidra_message`), `compile.rs` (SnippetCompiler, driver), `lib.rs`
+  (`compile`). Root `Cargo.toml`: one `[workspace.dependencies]` line.
+* In progress: `tests/common/mod.rs` written (roots, snippetdump lookup,
+  registry, load_sla); `tests/common/corpus.rs` and `oracle.rs` not yet
+  written (declared in mod.rs — the test crate does not compile until they
+  exist).
+* Next (after `git merge master`, then build/test via `scripts/remote.sh`):
+  1. corpus.rs: per language (registry), pspec then each cspec in document
+     order; `<pcode>` and `*_pcode` elements; params inputs then outputs;
+     executable (parent `segmentop` or `*_pcode`) → `fixed:0x2000`, others
+     carried from `unique_base+0x200` per (language, cspec); dynamic bodies
+     compiled too but counted apart. oracle.rs: write records, run tool,
+     parse results.
+  2. tests/differential.rs (XML equal, failure equal, next base equal, first
+     warning equal); error-case corpus vs oracle; PcodeParserTest port (step
+     0x100); unit tests per symbol kind/statement/error; proptest; fuzz
+     target `bk_sleigh_snippet_compile` + replay; benches; PERF.md.
+  3. build step for snippetdump in `scripts/build-reference.sh`, README
+     section; feature doc §8/§9; checklist mark in
+     `docs/inventory/tests/test-integrationtest.md`; Windows clippy on Mac;
+     both remote gates; check-dep-age.
