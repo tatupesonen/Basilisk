@@ -155,7 +155,7 @@ start a fresh agent briefed from the branch's files.
    updates its page.
 0b. **`x86-oracle`** (Opus, small): make the x86-64 table
    (`../reference-x86_64/opbehavior_cpp.x86_64.txt.gz`) `bk-pcode`'s
-   checked-in oracle, fix the 106 rows where basilisk does not follow
+   checked-in oracle, fix the 106 rows where Basilisk does not follow
    x86-64 (NaN inputs), drop the "created NaN sign" exception, record the
    provenance (ADR-029).
 0c. `ref-nofma` is merged (2026-11-14; ADR-034): `../reference` is the
@@ -243,7 +243,7 @@ start a fresh agent briefed from the branch's files.
 * **Idea recorded, not queued** (owner, 2026-11-14: "Not now"): improving
   the SLEIGH specifications themselves — testing each instruction's
   p-code against an emulator or a CPU to find specification bugs, and
-  basilisk-owned overlays for unimplemented instructions and for vector
+  Basilisk-owned overlays for unimplemented instructions and for vector
   operations that Ghidra models as opaque user ops. Needs an ADR
   (ADR-002 says the specifications are used unchanged) if it is taken up.
 * `spec-pe` and `store-spike` (Fable, paused since 2026-11-13) are
@@ -383,7 +383,7 @@ None. The owner answered the open questions on 2026-11-14 (`DIRECTION.md`,
   instrumented build printing exactly those 25 ties. The variants decode
   identically (checked exhaustively per node, and by `pcodedump`). The
   `log` implementation matters too: fdlibm's (the `libm` crate) changes
-  two files, so basilisk needs a `log` bit-equal to glibc's. Ghidra's
+  two files, so Basilisk needs a `log` bit-equal to glibc's. Ghidra's
   shipped Java-built files agree with x86-64 at all 25 nodes.
 * **`spec-plugin` merged**: `inventory/05-extension-points.md` (335
   bundled scripts counted and classified), `features/plugin-api.md` (all
@@ -391,14 +391,14 @@ None. The owner answered the open questions on 2026-11-14 (`DIRECTION.md`,
   tracks) and `features/plugin-binding-constraints.md` (15 rules for the
   other specs). Found: ADR-014's embedding cannot coexist with a single
   binary (Blockers); Ghidra commits a script's changes even when it
-  throws (basilisk rolls back, with an opt-out); PyO3 0.30.1 needs no
+  throws (Basilisk rolls back, with an opt-out); PyO3 0.30.1 needs no
   `unsafe` in `bk-plugin`; 28 % of the bundled scripts port mechanically
   once the program model is bound, 53 % with decompiler, data-type and
   analysis bindings. Not verified: anything on Linux or Windows.
 * Owner, 2026-11-14 (later): the coordinator does no hands-on work, all
   of it goes to Opus 5.5 subagents; a static website and user
   documentation in the monorepo (Starlight, Mermaid, built in a
-  container, basilisk's own style: ADR-030, ADR-031).
+  container, Basilisk's own style: ADR-030, ADR-031).
 
 ### 2026-11-13 — work resumed; `ui`, `windows-ci`, `gnu-disasm`, SLEIGH and decompiler specs, decompiler research merged
 * **`bk-ui` merged** (gate on the merge: green, 1,608 tests). Design
@@ -551,7 +551,7 @@ None. The owner answered the open questions on 2026-11-14 (`DIRECTION.md`,
   31, `testmultiprec.cc` 5, `BigFloatTest` 26, `FloatFormatTest` 58, all 40
   `OpBehavior*Test` classes. A differential test replays 87,176 cases
   evaluated by Ghidra's compiled C++ (`tests/data/opbehavior_cpp.txt.gz`);
-  basilisk differs only in three documented classes.
+  Basilisk differs only in three documented classes.
 * Learned: Ghidra's float behaviour is host-dependent in places (ADR-021:
   take x86-64's). The oracle found an undocumented difference (`INT_SEXT`
   with odd sizes, 280 rows), which was reverted to Ghidra's behaviour — the

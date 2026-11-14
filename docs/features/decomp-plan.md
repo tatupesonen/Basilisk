@@ -195,7 +195,7 @@ names the levels it must pass.
   build yet.
 * `option togglerule <rule> off` disables one rule and `option
   currentaction <root> <group> off` a group, in the reference console.
-  **So Ghidra can be run with exactly the rules basilisk has ported so
+  **So Ghidra can be run with exactly the rules Basilisk has ported so
   far**, and compared at L2, L3 and L5 in that configuration. A rule
   family is accepted against Ghidra-with-only-those-rules, not against
   hand-written expectations and not only when the whole pipeline exists.
@@ -212,7 +212,7 @@ the project adds one C++ file to the reference build:
   patching Ghidra. It registers console commands (as `ifacedecomp.cc`'s
   `IfaceDecompCapability` does), chiefly `bk dump state <file>`: the
   **complete** state of the current function in a line-oriented text
-  format defined by basilisk — every varnode (creation index, address,
+  format defined by Basilisk — every varnode (creation index, address,
   size, both flag words, defining op, readers in order, type reference,
   `consumed`, `nzm`, symbol entry, merge group), every op (sequence
   number, order, opcode, both flag words, inputs, output, parent block),
@@ -233,15 +233,15 @@ format into their own structures and write it back. Three uses:
    same orders. It is the acceptance test of the IR track and needs no
    pass to exist.
 2. **Pass isolation (L2)** — load the dump taken before pass P, run
-   basilisk's P, compare with the dump taken after Ghidra's P. Heritage,
+   Basilisk's P, compare with the dump taken after Ghidra's P. Heritage,
    each action, each rule pool run and the merge sequence can each be
    developed and accepted this way, in any order.
 3. **Divergence reports** — when a full run differs, the two dumps at the
    last agreeing break point are the bug report.
 
-The dump format is basilisk's, versioned, and documented in
+The dump format is Basilisk's, versioned, and documented in
 `tools/reference/README.md`; captured dumps are gzip-compressed fixtures.
-Because the format describes Ghidra's state, not basilisk's layout, it
+Because the format describes Ghidra's state, not Basilisk's layout, it
 does not constrain the IR design.
 
 ### 4.3 Corpus
@@ -544,7 +544,7 @@ of that action (L3).
 **R1–R9 (rule families).** Evidence, per family: (L2+L3) with the
 reference console configured to enable only the base set (R1) plus the
 family's rules — every other rule switched off with `option togglerule` —
-load Ghidra's state at each start of each rule pool, run basilisk's pool
+load Ghidra's state at each start of each rule pool, run Basilisk's pool
 with the same rules, and require the same trace records in the same order
 and the same state at the pool's end, over the data-test corpus and the
 extended corpus (S subset, L all); every rule of the family applies at
@@ -765,7 +765,7 @@ change, only D16b's design.
 2. **State dumps through a console extension compiled with
    `-fno-access-control`** (D00), and the debug console in `REF/`.
    Proposed ADR: "The decompiler's intermediate state is compared with
-   and loaded from Ghidra's through a basilisk-defined dump format." It
+   and loaded from Ghidra's through a Basilisk-defined dump format." It
    adds C++ to `tools/reference/` and one file to the reference build's
    copy — no change to `../ghidra`.
 3. **Rule families accepted in rule-subset configurations** (section 6):

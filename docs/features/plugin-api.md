@@ -16,13 +16,13 @@ verified is marked **unverified**.
 
 ## 1. Purpose
 
-Users must be able to extend basilisk themselves, as they extend Ghidra
-with scripts, analyzers, loaders, exporters and plugins. basilisk's
+Users must be able to extend Basilisk themselves, as they extend Ghidra
+with scripts, analyzers, loaders, exporters and plugins. Basilisk's
 extension language is Python 3: a package `basilisk` exposes the program
 model, analysis, the decompiler and UI hooks with a Python-shaped API; a
 flat scripting layer keeps Ghidra's `FlatProgramAPI`/`GhidraScript` names
 so existing scripts port with small, mechanical changes; and the same
-package is importable from any Python process to drive basilisk as a
+package is importable from any Python process to drive Basilisk as a
 library (PyGhidra's role).
 
 ## 2. Ghidra sources
@@ -38,7 +38,7 @@ library (PyGhidra's role).
 | `Framework/Project/.../plugintool/{PluginInfo,Plugin}.java`, `BASE/app/plugin/ProgramPlugin.java` | Which program events a plugin can follow (inv. 7) — not the service framework itself (ADR-001) |
 | `BASE/app/util/headless/{HeadlessAnalyzer,HeadlessScript}.java` | Pre/post scripts, continuation options, headless store (inv. 10) |
 | `PYG/` (`src/main/py/src/pyghidra/*.py`, `PyGhidraScriptProvider.java`, `support/pyghidra_launcher.py`) | The process model (Python hosts the application), script globals, `transaction()` rolling back, finding a Python and a virtual environment (inv. 11) |
-| `Framework/SoftwareModeling/.../symbol/SourceType.java` | `AI` source type at `ANALYSIS` rank (lines 28-54) — basilisk's `Provenance::Model` |
+| `Framework/SoftwareModeling/.../symbol/SourceType.java` | `AI` source type at `ANALYSIS` rank (lines 28-54) — Basilisk's `Provenance::Model` |
 | Ghidra's bundled scripts (335; inv. 3) | The porting target and the ten acceptance scripts (4.5) |
 
 Java is the only implementation of all of this; there is no C++ side.
@@ -59,7 +59,7 @@ Java is the only implementation of all of this; there is no C++ side.
 5. Ports of ten bundled Ghidra scripts as acceptance (4.5); further ports
    as a later track.
 
-**Not in:** running Java or Jython (basilisk has no JVM, ADR-005); a
+**Not in:** running Java or Jython (Basilisk has no JVM, ADR-005); a
 service-locator framework (ADR-001); Ghidra's OSGi bundles; sandboxing
 (plugins are trusted, ADR-014); plugins that draw egui directly (views are
 declarative, 4.7.6); file systems, relocation handlers, ELF extensions,
@@ -82,10 +82,10 @@ build. The tracks that build it are in section 7.
 
 ## 4. Behaviour
 
-### 4.1 Process model: the interpreter hosts basilisk
+### 4.1 Process model: the interpreter hosts Basilisk
 
 ADR-014 says "`bk-plugin` embeds CPython", and `DIRECTION.md` says
-basilisk is a single binary. Taken literally — the `basilisk` executable
+Basilisk is a single binary. Taken literally — the `basilisk` executable
 links libpython — the two cannot both hold, on any of the three systems:
 
 - **Linking libpython dynamically** (PyO3 `auto-initialize`): the
@@ -101,7 +101,7 @@ links libpython — the two cannot both hold, on any of the three systems:
   `PYO3_CONFIG_FILE` with `shared=false`; `pyo3-build-config`
   `impl_.rs`, the `shared(…)` default): the interpreter is always
   present, so it is no longer optional; the minor version is fixed by
-  the basilisk release, so users' virtual environments must match it;
+  the Basilisk release, so users' virtual environments must match it;
   the standard library must be shipped; and on Windows third-party
   extension modules (`numpy`, `capstone`, model clients with native
   parts) import `python3XX.dll` by name and cannot bind to an interpreter
@@ -116,7 +116,7 @@ links libpython — the two cannot both hold, on any of the three systems:
   library would put two copies of every `bk-*` crate in the process with
   no stable ABI between them [J].
 
-**Decision (ADR candidate A, section 9.1).** basilisk's Python support is
+**Decision (ADR candidate A, section 9.1).** Basilisk's Python support is
 the `basilisk` **extension module**, and a CPython interpreter hosts it —
 which is how Ghidra's own CPython support works (PyGhidra starts the JVM
 inside CPython; Python scripts run only "if Ghidra was started with
@@ -150,7 +150,7 @@ PyGhidra", `PyGhidraScriptProvider.java:71-77`). Concretely:
 5. **Interpreter search order**: `--python <path>`; the setting
    `plugins.python_executable`; `BASILISK_PYTHON`; the active virtual
    environment (`VIRTUAL_ENV`, then `bin/python` or `Scripts\python.exe`);
-   the basilisk-managed environment (below); on Windows `py -3`; then
+   the Basilisk-managed environment (below); on Windows `py -3`; then
    `python3` and `python` on `PATH`. Each candidate is probed once with
    `-c` (version, free-threading, `basilisk.__version__`) and the result
    cached with the executable's modification time.
@@ -374,14 +374,14 @@ under their own names, written in Python over the object model (4.2). It
 exists so that scripts port with small changes; new code should use the
 object model. Rules:
 
-1. **Same names, same arguments, same results** where basilisk has the
+1. **Same names, same arguments, same results** where Basilisk has the
    concept. Ghidra's overloads become one Python function with optional
    or typed arguments (Python has no overloading); each overload in
    Ghidra is a row of the drift test (section 6.3).
-2. Results are basilisk objects, which in a flat-layer script also answer
+2. Results are Basilisk objects, which in a flat-layer script also answer
    Ghidra's bean-style names (4.4.2), so `getFunctionAt(a).getName()`
    works as well as `.name`.
-3. Java exceptions become their basilisk classes: `CancelledException` →
+3. Java exceptions become their Basilisk classes: `CancelledException` →
    `CancelledError`, `MemoryAccessException` → `MemoryAccessError`,
    `InvalidInputException` → `InvalidNameError`,
    `DuplicateNameException` → `DuplicateNameError`,
@@ -393,7 +393,7 @@ object model. Rules:
 4. A method whose backing feature does not exist yet raises
    `UnsupportedError` naming the feature and milestone ("needs projects,
    M8"); this is behaviour, listed below and checked by the table test,
-   not a stub. A method with no basilisk meaning is absent, and the table
+   not a stub. A method with no Basilisk meaning is absent, and the table
    says why.
 
 Status column: **same** — same behaviour; **same\*** — same, with the
@@ -422,7 +422,7 @@ equivalent new code should use.
 | `setPlateComment`, `setPreComment`, `setPostComment`, `setEOLComment`, `setRepeatableComment` | same | `program.comments.set(a, CommentKind.X, text)` |
 | `getPlateComment`, `getPreComment`, `getPostComment`, `getEOLComment`, `getRepeatableComment` | same | `program.comments.get(a, CommentKind.X)` |
 | `find` (3: byte, bytes, text) | same | `program.memory.find(pattern, start)`; text: `program.listing.find_text(text)` (Ghidra searches comments, labels, mnemonics and operands in that order) |
-| `findBytes` (5, one deprecated) | same\* | `program.memory.find_pattern(regex, start_or_set, limit=1, alignment=1, forward=True)`; Ghidra matches a Java regular expression against the bytes read as ISO-8859-1 characters; basilisk translates the pattern to `regex::bytes` syntax, and the patterns Java and Rust read differently are listed in the implementation's tests |
+| `findBytes` (5, one deprecated) | same\* | `program.memory.find_pattern(regex, start_or_set, limit=1, alignment=1, forward=True)`; Ghidra matches a Java regular expression against the bytes read as ISO-8859-1 characters; Basilisk translates the pattern to `regex::bytes` syntax, and the patterns Java and Rust read differently are listed in the implementation's tests |
 | `findStrings`, `findPascalStrings` | same | `program.memory.find_strings(set, min_length, alignment, require_null_end, all_char_widths)`, `find_pascal_strings(…)` |
 | `createFunction`, `removeFunction`, `removeFunctionAt` | same | `program.functions.create(entry, name=None)`, `.remove(f)` |
 | `getFunctionAt`, `getFunctionContaining`, `getFunctionBefore` (2), `getFunctionAfter` (2), `getFirstFunction`, `getLastFunction` | same | `program.functions.at/containing/before/after(x)`, `.first`, `.last` |
@@ -445,7 +445,7 @@ equivalent new code should use.
 | `removeReference`, `setReferencePrimary` (2) | same | `program.references.remove(r)`, `.set_primary(r, True)` |
 | `createEquate` (2), `getEquate` (2), `getEquates`, `removeEquate` (2), `removeEquates` | same | `program.equates.create/get/at/remove(…)` |
 | `createBookmark`, `getBookmarks`, `removeBookmark` | same | `program.bookmarks.create(a, category, note)`, `.at(a)`, `.remove(b)` |
-| `openDataTypeArchive` (deprecated), `openFileDataTypeArchive` | same\* | `basilisk.types.open_archive(path, read_only)`: basilisk's own archive format; a Ghidra `.gdt` is a packed database basilisk does not read (ADR-003) and raises `UnsupportedError` naming that |
+| `openDataTypeArchive` (deprecated), `openFileDataTypeArchive` | same\* | `basilisk.types.open_archive(path, read_only)`: Basilisk's own archive format; a Ghidra `.gdt` is a packed database Basilisk does not read (ADR-003) and raises `UnsupportedError` naming that |
 | `saveProgram` (2: program; program and project path) | same\* / later (M8) | `program.save()`; the form with a project folder path needs projects (M8) |
 | `getProjectRootFolder` | later (M8) | projects |
 | `getByte`, `getShort`, `getInt`, `getLong`, `getFloat`, `getDouble`, `getBytes` | same\* | `program.memory.read_i8/i16/i32/i64/f32/f64(a)`, `read(a, n)`; signed like Java's types; `getBytes` returns `bytes` (Python has no signed byte arrays; `b[i]` is 0–255 where Java gave −128–127 — the one change a port may need) |
@@ -473,12 +473,12 @@ equivalent new code should use.
 | `setToolStatusMessage` | same | `basilisk.ui.status(msg)`; `ImproperUseError` headless |
 | `show` (2) | same\* | `basilisk.ui.show_addresses(title, addresses)`: a results view; headless prints the addresses (Ghidra raises) |
 | `createTableChooserDialog` (2) | same\* | `basilisk.ui.table(title, columns, rows, executor=None)`: a declarative table view (4.7.6); headless prints the rows (Ghidra raises) |
-| `getCodeUnitFormat` | same\* | `program.listing.format(unit)` gives the listing text of a unit as basilisk shows it |
+| `getCodeUnitFormat` | same\* | `program.listing.format(unit)` gives the listing text of a unit as Basilisk shows it |
 | `getPlateCommentAsRendered`, `getPreCommentAsRendered`, `getPostCommentAsRendered`, `getEOLCommentAsRendered`, `getRepeatableCommentAsRendered` | same | `program.comments.rendered(a, kind)`: annotations expanded |
 | `getState` | same\* | a `GhidraState`-like object: current program, location, selection, highlight, `getEnvironmentVar`/`addEnvironmentVar`/`removeEnvironmentVar`/`getEnvironmentNames`; `getTool()` and `getProject()` return `None` |
 | `getControls` | same\* | writer, error writer and monitor |
-| `runScript` (4), `runScriptPreserveMyState` | same | runs another basilisk script with the same (or a copied) state, its transaction nested in the caller's (4.9) |
-| `runCommand` (2: command, background command) | same\* | runs a `basilisk.ghidra` command object (`applyTo(program, monitor)`); basilisk provides the commands bundled scripts use, by frequency in tier A/B: `DisassembleCommand` (18 uses), `CreateFunctionCmd` (12), `ClearFlowAndRepairCmd` (7), `DemanglerCmd` (6), `SetFlowOverrideCmd` (4), `DecompilerSwitchAnalysisCmd`, `CreateDataCmd`, `CompoundCmd`, `BookmarkEditCmd`, `AddLabelCmd` (3 each), `RenameLabelCmd` (2) |
+| `runScript` (4), `runScriptPreserveMyState` | same | runs another Basilisk script with the same (or a copied) state, its transaction nested in the caller's (4.9) |
+| `runCommand` (2: command, background command) | same\* | runs a `basilisk.ghidra` command object (`applyTo(program, monitor)`); Basilisk provides the commands bundled scripts use, by frequency in tier A/B: `DisassembleCommand` (18 uses), `CreateFunctionCmd` (12), `ClearFlowAndRepairCmd` (7), `DemanglerCmd` (6), `SetFlowOverrideCmd` (4), `DecompilerSwitchAnalysisCmd`, `CreateDataCmd`, `CompoundCmd`, `BookmarkEditCmd`, `AddLabelCmd` (3 each), `RenameLabelCmd` (2) |
 | `getScriptName`, `getSourceFile`, `setSourceFile`, `getCategory` | same | from the file and its header |
 | `getScriptArgs`, `setScriptArgs` | same | `sys.argv[1:]` as well |
 | `setPropertiesFile`, `setPropertiesFileLocation`, `setPotentialPropertiesFileLocations` | same | where `.properties` values come from |
@@ -490,7 +490,7 @@ equivalent new code should use.
 | `importFile`, `importFileAsBinary`, `createProgram` (3), `openProgram`, `closeProgram` | same | `basilisk.import_file(path, …)`, `basilisk.create_program(name, language, compiler)`, `basilisk.ui.open(program)`, `.close(program)` |
 | `getDemangled` (deprecated) | later (M6) | `basilisk.demangle(name)` with the demanglers |
 | `getUserName` | same | the operating-system user |
-| `getGhidraVersion` | same\* | returns basilisk's version string; scripts that compare it with Ghidra version numbers must be changed |
+| `getGhidraVersion` | same\* | returns Basilisk's version string; scripts that compare it with Ghidra version numbers must be changed |
 | `toHexString` (4: byte, short, int, long) | same | Java's two's-complement width for the type named by a keyword (`toHexString(v, zeropad, header, width=8)`) |
 | `setServerCredentials`, `setAnonymousServerCredentials` | later (M8) | the multi-user server |
 | `execute` (2), `set` (3) | none | the runner's own entry points; "not intended to be called by script writers" (`GhidraScript.java:278-284`) |
@@ -513,7 +513,7 @@ They import from 86 `ghidra.*` packages (849 import lines), dominated by
 `ghidra.app.script`, `ghidra.program.model.{address,listing,symbol,mem,data,lang}`
 and `ghidra.util.{exception,task}`.
 
-1. **Bean names.** Every basilisk object answers `getX()` and `isX()`
+1. **Bean names.** Every Basilisk object answers `getX()` and `isX()`
    for its property `x` and `setX(v)` for a writable one, by one generic
    rule in the binding's base class, plus an alias table for names that
    differ (`getEntryPoint` → `entry`, `getFunctionManager` → `functions`,
@@ -533,7 +533,7 @@ and `ghidra.util.{exception,task}`.
    (`ByteDataType`, `StringDataType`, …), `AddressSet`,
    `CancelledException`, `MemoryAccessException`, and the command classes
    of 4.4.2. A port changes `from ghidra.x.y import Z` to
-   `from basilisk.ghidra import Z` — a mechanical edit. basilisk does not
+   `from basilisk.ghidra import Z` — a mechanical edit. Basilisk does not
    install a fake top-level `ghidra` package, so it never collides with
    PyGhidra in the same environment.
 
@@ -551,7 +551,7 @@ bundled scripts,
   languages, analysis options, commands, the assembler or the flat GUI
   calls. They port as mechanically once the corresponding bindings (P4,
   P5) and features (M5 analysis, M3 decompiler, M6 assembler) exist.
-- **156 (47 %), tier C**, need something basilisk does not offer to
+- **156 (47 %), tier C**, need something Basilisk does not offer to
   plugins at M9: a Swing tool or tool service (70), projects and
   repositories (62), a feature module such as BSim, Function ID, Version
   Tracking, PDB or the debugger (56), a binary-format parser package
@@ -615,7 +615,7 @@ resolves; it is accepted only once the jump-table track (D13) is.
 
 ### 4.6 Plugin packages
 
-**What a plugin is.** A Python package that tells basilisk what it
+**What a plugin is.** A Python package that tells Basilisk what it
 provides. It is found either as an installed distribution with an entry
 point in the group `basilisk.plugins`
 (`[project.entry-points."basilisk.plugins"] myplugin = "myplugin"` in its
@@ -672,7 +672,7 @@ window and `basilisk plugin list` show the reason and the traceback.
 exporter, action, view and proposer carries its plugin's name, so errors
 are attributed and everything can be removed again.
 
-**Error isolation.** A plugin must not take basilisk down.
+**Error isolation.** A plugin must not take Basilisk down.
 - Import or `register` raises: everything that plugin registered so far
   is removed; the plugin is marked failed.
 - A callback raises (any exception, including `SystemExit`): caught at
@@ -688,7 +688,7 @@ are attributed and everything can be removed again.
 - What cannot be contained in process: a crash in native code a plugin
   loads (a C extension), `os._exit`, and Python code that never returns
   and never checks its monitor. For the last, Cancel first sets the
-  monitor; if the code has not returned after two seconds basilisk
+  monitor; if the code has not returned after two seconds Basilisk
   raises `CancelledError` in that thread asynchronously
   (`PyThreadState_SetAsyncExc`; **unverified** that it is usable under
   abi3 — P1 checks, and without it Cancel only sets the monitor).
@@ -774,7 +774,7 @@ class MyFormat(Loader):
     def default_options(self, provider, spec) -> list: ...      # optional
     def validate_options(self, provider, spec, options): ...    # optional; message or None
     def load(self, provider, spec, options, program, monitor, log) -> None:
-        ...   # fill the program basilisk created for the spec
+        ...   # fill the program Basilisk created for the spec
 ```
 
 `find_load_specs` gets a read-only byte provider (`read(offset, n)`,
@@ -832,7 +832,7 @@ plugin code, which ADR-012 ("the UI never blocks") forbids. Kinds:
 - `TableView(columns, provider)`: typed columns (text, integer, address,
   function, …); `provider.count()` and `provider.rows(start, count)` are
   called on worker threads through the same paged client the built-in
-  tables use (`ui-shell.md` 4.2); sorting and filtering by basilisk; an
+  tables use (`ui-shell.md` 4.2); sorting and filtering by Basilisk; an
   address column navigates. `createTableChooserDialog` is this view
   (4.4.2).
 - `TextView(provider)`: lines of tokens with the token kinds and
@@ -853,7 +853,7 @@ Plugins window, and the Proposals view (4.7.7).
 
 #### 4.7.7 Decompiler hooks: proposers (ADR-025 item 6)
 A language model never edits decompiled code. A plugin can **propose**
-names, types and comments; basilisk validates and applies them with the
+names, types and comments; Basilisk validates and applies them with the
 program's ordinary rename, retype and comment operations, records their
 provenance and can remove them. Off by default.
 
@@ -924,7 +924,7 @@ varnodes; blocks), `summary` (ADR-025 3d) and `error`.
    iterator — runs inside `py.detach`. Measured: two Python threads each
    running 300 ms of native work take 600 ms when the GIL is held and
    300 ms when it is released (*exp.*).
-2. **Where Python runs**: on the thread that called into basilisk
+2. **Where Python runs**: on the thread that called into Basilisk
    (library use); on the **plugin executor**, a small pool (two threads
    by default) for scripts, actions, view providers, proposers and the
    console; on analysis worker threads for Python analyzers. **The UI
@@ -980,7 +980,7 @@ Writing without a transaction is an error (`db/NoTransactionException.java`).
 PyGhidra's `transaction()` context manager rolls back on an exception
 (`pyghidra/api.py:256-275`).
 
-**basilisk:**
+**Basilisk:**
 1. Every change happens inside a transaction; a write without one raises
    `NoTransactionError`. Reads need none.
 2. The runner opens one transaction around each script, action, console
@@ -1015,7 +1015,7 @@ a read-only program: `ReadOnlyError`) or from a loader's
 `find_load_specs`; start analysis from inside an analyzer; touch a closed
 program (`StaleObjectError`); run code on the UI thread (no API exists);
 undo, redo or save inside a transaction. Plugins are trusted code with
-the user's privileges (ADR-014); basilisk does not sandbox them, and says
+the user's privileges (ADR-014); Basilisk does not sandbox them, and says
 so where plugins are installed and enabled.
 
 ### 4.10 Versioning and compatibility
@@ -1319,11 +1319,11 @@ Specification written 2026-11-14 (track `spec-plugin`); not implemented.
 
 ### 9.1 Decisions to confirm
 
-- **A. The interpreter hosts basilisk** (4.1): the binary stays free of
+- **A. The interpreter hosts Basilisk** (4.1): the binary stays free of
   Python; Python support is the `basilisk` extension module, run by
   `python -m basilisk` or imported, with the binary handing over to a
   found interpreter. This reads ADR-014's "embeds CPython" as "CPython
-  and basilisk share one process, with CPython's executable as the host",
+  and Basilisk share one process, with CPython's executable as the host",
   because linking libpython into the binary breaks the single binary on
   every platform (measured on macOS). The wheel ships beside the binary in
   release archives (not inside it); embedding its bytes in the binary is

@@ -2,7 +2,7 @@
 
 Throwaway programs that settle claims in `docs/features/plugin-api.md`.
 Each Cargo project has its own `[workspace]` table, so it is not a member
-of the basilisk workspace and does not touch the root `Cargo.lock`. Build
+of the Basilisk workspace and does not touch the root `Cargo.lock`. Build
 with a target directory outside the repository.
 
 Environment of the runs below (2026-11-14): macOS 26 on Apple silicon,

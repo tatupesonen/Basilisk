@@ -6,7 +6,7 @@ analysis, decompiler-host and UI specs. ADR-014 says core APIs are
 means in practice: the rules a Rust API must follow so that `bk-plugin`
 (`plugin-api.md`) can expose it to Python through PyO3 without a redesign
 or a parallel copy of the model. Each item gives the rule, why, a
-conforming and a non-conforming signature, and where basilisk stands
+conforming and a non-conforming signature, and where Basilisk stands
 today (files cited; "spec" means a feature document, not yet code).
 
 Scope: the **plugin surface** — what `plugin-api.md` 4.2 and 4.7 expose:
@@ -176,7 +176,7 @@ notifications (kind, address set, entity ids) are available to
 subscribers as owned records.
 **Why.** A Python class implements the trait through an adapter holding
 `Py<PyAny>` (`plugin-api.md` 5.3); plugins are loaded, reloaded and
-removed while basilisk runs; analyzers are driven by change events
+removed while Basilisk runs; analyzers are driven by change events
 (Ghidra's `AnalysisScheduler`, `05-extension-points.md` 4).
 **Conforming.** `pub trait Loader: Send + Sync { fn find_load_specs(&self, p: &dyn ByteProvider) -> Result<Vec<LoadSpec>, LoaderError>; … }`;
 `fn register(&self, owner: Owner, l: Arc<dyn Loader>) -> RegistrationId`; `fn unregister(&self, id)`.
@@ -211,7 +211,7 @@ and a namespaced string id next to the built-in ones; enablement is
 declarative (scope plus facts the shell computes); views can be added at
 run time as declarative tables, token text and trees fed by paged
 providers called off the UI thread; the layout persists such views by id.
-**Why.** Plugins add actions and views while basilisk runs and remove
+**Why.** Plugins add actions and views while Basilisk runs and remove
 them on reload (`plugin-api.md` 4.6, 4.7.5–4.7.6); the UI thread must
 not attach to Python (ADR-012, `plugin-api.md` 4.8 rule 2).
 **Conforming.** `enum ActionId { Builtin(BuiltinAction), Plugin(Arc<str>) }`;

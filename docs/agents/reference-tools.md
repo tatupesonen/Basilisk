@@ -42,7 +42,7 @@ its handover; not re-run by me) or **[not run]**.
   `tools/reference/measure.sh` (the baseline numbers),
   `tools/reference/patches/0001-opbehavior-int-min-macro.patch`.
   `pcodedump.cc` now carries `SPDX-License-Identifier: GPL-3.0-or-later`;
-  no basilisk file claimed Apache-2.0 (checked with `grep`) **[run]**.
+  no Basilisk file claimed Apache-2.0 (checked with `grep`) **[run]**.
 * **`crates/bk-testkit`** — modules `paths`, `skip`, `tools/{process,
   sleigh, decomp, decomp_test, pcodedump}`, `datatest/{model, parse}`,
   `corpus`. The `golden` module, its `golden!()` macro and the direct
@@ -141,7 +141,7 @@ snapshot is byte-identical to the old golden file, trailing tab included
   `FloatFormat::printDecimal` keeps adding digits to 17. **Inference, not
   verified**: libstdc++ returns `DBL_MAX` there, and the NaN sign is an
   arm64-vs-x86 difference; see the Linux result below.
-* These three are host-dependent Ghidra results, not basilisk targets; a
+* These three are host-dependent Ghidra results, not Basilisk targets; a
   Rust port should match Ghidra's intended output (`-NAN`, 15 digits).
 
 ### Linux run (optional item, done)

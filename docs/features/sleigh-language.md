@@ -132,7 +132,7 @@ ranges with per-symbol overrides [to verify the precedence; pinned by
   `getOpObjects`].
 * A prototype is shared by all instructions with the same constructor
   tree (hash of the root state, +0xFABFAB in a delay slot; equality trusts
-  the hash, 421–427, 1425–1428). basilisk need not share prototypes this
+  the hash, 421–427, 1425–1428). Basilisk need not share prototypes this
   way, but must not let two different trees be confused.
 
 ### 4.5 Emission under overrides [verified: `PcodeEmit.java` 76–121, 183–260, 770–894; to verify: 259–410]
@@ -219,7 +219,7 @@ not expose flow or operand types, so the oracle is full Ghidra
 (`GHIDRA_INSTALL_DIR`, ADR-007): a headless script dumps, for the
 directed samples of `sleigh-decode` §6.2 in a handful of languages,
 each instruction's flow type, fall-through, operand types and operand
-representation; basilisk must agree. Without an installation the test
+representation; Basilisk must agree. Without an installation the test
 skips; a checked-in snapshot of that dump keeps CI meaningful.
 
 ## 7. Acceptance (to be finalised with the [to verify] items)

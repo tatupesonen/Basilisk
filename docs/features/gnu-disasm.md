@@ -13,8 +13,8 @@ Path abbreviations: `GD/` = `GPL/GnuDisassembler/`,
 Ghidra can show GNU's disassembly of an instruction beside SLEIGH's, as a
 way to check a processor specification. It does this by running `gdis`, a
 small C program over binutils that the user must build themselves.
-basilisk builds the needed parts of binutils into its single binary and
-offers the same comparison as a Rust API — which also gives basilisk's own
+Basilisk builds the needed parts of binutils into its single binary and
+offers the same comparison as a Rust API — which also gives Basilisk's own
 tests a second, independent disassembly oracle.
 
 ## 2. Sources
@@ -41,7 +41,7 @@ tests a second, independent disassembly oracle.
 **Crates and paths owned:** `crates/bk-binutils-sys`,
 `crates/bk-gnu-disasm`, `vendor/binutils-2.41/`,
 `scripts/vendor-binutils.sh`. They depend on **no other `bk-*` crate**
-(wave 1 crates are still being written). Mapping a basilisk language to a
+(wave 1 crates are still being written). Mapping a Basilisk language to a
 GNU architecture through `bk-lang`'s external names is a follow-up after
 `bk-lang` merges; this track takes GNU architecture and machine names as
 strings and parses `.gdis` files itself (`roxmltree`).

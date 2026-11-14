@@ -57,7 +57,7 @@ recorder), `differential` 1 (+1 ignored full run), `bench_heap` 1,
 * **Differential, full run** (`every_language`, ignored; 131 s with three
   threads): every one of the 175 distinct (`.sla`, `.pspec`) pairs the
   registry names and `pcodedump` can run; eight directed samples per root
-  leaf pair plus a coverage search (300,000 basilisk-side fillings per
+  leaf pair plus a coverage search (300,000 Basilisk-side fillings per
   language), 64 kB of random bytes, and the `.text` of the `bk-elf` ELF
   fixtures (x86-64, i686, AArch64 LE/BE, ARM LE/BE also as Thumb). Result:
   **no record differs from `pcodedump`**. Coverage: 419,098 of 421,932 root
@@ -71,7 +71,7 @@ recorder), `differential` 1 (+1 ignored full run), `bench_heap` 1,
   Tolerated differences: 3 × more than 20 operands (PowerPC; the harness
   fails as Ghidra does, see below), 1 × bytes past index 15 (68000), 0 ×
   `inst_next2` with commit.
-* **Languages where basilisk and `pcodedump` disagree**: none outside the
+* **Languages where Basilisk and `pcodedump` disagree**: none outside the
   tolerated cases. Ghidra's engine **crashes** (SIGSEGV) 36 times in the
   random sweeps — SPARC 32 (12) and 64 (18), ARM v8-m LE (4) and BE (1),
   MIPS micro BE (1): when a delay-slot instruction has an `unimpl` body,
@@ -99,7 +99,7 @@ recorder), `differential` 1 (+1 ignored full run), `bench_heap` 1,
   slots (a branch in a delay slot, a likely branch) and random words. The
   replay needs the languages' `.sla`/`.ldefs`/`.pspec`, which are Ghidra's
   files (ADR-002: not copied into the repository), so **it is skipped in CI**;
-  the `bkfix` replay is the check that runs there. AltiVec: basilisk-only
+  the `bkfix` replay is the check that runs there. AltiVec: Basilisk-only
   snapshot `tests/snapshots/recorded__altivec.snap` (`vadduhm`, `vsubuhm`,
   27 operands; with `set_operand_limit(Some(20))` the decoder gives Ghidra's
   error).
@@ -162,7 +162,7 @@ word-level context sets as in Ghidra.
   after the oracle's 1-byte error the sweeps take different instruction
   boundaries and meet again with different context. Implemented instead
   with `Decoder::set_operand_limit(Some(20))` in the harness, so both sweeps
-  fail identically and stay in step; basilisk's decoding of those
+  fail identically and stay in step; Basilisk's decoding of those
   constructors is checked by the `over-20` count and the AltiVec snapshot.
 * **Pairs reachable only through a context set inside the instruction**
   (x86 VEX/EVEX/REX prefixes set context and re-enter the root table): a

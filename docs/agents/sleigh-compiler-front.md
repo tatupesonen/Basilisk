@@ -129,7 +129,7 @@ uses an in-memory loader).
 * **Seams for the back half.** `elaborate` runs `check::post_parse`
   (`crates/bk-sleigh-compiler/src/check/mod.rs`): NOPs, case check,
   default space, consistency, collisions, then — where Ghidra calls
-  `buildPatterns` and `buildDecisionTrees` — basilisk's "Unreferenced
+  `buildPatterns` and `buildDecisionTrees` — Basilisk's "Unreferenced
   table" warnings from reachability, then register cross references, the
   crossbuild shift, and the purge (`purge::finish`). The back half should
   insert pattern building and decision trees after
@@ -148,7 +148,7 @@ uses an in-memory loader).
   lowering, and `tests/reference_sla.rs` can grow to byte equality.
 * Diagnostics carry `located` (Ghidra's inner `FILE:LINE: `) and a span;
   the command line renders `FILE:LINE - ERROR TEXT` with the lexer's line,
-  which basilisk approximates by the span's line.
+  which Basilisk approximates by the span's line.
 * `bk-testkit` could own `module_options` (per-module `sleigh` switches
   from `REF/.state/lang/<Module>.opts`), now copied in three test files
   across crates.

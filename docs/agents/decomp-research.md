@@ -1,7 +1,7 @@
 # Track `decomp-research` — status report
 
 Research track (no Rust code). Worktree `basilisk-wt/decomp-research`, branch
-`decomp-research`. Brief: how basilisk's decompiler can be more accurate and
+`decomp-research`. Brief: how Basilisk's decompiler can be more accurate and
 more readable than Ghidra's, with a plan the project can build from.
 
 **State on 2026-11-13: done.** The document answers the four things the
@@ -129,7 +129,7 @@ marked `[S]` or `[S?]` in the document.
     files under 2 MiB of addresses). They belong to M5 and decide what the
     decompiler prints.
   * The console's `load function` follows flow at once; a flow override given
-    afterwards only takes effect on a second `decompile`. A basilisk test
+    afterwards only takes effect on a second `decompile`. A Basilisk test
     runner that replays console scripts must reproduce this order.
   * Ghidra's `SourceType` already has an `AI` level at the pinned commit.
   * `TypeOpFloatLess` flips to `FLOAT_LESSEQUAL`: the `ghidra` profile must

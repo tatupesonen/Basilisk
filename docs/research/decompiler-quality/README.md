@@ -35,7 +35,7 @@ tools/metrics.py                                   # counters over out/
 Needs: `clang`, `ld.lld` and `llvm-objdump` (paths in `BK_CLANG`, `BK_LLD`,
 `BK_OBJDUMP`; the defaults are Homebrew's `llvm@20` and `lld@20`), Docker with
 the `gcc:14` image for the `gcc` targets, Python 3. The reference tools are
-found beside the basilisk checkout or through `BK_REFERENCE`.
+found beside the Basilisk checkout or through `BK_REFERENCE`.
 
 The runner always passes `--platform` to Docker. With Docker's classic image
 store a tag names one platform at a time, and asking for the other platform

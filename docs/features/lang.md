@@ -43,7 +43,7 @@ SLEIGH language is M1's job.
 prototype models); loading `.sla` files or anything that needs registers
 resolved; the old-language translators (`data/languages/old/*.lang` and
 `*.trans`, used to upgrade programs saved with older language versions —
-there are no old basilisk programs; revisit in M8 and record it as a gap);
+there are no old Basilisk programs; revisit in M8 and record it as a gap);
 `.dwarf` register mappings (M6); pattern files (M5).
 
 ## 4. Behaviour
@@ -51,7 +51,7 @@ there are no old basilisk programs; revisit in M8 and record it as a gap);
 ### 4.1 Identity types
 - `LanguageID`: a non-empty string, conventionally
   `processor:endian:size:variant`; equality and ordering by string. Ghidra
-  does not parse it into fields and neither should basilisk — the fields
+  does not parse it into fields and neither should Basilisk — the fields
   come from the description.
 - `CompilerSpecID`: a string; `default` has no special lookup meaning
   except what `SleighLanguageDescription` gives it — check
@@ -59,7 +59,7 @@ there are no old basilisk programs; revisit in M8 and record it as a gap);
   is not found.
 - `LanguageCompilerSpecPair`, `Endian` (`big`/`little`, and the display
   and parse forms Ghidra accepts), `Processor` (a name; Ghidra keeps a
-  global registry of names — basilisk interns them in the registry
+  global registry of names — Basilisk interns them in the registry
   instead).
 
 ### 4.2 `.ldefs`
@@ -281,7 +281,7 @@ against a RELAX NG validator (`oxixml-relaxng` 0.1.2, loaded with
 Ghidra's `.rxg` files) — all 173 corpus files validated, and on 1,049
 single-step mutations of documents generated from the tables (119
 `.ldefs`, 817 `.pspec`, 113 `.opinion`) reader and validator disagreed
-nowhere, except where the schema accepts a value that neither basilisk's
+nowhere, except where the schema accepts a value that neither Basilisk's
 nor Ghidra's reader can decode (`size="maybe"`). The validator was then
 removed as a dependency (too little used to carry in every test run).
 
@@ -307,7 +307,7 @@ spelled (`..`, `.`, trailing slash, symbolic link); `tests/root_spelling.rs`
 checks this on a fixture and on the Ghidra tree.
 `spec_root_from_env()` returns the `BASILISK_GHIDRA_DIR` value or
 `None`: the "`../ghidra`" default of section 4.5 is relative to the
-basilisk checkout, which only the caller can locate (the tests resolve
+Basilisk checkout, which only the caller can locate (the tests resolve
 it from `CARGO_MANIFEST_DIR`), not to the current directory.
 
 **Benchmark.** Registry scan of the whole Ghidra tree 13–15 ms median on

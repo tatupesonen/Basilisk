@@ -51,7 +51,7 @@ read `len` bytes at `offset` (error if the range is outside the provider),
 read one byte, length, emptiness, validity of an index, and an optional
 name and path for messages. It is `Send + Sync` and takes `&self`, so many
 threads can read one provider without locking (Ghidra needs
-`SynchronizedByteProvider` for this; basilisk does not, by design).
+`SynchronizedByteProvider` for this; Basilisk does not, by design).
 
 Providers to supply, with Ghidra's semantics:
 - in-memory bytes (owned and borrowed);
@@ -247,7 +247,7 @@ Appended by the `bin-elf` agents (2026-11-12).
 - **`RangeMappedProvider` bug not reproduced.** Ghidra marks a sparse range
   with offset −1, so a real range starting at `sparse_len − 1` passes its
   "continues the previous range" test and is merged into the sparse range
-  (its bytes then read as zeros). basilisk keeps the two ranges apart.
+  (its bytes then read as zeros). Basilisk keeps the two ranges apart.
   `add_range` with length 0 is ignored instead of throwing.
 - **`SubProvider` names** use `<unnamed>` where Java prints `null` for a
   parent without a name.
@@ -298,10 +298,10 @@ Appended by the `bin-elf` agents (2026-11-12).
   diagnostic; in Ghidra the `IOException` ends `parse()`.
 - **Prelinked files.** Ghidra compares `DT_STRTAB` (adjusted once) with a
   string-table section address that it adjusts twice, so on a prelinked file
-  it never matches and a duplicate dynamic string table is created. basilisk
+  it never matches and a duplicate dynamic string table is created. Basilisk
   adjusts once and matches the section.
 - **Compressed sections.** Ghidra logs problems with a compression header
-  through `Msg.warn`, not the error consumer; basilisk reports them as
+  through `Msg.warn`, not the error consumer; Basilisk reports them as
   diagnostics of kind `Compression`. Inflation grows its buffer with the
   data produced, never with `ch_size` alone (bound: 1040× the compressed
   size).
@@ -322,7 +322,7 @@ Appended by the `bin-elf` agents (2026-11-12).
   read, not stored in the file's diagnostics list.
 - **Android relocations on MIPS-64.** Ghidra builds them with a
   constructor its MIPS relocation class does not override, so symbol index
-  and type read as 0; basilisk uses the standard 64-bit split.
+  and type read as 0; Basilisk uses the standard 64-bit split.
 - **Exceptions that end Ghidra's import are diagnostics here.** An Android
   table that is missing or not `APS2` (Ghidra's `IOException` escapes
   `parse()`) is reported as "Failed to process relocation table…: <message>"

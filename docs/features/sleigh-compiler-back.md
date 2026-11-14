@@ -102,7 +102,7 @@ the identical check, the insertion pass and the conflict resolution;
 `docs/research/sla-host-dependence.md`, sections 2 and 6.1). At 25
 decision nodes of the 150 specifications two candidate fields have
 mathematically equal scores, and the last bit of the computed scores
-decides `chooseOptimalField`'s strict `>`. basilisk's score is therefore a
+decides `chooseOptimalField`'s strict `>`. Basilisk's score is therefore a
 defined computation, the one x86-64 Linux (and Ghidra's Java compiler)
 performs:
 
@@ -142,7 +142,7 @@ errors, reported for both constructors), indistinguishable patterns
 Ghidra's unrecoverable errors here ("Child has as many Patterns as
 parent", ellipsis errors escaping `commonSubPattern`) are ordinary
 errors. `Mismatched tokens when combining patterns` prints two pointers
-in Ghidra; basilisk prints the two token names.
+in Ghidra; Basilisk prints the two token names.
 
 ### 4.5 Output
 Lower to `bk_sla` through `SlaBuilder` and write with `bk_sla` (packed
@@ -207,7 +207,7 @@ Java does. `-x` is accepted and ignored.
 ### 6.1 Ghidra tests to port
 | Checklist line (`docs/inventory/tests/`) | What it becomes |
 |---|---|
-| `test-integrationtest.md`: `ghidra.pcodeCPort.slgh_compile.regression.SleighCompileRegressionTest` (slow, 1 tests) | It compiles every `.slaspec` with the C++ and the Java compiler (`-y`) and compares the texts, skipping `<print piece=" "/>` lines. Ported as 6.2, with basilisk in Java's place and a stricter comparison |
+| `test-integrationtest.md`: `ghidra.pcodeCPort.slgh_compile.regression.SleighCompileRegressionTest` (slow, 1 tests) | It compiles every `.slaspec` with the C++ and the Java compiler (`-y`) and compares the texts, skipping `<print piece=" "/>` lines. Ported as 6.2, with Basilisk in Java's place and a stricter comparison |
 | `framework-softwaremodeling.md`: `ghidra.pcodeCPort.slgh_compile.SleighCompileOptionsTest` (slow, 5 tests) | Option parsing: an options file with `-x -u -l -n -t -e -c -f -s -DTESTNAME=TESTVALUE -dx86`, each flag's effect on the option set, `-i file input.slaspec` → output `input.sla`, a missing extension defaulting to `.slaspec`, an explicit output, `-a dir` |
 | `framework-softwaremodeling.md`: `ghidra.pcodeCPort.slghpatexpress.EqualEquationTest` (unit, 3 tests) | The unsigned range test of 4.1: normal range, full-width range, range crossing the signed boundary |
 | `framework-softwaremodeling.md`: `ghidra.app.plugin.processors.sleigh.SleighLanguageProviderTest` (slow, 4 tests) | Not here: needs compile-on-demand and locking (`sleigh-language`) |
@@ -222,7 +222,7 @@ each: the `-y` XML text against `REF/bin/sleigh -y`; and the warning
 lines, in order, against the reference build's log
 (`REF/logs/sleigh/<Module>/<name>.log`, lines beginning `WARN  `), with
 Ghidra's `FILE:LINE:` prefixes inside the messages kept (they are
-constructor and table locations, which basilisk knows).
+constructor and table locations, which Basilisk knows).
 
 **The oracle** is byte equality with the x86-64 Linux build for all 150
 specifications (ADR-032): `REF`, which is built with `-ffp-contract=off`
@@ -230,7 +230,7 @@ and gives exactly those bytes on every host
 (`../reference-x86_64/x86_64-linux` holds the original x86-64 files; the
 two agree for all 150). Tolerated differences: **none**. There are no
 admitted ties: with the arithmetic of 4.3 none is expected, and a
-decision node where basilisk chose a different field is a failure.
+decision node where Basilisk chose a different field is a failure.
 
 For anyone comparing against an old or unpatched AArch64 build of
 Ghidra's compiler (a diagnostic, not the acceptance test; research
@@ -242,8 +242,8 @@ constrain to the same constructor (`tools/sla-host-diff`'s `equiv`).
 **Behavioural cross-check** (uses the merged runtime; skip if
 `sleigh-pcode` is not merged yet, and then it becomes a merge condition
 of whichever lands second): for 12 languages (the list of
-`sleigh-decode` §6.2), decode the directed samples with basilisk's
-runtime once from Ghidra's `.sla` and once from basilisk's; the outputs
+`sleigh-decode` §6.2), decode the directed samples with Basilisk's
+runtime once from Ghidra's `.sla` and once from Basilisk's; the outputs
 must be identical. This is redundant when the files are equal; it
 localises a failure of the byte comparison to behaviour or to layout.
 
@@ -254,11 +254,11 @@ Part 1's harness, extended with a case for every message of this half
 operand offsets, circular offset dependency, operand in a context
 expression that is not constructor-relative, identical patterns, and
 indistinguishable patterns with and without `-l`), each compiled by
-`REF/bin/sleigh` and by basilisk: same success or failure, same multiset
+`REF/bin/sleigh` and by Basilisk: same success or failure, same multiset
 of (severity, message text); and the command's standard error and exit
 status for a set of command lines (bad option, missing input, too many
 parameters, unreadable file, `-a` over a directory with one failing
-specification — where the C++ stops and basilisk, like Java, continues;
+specification — where the C++ stops and Basilisk, like Java, continues;
 listed as expected).
 
 ### 6.4 Derived, property, fuzz
@@ -284,7 +284,7 @@ listed as expected).
   `a9e120b2c0f1bd977abb3f70640effbb`). The test loads that file from the
   repository (path relative to the workspace root, via
   `CARGO_MANIFEST_DIR`; it is checked in, so the test never skips) and
-  requires basilisk's `log`, hashed the same way, to equal it on every
+  requires Basilisk's `log`, hashed the same way, to equal it on every
   line. It pins the arithmetic that decides the 25 ties without the
   reference. Regenerating the table for a larger bound is described in
   `tools/sla-host-diff/README.md`.

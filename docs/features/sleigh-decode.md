@@ -30,7 +30,7 @@ decompiler, and the language data it produces is shared by every thread.
 | `CPP/semantics.cc` | `HandleTpl::fix`, `ConstTpl::fix`, `fixSpace`, `fillinSpace`, `fillinOffset` (handle resolution only) |
 | `CPP/globalcontext.cc`, `globalcontext.hh`, `partmap.hh` | `ContextBitRange`, `ContextDatabase`, `ContextInternal`, `ContextCache`, `TrackedContext` |
 | `CPP/translate.hh` | The `Translate` interface, `UnimplError`, `BadDataError`, `AssemblyEmit`, `UniqueLayout` |
-| `tools/reference/pcodedump.cc` (basilisk) | What the oracle does around the engine: language set-up, the sweep, the record format |
+| `tools/reference/pcodedump.cc` (Basilisk) | What the oracle does around the engine: language set-up, the sweep, the record format |
 
 C++ is authoritative (it is what the oracle and the decompiler run). The
 Java runtime's additional services are `features/sleigh-language.md`.
@@ -57,7 +57,7 @@ sections of fixture binaries), `proptest`, `insta`, `dhat`.
 ## 4. Behaviour
 
 Inventory sections 3–7 describe Ghidra's behaviour and are normative
-unless this section says otherwise. This section fixes what is basilisk's
+unless this section says otherwise. This section fixes what is Basilisk's
 own: the units of the API, the defined results where the C++ is
 undefined, and the errors.
 
@@ -150,7 +150,7 @@ delay-slot parses available to part 2.
 
 Defined results where the C++ is undefined (inventory section 8):
 
-| Case | basilisk |
+| Case | Basilisk |
 |---|---|
 | Reading instruction bytes | The buffer is 16 bytes. A read whose first byte index is ≥ 16 is `BadData` "Instruction is using more than 16 bytes" (as C++). Bytes of a read that starts below 16 and runs past it are zero |
 | `<<`, `>>` | Count taken modulo 64; `>>` arithmetic (ADR-021; Java agrees) |
@@ -251,7 +251,7 @@ run once), compare record by record with `REF/bin/pcodedump` (format:
 `tools/reference/README.md`). In this track the `I` records (address,
 length, **flow length**, bytes, mnemonic, operand text), the `E` records
 (address, length, bytes, kind, message) and the `T` record are compared;
-`P` and `U` records are ignored until part 2. basilisk's side of the
+`P` and `U` records are ignored until part 2. Basilisk's side of the
 sweep mirrors the oracle's exactly: at each position `decode` + text,
 then `prepare` (so commits and delay-slot parses happen in the same
 order), advance by length; a failed decode is an `E` of length 1; an
@@ -267,9 +267,9 @@ sweep; `--context` is a region set over the whole default code space.
    block's mask and value into values of the named context variables
    (unconstrained bits 0); otherwise to the `.pspec` default. Samples of
    one configuration are packed into one stream using the length
-   basilisk decodes for each (a delay-slot instruction is followed by a
+   Basilisk decodes for each (a delay-slot instruction is followed by a
    second directed sample), and the stream is given to the oracle with
-   that configuration as `--context` options. Packing by basilisk's own
+   that configuration as `--context` options. Packing by Basilisk's own
    length cannot hide an error: a wrong length desynchronises the two
    sweeps and the records differ. To raise coverage of sub-tables, half
    of the samples additionally impose the pattern of a randomly chosen
@@ -301,7 +301,7 @@ reviews that file at merge.
 and counted in the snapshot (zero is expected for 2–3):
 
 1. *More than 20 operands.* Oracle: `E … error  SLEIGH parser out of
-   state space`; basilisk: an instruction whose parse has a constructor
+   state space`; Basilisk: an instruction whose parse has a constructor
    with more than 20 operands. The harness then resynchronises at the
    next address both sides have a record for. Directed samples for such
    root constructors are kept out of the oracle streams and covered by
@@ -338,7 +338,7 @@ word-addressed space, `noflow`, and wrap-around at the top of the space.
 `insta` snapshots, taken from `pcodedump` output once and checked in
 (they are small): the directed samples of the Toy languages, and 200
 instructions each of x86-64, ARM/Thumb with a mode switch, MIPS with
-delay slots. Plus basilisk-only snapshots of the PowerPC AltiVec
+delay slots. Plus Basilisk-only snapshots of the PowerPC AltiVec
 instructions Ghidra's C++ cannot decode.
 
 ### 6.5 Property and fuzz
@@ -426,7 +426,7 @@ Appended by the `sleigh-decode` track:
 * **Ghidra's operand limit is available as an option**:
   `Decoder::set_operand_limit(Some(20))` fails as Ghidra's C++ does ("SLEIGH
   parser out of state space"). The differential harness uses it so both
-  sweeps stay in step; basilisk's own decoding of those constructors is
+  sweeps stay in step; Basilisk's own decoding of those constructors is
   checked separately (6.4 and the harness's `over-20` count).
 * **`prepare` bounds the delay-slot loop** to 16 instructions and stops at a
   zero-length instruction (Ghidra's loop would not end).

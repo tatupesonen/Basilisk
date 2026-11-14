@@ -61,7 +61,7 @@ only means "nothing left" (no more attributes, no next element).
 `ATTRIB_CONTENT` (id 1) stands for an element's text content in XML and is
 an ordinary attribute in the packed form.
 
-Ghidra registers ids through global static constructors. basilisk must not
+Ghidra registers ids through global static constructors. Basilisk must not
 use global mutable state: design an id table that is built once, immutable
 afterwards, and lets each crate contribute its ids (for example a `const`
 id type plus per-crate static slices combined into a lookup table when a
@@ -108,11 +108,11 @@ a length integer followed by raw bytes; special space codes stack 0, join
 truncated and malformed input as typed errors, never panics (ADR-009).
 
 Ghidra's packed decoder reads through a chain of 1,024-byte buffers with
-padding because it ingests a stream. basilisk decodes from a contiguous
+padding because it ingests a stream. Basilisk decodes from a contiguous
 `&[u8]` with zero copies (strings are borrowed). `marshal_bufferpad` tests
 buffer-boundary handling; port what it checks — values that span chunk
 boundaries decode correctly — against whatever incremental-ingest API
-basilisk offers, and if there is none, record the test as covered by the
+Basilisk offers, and if there is none, record the test as covered by the
 contiguous design under "Differences from Ghidra".
 
 ### 4.5 XML reading
@@ -248,7 +248,7 @@ Appended by the `core-marshal` track:
   data, each reference and each CDATA section are separate pieces, and a
   piece that is only white space is dropped. Relative to `xml.y`: character
   references give the Unicode character (Ghidra's C++ truncates to one
-  byte; its Java side does what basilisk does); an unknown entity, a
+  byte; its Java side does what Basilisk does); an unknown entity, a
   mismatched end tag and a repeated attribute are errors (Ghidra accepts
   them); processing instructions, comments after the root, a byte order
   mark and `standalone` are accepted (Ghidra rejects them; they are legal
@@ -283,13 +283,13 @@ Appended by the `core-marshal` track:
 **`bk-core`**
 
 - Index 0 belongs to the constant space alone (`ReservedIndexZero`):
-  Ghidra requires the constant space to be at 0, basilisk also forbids any
+  Ghidra requires the constant space to be at 0, Basilisk also forbids any
   other space there, so `Address::is_constant` and
   `JoinRecord::is_pure_padding` compare an index and need no manager.
 - Space indices above `MAX_SPACE_INDEX` (0xffff) are refused
   (`IndexTooLarge`); Ghidra resizes its table to whatever a document says.
 - The constant, fspec and iop spaces are always little endian; Ghidra
-  gives them the host's endianness, and basilisk takes x86-64's (ADR-021,
+  gives them the host's endianness, and Basilisk takes x86-64's (ADR-021,
   on `master` since this track branched).
 - `copy_spaces` copies the spaces; Ghidra shares them between managers by
   reference count, so a later truncation of one shows in the other.

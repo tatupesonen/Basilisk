@@ -1,6 +1,6 @@
-# basilisk — plan
+# Basilisk — plan
 
-basilisk is a Rust reimplementation of Ghidra, aiming for full parity and
+Basilisk is a Rust reimplementation of Ghidra, aiming for full parity and
 then better. The owner's decisions are in `DIRECTION.md`; architecture
 decisions in `DECISIONS.md`; how work proceeds in `LOOP.md`; what Ghidra
 contains in `inventory/`; per-feature specs in `features/`; status against
@@ -22,7 +22,7 @@ Ghidra in `PARITY.md`.
 
 Ghidra at commit `42db038f3c` is about 2.9 million lines of Java, 190,000
 lines of C++ (the decompiler and the SLEIGH compiler) and 310,000 lines of
-SLEIGH specification that basilisk reuses. `inventory/00-overview.md` maps
+SLEIGH specification that Basilisk reuses. `inventory/00-overview.md` maps
 every module. The largest parts:
 
 | Ghidra part | Size | What it is |
@@ -78,7 +78,7 @@ depend only on `bk-bin`; they know nothing about programs. `bk-sleigh*`
 know nothing about programs. `bk-decomp` depends on the language and
 foundation layers and reaches the program through a trait (ADR-004), so it
 can be tested standalone on Ghidra's data tests. Nothing below `bk-ui`
-depends on it. `bk-testkit` is a dev-dependency only. basilisk ships as
+depends on it. `bk-testkit` is a dev-dependency only. Basilisk ships as
 a single binary; Ghidra's GPL modules are ported as ordinary crates
 (ADR-018).
 
@@ -177,7 +177,7 @@ this list follows its waves.
 - [ ] Projects, versioned programs, multi-user server, merge
 
 ### M9 — Plugin API (ADR-014, ADR-035, ADR-036, ADR-037)
-Python hosts basilisk through an extension module (`basilisk-py`); the
+Python hosts Basilisk through an extension module (`basilisk-py`); the
 tracks and their acceptance are in `features/plugin-api.md`. The work is
 spread over the milestones its parts depend on rather than left to the end.
 - [ ] P0 reference fixtures · P1 host and packaging (`python -m basilisk`, wheels on three systems, the binary's hand-over) · P3 the flat scripting layer — can start now

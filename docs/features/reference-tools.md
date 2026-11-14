@@ -8,7 +8,7 @@ Path abbreviations: `DEC/` = `Ghidra/Features/Decompiler/src/decompile/`,
 
 ## 1. Purpose
 
-basilisk's correctness is measured against Ghidra itself (ADR-007). This
+Basilisk's correctness is measured against Ghidra itself (ADR-007). This
 track builds Ghidra's native tools from source into a directory outside
 both repositories, produces the compiled `.sla` file for every language
 (Ghidra's source tree does not contain them), and gives every other crate
@@ -34,7 +34,7 @@ tools and comparing output. Nothing here ships in the product.
 **In:**
 1. `scripts/build-reference.sh` — builds the reference tools and the
    compiled-language overlay into `../reference/`.
-2. `tools/reference/pcodedump.cc` — basilisk's own small C++ oracle
+2. `tools/reference/pcodedump.cc` — Basilisk's own small C++ oracle
    program (kept in this repository), linked against the
    reference objects.
 3. `bk-testkit` — the Rust test-support crate.
@@ -53,7 +53,7 @@ here later).
 
 ### 4.1 The reference directory
 Everything is produced under one root, `../reference` relative to the
-basilisk checkout (override: `BASILISK_REFERENCE_DIR`). **Nothing is ever
+Basilisk checkout (override: `BASILISK_REFERENCE_DIR`). **Nothing is ever
 written into `../ghidra`.** Layout:
 
 ```
@@ -62,7 +62,7 @@ written into `../ghidra`.** Layout:
   bin/sleigh           Ghidra's SLEIGH compiler        (sleigh_opt)
   bin/decomp           Ghidra's decompiler console     (decomp_opt)
   bin/decomp_test      Ghidra's test runner            (decomp_test_dbg)
-  bin/pcodedump        basilisk's p-code dump oracle
+  bin/pcodedump        Basilisk's p-code dump oracle
   Ghidra/Processors/<Module>/data/languages/…   copy of each language directory,
                        with a compiled .sla beside every .slaspec
   STAMP                Ghidra commit, tool versions, date, per-file hashes
@@ -70,7 +70,7 @@ written into `../ghidra`.** Layout:
 
 The `Ghidra/Processors/…` part mirrors Ghidra's layout on purpose: the
 reference tools find their languages by scanning a root for `.ldefs`
-files, and basilisk's language registry (`features/lang.md`) can add this
+files, and Basilisk's language registry (`features/lang.md`) can add this
 root to get `.sla` paths.
 
 ### 4.2 `scripts/build-reference.sh`
@@ -319,7 +319,7 @@ checks expect `-NAN` and the console prints `NAN` on both AArch64 hosts:
 the sign of a NaN the hardware creates differs between arm64 and x86-64,
 and both pass on x86-64 (measured since, ADR-029, ADR-021). Turning
 contraction off does not change any of the three. These three are host-dependent Ghidra results, not
-basilisk targets: a Rust port should produce Ghidra's intended output
+Basilisk targets: a Rust port should produce Ghidra's intended output
 (`-NAN`, 15 digits).
 
 **Tests**: `bk-testkit` 88 unit, 4 corpus, 13 integration, 2 doc tests;
