@@ -285,7 +285,11 @@ impl Env<'_> {
 }
 
 /// Ghidra `HandleTpl::fix` at node `n`.
-#[inline]
+#[expect(
+    clippy::inline_always,
+    reason = "returned through memory, the handle is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
+)]
+#[inline(always)]
 fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeError> {
     let mut hand = FixedHandle::UNSET;
     if matches!(tpl.ptr_space, ConstTpl::Real(_)) {
@@ -350,7 +354,11 @@ fn wrap(env: &Env<'_>, space: u32, offset: u64) -> u64 {
 /// The handle of a non-subtable operand at node `n` (Ghidra
 /// `getFixedHandle` of its defining symbol, or the value of its defining
 /// expression).
-#[inline]
+#[expect(
+    clippy::inline_always,
+    reason = "returned through memory, the handle is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
+)]
+#[inline(always)]
 pub(crate) fn operand_handle(
     env: &Env<'_>,
     def: OpDef,

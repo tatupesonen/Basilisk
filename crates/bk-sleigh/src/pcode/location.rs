@@ -217,7 +217,11 @@ fn place(lang: &Language, space: u32, offset: u64, size: u32, unique: u64) -> u6
 }
 
 /// Ghidra `generateLocation`, with [`is_dynamic`]'s answer.
-#[inline]
+#[expect(
+    clippy::inline_always,
+    reason = "returned through memory, the varnode is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
+)]
+#[inline(always)]
 pub(crate) fn locate(
     lang: &Language,
     vn: &VarnodeTpl,

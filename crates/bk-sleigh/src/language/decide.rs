@@ -99,7 +99,7 @@ impl Trees {
                 .map(|symbol| match &symbol.kind {
                     SymbolKind::Subtable(table) => Root {
                         decision: table.decision.index(),
-                        first_constructor: table.constructor(0).map_or(NONE, |c| c.index()),
+                        first_constructor: table.constructors.start(),
                         num_constructors: table.num_constructors(),
                     },
                     _ => Root {
