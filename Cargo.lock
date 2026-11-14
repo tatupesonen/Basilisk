@@ -619,6 +619,7 @@ dependencies = [
 name = "bk-sleigh"
 version = "0.0.1"
 dependencies = [
+ "bk-bin",
  "bk-core",
  "bk-elf",
  "bk-lang",

@@ -56,6 +56,7 @@ pub struct Decoder {
     delays: Vec<Parse>,
     num_delays: usize,
     lookahead: Parse,
+    operand_limit: u32,
 }
 
 impl Decoder {
@@ -67,7 +68,16 @@ impl Decoder {
             delays: Vec::new(),
             num_delays: 0,
             lookahead: Parse::new(),
+            operand_limit: u32::MAX,
         }
+    }
+
+    /// Ghidra's C++ engine cannot decode a constructor with more than 20
+    /// operands (`ParserContext::MAX_OPERAND`); basilisk can. With
+    /// `Some(20)` the decoder fails as Ghidra does ("SLEIGH parser out of
+    /// state space") — for comparing with Ghidra, not for analysis.
+    pub fn set_operand_limit(&mut self, limit: Option<u32>) {
+        self.operand_limit = limit.unwrap_or(u32::MAX);
     }
 
     /// The language.
@@ -93,9 +103,9 @@ impl Decoder {
         C: ContextSource + ?Sized,
     {
         self.num_delays = 0;
-        resolve::resolve(&self.lang, &mut self.main, addr, bytes, context)?;
+        resolve::resolve(&self.lang, &mut self.main, addr, bytes, context, self.operand_limit)?;
         if self.lang.tables.uses_next2 {
-            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context);
+            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context, self.operand_limit);
         }
         Ok(&self.main)
     }
@@ -103,12 +113,19 @@ impl Decoder {
     /// The address after the instruction after `parse`, decoding that
     /// instruction with the context the store holds now (Ghidra
     /// `getN2addr`; not cached across calls).
-    fn next2<B, C>(lang: &Language, scratch: &mut Parse, parse: &Parse, bytes: &B, context: &C) -> Option<Address>
+    fn next2<B, C>(
+        lang: &Language,
+        scratch: &mut Parse,
+        parse: &Parse,
+        bytes: &B,
+        context: &C,
+        operand_limit: u32,
+    ) -> Option<Address>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
-        resolve::resolve(lang, scratch, parse.naddr, bytes, context).ok()?;
+        resolve::resolve(lang, scratch, parse.naddr, bytes, context, operand_limit).ok()?;
         Some(resolve::add(lang, parse.naddr, u64::from(scratch.length())))
     }
 
@@ -120,7 +137,7 @@ impl Decoder {
         C: ContextSource + ?Sized,
     {
         if self.lang.tables.next2_anywhere && self.main.next2.is_none() {
-            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context);
+            self.main.next2 = Self::next2(&self.lang, &mut self.lookahead, &self.main, bytes, context, self.operand_limit);
         }
         handles::resolve_handles(&self.lang, &mut self.main)?;
         Ok(&self.main)
@@ -197,9 +214,9 @@ impl Decoder {
                 let Some(slot) = self.delays.get_mut(self.num_delays) else {
                     break;
                 };
-                resolve::resolve(&self.lang, slot, at, bytes, &*context)?;
+                resolve::resolve(&self.lang, slot, at, bytes, &*context, self.operand_limit)?;
                 if self.lang.tables.next2_anywhere {
-                    slot.next2 = Self::next2(&self.lang, &mut self.lookahead, slot, bytes, &*context);
+                    slot.next2 = Self::next2(&self.lang, &mut self.lookahead, slot, bytes, &*context, self.operand_limit);
                 }
                 handles::resolve_handles(&self.lang, slot)?;
                 commit::apply_commits(&self.lang, slot, context)?;

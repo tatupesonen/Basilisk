@@ -5,6 +5,7 @@
 
 pub mod coverage;
 pub mod directed;
+pub mod real_code;
 pub mod sweep;
 
 use std::collections::HashMap;
@@ -62,14 +63,58 @@ pub struct OracleDump {
 
 /// Runs `pcodedump` and keeps the records this part compares.
 pub fn oracle(reference: &ReferenceDir, id: &str, base: u64, data: &[u8], context: &[(String, u32)]) -> OracleDump {
+    try_oracle(reference, id, base, data, context).unwrap_or_else(|e| panic!("pcodedump {id}: {e}"))
+}
+
+/// Runs `pcodedump`; the error says how it failed (a crash is reported as
+/// "exited with a signal").
+pub fn try_oracle(
+    reference: &ReferenceDir,
+    id: &str,
+    base: u64,
+    data: &[u8],
+    context: &[(String, u32)],
+) -> Result<OracleDump, String> {
     let mut tool = reference.pcodedump().timeout(std::time::Duration::from_secs(600));
     for (name, value) in context {
         tool = tool.context(name, *value);
     }
-    let text = tool
-        .dump_text(id, base, data)
-        .unwrap_or_else(|e| panic!("pcodedump {id}: {e}"));
-    parse_oracle(&text)
+    tool.dump_text(id, base, data)
+        .map(|text| parse_oracle(&text))
+        .map_err(|e| e.to_string())
+}
+
+/// Whether an oracle failure is a crash of the process.
+pub fn is_crash(error: &str) -> bool {
+    error.contains("signal")
+}
+
+/// The bytes `[start, end)` of the instruction whose processing makes the
+/// oracle crash: the shortest crashing prefix ends with it.
+pub fn locate_crash(
+    reference: &ReferenceDir,
+    id: &str,
+    base: u64,
+    data: &[u8],
+    context: &[(String, u32)],
+) -> (usize, usize) {
+    let crashes = |len: usize| try_oracle(reference, id, base, &data[..len], context).is_err_and(|e| is_crash(&e));
+    let (mut ok, mut bad) = (0usize, data.len());
+    while bad - ok > 1 {
+        let mid = ok + (bad - ok) / 2;
+        if crashes(mid) {
+            bad = mid;
+        } else {
+            ok = mid;
+        }
+    }
+    let before = try_oracle(reference, id, base, &data[..bad - 1], context).unwrap_or_default();
+    let start = before
+        .lines
+        .last()
+        .filter(|l| l.contains("\ttruncated\t"))
+        .map_or(bad - 1, |l| (line_address(l) - base) as usize);
+    (start, bad)
 }
 
 /// Keeps the `I`, `E` and `T` records of `pcodedump` output.
@@ -139,7 +184,25 @@ pub fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
         let line = &oracle.lines[oi];
         let record = &ours.records[bi];
         if *line == record.line {
-            out.confirmed[bi] = true;
+            if line.ends_with("\terror\tSLEIGH parser out of state space") {
+                // Equal because the harness fails as Ghidra does.
+                out.tolerated.over_20_operands += 1;
+            } else {
+                out.confirmed[bi] = true;
+            }
+            oi += 1;
+            bi += 1;
+            continue;
+        }
+        let without_flow = |l: &str| {
+            let mut f: Vec<&str> = l.split('\t').collect();
+            if f.len() > 3 {
+                f[3] = "";
+            }
+            f.join("\t")
+        };
+        if record.delay_over_20 && without_flow(line) == without_flow(&record.line) {
+            out.tolerated.over_20_operands += 1;
             oi += 1;
             bi += 1;
             continue;

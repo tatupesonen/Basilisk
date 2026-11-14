@@ -1,0 +1,3 @@
+# Languages allowed below the coverage thresholds of the differential test
+# (features/sleigh-decode.md 6.2): language<TAB>metric (pairs|constructors)<TAB>cause.
+# Reviewed by the coordinator at merge.

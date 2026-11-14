@@ -8,7 +8,7 @@ use bk_sleigh::{Decoder, Language, SliceBytes};
 use bk_testkit::ReferenceDir;
 
 use super::directed::{Rng, extend_for_coverage, pack, plan, seed};
-use super::{Tolerated, compare, oracle, sweep};
+use super::{Tolerated, compare, is_crash, locate_crash, sweep, try_oracle};
 
 /// The base address of every stream.
 pub const BASE: u64 = 0;
@@ -48,6 +48,8 @@ pub struct LanguageResult {
     pub tolerated: Tolerated,
     pub failures: Vec<String>,
     pub invocations: usize,
+    /// Instructions whose processing crashes the oracle (address and bytes).
+    pub oracle_crashes: Vec<String>,
 }
 
 impl LanguageResult {
@@ -62,7 +64,7 @@ impl LanguageResult {
     /// One row of the coverage table.
     pub fn row(&self) -> String {
         format!(
-            "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}\tshadowed {}\tno-hit {}",
+            "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}\tshadowed {}\tno-hit {}\toracle-crashes {}",
             self.id,
             self.constructors,
             self.exercised.len(),
@@ -76,6 +78,7 @@ impl LanguageResult {
             self.tolerated.next2_and_commit,
             self.shadowed,
             self.no_hit,
+            self.oracle_crashes.len(),
         )
     }
 }
@@ -90,8 +93,24 @@ fn run_stream(
     result: &mut LanguageResult,
     label: &str,
 ) -> Vec<(u64, bool, Vec<u32>)> {
+    if bytes.is_empty() {
+        return Vec::new();
+    }
+    let theirs = match try_oracle(reference, id, base, bytes, config) {
+        Ok(theirs) => theirs,
+        Err(error) if is_crash(&error) => {
+            // Ghidra's engine crashes on one instruction: split the stream
+            // around it (both sweeps restart their context there).
+            let (start, end) = locate_crash(reference, id, base, bytes, config);
+            let hex: String = bytes[start..end].iter().map(|b| format!("{b:02x}")).collect();
+            result.oracle_crashes.push(format!("{label} {config:?} at {:#x}: {hex}", base + start as u64));
+            let mut seen = run_stream(reference, lang, id, base, &bytes[..start], config, result, label);
+            seen.extend(run_stream(reference, lang, id, base + end as u64, &bytes[end..], config, result, label));
+            return seen;
+        }
+        Err(error) => panic!("pcodedump {id}: {error}"),
+    };
     let ours = sweep(lang, base, bytes, config);
-    let theirs = oracle(reference, id, base, bytes, config);
     let cmp = compare(&theirs, &ours);
     result.invocations += 1;
     result.tolerated.add(&cmp.tolerated);

@@ -18,6 +18,9 @@ pub struct Record {
     pub root_constructor: Option<u32>,
     /// Ghidra's C++ cannot decode a constructor with more than 20 operands.
     pub too_many_operands: bool,
+    /// A delay-slot instruction folded into this one has more than 20
+    /// operands (the oracle's flow length is then the plain length).
+    pub delay_over_20: bool,
     pub reads_past_window: bool,
     pub committed: bool,
     pub uses_next2: bool,
@@ -81,6 +84,9 @@ pub fn start_context(lang: &Language, context: &[(String, u32)]) -> ContextDb {
 pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u32)]) -> Sweep {
     let mut db = start_context(lang, context);
     let mut decoder = Decoder::new(Arc::clone(lang));
+    // Fail as Ghidra's C++ does on more than 20 operands, so both sweeps stay
+    // in step; basilisk's own decoding of those is checked separately.
+    decoder.set_operand_limit(Some(20));
     let bytes = SliceBytes::new(base, data);
     let space = lang.default_space();
     let mut out = Sweep::default();
@@ -116,6 +122,7 @@ pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u
             constructors: Vec::new(),
             root_constructor: None,
             too_many_operands: false,
+            delay_over_20: false,
             reads_past_window: false,
             committed: false,
             uses_next2: false,
@@ -160,6 +167,7 @@ pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u
             Err(_) => length,
         };
         reads_past_window |= decoder.delay_slots().iter().any(|d| d.reads_past_window());
+        let delay_over_20 = decoder.delay_slots().iter().any(|d| d.max_operands() > 20);
         let mut line = format!("I\t{offset:#x}\t{length}\t{flow}\t");
         hex_bytes(data.get(pos..pos + length).unwrap_or_default(), &mut line);
         line.push('\t');
@@ -172,6 +180,7 @@ pub fn sweep(lang: &Arc<Language>, base: u64, data: &[u8], context: &[(String, u
             constructors,
             root_constructor,
             too_many_operands,
+            delay_over_20,
             reads_past_window,
             committed,
             uses_next2,

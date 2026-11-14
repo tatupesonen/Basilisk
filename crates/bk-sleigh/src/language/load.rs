@@ -5,6 +5,7 @@
 use std::sync::Arc;
 
 use bk_core::{RegisterLookup, SpaceId, TruncationTag};
+use bk_lang::pspec::ProcessorSpec;
 use bk_lang::{LanguageId, LanguageRegistry};
 use bk_pcode::FloatFormats;
 use bk_sla::{Expr, Limits, ScopeId, Sla, SymbolKind};
@@ -100,6 +101,21 @@ impl Language {
         })
     }
 
+    /// Truncates an address space (an `.ldefs` `<truncate_space>`).
+    pub fn truncate_space(&mut self, space: &str, size: u32) -> Result<(), LoadError> {
+        self.spaces
+            .truncate_space(&TruncationTag::new(space.to_owned(), size))?;
+        self.space_text = Self::compute_space_text(&self.spaces);
+        Ok(())
+    }
+
+    /// Takes the context defaults of a processor specification's
+    /// `<context_data>`, replacing any taken before.
+    pub fn apply_processor_spec(&mut self, pspec: &ProcessorSpec) -> Result<(), LoadError> {
+        self.initial = setup::resolve(pspec, &self.spaces, &self.registers, &self.context_vars)?;
+        Ok(())
+    }
+
     /// Loads a language as `pcodedump` and Ghidra's `SleighArchitecture` do:
     /// the `.sla` the registry names, then the `.ldefs` entry's
     /// `<truncate_space>`s and the `.pspec`'s `<context_data>`.
@@ -117,18 +133,10 @@ impl Language {
         })?;
         let mut language = Self::from_sla(Arc::new(sla))?;
         for truncation in description.truncated_spaces() {
-            language
-                .spaces
-                .truncate_space(&TruncationTag::new(truncation.space.clone(), truncation.size))?;
+            language.truncate_space(&truncation.space, truncation.size)?;
         }
-        language.space_text = Self::compute_space_text(&language.spaces);
         let pspec = registry.processor_spec(id)?;
-        language.initial = setup::resolve(
-            &pspec,
-            &language.spaces,
-            &language.registers,
-            &language.context_vars,
-        )?;
+        language.apply_processor_spec(&pspec)?;
         language.id = Some(id.clone());
         Ok(language)
     }

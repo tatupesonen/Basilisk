@@ -114,6 +114,10 @@ pub enum Limit {
     Nodes,
     /// A pattern expression evaluated more deeply than the decoder allows.
     ExpressionDepth,
+    /// More operands in one constructor than the decoder was told to allow
+    /// ([`Decoder::set_operand_limit`](crate::Decoder::set_operand_limit),
+    /// Ghidra's C++ limit of 20).
+    Operands,
 }
 
 impl fmt::Display for Limit {
@@ -122,6 +126,7 @@ impl fmt::Display for Limit {
             Self::Depth => "SLEIGH exceeded maximum parse depth",
             Self::Nodes => "SLEIGH parser exceeded the node limit of one instruction",
             Self::ExpressionDepth => "SLEIGH pattern expression nested too deeply",
+            Self::Operands => "SLEIGH parser out of state space",
         })
     }
 }

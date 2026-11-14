@@ -15,6 +15,7 @@ bk-sla.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+bk-bin.workspace = true
 bk-elf.workspace = true
 bk-testkit.workspace = true
 dhat.workspace = true

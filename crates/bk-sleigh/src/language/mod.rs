@@ -110,6 +110,12 @@ impl Language {
         self.sla.header().big_endian
     }
 
+    /// Whether a constructor has a main p-code template (its body is not
+    /// `unimpl`).
+    pub fn has_semantics(&self, ctor: bk_sla::ConstructorId) -> bool {
+        self.tables.ctor(ctor).is_some_and(|info| info.has_main)
+    }
+
     /// Instruction alignment in bytes (1 = none).
     pub fn alignment(&self) -> u32 {
         self.sla.header().align.max(1) as u32

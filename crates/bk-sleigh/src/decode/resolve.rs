@@ -55,6 +55,7 @@ pub(crate) fn resolve<B, C>(
     addr: Address,
     bytes: &B,
     context: &C,
+    operand_limit: u32,
 ) -> Result<(), DecodeError>
 where
     B: ByteSource + ?Sized,
@@ -74,13 +75,13 @@ where
     parse.context.resize(lang.context_words(), 0);
     context.context_at(addr, &mut parse.context);
 
-    walk(lang, parse)?;
+    walk(lang, parse, operand_limit)?;
     parse.naddr = add(lang, addr, u64::from(parse.length()));
     parse.state = ParseState::Resolved;
     Ok(())
 }
 
-fn walk(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
+fn walk(lang: &Language, parse: &mut Parse, operand_limit: u32) -> Result<(), DecodeError> {
     let address = parse.addr;
     let model = |what| DecodeError::Model { address, what };
     parse.nodes.push(Node::new(NONE));
@@ -109,6 +110,12 @@ fn walk(lang: &Language, parse: &mut Parse) -> Result<(), DecodeError> {
             };
             let offset = base.wrapping_add(op.offset as u32);
             // Ghidra `allocateOperand`.
+            if oper >= operand_limit {
+                return Err(DecodeError::Limit {
+                    address: parse.addr,
+                    limit: Limit::Operands,
+                });
+            }
             if depth > MAX_DEPTH - 2 {
                 return Err(DecodeError::Limit {
                     address: parse.addr,
