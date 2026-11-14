@@ -330,4 +330,27 @@ Appended by the `sleigh-pcode` track:
 
 ## 9. Status
 
-Not started.
+Built by track `sleigh-pcode` (2026-11-14; report `docs/agents/sleigh-pcode.md`).
+
+* **`bk-sleigh`**: `emit` (`PcodeEmit`; `PcodeCollector`, `PcodeCounter`,
+  `PcodeRecords`, `write_record`, `write_varnode`), `pcode` (`Decoder::lift`,
+  `lift_observed`, `lift_decoded`, `build_template`,
+  `build_template_observed`, `InjectContext`, `BuildObserver`,
+  `BuildFeature`, `LiftError`, `LiftLimit`; modules `buffer`, `location`,
+  `build`, `nested`, `error`), `dump` (`pcodedump`'s sweep and record
+  writer, `SweepObserver`). The spec's module names `op`, `labels`,
+  `delay`, `crossbuild`, `inject` became `build` (ops, labels, `BUILD`),
+  `nested` (delay slots and crossbuild), `buffer` and `pcode/mod.rs`
+  (injection).
+* **`basilisk disasm`** (`crates/basilisk/src/cmd/disasm.rs`), plus
+  `--sla-dir` for a root without compiled files.
+* **Differential test**: every record (`I`, `E`, `P`, `U`, `T`) equal to
+  `pcodedump`'s for all 175 language pairs; template and feature coverage in
+  the snapshot table; three new tolerated kinds, each explained by the
+  harness's model of Ghidra (see Differences): unset handles, crossbuild
+  targets Ghidra's cache would not hold, parses Ghidra's cache clobbered.
+* **`Translate`** completed (`one_instruction`, registers, user ops, spaces,
+  float formats, alignment, endianness, unique layout, `set_context_default`,
+  `allow_context_set`); `UniqueLayout` and `Language::unique_start`.
+  `print_assembly` keeps part 1's two-string form instead of an emitter.
+* **Not met**: 8-thread scaling below 6× (report, Gaps).

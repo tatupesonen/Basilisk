@@ -525,3 +525,54 @@ fn arm_v8m_oracle_crashes_read_unset_handles() {
         assert!(unset.0, "{id} {hex}");
     }
 }
+
+#[test]
+fn translator_offers_the_translate_interface() {
+    use bk_sleigh::{Translate, Translator, UniqueLayout};
+    let lang = language();
+    let data = bytes("0112 0720");
+    let mut t = Translator::new(Arc::clone(&lang), SliceBytes::new(0, &data));
+    let mut ops = PcodeCollector::new();
+    assert_eq!(t.one_instruction(ram(&lang, 0), &mut ops).unwrap(), 2);
+    assert_eq!(ops.ops()[0].opcode, OpCode::IntAdd);
+    assert_eq!(t.instruction_length(ram(&lang, 2)).unwrap(), 2);
+    let r1 = t.register("r1").unwrap();
+    assert_eq!(r1, VarnodeData::new(SpaceId::new(4), 4, 4));
+    assert_eq!(t.register_name(SpaceId::new(4), 5, 1), Some("r1"));
+    assert_eq!(t.exact_register_name(SpaceId::new(4), 4, 4), Some("r1"));
+    assert_eq!(t.exact_register_name(SpaceId::new(4), 5, 1), None);
+    assert_eq!(t.all_registers().len(), 4);
+    assert_eq!(t.user_op_names(), [Some("syscall".to_owned())]);
+    assert_eq!(t.unique_base(), 0x1000);
+    assert_eq!(t.unique_start(UniqueLayout::RuntimeBitrangeEa), 0x1100);
+    assert_eq!(t.unique_start(UniqueLayout::Inject), 0x1200);
+    assert_eq!(t.unique_start(UniqueLayout::Analysis), 0x1000_0000);
+    assert_eq!(t.alignment(), 2);
+    assert!(t.is_big_endian());
+    assert_eq!(t.float_format(8).map(bk_pcode::FloatFormat::size), Some(8));
+    assert!(t.spaces().space_by_name("ram").is_some());
+    assert!(!t.set_context_default("nosuch", 1));
+}
+
+#[test]
+fn translator_can_refuse_context_commits() {
+    use bk_sleigh::{Translate, Translator};
+    // bkfix: `setmode` (0x60) commits mode = 1 to the next address, where
+    // 0x70 then decodes as `m1op` instead of `clrmode`.
+    let lang = Arc::new(Language::from_sla(Arc::new(fixture::build())).unwrap());
+    let data = bytes("6000 7000");
+    for (allow, expected) in [(true, "m1op"), (false, "clrmode")] {
+        let mut t = Translator::new(Arc::clone(&lang), SliceBytes::new(0, &data));
+        t.allow_context_set(allow);
+        t.one_instruction(ram(&lang, 0), &mut PcodeCounter::default())
+            .unwrap();
+        let (mut m, mut b) = (String::new(), String::new());
+        t.print_assembly(ram(&lang, 2), &mut m, &mut b).unwrap();
+        assert_eq!(m, expected);
+    }
+    let mut t = Translator::new(Arc::clone(&lang), SliceBytes::new(0, &data));
+    assert!(t.set_context_default("mode", 1));
+    let (mut m, mut b) = (String::new(), String::new());
+    t.print_assembly(ram(&lang, 2), &mut m, &mut b).unwrap();
+    assert_eq!(m, "m1op");
+}
