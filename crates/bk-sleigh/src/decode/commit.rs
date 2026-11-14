@@ -29,8 +29,7 @@ pub(crate) fn apply_commits<S: ContextSink + ?Sized>(
                 .nodes
                 .get(commit.node as usize)
                 .and_then(|node| node.child(operand.index.max(0) as u32))
-                .and_then(|child| parse.nodes.get(child as usize))
-                .map_or(FixedHandle::UNSET, |child| child.handle),
+                .map_or(FixedHandle::UNSET, |child| parse.handle(child)),
             _ => operand_handle(&env, symbol_def(sla, commit.symbol), 0)?,
         };
         let space = parse.addr.space();

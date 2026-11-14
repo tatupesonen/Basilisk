@@ -2,13 +2,11 @@
 //! evaluating pattern expressions (Ghidra `ParserContext::get*Bytes`,
 //! `get*Bits`, `PatternExpression::getValue`; inventory section 5).
 
-use std::cell::Cell;
-
 use bk_core::Address;
 use bk_sla::{BinaryOp, ConstructorId, Expr, ExprId, Field, Sla, UnaryOp};
 
-use super::bytes::{WINDOW, Window};
-use super::tree::{NONE, Node};
+use super::bytes::WINDOW;
+use super::tree::{NONE, Parse};
 use crate::error::{DecodeError, Limit};
 use crate::language::Language;
 use crate::language::tables::{OpDef, sign_extend, zero_extend};
@@ -26,37 +24,41 @@ pub(crate) enum Point {
     Temp { ct: u32, offset: u32 },
 }
 
-/// Everything expression evaluation reads.
+/// Everything expression evaluation reads. It is built afresh for each
+/// evaluation (the parse changes between them), so it holds references
+/// only: copying the parse's vector headers into it on every call cost a
+/// store-to-load forwarding stall on x86-64 right after the node vector grew.
 pub(crate) struct Env<'a> {
     pub(crate) lang: &'a Language,
     pub(crate) sla: &'a Sla,
-    pub(crate) window: &'a Window,
-    pub(crate) context: &'a [u32],
-    pub(crate) nodes: &'a [Node],
-    pub(crate) addr: Address,
+    /// The instruction being decoded: its bytes, local context, nodes,
+    /// address, `inst_next2` and overhang flag.
+    pub(crate) parse: &'a Parse,
     /// The next address; `None` while the instruction is being resolved.
     pub(crate) naddr: Option<Address>,
-    /// `inst_next2`; `None` when it is not available.
-    pub(crate) next2: Option<Address>,
-    /// Set when a read used bytes past index 15.
-    pub(crate) overhang: &'a Cell<bool>,
 }
 
 impl Env<'_> {
     pub(crate) fn model(&self, what: &'static str) -> DecodeError {
         DecodeError::Model {
-            address: self.addr,
+            address: self.parse.addr,
             what,
         }
     }
 
     fn too_long(&self) -> DecodeError {
-        DecodeError::TooLong { address: self.addr }
+        DecodeError::TooLong {
+            address: self.parse.addr,
+        }
     }
 
     pub(crate) fn offset_of(&self, point: Point) -> u32 {
         match point {
-            Point::Node(n) => self.nodes.get(n as usize).map_or(0, |node| node.offset),
+            Point::Node(n) => self
+                .parse
+                .nodes
+                .get(n as usize)
+                .map_or(0, |node| node.offset),
             Point::Temp { offset, .. } => offset,
         }
     }
@@ -75,9 +77,9 @@ impl Env<'_> {
             return Err(self.too_long());
         }
         if pos as usize + size as usize > WINDOW {
-            self.overhang.set(true);
+            self.parse.overhang.set(true);
         }
-        Ok(self.window.read(pos, size))
+        Ok(self.parse.window.read(pos, size))
     }
 
     /// A 4-byte pattern word at `start` from `node_offset`; bytes past the
@@ -95,9 +97,9 @@ impl Env<'_> {
         }
         let inside = WINDOW as u32 - pos;
         if inside < 4 && mask & (u32::MAX >> (8 * inside)) != 0 {
-            self.overhang.set(true);
+            self.parse.overhang.set(true);
         }
-        Ok(self.window.read(pos, 4))
+        Ok(self.parse.window.read(pos, 4))
     }
 
     /// `size` bits at `start_bit` from `node_offset`, most significant first
@@ -116,9 +118,9 @@ impl Env<'_> {
         let bit = (start_bit % 8) as u32;
         let byte_size = (bit + size).saturating_sub(1) / 8 + 1;
         if pos as usize + byte_size as usize > WINDOW {
-            self.overhang.set(true);
+            self.parse.overhang.set(true);
         }
-        let raw = self.window.read(pos, byte_size.min(4));
+        let raw = self.parse.window.read(pos, byte_size.min(4));
         let raw = raw.wrapping_shl(8 * (4 - byte_size.min(4)) + bit);
         Ok(raw.wrapping_shr(32u32.wrapping_sub(size)))
     }
@@ -132,7 +134,7 @@ impl Env<'_> {
         let word = |i: i32| {
             usize::try_from(i)
                 .ok()
-                .and_then(|i| self.context.get(i))
+                .and_then(|i| self.parse.context.get(i))
                 .copied()
         };
         let mut res = word(word_index).unwrap_or(0);
@@ -155,7 +157,7 @@ impl Env<'_> {
         let word = |i: i32| {
             usize::try_from(i)
                 .ok()
-                .and_then(|i| self.context.get(i))
+                .and_then(|i| self.parse.context.get(i))
                 .copied()
         };
         let mut res = word(word_index).unwrap_or(0);
@@ -214,7 +216,7 @@ impl Env<'_> {
     pub(crate) fn eval(&self, id: ExprId, point: Point, depth: u32) -> Result<i64, DecodeError> {
         if depth > MAX_EXPR_DEPTH {
             return Err(DecodeError::Limit {
-                address: self.addr,
+                address: self.parse.addr,
                 limit: Limit::ExpressionDepth,
             });
         }
@@ -237,18 +239,20 @@ impl Env<'_> {
                     .ok_or_else(|| self.model("operand_exp constructor"))?;
                 self.operand_value(ctor, index, point, depth)?
             }
-            Expr::Start => self.unit_offset(self.addr),
-            Expr::End => self.unit_offset(self.naddr.unwrap_or(self.addr)),
+            Expr::Start => self.unit_offset(self.parse.addr),
+            Expr::End => self.unit_offset(self.naddr.unwrap_or(self.parse.addr)),
             Expr::Next2 => {
-                let next2 = self
-                    .next2
-                    .ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
+                let next2 = self.parse.next2.ok_or(DecodeError::Next2Unavailable {
+                    address: self.parse.addr,
+                })?;
                 self.unit_offset(next2)
             }
             Expr::Binary { op, left, right } => {
                 let a = self.eval(left, point, depth + 1)?;
                 let b = self.eval(right, point, depth + 1)?;
-                binary(op, a, b).ok_or(DecodeError::DivisionByZero { address: self.addr })?
+                binary(op, a, b).ok_or(DecodeError::DivisionByZero {
+                    address: self.parse.addr,
+                })?
             }
             Expr::Unary { op, operand } => {
                 let a = self.eval(operand, point, depth + 1)?;
@@ -292,12 +296,12 @@ impl Env<'_> {
             .ok_or_else(|| self.model("operand"))?;
         let expr = match op.def {
             OpDef::Expr(expr) | OpDef::Value(expr) | OpDef::Table { expr, .. } => expr,
-            OpDef::Start => return Ok(self.unit_offset(self.addr)),
-            OpDef::End => return Ok(self.unit_offset(self.naddr.unwrap_or(self.addr))),
+            OpDef::Start => return Ok(self.unit_offset(self.parse.addr)),
+            OpDef::End => return Ok(self.unit_offset(self.naddr.unwrap_or(self.parse.addr))),
             OpDef::Next2 => {
-                let next2 = self
-                    .next2
-                    .ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
+                let next2 = self.parse.next2.ok_or(DecodeError::Next2Unavailable {
+                    address: self.parse.addr,
+                })?;
                 return Ok(self.unit_offset(next2));
             }
             OpDef::Varnode { .. } | OpDef::Zero => return Ok(0),
@@ -315,7 +319,7 @@ impl Env<'_> {
             Point::Node(start) => {
                 let mut at = start;
                 loop {
-                    let Some(node) = self.nodes.get(at as usize) else {
+                    let Some(node) = self.parse.nodes.get(at as usize) else {
                         return point;
                     };
                     if node.ctor == ct {
@@ -323,7 +327,7 @@ impl Env<'_> {
                             node.offset.wrapping_add(rel as u32)
                         } else {
                             node.child(index as u32)
-                                .and_then(|c| self.nodes.get(c as usize))
+                                .and_then(|c| self.parse.nodes.get(c as usize))
                                 .map_or(0, |child| child.offset)
                         };
                         return Point::Temp { ct, offset };

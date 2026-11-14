@@ -61,6 +61,7 @@ impl<'a> Printer<'a, '_> {
         let sla: &'a bk_sla::Sla = self.env.sla;
         let node = self
             .env
+            .parse
             .nodes
             .get(n as usize)
             .ok_or_else(|| self.model("node"))?;
@@ -81,6 +82,7 @@ impl<'a> Printer<'a, '_> {
 
     fn child(&self, n: u32, index: u32) -> Result<u32, DecodeError> {
         self.env
+            .parse
             .nodes
             .get(n as usize)
             .and_then(|node| node.child(index))
@@ -127,6 +129,7 @@ impl<'a> Printer<'a, '_> {
     fn operand(&mut self, n: u32, index: u32) -> Result<(), DecodeError> {
         let node = self
             .env
+            .parse
             .nodes
             .get(n as usize)
             .ok_or_else(|| self.model("node"))?;
@@ -157,8 +160,8 @@ impl<'a> Printer<'a, '_> {
                 let value = self.env.eval(expr, point, 0)?;
                 let slot = value as u32 as usize;
                 let missing = || DecodeError::NoTableEntry {
-                    address: self.env.addr,
-                    at: self.env.lang.raw_text(self.env.addr),
+                    address: self.env.parse.addr,
+                    at: self.env.lang.raw_text(self.env.parse.addr),
                     table: kind,
                 };
                 match sla.symbol(symbol).map(|s| s.kind) {
@@ -182,7 +185,7 @@ impl<'a> Printer<'a, '_> {
                     Some(SymbolKind::VarnodeList { table, .. }) => {
                         let entries = sla.varnode_table(table);
                         let entry = entries.get(slot).ok_or(DecodeError::VarnodeListRange {
-                            address: self.env.addr,
+                            address: self.env.parse.addr,
                         })?;
                         let register = entry.ok_or_else(missing)?;
                         self.out.push_str(sla.symbol_name(register));
@@ -192,18 +195,18 @@ impl<'a> Printer<'a, '_> {
             }
             OpDef::Varnode { symbol, .. } => self.out.push_str(sla.symbol_name(symbol)),
             OpDef::Start => {
-                let _ = write!(self.out, "{:#x}", self.env.addr.offset());
+                let _ = write!(self.out, "{:#x}", self.env.parse.addr.offset());
             }
             OpDef::End => {
                 let _ = write!(
                     self.out,
                     "{:#x}",
-                    self.env.naddr.unwrap_or(self.env.addr).offset()
+                    self.env.naddr.unwrap_or(self.env.parse.addr).offset()
                 );
             }
             OpDef::Next2 => {
-                let next2 = self.env.next2.ok_or(DecodeError::Next2Unavailable {
-                    address: self.env.addr,
+                let next2 = self.env.parse.next2.ok_or(DecodeError::Next2Unavailable {
+                    address: self.env.parse.addr,
                 })?;
                 let _ = write!(self.out, "{:#x}", next2.offset());
             }

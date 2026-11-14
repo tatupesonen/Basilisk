@@ -36,8 +36,8 @@ impl Env<'_> {
                     }
                 }
                 return Err(DecodeError::NoConstructor {
-                    address: self.addr,
-                    at: self.lang.raw_text(self.addr),
+                    address: self.parse.addr,
+                    at: self.lang.raw_text(self.parse.addr),
                 });
             }
             let size = u32::from(node.size);

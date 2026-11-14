@@ -29,6 +29,8 @@ pub(crate) fn resolve_handles(lang: &Language, parse: &mut Parse) -> Result<(), 
             what: "handles of an unresolved parse",
         });
     }
+    parse.handles.clear();
+    parse.handles.resize(parse.nodes.len(), FixedHandle::UNSET);
     if resolve_backwards(lang, parse).is_ok() {
         parse.state = ParseState::Handles;
         return Ok(());
@@ -60,8 +62,8 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErr
             }
             let child = node.child(oper).ok_or_else(|| model("operand node"))?;
             let handle = operand_handle(&env(lang, parse, naddr), op.def, child)?;
-            if let Some(slot) = parse.nodes.get_mut(child as usize) {
-                slot.handle = handle;
+            if let Some(slot) = parse.handles.get_mut(child as usize) {
+                *slot = handle;
             }
         }
         let export = lang
@@ -70,8 +72,8 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErr
             .and_then(|template| template.result().copied());
         if let Some(export) = export {
             let handle = fix(&env(lang, parse, naddr), &export, cur)?;
-            if let Some(slot) = parse.nodes.get_mut(cur as usize) {
-                slot.handle = handle;
+            if let Some(slot) = parse.handles.get_mut(cur as usize) {
+                *slot = handle;
             }
         }
     }
@@ -123,8 +125,8 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
                 break;
             }
             let handle = operand_handle(&env(lang, parse, naddr), op.def, child)?;
-            if let Some(slot) = parse.nodes.get_mut(child as usize) {
-                slot.handle = handle;
+            if let Some(slot) = parse.handles.get_mut(child as usize) {
+                *slot = handle;
             }
             depth -= 1;
             oper += 1;
@@ -138,8 +140,8 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
             .and_then(|template| template.result().copied());
         if let Some(export) = export {
             let handle = fix(&env(lang, parse, naddr), &export, cur)?;
-            if let Some(slot) = parse.nodes.get_mut(cur as usize) {
-                slot.handle = handle;
+            if let Some(slot) = parse.handles.get_mut(cur as usize) {
+                *slot = handle;
             }
         }
         if node.parent == NONE {
@@ -154,7 +156,10 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
 
 impl Env<'_> {
     fn cur_space(&self) -> u32 {
-        self.addr.space().map_or(CONST, bk_core::SpaceId::index)
+        self.parse
+            .addr
+            .space()
+            .map_or(CONST, bk_core::SpaceId::index)
     }
 
     fn space_size(&self, space: u32) -> u32 {
@@ -165,7 +170,9 @@ impl Env<'_> {
     }
 
     fn address_handle(&self, addr: Option<Address>) -> Result<FixedHandle, DecodeError> {
-        let addr = addr.ok_or(DecodeError::Next2Unavailable { address: self.addr })?;
+        let addr = addr.ok_or(DecodeError::Next2Unavailable {
+            address: self.parse.addr,
+        })?;
         let space = self.cur_space();
         Ok(FixedHandle::fixed(
             space,
@@ -175,13 +182,12 @@ impl Env<'_> {
     }
 
     fn handle_of(&self, n: u32) -> FixedHandle {
-        self.nodes
-            .get(n as usize)
-            .map_or(FixedHandle::UNSET, |node| node.handle)
+        self.parse.handle(n)
     }
 
     fn child_handle(&self, n: u32, index: u32) -> Result<FixedHandle, DecodeError> {
         let node = self
+            .parse
             .nodes
             .get(n as usize)
             .ok_or_else(|| self.model("node"))?;
@@ -195,11 +201,14 @@ impl Env<'_> {
     fn fix_const(&self, c: &ConstTpl, n: u32) -> Result<u64, DecodeError> {
         Ok(match *c {
             ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
-            ConstTpl::Start => self.addr.offset(),
-            ConstTpl::Next => self.naddr.unwrap_or(self.addr).offset(),
+            ConstTpl::Start => self.parse.addr.offset(),
+            ConstTpl::Next => self.naddr.unwrap_or(self.parse.addr).offset(),
             ConstTpl::Next2 => self
+                .parse
                 .next2
-                .ok_or(DecodeError::Next2Unavailable { address: self.addr })?
+                .ok_or(DecodeError::Next2Unavailable {
+                    address: self.parse.addr,
+                })?
                 .offset(),
             ConstTpl::CurSpace => u64::from(self.cur_space()),
             ConstTpl::CurSpaceSize => u64::from(self.space_size(self.cur_space())),
@@ -261,7 +270,9 @@ impl Env<'_> {
                     hand.space
                 })
             }
-            _ => Err(DecodeError::NotASpace { address: self.addr }),
+            _ => Err(DecodeError::NotASpace {
+                address: self.parse.addr,
+            }),
         }
     }
 }
@@ -279,7 +290,11 @@ fn fix(env: &Env<'_>, tpl: &HandleTpl, n: u32) -> Result<FixedHandle, DecodeErro
                 select: HandleSelect::Space,
                 ..
             } => env.child_handle(n, index)?.space,
-            _ => return Err(DecodeError::NotASpace { address: env.addr }),
+            _ => {
+                return Err(DecodeError::NotASpace {
+                    address: env.parse.addr,
+                });
+            }
         };
         hand.size = env.fix_const(&tpl.size, n)? as u32;
         // fillinOffset.
@@ -341,8 +356,8 @@ pub(crate) fn operand_handle(
         } => {
             let value = env.eval(expr, point, 0)?;
             let missing = || DecodeError::NoTableEntry {
-                address: env.addr,
-                at: env.lang.raw_text(env.addr),
+                address: env.parse.addr,
+                at: env.lang.raw_text(env.parse.addr),
                 table: kind,
             };
             match (kind, env.sla.symbol(symbol).map(|s| &s.kind)) {
@@ -379,9 +394,9 @@ pub(crate) fn operand_handle(
             size,
             ..
         } => FixedHandle::fixed(space, offset, size),
-        OpDef::Start => env.address_handle(Some(env.addr))?,
-        OpDef::End => env.address_handle(Some(env.naddr.unwrap_or(env.addr)))?,
-        OpDef::Next2 => env.address_handle(env.next2)?,
+        OpDef::Start => env.address_handle(Some(env.parse.addr))?,
+        OpDef::End => env.address_handle(Some(env.naddr.unwrap_or(env.parse.addr)))?,
+        OpDef::Next2 => env.address_handle(env.parse.next2)?,
         OpDef::Zero | OpDef::Subtable(_) => FixedHandle::fixed(CONST, 0, 0),
     })
 }

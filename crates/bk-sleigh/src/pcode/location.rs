@@ -92,10 +92,7 @@ impl<'p> Walk<'p> {
                 if index >= num_children {
                     return FixedHandle::UNSET;
                 }
-                parse
-                    .nodes
-                    .get(first_child.wrapping_add(index) as usize)
-                    .map_or(FixedHandle::UNSET, |n| n.handle)
+                parse.handle(first_child.wrapping_add(index))
             }
             Handles::Params(params) => {
                 params

@@ -25,13 +25,8 @@ pub(crate) fn env<'a>(lang: &'a Language, parse: &'a Parse, naddr: Option<Addres
     Env {
         lang,
         sla: lang.sla(),
-        window: &parse.window,
-        context: &parse.context,
-        nodes: &parse.nodes,
-        addr: parse.addr,
+        parse,
         naddr,
-        next2: parse.next2,
-        overhang: &parse.overhang,
     }
 }
 
