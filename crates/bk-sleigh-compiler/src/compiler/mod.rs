@@ -152,6 +152,12 @@ pub(crate) struct Compiler<'a> {
     env: Option<Arc<BuildEnv>>,
 }
 
+/// Ghidra's limit on errors before it gives up (`reportError`).
+const MAX_ERRORS: usize = 1_000_000;
+
+/// The context words a layout may occupy (spec 4.5).
+pub(crate) const MAX_CONTEXT_WORDS: i32 = 1024;
+
 /// The elaboration was stopped by an unrecoverable error.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Fatal;
@@ -208,6 +214,10 @@ impl<'a> Compiler<'a> {
     /// Walks items in source order.
     pub(crate) fn items(&mut self, items: &'a [Item]) -> Result<(), Fatal> {
         for item in items {
+            if self.diags.errors() > MAX_ERRORS {
+                self.diags.error(None, "Too many errors: Aborting");
+                return Err(Fatal);
+            }
             match item {
                 Item::Definition(def) => self.definition(def),
                 Item::Macro(m) => self.macro_def(m)?,

@@ -62,6 +62,14 @@ impl Compiler<'_> {
                 at,
             );
             begin += size;
+            if bits > super::MAX_CONTEXT_WORDS * 32 {
+                self.diags.error_at(
+                    at,
+                    format!("Context layout exceeds {} words", super::MAX_CONTEXT_WORDS),
+                );
+                self.fatal = true;
+                return;
+            }
         }
     }
 
