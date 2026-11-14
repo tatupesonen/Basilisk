@@ -84,12 +84,16 @@ and a sane architecture in mind.
   checkout. It lands on `master` through its own branch and CI run, with
   whatever the newer compiler and clippy require fixed in the same branch
   (track `toolchain-1.100` in `PROGRESS.md`).
-* **At most three running workers** (owner, 2026-11-14: "limit to 3
-  agents total", and again "you can use 3 agents" after briefly allowing
-  five the same day; before that four, 2026-11-13, and "about four",
-  2026-11-12), counting helper subagents. The coordinator fills the slots
-  itself, so agents start no helpers. Start the next track when a slot
-  frees; queue the rest in `PROGRESS.md`.
+* **At most two running workers, for now** (owner, 2026-11-14: "limit to
+  two agents for now"; earlier the same day three, briefly five; four on
+  2026-11-13; "about four" on 2026-11-12), counting helper subagents. The
+  coordinator fills the slots itself, so agents start no helpers. Start
+  the next track when a slot frees; queue the rest in `PROGRESS.md`.
+* **Existing work is never thrown away** (owner, 2026-11-14: "remember to
+  not throw away existing work"). An agent that has to stop is paused at a
+  safe point with its work committed and is resumed later by its id; its
+  worktree, branch and uncommitted files are kept. Branches and worktrees
+  are removed only after their content is on `master`.
 * **x86-64 Linux results come from Docker emulation on this Mac** (owner,
   2026-11-12): the reference build runs in a `linux/amd64` container into
   `../reference-x86_64/` (ADR-021).

@@ -33,7 +33,11 @@ and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
 **Resumed 2026-11-14 15:07 after the usage-limit stop of 13:30.** Cap:
-three workers (the owner's latest word; five was allowed briefly).
+**two workers** (owner, 15:07; three and briefly five earlier the same
+day). Existing work is never thrown away (owner): pause agents at a safe
+point, keep worktrees and branches until their content is on `master`.
+`sleigh-pcode` was asked at 15:07 to pause cleanly (commit, clean status,
+stop) and is **first to resume** when a slot frees.
 
 **The main checkout has a staged, uncommitted change by the owner**:
 `rust-toolchain.toml` 1.97.1 → 1.100.0 ("I updated Rust"). Do not commit
