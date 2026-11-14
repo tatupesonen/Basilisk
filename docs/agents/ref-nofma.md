@@ -24,9 +24,18 @@ Reference build with `-ffp-contract=off` (ADR-032).
   - `decomp` console: all 93 data tests' scripts run on their images,
     old vs new: stdout, stderr and exit status identical for all 93.
 
+- Workspace tests (`cargo test --workspace`, reference env set): before
+  the swap 1,747 passed, 0 failed; after the swap 1,747 passed, 0 failed;
+  the sorted per-test result lists are identical (no SKIPPED lines in
+  either run).
+- `docs/features/reference-tools.md` (step 4), `sleigh-compiler-back.md`
+  and `inventory/01-sleigh.md` 10(e)1 (step 5).
+
 ## In progress
-- Post-swap workspace test run (pre-swap: 1,747 tests passed, 0 failed,
-  log `target/ref-nofma/test-before.log`).
+- Step 6: `pcodedump` crashes (`docs/research/pcodedump-crashes.md`).
+
+## Next
+- Step 7 Docker leftovers; gate; final report.
 
 ## State of `/Users/tatu/slop/reference`
 SWAP COMPLETE (2026-11-14). The live tree is the `-ffp-contract=off`
