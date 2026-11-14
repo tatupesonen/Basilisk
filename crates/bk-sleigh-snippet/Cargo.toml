@@ -20,6 +20,7 @@ tracing.workspace = true
 bk-lang.workspace = true
 bk-marshal.workspace = true
 bk-testkit.workspace = true
+insta.workspace = true
 proptest.workspace = true
 
 [lints]

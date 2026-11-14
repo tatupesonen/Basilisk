@@ -5,6 +5,7 @@
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
 pub(crate) mod corpus;
+pub(crate) mod fixture;
 pub(crate) mod oracle;
 
 use std::path::{Path, PathBuf};

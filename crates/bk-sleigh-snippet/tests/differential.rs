@@ -183,8 +183,8 @@ fn every_shipped_snippet_matches_ghidra() {
     assert!(total.records > 0, "no snippet was compiled");
     assert_eq!(
         elements.len(),
-        139,
-        "the shipped trees hold 139 snippet elements"
+        137,
+        "the shipped trees hold 137 snippet elements outside XML comments"
     );
     assert_eq!(total.distinct.len() + without_body.len(), elements.len());
     assert_eq!(total.mismatches, Vec::<String>::new());
