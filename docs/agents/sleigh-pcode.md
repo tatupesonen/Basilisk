@@ -22,6 +22,25 @@ Spec: `docs/features/sleigh-pcode.md`. Resumed 2026-11-14 after a pause.
   one Toy harvard_rev record where Ghidra's 2-entry cache hands the builder
   a clobbered parse (delay slot `skvs` uses `inst_next2`).
 
+## Done since (all committed)
+
+* `bkpc` p-code fixture (`tests/fixture/pcode.rs`) with recorded pcodedump
+  output (`tests/data/pcode-fixture-oracle.txt`), replayed in CI
+  (`tests/pcode_fixture.rs`): every op template built, every feature column.
+* Unit tests `tests/pcode_units.rs` (28), properties `tests/pcode_properties.rs`
+  (PROPTEST_CASES honoured; run at 20,000), fuzz `bk_sleigh_lift` (60 s,
+  1.94 M runs, clean), dhat: 0 allocations lifting 100,000 instructions.
+* Full run every language passes (153 s): no unexplained difference;
+  tolerated: unset handles (Ghidra reads uninitialised `FixedHandle`; null
+  space → the ARM v8-m SIGSEGVs, confirmed by
+  `arm_v8m_oracle_crashes_read_unset_handles`), one cache-clobber record.
+* Benchmarks `tests/bench_pcode.rs`; `lift_decoded` (reuse last decode).
+  Last numbers (load ~12): decode+lift 1.48 M/s vs ref 1.54; text+lift 1.28
+  vs 0.99; disasm --quiet 0.190 s vs 0.201 s; full listing 0.396 vs 0.714.
+  Working on closing the decode+lift gap.
+* Coordinator: master moves to Rust 1.100.0; merge master when told, gates
+  only after that merge.
+
 ## Done (reading)
 
 * Read RULES, LOOP, DIRECTION, ADR-021/022/023/024/027/032, the spec,
