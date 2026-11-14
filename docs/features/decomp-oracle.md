@@ -148,9 +148,14 @@ disabled, debug state).
   `com_opt` flags (`$(OPT_CXXFLAGS) $(ADDITIONAL_FLAGS) -D__TERMINAL__`)
   and once with `com_dbg`'s (`$(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS)
   -DCPUI_DEBUG -D__TERMINAL__`), each adding `-fno-access-control` and
-  `-I REF/src/cpp`. `decomp_bk` = the link line of `decomp_opt` (all
-  `com_opt/*.o` objects the Makefile linked, the bundled zlib) plus the
-  extension's optimised objects; `decomp_bk_dbg` likewise from `com_dbg`.
+  `-I REF/src/cpp`. `decomp_bk` = the link line of `decomp_opt`
+  (Makefile:235–236: `$(CXX) $(OPT_CXXFLAGS) $(ARCH_TYPE) -o …
+  $(COMMANDLINE_OPT_OBJS) $(BFDLIB) $(LNK)`, i.e. the `com_opt/*.o` of
+  `COMMANDLINE_NAMES` and the bundled zlib) plus the extension's
+  optimised objects; `decomp_bk_dbg` likewise from `decomp_dbg`'s line
+  (232–233) and `com_dbg`. The script takes the object list from `make
+  -n` or from `COMMANDLINE_NAMES` evaluated with the same `EXTRA`, not
+  from a directory listing.
   The extension registers its commands from a static `IfaceCapability`
   object, as `IfaceDecompCapability` does (ifacedecomp.cc:26), so linking
   its object file is enough. **Why not the plan's "copy into the source
@@ -400,7 +405,8 @@ T
 
 ### 4.7 `bk structure` and the structure dump (for D04)
 
-**`bk structure <graph> <out> [bare|asgiven] [finish] [trace]`**: builds
+**`bk structure <graph> <out> [bare|asgiven] [finish] [trace] [xml
+<file>]`**: builds
 fact blocks, `buildCopy`; in `bare` mode `structureLoops` and
 `calcForwardDominator` on the copy (as `structure blocks`); then the
 collapse; with `finish`, `orderBlocks`, `scopeBreak(-1,-1)`,
@@ -411,7 +417,10 @@ and `collapseInternal` (blockaction.cc:1776–1904), calling Ghidra's own
 (private) rule methods, `selectGoto` and `collapseConditions` in Ghidra's
 order, so that it can log; the extension also runs Ghidra's unmodified
 `collapseAll` on a second copy and fails the command (`error`, message
-`trace replica differs`) unless both give the same dump. Output:
+`trace replica differs`) unless both give the same dump. With `xml
+<file>` it also writes the result with Ghidra's own encoder
+(`BlockGraph::encode`, as `structure blocks` does), for test 6.4.
+Output:
 
 ```
 H	bkstruct	1	ok|error	<message or ->
@@ -742,11 +751,13 @@ Test tooling; not on the plugin surface. No rule applies.
    parse. Counts of functions, ops and varnodes go to `summary.txt`.
 3. **Replay of recorded p-code (L; plan 6 D00 (3))**: 4.8's check, for
    every data test.
-4. **Structurer commands (L)**: `bk structure … bare` on the 3,000
-   graphs of R3, projected onto what `structure blocks` encodes, equals
-   `structure blocks`' output; the trace replica agrees with
-   `collapseAll` on every graph (4.7); D04's tables come from these
-   commands.
+4. **Structurer commands (L)**: the generator of R3 (rewritten as test
+   support that writes each graph both as Ghidra XML and as a graph file
+   with neutral facts) feeds `structure blocks` and `bk structure … bare
+   xml <file>`; the two XML outputs are byte-identical for all 3,000
+   graphs (fact blocks with neutral facts behave as Ghidra's plain
+   blocks), and the trace replica agrees with `collapseAll` on every
+   graph (4.7). D04's tables come from these commands.
 5. **Determinism (L)**: every capture of this section generated twice
    per host and on both hosts, with the results of 4.11 (equal, or
    differing only by counted causes).

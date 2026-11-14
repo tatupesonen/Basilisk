@@ -857,9 +857,10 @@ this crate's test support parses and writes them.
    into loop bodies); sizes 1–64 nodes, 10 % with random facts (`complex`,
    `ends_in_return` on nodes without outs, input goto and default-switch
    labels). Each graph is run with `bk cfg analyze` and with `bk
-   structure` in modes `bare` and `bare finish`; the function-like ones
-   also `asgiven` after a Basilisk-computed analysis written back into the
-   file (which also checks that the written labels round-trip). The table
+   structure` in modes `bare trace` and `bare finish`; the function-like
+   ones also in mode `asgiven`, on a graph file written from Ghidra's own
+   analysis of the graph (the `bk cfg analyze` output: its list order,
+   indices, dominators and labels). The table
    holds, per graph, its seed and generator class (the graph is
    regenerated in the test, not stored) and the three outputs. Replay
    compares Basilisk's outputs byte for byte, including error messages.
