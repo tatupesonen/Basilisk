@@ -218,7 +218,7 @@ fn toy_processor() {
     };
     let path = ghidra.join("Ghidra/Processors/Toy/data/languages/toy_be.slaspec");
     let parsed = parse_file(&path, &common::build_defines(), &mut FsLoader);
-    assert!(parsed.diagnostics.is_empty());
+    assert_eq!(parsed.diagnostics, []);
     let tree = dump::spec(&parsed.spec, &parsed.names, Some(&parsed.sources));
     insta::with_settings!({ snapshot_path => "golden", prepend_module_to_snapshot => false }, {
         insta::assert_snapshot!("toy_be", tree);

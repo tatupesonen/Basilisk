@@ -178,7 +178,7 @@ fn starting_work_inside_an_open_request_is_refused_not_deadlocked() {
     );
     // Lookups and dropping a disassembler still work.
     assert!(scan_architecture("aarch64").unwrap().is_some());
-    assert!(!architecture_names().unwrap().is_empty());
+    assert_ne!(architecture_names().unwrap(), Vec::<String>::new());
     drop(second);
     // The open request is unaffected.
     assert_eq!(open.step(0).unwrap().text, b"nop");

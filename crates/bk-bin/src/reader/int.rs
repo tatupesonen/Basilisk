@@ -341,7 +341,7 @@ mod tests {
             r.read_i64_array_at(0, 1).unwrap(),
             [0xefcd_ab89_6745_2301_u64 as i64]
         );
-        assert!(r.read_u16_array_at(8, 0).unwrap().is_empty());
+        assert_eq!(r.read_u16_array_at(8, 0).unwrap(), []);
         assert!(r.read_u16_array_at(7, 1).is_err());
         assert!(r.read_u64_array_at(1, 1).is_err());
 

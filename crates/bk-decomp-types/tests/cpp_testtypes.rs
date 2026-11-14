@@ -78,7 +78,7 @@ fn enum_matching() {
     assert_eq!(rep.names, ["ZERO"]);
     assert!(!rep.complement);
     let rep = f.enum_matches(enum3, 0x10);
-    assert!(rep.names.is_empty());
+    assert_eq!(rep.names, Vec::<String>::new());
     assert!(!rep.complement);
 }
 

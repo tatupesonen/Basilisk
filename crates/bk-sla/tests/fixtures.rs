@@ -104,7 +104,7 @@ fn accessors_reach_every_part() {
     assert_eq!(main.inputs(&main.ops()[5]).len(), 2);
     assert!(main.output(&main.ops()[0]).is_some());
     assert!(sla.section_template(ctor, 0).is_some());
-    assert!(sla.section_template(ctor, 1).unwrap().ops().is_empty());
+    assert_eq!(sla.section_template(ctor, 1).unwrap().ops(), []);
     assert!(sla.section_template(ctor, 2).is_none());
     // Templates are ordered main first, then by section.
     let sections: Vec<_> = sla
@@ -199,6 +199,6 @@ fn diff_reports_paths_and_values() {
         "table \"instruction\" constructor 0 (a.sinc:10) main op 0 output: \
          (const_spaceid ram, const_real 0x10, const_real 0x4) \u{2260} (const_spaceid ram, const_real 0x20, const_real 0x4)"
     );
-    assert!(bk_sla::diff(&a, &a, 10).is_empty());
-    assert!(bk_sla::diff(&a, &b, 0).is_empty());
+    assert_eq!(bk_sla::diff(&a, &a, 10), []);
+    assert_eq!(bk_sla::diff(&a, &b, 0), []);
 }
