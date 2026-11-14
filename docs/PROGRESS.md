@@ -1,12 +1,12 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 21:37)
+## Now — RESUME HERE (2026-11-14 22:05)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`5664c61` plus docs) also has `bk-ui`, the GNU disassembler crates,
+(`1cf2735` plus docs) also has `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 21:37)
+### Running (state at 2026-11-14 22:05)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,39 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Merged: `testbed`** (`ab8ffc5547650775f`; `1cf2735`, merged directly
+at 22:04 — scripts, `tools/testbed/` and docs only; both gates green on
+the branch after it merged `master`, 2,095 tests; worktree and branch
+removed). The build host is the testbed (`LOOP.md`, "Testbed";
+`RULES.md` says which checks a track runs before its report):
+`scripts/remote.sh wine [--msvc]`, `ubuntu`, `arm64`, `long
+miri|fuzz|proptest|sanitizers|differential|all`, `publish`, `nightly
+install|remove|run|status`, `report`, `clean --target`. Results on
+`master`'s content, 12 cores: Wine GNU target 2,036 passed (2 min 11 s)
+and MSVC target through cargo-xwin 2,036 passed (2 min 45 s; Microsoft's
+CRT/SDK licence accepted on the host on the machine's behalf); Ubuntu
+26.04 / GCC 15: C crates pass, reference tools build and give all 150
+`.sla` byte-identical; Linux AArch64 under qemu: 447 passed, all 150
+`.sla` equal the reference's bytes from an AArch64 build (supports
+ADR-039 off x86); ASan/UBSan: only the two known binutils sites; 16
+fuzz targets × 600 s, no finding; the 8 property suites that honour
+`PROPTEST_CASES` pass at 1,000,000 cases; differential with the
+reference required: 2,095 passed, none skipped; `cspec` table
+regenerates byte-identical. **The nightly run is installed** (the host
+user's crontab, 01:30 host time; gate + Wine + one rotating slot; 12
+cores, at most 6 h; refuses under 60 GB free); the run triggered by
+hand passed 6 of 6 items in 12 minutes. **After every merge to `master`
+run `scripts/remote.sh publish`** (done for `28dee4d`), and read
+`scripts/remote.sh report` at the start of a day's work. One item
+fails on the host until `sleigh-perf-linux` fixes it:
+`long differential sleigh-every-language` (the host-dependent snapshot).
+Follow-ups: the Wine runs do not mount the reference's `.sla` files;
+Ghidra headless on the host needs JDK 21, Gradle through Ghidra's
+wrapper, about 10 GB (for the D00 spec). The old scratch scripts in
+`../basilisk-wt/windows-ci/target/` and `../basilisk-wt/gnu-disasm/target/`
+(15 GB with their worktrees, both branches merged) are superseded by
+`tools/testbed/`; remove those worktrees when disk is wanted.
 
 **Merged: `sleigh-fixups`** (`a729d10fd3ad89e8d`; `5664c61`, CI run
 43632387623 green on all 8 jobs, integration gate on the build host
@@ -190,7 +223,7 @@ left as they are).
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `testbed` (worktree `../basilisk-wt/testbed`, cut from `master` `493ae3f`) | Opus | `ab8ffc5547650775f` | started 20:33; handed back partial work at about 21:26 and was sent on at 21:27 to finish. Built: `remote.sh` subcommands `wine`, `ubuntu`, `long miri\|fuzz\|proptest\|sanitizers\|differential\|all`, `publish`, `nightly install\|remove\|run\|status`, `report`, `clean --target`, with the work in `tools/testbed/`. Proven so far on the build host: Wine (gnu target, whole workspace) 2,036 passed in 2 min 11 s; ASan and UBSan on the binutils crates (two known UBSan sites); 16 fuzz targets × 600 s, no finding; the whole suite with the reference required, 2,030 passed and none skipped. Still owed: the 1,000,000-case property run's results, `ubuntu`, `wine --msvc`, the nightly installed and run once with its report, the `remote-build` regression checks, a `git merge master` (allowed once), dep-age and both gates. Findings for other owners: (1) `bk-sleigh`'s `every_language` coverage snapshot holds an oracle-crash count that differs by host (ARM v8-m: 5 on macOS, 4 on Linux) — keep those counts out of the snapshot (`sleigh-perf-linux`'s brief); (2) `PROPTEST_CASES` has no effect in 11 property-test files that fix their case count (`followups`). The coordinator installed `qemu-user-static` on the host at 21:26 (arm64 containers run). |
+| `sleigh-perf-linux` (worktree `../basilisk-wt/sleigh-perf-linux`, cut from `master` `12f1705`) | Opus | `a20fadd7bd1040732` | started 22:03. Queue item 4 below: re-measure `bk-sleigh` against the reference on the build host's new CPU model, profile both with `perf`, close the single-thread gap without `unsafe` or output changes, numbers on both machines; plus label numbers truncated to 32 bits as in Ghidra and the host-dependent oracle-crash count taken out of the `every_language` snapshot. May touch `bk-sla` if the profile points there. |
 | `decomp-range` (worktree `../basilisk-wt/decomp-range`, cut from `master` `4891f37`) | Opus | `a8550db77f2254819` | started 21:24. D01: `bk-decomp-range` from `features/decomp-range.md` (`CircleRange`; 117 `testcirclerange` tests, oracle table generated on both C++ libraries and compared, UBSan and valgrind on the oracle, properties, fuzz target, benchmark). Adds lines to the root `Cargo.toml`, which `sleigh-fixups` also changed (removals): resolve by reading. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
@@ -383,8 +416,7 @@ start a fresh agent briefed from the branch's files.
    not — `../reference` is the oracle and equals x86-64 Linux for the
    SLEIGH compiler. This is a new case: Ghidra's own answer differs
    between its platforms.)
-2. **`testbed` (running)** — the item below (-2), now that `remote-build` is
-   merged.
+2. **`testbed`** — merged 22:04.
 3. **`sleigh-fixups` (merged 21:36; the text below is the brief it had)** (before
    `sleigh-perf-linux`, whose measurements need the build host quiet,
    which it is not while `testbed` runs its long jobs). Small
@@ -403,7 +435,7 @@ start a fresh agent briefed from the branch's files.
    if Ghidra's reader does (read the source first); (e) the 8 cargo
    manifest warnings (unused `[workspace.dependencies]` entries, the
    unused `authors` field).
-4. **`sleigh-perf-linux` (Opus)** — on x86-64 Linux `bk-sleigh` is
+4. **`sleigh-perf-linux` (Opus; running since 22:03)** — on x86-64 Linux `bk-sleigh` is
    slower than the g++-built reference single-threaded (decode 3.0–3.3
    against 4.0–4.2 M instructions/s; decode + lift 1.5 against 2.1 M/s),
    the reverse of the Mac, so "at least as fast as Ghidra" (ADR-012) is
@@ -497,14 +529,10 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 ### Coordinator's next steps
 
 1. `cspec-host` is merged (above).
-2. `sleigh-fixups` is merged (above). `testbed` reports → review; install the packages it lists on the
-   build host; its "Testbed" text into `LOOP.md` and `RULES.md`; merge;
-   read the first nightly report. Start `sleigh-perf-linux` in its slot
-   (tell it to measure when no other job runs — `scripts/remote.sh
-   status` — and, while it is in `bk-sleigh`, to truncate label numbers
-   to 32 bits as Ghidra does and to keep host-dependent oracle-crash
-   counts out of the `every_language` snapshot). `decomp-range` reports → merge; start
-   the D00/D04 spec agent.
+2. `sleigh-fixups` and `testbed` are merged (above).
+   `decomp-range` reports → merge; start the D00/D04 spec agent (queue
+   item 6). `sleigh-perf-linux` reports → merge; start queue item 7
+   (the monitor type). After each merge: `scripts/remote.sh publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
