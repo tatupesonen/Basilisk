@@ -58,16 +58,21 @@ fn spellings(root: &Path) -> Vec<PathBuf> {
     let parent = root.parent().unwrap();
     let mut slash = root.as_os_str().to_owned();
     slash.push("/");
-    vec![
+    let mut spellings = vec![
         root.to_owned(),
-        parent
-            .join("..")
-            .join(parent.file_name().unwrap())
-            .join(name),
         root.join("."),
         PathBuf::from(slash),
         root.join("Ghidra").join(".."),
-    ]
+    ];
+    // Up and down again through the parent, unless the parent is the root
+    // of the file system (a tree at `Z:\ghidra` or `/ghidra`), which has
+    // no name to come back down by: `..` at the root stays there.
+    if let Some(parent_name) = parent.file_name() {
+        spellings.push(parent.join("..").join(parent_name).join(name));
+    } else {
+        spellings.push(parent.join("..").join(name));
+    }
+    spellings
 }
 
 fn build(root: &Path, overlay: &Path) -> LanguageRegistry {
@@ -138,9 +143,22 @@ fn a_root_reached_through_a_symbolic_link_gives_the_same_registry() {
     let links = tempfile::tempdir().unwrap();
     let link = links.path().join("ghidra-link");
     // Windows lets only administrators, or anyone in Developer Mode,
-    // create symbolic links.
+    // create symbolic links, and Wine creates links it cannot follow. The
+    // skip is written to the real standard error, which the harness does
+    // not capture, so a CI log shows whether the test ran.
+    let skip = |reason: String| {
+        use std::io::Write as _;
+        let _ = writeln!(
+            std::io::stderr(),
+            "SKIPPED a_root_reached_through_a_symbolic_link_gives_the_same_registry: {reason}"
+        );
+    };
     if let Err(error) = symlink_dir(dir.path(), &link) {
-        eprintln!("SKIPPED a_root_reached_through_a_symbolic_link: cannot create a link: {error}");
+        skip(format!("cannot create a symbolic link: {error}"));
+        return;
+    }
+    if !link.join("Ghidra").is_dir() {
+        skip(format!("{} does not lead to its target", link.display()));
         return;
     }
     let expected = describe(&build(&canonical(dir.path()), overlay.path()));

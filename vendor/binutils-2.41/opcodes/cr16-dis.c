@@ -792,6 +792,11 @@ print_insn_cr16 (bfd_vma memaddr, struct disassemble_info *info)
   /* Initialize global variables.  */
   imm4flag = 0;
   size_changed = 0;
+  /* bk-binutils-sys: storm/loadm with bit 7 of the first word set get an
+     argument that cr16_make_instruction never fills in, which was then
+     printed from whatever an earlier instruction (of any disassembler) left
+     here.  Start each instruction from a clean slate.  */
+  memset (&cr16_currInsn, 0, sizeof (cr16_currInsn));
 
   /* Retrieve the encoding from current memory location.  */
   get_words_at_PC (memaddr, info);

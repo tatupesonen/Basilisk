@@ -112,10 +112,18 @@ fn run() -> Result<(), String> {
     // abort() and exit() inside binutils end the shim call, not the process
     // (shim/include/bk_prelude.h).
     let prelude = shim.join("include/bk_prelude.h");
+    // The language standard is pinned, not left to the compiler's default:
+    // binutils 2.41 is written for GNU C before C23 (GCC 15 defaults to C23,
+    // where e.g. static_assert is a keyword).
     if build.get_compiler().is_like_msvc() {
-        build.flag(format!("/FI{}", prelude.display()));
+        build
+            .flag("/std:c17")
+            .flag(format!("/FI{}", prelude.display()));
     } else {
-        build.flag("-include").flag(prelude.display().to_string());
+        build
+            .flag("-std=gnu17")
+            .flag("-include")
+            .flag(prelude.display().to_string());
     }
     if target_env_is_msvc() {
         // Headers MSVC's C library lacks (shim/include-msvc).

@@ -256,3 +256,27 @@ fn a_cris_case_table_does_not_continue_into_the_next_request() {
     let next = listing(&mut other, &[0x10, 0, 0x20, 0], 0x100);
     assert!(!next.contains("case"), "{next}");
 }
+
+#[test]
+fn a_cr16_register_list_does_not_print_an_earlier_instructions_operand() {
+    // storm/loadm with bit 7 of the first word set get an operand binutils
+    // never decodes; it printed whatever an earlier instruction left in a
+    // static (patch 0004 clears it per instruction).
+    let mut dis = disassembler("cr16", false, None).unwrap();
+    let word = (0u16..=0xffff)
+        .filter(|w| w & 0x80 != 0)
+        .find(|w| {
+            let text = listing(&mut dis, &w.to_le_bytes(), 0);
+            text.starts_with("2 storm") || text.starts_with("2 loadm")
+        })
+        .expect("a storm/loadm encoding with bit 7 set");
+    let alone = listing(&mut dis, &word.to_le_bytes(), 0x100);
+    for seed in 1..=8 {
+        let _ = listing(&mut dis, &noise(64, seed), 0x1000);
+        assert_eq!(
+            listing(&mut dis, &word.to_le_bytes(), 0x100),
+            alone,
+            "{word:#06x}"
+        );
+    }
+}

@@ -361,6 +361,79 @@ model (`dhat`, as `bk-elf` does).
 
 (The implementing track appends.)
 
+Appended by the `sla` track (2026-11-14):
+
+* **Values that do not fit the C++ field are rejected**, not truncated:
+  an attribute Ghidra stores in `int4`/`uint4`/`uintm` (most of them; mask
+  words, masks, `uniqbase`) must fit 32 bits, a handle index or pair id must
+  not be negative. Truncation would make the round trip lossy.
+* **Strings containing NUL are rejected** (reader and builder): the packed
+  form cannot hold them (`bk-marshal` refuses to encode them), so such a
+  model could not be written back. Found by the `bk_sla_decode_packed`
+  fuzzer; the input is kept in `fuzz/regressions/bk_sla_decode_packed/`.
+* **Stricter grammar where Ghidra guesses**: a symbol body must be of the
+  kind its head announced; an unknown element inside `<spaces>` (Ghidra
+  makes it a processor space), inside `varlist_sym` (Ghidra reads it as an
+  unusable entry) or inside a constructor (Ghidra reads it as a template)
+  is an error; `or_pat` in a pair is an error (the C++ would misread it as
+  `combine_pat`); a subtable without a decision tree is an error (the C++
+  silently omits such a subtable's body when writing); source-file indices
+  must be dense from 0 (the C++ writer would throw on a gap); bytes after
+  the zlib stream and data after `</sleigh>` are errors.
+* **Extra validation** beyond 4.3, each true of all 150 reference files:
+  the field of a value, value-map, name or varnode-list symbol is a value
+  expression (the C++ casts it to `PatternValue`); a context symbol's field
+  is a context field; varnode-symbol sizes are positive; an operand's
+  defining symbol is not an operand or user op; pattern-block offsets are
+  byte quantities; expression children precede their parents (so trees are
+  acyclic and their depth is checked in one pass).
+* **The context-word margin of 4.3 rule 3 is zero**: `context_op.i` and
+  `commit.number` must be below `Sla::context_words()` (the largest
+  `endbit / 32 + 1` over all context fields). Every compiler-produced change
+  derives from a context field, so no shipped file is affected; the runtime
+  sizes its context array from `context_words()`.
+* **Space attributes are kept per space**, including each space's
+  `bigendian` (the C++ processor space takes its own; unique and other spaces
+  ignore it) and the ignored attributes of `space_unique`/`space_other`. A
+  unique or other space missing an attribute gets the value the C++ loader's
+  object would write (`unique`/4 bytes/physical, `OTHER`/8 bytes).
+* **Space references are resolved against the file's own space records**,
+  not through a `SpaceManager` built while reading (4.6 suggested the
+  manager's directory). The model stores space indices; `build_spaces()`
+  builds the manager on demand. Same accepted files, no manager needed to
+  read.
+* **Duplicate attributes**: the last occurrence wins (Ghidra's lookup by id
+  takes the first). Malformed either way; no file has one.
+* **Model equality is structural** (`PartialEq` goes through `diff`), so
+  models read from differently ordered but equivalent documents compare
+  equal.
+
 ## 9. Status
 
-Not started.
+Done (track `sla`, 2026-11-14). Crate `crates/bk-sla`:
+
+* `ids` (format-scope table), `model` (arenas, typed ids, struct sizes
+  asserted, `Sla: Send + Sync` asserted), `read` (container with size limit,
+  this crate's packed cursor, `bk-marshal` packed and XML adapters, one
+  generic model decoder), `validate` (4.3 and 4.4), `write` (packed,
+  container through a temporary file, XML), `builder` (`SlaBuilder`),
+  `diff` (structural, capped, with paths), `spaces` (`build_spaces`),
+  `template_codec` (standalone `Template` with `SpaceTable`).
+* Differential tests 1–3 pass for all 150 reference languages; test 1 also
+  runs through `bk-marshal`'s packed decoder and compares models. Test 4:
+  twelve single-attribute model mutations each fail tests 1 and 2; three of
+  four code mutations of the writer/reader are caught by tests 1–2, the
+  fourth (skipping `PatternBlock::normalize` on read) only by the unit and
+  fixture tests, because the reference files are already normalised.
+* Fixtures: one model with every element kind and optional attribute
+  (including `epsilon_sym`, `next2_exp`, `const_flowref*`); one violating
+  fixture per validation rule and per limit; header, truncated zlib and
+  trailing-byte errors. Property tests and two fuzz targets (60 s each,
+  clean after the NUL fix).
+* Performance (`PERF.md`): `read_file("x86-64.sla")` 17.9 ms against the
+  reference loader's 30.8 ms in the same session; all 150 in 415 ms; x86-64
+  model heap 3.0x the stream.
+
+Gaps: none against section 7, except that acceptance 5's "tests pass on all
+three systems in CI" rests on CI (Windows checked locally with
+`cargo clippy --target x86_64-pc-windows-msvc` only).
