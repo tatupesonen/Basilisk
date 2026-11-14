@@ -138,14 +138,17 @@ CircleRange makeEmpty() {
   return r;
 }
 
-CircleRange raw(uintb l, uintb r, uintb m, int4 s, bool e) {
-  CircleRange c = makeEmpty();
-  c.left = l;
-  c.right = r;
-  c.mask = m;
-  c.step = s;
-  c.isempty = e;
-  return c;
+// The receiver of every push-forward: an empty range with recognisable
+// fields, so that what a method leaves of them shows in the result (an empty
+// input sets only `isempty`; a failed INT_MULT only `isempty` and `mask`).
+CircleRange receiver() {
+  CircleRange r;
+  r.left = 0x5a;
+  r.right = 0xa5;
+  r.mask = 0xff;
+  r.step = 3;
+  r.isempty = true;
+  return r;
 }
 
 // splitmix64
@@ -355,12 +358,12 @@ void pairRow(const CircleRange &a, const CircleRange &b) {
   rng(c);
   int4 size = sizeOf(a);
   sp();
-  c = makeEmpty();
+  c = receiver();
   flag(c.pushForwardBinary(CPUI_INT_ADD, a, b, size, size, 32));
   line += ':';
   rng(c);
   sp();
-  c = makeEmpty();
+  c = receiver();
   flag(c.pushForwardBinary(CPUI_INT_MULT, a, b, size, size, 32));
   line += ':';
   rng(c);
@@ -440,13 +443,13 @@ void pushUnary(const CircleRange &r, int4 in, int4 outSize) {
   dec(outSize);
   tok(" =");
   for (OpCode op : PUSH_UNARY) {
-    CircleRange c = makeEmpty();
+    CircleRange c = receiver();
     sp();
     flag(c.pushForwardUnary(op, r, in, outSize));
     line += ':';
     rng(c);
   }
-  CircleRange c = makeEmpty();
+  CircleRange c = receiver();
   sp();
   flag(c.pushForwardUnary(CPUI_POPCOUNT, r, in, outSize));
   endRow();
@@ -508,7 +511,7 @@ void pushShift(const CircleRange &r, OpCode op, int4 in, int4 outSize, int4 maxS
   dec(maxStep);
   tok(" =");
   for (const CircleRange &b : in2s) {
-    CircleRange c = makeEmpty();
+    CircleRange c = receiver();
     sp();
     flag(c.pushForwardBinary(op, r, b, in, outSize, maxStep));
     line += ':';
@@ -532,7 +535,7 @@ void pushBool(const CircleRange &a, const CircleRange &b) {
   rng(b);
   tok(" =");
   for (OpCode op : BOOL_OUT) {
-    CircleRange c = makeEmpty();
+    CircleRange c = receiver();
     sp();
     flag(c.pushForwardBinary(op, a, b, sizeOf(a), 1, 32));
     line += ':';
@@ -552,12 +555,12 @@ void trinary(const CircleRange &a, const CircleRange &b, const CircleRange &c3) 
   rng(c3);
   tok(" = ");
   int4 size = sizeOf(a);
-  CircleRange c = makeEmpty();
+  CircleRange c = receiver();
   flag(c.pushForwardTrinary(CPUI_PTRADD, a, b, c3, size, size, 32));
   line += ':';
   rng(c);
   sp();
-  c = makeEmpty();
+  c = receiver();
   flag(c.pushForwardTrinary(CPUI_INT_ADD, a, b, c3, size, size, 32));
   endRow();
 }

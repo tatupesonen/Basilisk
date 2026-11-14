@@ -52,6 +52,11 @@ where
     s.parse().unwrap()
 }
 
+/// The receiver of every push-forward in the oracle (`receiver()`).
+pub(crate) fn receiver() -> CircleRange {
+    CircleRange::from_parts(0x5a, 0xa5, 0xff, 3, true)
+}
+
 /// A range token: `l,r,m,s` with a leading `!` when empty.
 pub(crate) fn range(s: &str) -> CircleRange {
     let (empty, s) = match s.strip_prefix('!') {
@@ -256,7 +261,7 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
         "UF" => {
             let (r, inn, out) = (range(i[0]), int(i[1]), int(i[2]));
             for op in PUSH_UNARY {
-                let mut c = CircleRange::empty();
+                let mut c = receiver();
                 if !o.is_empty() {
                     o.push(' ');
                 }
@@ -264,7 +269,7 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
                 o.push(':');
                 put(&mut o, &c);
             }
-            let mut c = CircleRange::empty();
+            let mut c = receiver();
             o.push(' ');
             flag(&mut o, c.push_forward_unary(OpCode::PopCount, &r, inn, out));
         }
@@ -283,7 +288,7 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
         "F" => {
             let (r, opc, inn, out, max) = (range(i[0]), op(i[1]), int(i[2]), int(i[3]), int(i[4]));
             for b in second_inputs(row) {
-                let mut c = CircleRange::empty();
+                let mut c = receiver();
                 if !o.is_empty() {
                     o.push(' ');
                 }
@@ -295,7 +300,7 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
         "K" => {
             let (a, b) = (range(i[0]), range(i[1]));
             for opc in BOOL_OUT {
-                let mut c = CircleRange::empty();
+                let mut c = receiver();
                 if !o.is_empty() {
                     o.push(' ');
                 }
@@ -307,12 +312,12 @@ pub(crate) fn compute(row: &Row<'_>) -> String {
         "T" => {
             let (a, b, c3) = (range(i[0]), range(i[1]), range(i[2]));
             let size = size_of(&a);
-            let mut c = CircleRange::empty();
+            let mut c = receiver();
             flag(&mut o, c.push_forward_trinary(OpCode::PtrAdd, [&a, &b, &c3], size, size, 32));
             o.push(':');
             put(&mut o, &c);
             o.push(' ');
-            let mut c = CircleRange::empty();
+            let mut c = receiver();
             flag(&mut o, c.push_forward_trinary(OpCode::IntAdd, [&a, &b, &c3], size, size, 32));
         }
         other => panic!("unknown row tag {other:?}"),
@@ -386,7 +391,7 @@ fn pair(o: &mut String, a: &CircleRange, b: &CircleRange) {
     put(o, &c);
     let size = size_of(a);
     for opc in [OpCode::IntAdd, OpCode::IntMult] {
-        let mut c = CircleRange::empty();
+        let mut c = receiver();
         o.push(' ');
         flag(o, c.push_forward_binary(opc, a, b, size, size, 32));
         o.push(':');

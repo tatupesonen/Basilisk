@@ -8,7 +8,7 @@
 use bk_decomp_range::CircleRange;
 use bk_pcode::OpCode;
 
-use super::oracle::{Row, put, range};
+use super::oracle::{Row, put, range, receiver};
 
 /// Why the macOS row differs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -46,7 +46,7 @@ fn ushl(v: u64, sa: u32) -> u64 {
 /// Ghidra's `INT_LEFT` push-forward with its shifts done by `USHL`: Basilisk's
 /// result with the bounds recomputed.
 fn push_left_ushl(in1: &CircleRange, in2: &CircleRange, max_step: i32) -> (bool, CircleRange) {
-    let mut c = CircleRange::empty();
+    let mut c = receiver();
     let ok = c.push_forward_binary(OpCode::IntLeft, in1, in2, 8, 8, max_step);
     if !in2.is_single() {
         return (ok, c);
