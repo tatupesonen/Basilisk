@@ -36,10 +36,52 @@ impl TemplateCoverage {
     pub(crate) fn of(lang: &Language) -> Self {
         let sla = lang.sla();
         let mut out = Self::default();
-        let dynamic = |ctor: &bk_sla::Constructor| {
+        // The subtable defining operand `index` of `ctor`, if any.
+        let operand_def = |ctor: &bk_sla::Constructor, index: u32| {
+            let symbol = *sla.operands(ctor).get(index as usize)?;
+            match sla.symbol(symbol).map(|s| s.kind) {
+                Some(bk_sla::SymbolKind::Operand(operand)) => operand.defining_symbol,
+                _ => None,
+            }
+        };
+        // A constructor exporting a varnode whose space is not constant.
+        let exports_storage = |ctor: &bk_sla::Constructor| {
             sla.main_template(ctor)
                 .and_then(|t| t.result().copied())
-                .is_some_and(|h| !matches!(h.ptr_space, ConstTpl::Real(_) | ConstTpl::Space(0)))
+                .is_some_and(|h| match h.space {
+                    ConstTpl::Space(s) => s != 0,
+                    ConstTpl::Handle { .. } | ConstTpl::CurSpace => true,
+                    _ => false,
+                })
+        };
+        // An export through a pointer that can be a run-time value: the
+        // pointer's space is a fixed non-constant space, or comes from an
+        // operand that is a register, or a subtable exporting storage.
+        let dynamic = |ctor: &bk_sla::Constructor| {
+            let Some(h) = sla.main_template(ctor).and_then(|t| t.result().copied()) else {
+                return false;
+            };
+            match h.ptr_space {
+                ConstTpl::Space(s) => s != 0,
+                ConstTpl::Handle { index, .. } => match operand_def(ctor, index)
+                    .and_then(|d| sla.symbol(d).map(|s| (d, s.kind)))
+                {
+                    Some((
+                        _,
+                        bk_sla::SymbolKind::Varnode { .. } | bk_sla::SymbolKind::VarnodeList { .. },
+                    )) => true,
+                    Some((d, bk_sla::SymbolKind::Subtable(_))) => {
+                        sla.subtable(d).is_some_and(|t| {
+                            (0..t.num_constructors())
+                                .filter_map(|i| t.constructor(i))
+                                .filter_map(|id| sla.constructor(id))
+                                .any(exports_storage)
+                        })
+                    }
+                    _ => false,
+                },
+                _ => false,
+            }
         };
         // Operand `index` of `ctor` is a subtable with a dynamic export.
         let dynamic_operand = |ctor: &bk_sla::Constructor, index: u32| {

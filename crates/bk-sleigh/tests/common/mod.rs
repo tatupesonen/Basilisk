@@ -310,3 +310,11 @@ pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
     }
     out
 }
+
+/// The proptest case count: `PROPTEST_CASES` when set, else `default`.
+pub(crate) fn proptest_cases(default: u32) -> u32 {
+    std::env::var("PROPTEST_CASES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(default)
+}

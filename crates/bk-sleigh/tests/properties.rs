@@ -62,7 +62,7 @@ fn exercise(lang: &Arc<Language>, offset: u64, bytes: &[u8], words: &[u32]) -> S
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2000))]
+    #![proptest_config(ProptestConfig::with_cases(common::proptest_cases(2000)))]
 
     #[test]
     fn fixture_never_panics_and_is_deterministic(

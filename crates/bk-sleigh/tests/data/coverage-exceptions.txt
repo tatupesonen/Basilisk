@@ -1,7 +1,12 @@
 # Languages allowed below the coverage thresholds of the differential test
-# (features/sleigh-decode.md 6.2): language<TAB>metric (pairs|constructors)<TAB>cause.
+# (features/sleigh-decode.md 6.2, features/sleigh-pcode.md 6.2):
+# language<TAB>metric (pairs|constructors|templates|feature:<column>)<TAB>cause.
 # Reviewed by the coordinator at merge.
 DATA:BE:64:default	pairs	The language's only constructor (`nop is test=1 unimpl`) has length 0: both sides report "instruction has no length" (E records, equal), so no I record can confirm it.
 DATA:BE:64:default	constructors	As for pairs: the only constructor has length 0 and never yields an I record.
 DATA:LE:64:default	pairs	As DATA:BE:64:default.
 DATA:LE:64:default	constructors	As DATA:BE:64:default.
+DATA:BE:64:default	templates	Its only constructor is `unimpl` and has length 0: no template exists to build.
+DATA:LE:64:default	templates	As DATA:BE:64:default.
+sparc:BE:32:default	feature:load	Overestimated by the harness: the only dynamic export is `retea: regorimm is rs1=0 & i=1 & regorimm { export *:4 regorimm; }`, and with `i=1` `regorimm` is the constant `simm13`, so the pointer is static and no LOAD is generated (Ghidra and basilisk agree).
+sparc:BE:64:default	feature:load	As sparc:BE:32:default (`export *:8 regorimm` with `i=1`).
