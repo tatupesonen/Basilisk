@@ -114,7 +114,7 @@ fn twelve_languages_one_sample_per_pair() {
     let budget = Budget {
         samples_per_pair: 1,
         random_bytes: 0,
-        max_streams: 200,
+        max_streams: 1000,
         coverage_attempts: 0,
     };
     let results = run_all(&ids, budget, &BTreeMap::new(), 3);
@@ -133,7 +133,7 @@ fn every_language() {
     let budget = Budget {
         samples_per_pair: 8,
         random_bytes: 64 * 1024,
-        max_streams: 200,
+        max_streams: 1000,
         coverage_attempts: 300_000,
     };
     let extras = common::real_code::extras(&reference);

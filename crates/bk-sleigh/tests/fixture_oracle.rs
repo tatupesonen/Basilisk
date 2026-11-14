@@ -54,13 +54,6 @@ fn streams(lang: &Arc<Language>) -> Vec<(u64, Vec<(String, u32)>, Vec<u8>)> {
     out
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn unhex(text: &str) -> Vec<u8> {
-    (0..text.len() / 2).map(|i| u8::from_str_radix(&text[2 * i..2 * i + 2], 16).unwrap()).collect()
-}
 
 /// Runs `pcodedump` on the fixture directory, killed after 60 s.
 fn run_pcodedump(program: &std::path::Path, root: &std::path::Path, base: u64, config: &[(String, u32)], bytes: &[u8]) -> Option<String> {
@@ -98,41 +91,6 @@ fn run_pcodedump(program: &std::path::Path, root: &std::path::Path, base: u64, c
     Some(reader.join().unwrap())
 }
 
-/// Records one stream; where Ghidra's engine crashes on an instruction (an
-/// `unimpl` body in a delay slot makes its error path use a dangling
-/// walker), the stream is split around that instruction.
-fn record(out: &mut String, program: &std::path::Path, root: &std::path::Path, base: u64, config: &[(String, u32)], bytes: &[u8]) {
-    if bytes.is_empty() {
-        return;
-    }
-    let Some(text) = run_pcodedump(program, root, base, config, bytes) else {
-        let crashes = |len: usize| run_pcodedump(program, root, base, config, &bytes[..len]).is_none();
-        let (mut ok, mut bad) = (0usize, bytes.len());
-        while bad - ok > 1 {
-            let mid = ok + (bad - ok) / 2;
-            if crashes(mid) { bad = mid } else { ok = mid }
-        }
-        let before = common::parse_oracle(&run_pcodedump(program, root, base, config, &bytes[..bad - 1]).unwrap_or_default());
-        let start = before
-            .lines
-            .last()
-            .filter(|l| l.contains("\ttruncated\t"))
-            .map_or(bad - 1, |l| (u64::from_str_radix(l.split('\t').nth(1).unwrap().trim_start_matches("0x"), 16).unwrap() - base) as usize);
-        let _ = writeln!(out, "# oracle crash at {:#x}: {}", base + start as u64, hex(&bytes[start..bad]));
-        record(out, program, root, base, config, &bytes[..start]);
-        record(out, program, root, base + bad as u64, config, &bytes[bad..]);
-        return;
-    };
-    let names: Vec<String> = config.iter().map(|(n, v)| format!("{n}={v}")).collect();
-    let _ = writeln!(out, "stream\t{base:#x}\t{}", names.join(","));
-    let _ = writeln!(out, "bytes\t{}", hex(bytes));
-    for line in text.lines().filter(|l| !l.starts_with('H')) {
-        out.push_str(line);
-        out.push('\n');
-    }
-    out.push_str("end\n");
-}
-
 /// Regenerates `tests/data/fixture-oracle.txt` with the reference
 /// `pcodedump` (run with `--ignored` after changing the fixture).
 #[test]
@@ -151,7 +109,8 @@ fn record_fixture_oracle() {
     let _ = writeln!(out, "# tool: {} ({commit})", reference.tool_path(bk_testkit::Tool::Pcodedump).display());
     let _ = writeln!(out, "# host: {} {}, compiler: Apple clang 17 (the reference build)", std::env::consts::OS, std::env::consts::ARCH);
     for (base, config, bytes) in streams(&lang) {
-        record(&mut out, &program, dir.path(), base, &config, &bytes);
+        let run = |base: u64, config: &[(String, u32)], bytes: &[u8]| run_pcodedump(&program, dir.path(), base, config, bytes);
+        common::recording::record(&mut out, &run, base, &config, &bytes);
     }
     std::fs::write(DATA, out).unwrap();
 }
@@ -160,49 +119,11 @@ fn record_fixture_oracle() {
 #[test]
 fn fixture_matches_recorded_oracle() {
     let text = std::fs::read_to_string(DATA).unwrap();
-    let lang = language();
-    let mut lines = text.lines().filter(|l| !l.starts_with('#'));
-    let mut streams = 0;
-    let mut tolerated = common::Tolerated::default();
-    let mut instructions = 0;
-    while let Some(head) = lines.next() {
-        let mut fields = head.split('\t');
-        assert_eq!(fields.next(), Some("stream"));
-        let base = u64::from_str_radix(fields.next().unwrap().trim_start_matches("0x"), 16).unwrap();
-        let config: Vec<(String, u32)> = fields
-            .next()
-            .unwrap_or("")
-            .split(',')
-            .filter(|c| !c.is_empty())
-            .map(|c| {
-                let (n, v) = c.split_once('=').unwrap();
-                (n.to_owned(), v.parse().unwrap())
-            })
-            .collect();
-        let bytes = unhex(lines.next().unwrap().strip_prefix("bytes\t").unwrap());
-        let mut recorded = String::new();
-        for line in lines.by_ref() {
-            if line == "end" {
-                break;
-            }
-            recorded.push_str(line);
-            recorded.push('\n');
-        }
-        let theirs = common::parse_oracle(&recorded);
-        let ours = common::sweep(&lang, base, &bytes, &config);
-        let cmp = common::compare(&theirs, &ours);
-        for f in &cmp.failures {
-            eprintln!("stream at {base:#x} {config:?}: {f}");
-        }
-        assert!(cmp.failures.is_empty());
-        tolerated.add(&cmp.tolerated);
-        instructions += theirs.instructions;
-        streams += 1;
-    }
-    assert!(streams >= 8, "{streams} streams");
-    assert!(instructions > 1000, "{instructions} instructions");
+    let seen = common::recording::replay(&text, &language());
+    assert!(seen.streams >= 8, "{seen:?}");
+    assert!(seen.instructions > 1000, "{seen:?}");
     // The 21-operand constructor is in the streams; Ghidra's C++ cannot
-    // decode it, basilisk does.
-    assert!(tolerated.over_20_operands > 0, "{tolerated:?}");
-    assert_eq!(tolerated.next2_and_commit, 0);
+    // decode it, basilisk does (the harness fails as Ghidra does).
+    assert!(seen.tolerated.over_20_operands > 0, "{seen:?}");
+    assert_eq!(seen.tolerated.next2_and_commit, 0);
 }

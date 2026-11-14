@@ -182,8 +182,9 @@ pub fn impose(sample: &mut [u8; 16], fixed: &mut [u8; 16], block: &Block, offset
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
     pub targets: Vec<Target>,
-    /// Configuration → samples as (target index, bytes).
-    pub groups: BTreeMap<Vec<(String, u32)>, Vec<(usize, [u8; 16])>>,
+    /// Configuration → samples as (target index, bytes); samples added for
+    /// constructor coverage have no target.
+    pub groups: BTreeMap<Vec<(String, u32)>, Vec<(Option<usize>, [u8; 16])>>,
     /// Targets whose context block no named variable expresses.
     pub inexpressible: Vec<usize>,
     /// Targets whose constructor has more than 20 operands (kept out of the
@@ -267,8 +268,16 @@ fn prefixes(lang: &Language, targets: &[Target]) -> Vec<(usize, Vec<(String, u32
             }
         }
     }
+    // One entry per distinct prefix constructor, so that a constructor
+    // reached by many leaves is not tried more often than the others.
+    let mut seen = BTreeSet::new();
+    out.retain(|(index, config, offset)| seen.insert((targets[*index].constructor, config.clone(), *offset)));
     out
 }
+
+/// How many prefix + pair combinations are tried for a pair no plain
+/// sample reaches.
+const NESTED_ATTEMPTS: usize = 30_000;
 
 /// Tries prefix + pair combinations until basilisk's parse contains the
 /// pair's constructor.
@@ -283,7 +292,7 @@ fn nested_sample(
 ) -> Option<(Vec<(String, u32)>, [u8; 16])> {
     let addr = Address::new(lang.default_space(), 0);
     let mut sample = [0u8; 16];
-    for _ in 0..EXTENDED_ATTEMPTS {
+    for _ in 0..NESTED_ATTEMPTS {
         let (prefix, config, offset) = &prefixes[rng.below(prefixes.len())];
         rng.fill(&mut sample);
         let mut fixed = [0u8; 16];
@@ -322,7 +331,9 @@ pub fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng,
             if let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, sample), &*db) {
                 covered.extend(parse.constructors().map(|c| c.index()));
             }
-            usable.push((config.clone(), *target));
+            if let Some(target) = target {
+                usable.push((config.clone(), *target));
+            }
         }
     }
     usable.dedup();
@@ -331,14 +342,37 @@ pub fn extend_for_coverage(lang: &Arc<Language>, plan: &mut Plan, rng: &mut Rng,
     }
     let mut subtable_pairs = BTreeMap::new();
     let mut sample = [0u8; 16];
-    for _ in 0..attempts {
-        let (config, target) = &usable[rng.below(usable.len())];
-        let db = &contexts[config];
-        fill_sample(sla, &plan.targets[*target], true, &mut subtable_pairs, rng, &mut sample);
+    let prefixes = prefixes(lang, &plan.targets);
+    for n in 0..attempts {
+        let (mut config, target) = usable[rng.below(usable.len())].clone();
+        fill_sample(sla, &plan.targets[target], true, &mut subtable_pairs, rng, &mut sample);
+        if n % 2 == 1 && !prefixes.is_empty() {
+            // Behind a prefix that re-enters the root table, so that its
+            // context operations set what the target needs.
+            let (prefix, prefix_config, offset) = &prefixes[rng.below(prefixes.len())];
+            let mut inner = [0u8; 16];
+            fill_sample(sla, &plan.targets[target], true, &mut subtable_pairs, rng, &mut inner);
+            let mut fixed = [0u8; 16];
+            rng.fill(&mut sample);
+            if let Some(block) = &plan.targets[*prefix].instruction {
+                impose(&mut sample, &mut fixed, block, 0, false);
+            }
+            let shift = usize::try_from(*offset).unwrap_or(16).min(16);
+            for (i, byte) in inner.iter().enumerate() {
+                if let Some(slot) = sample.get_mut(shift + i)
+                    && fixed.get(shift + i) == Some(&0)
+                {
+                    *slot = *byte;
+                }
+            }
+            config = prefix_config.clone();
+            contexts.entry(config.clone()).or_insert_with(|| start_context(lang, &config));
+        }
+        let db = &contexts[&config];
         let Ok(parse) = decoder.decode(addr, &SliceBytes::new(0, &sample), db) else { continue };
         if parse.constructors().any(|c| !covered.contains(&c.index())) {
             covered.extend(parse.constructors().map(|c| c.index()));
-            plan.groups.entry(config.clone()).or_default().push((*target, sample));
+            plan.groups.entry(config.clone()).or_default().push((None, sample));
         }
     }
 }
@@ -392,11 +426,11 @@ pub fn plan(lang: &Arc<Language>, per_pair: usize, rng: &mut Rng) -> Plan {
                 // table, so its context operations set what the pair needs.
                 if let Some((config, found)) = nested_sample(lang, &mut decoder, &targets, &prefixes, target, rng, &mut contexts) {
                     out.hit.insert(index);
-                    out.groups.entry(config).or_default().push((index, found));
+                    out.groups.entry(config).or_default().push((Some(index), found));
                     continue;
                 }
             }
-            out.groups.entry(config.clone()).or_default().push((index, sample));
+            out.groups.entry(config.clone()).or_default().push((Some(index), sample));
         }
     }
     out.shadowed = shadowed(&targets, sla);
@@ -458,50 +492,89 @@ pub struct Stream {
     pub starts: Vec<(u64, usize)>,
 }
 
-/// Packs each group's samples into streams by basilisk's lengths, cutting
-/// after a sample that committed context while fewer than `max_streams`
-/// streams exist.
+/// Packs each group's samples into streams by basilisk's lengths. A sample
+/// that basilisk does not decode to its target in the context the stream has
+/// reached (after earlier samples' commits) starts a new stream while fewer
+/// than `max_streams` exist; a sample that does not decode to its target
+/// even then is dropped, so that it cannot shift the samples after it.
 pub fn pack(lang: &Arc<Language>, plan: &Plan, base: u64, max_streams: usize, max_bytes: usize) -> Vec<Stream> {
     let mut streams = Vec::new();
     let space = lang.default_space();
     let mut decoder = Decoder::new(Arc::clone(lang));
+    decoder.set_operand_limit(Some(20));
+    let fresh = |config: &Vec<(String, u32)>| Stream {
+        config: config.clone(),
+        bytes: Vec::new(),
+        starts: Vec::new(),
+    };
     for (config, samples) in &plan.groups {
-        let mut current = Stream {
-            config: config.clone(),
-            bytes: Vec::new(),
-            starts: Vec::new(),
-        };
+        let mut current = fresh(config);
         let mut db = start_context(lang, config);
+        let mut dirty = false;
+        let mut previous: Option<(usize, usize, Option<bk_sla::ConstructorId>)> = None;
         for (target, sample) in samples {
             if current.bytes.len() + 16 > max_bytes {
-                streams.push(std::mem::replace(
-                    &mut current,
-                    Stream { config: config.clone(), bytes: Vec::new(), starts: Vec::new() },
-                ));
+                streams.push(std::mem::replace(&mut current, fresh(config)));
                 db = start_context(lang, config);
+                dirty = false;
+                previous = None;
+            }
+            let want = target.map(|t| plan.targets[t].constructor);
+            // Decoding at the end of the stream reads only the sample's own
+            // 16 bytes.
+            let attempt = |decoder: &mut Decoder, db: &bk_sleigh::ContextDb, pos: usize| {
+                let addr = Address::new(space, base + pos as u64);
+                let bytes = SliceBytes::new(base + pos as u64, sample);
+                decoder.decode(addr, &bytes, db).ok().map(|parse| {
+                    let hit = want.is_none_or(|want| parse.constructors().any(|c| c.index() == want));
+                    (hit, (parse.length() as usize).clamp(1, 16), !parse.commits().is_empty())
+                })
+            };
+            let mut outcome = attempt(&mut decoder, &db, current.bytes.len());
+            if !outcome.is_some_and(|o| o.0) && dirty && streams.len() + 1 < max_streams {
+                streams.push(std::mem::replace(&mut current, fresh(config)));
+                db = start_context(lang, config);
+                dirty = false;
+                previous = None;
+                outcome = attempt(&mut decoder, &db, 0);
+            }
+            let Some((true, len, committed)) = outcome else { continue };
+            let pos = current.bytes.len();
+            // The previous instruction may read bytes past its length (a
+            // little-endian token longer than the constructor): it must
+            // still decode as it did with this sample's bytes after it.
+            if let Some((prev_pos, prev_len, prev_root)) = previous {
+                let mut window: Vec<u8> = current.bytes[prev_pos..].to_vec();
+                window.extend_from_slice(sample);
+                let addr = Address::new(space, base + prev_pos as u64);
+                let same = decoder
+                    .decode(addr, &SliceBytes::new(base + prev_pos as u64, &window), &db)
+                    .is_ok_and(|p| p.length() as usize == prev_len && p.root().and_then(|r| r.constructor()) == prev_root);
+                if !same {
+                    // End the stream with the previous instruction.
+                    if streams.len() + 1 >= max_streams {
+                        continue;
+                    }
+                    streams.push(std::mem::replace(&mut current, fresh(config)));
+                    db = start_context(lang, config);
+                    dirty = false;
+                    previous = None;
+                    if !attempt(&mut decoder, &db, 0).is_some_and(|o| o.0) {
+                        continue;
+                    }
+                }
             }
             let pos = current.bytes.len();
-            // Decoding at `pos` reads only the sample's own 16 bytes.
             let addr = Address::new(space, base + pos as u64);
-            let bytes = SliceBytes::new(base + pos as u64, sample);
-            let (len, committed) = match decoder.decode(addr, &bytes, &db) {
-                Ok(parse) => {
-                    let len = (parse.length() as usize).clamp(1, 16);
-                    let committed = !parse.commits().is_empty();
-                    let _ = decoder.prepare(addr, &bytes, &mut db);
-                    (len, committed)
-                }
-                Err(_) => (1, false),
-            };
-            current.starts.push((pos as u64, *target));
-            current.bytes.extend_from_slice(&sample[..len]);
-            if committed && streams.len() + 1 < max_streams {
-                streams.push(std::mem::replace(
-                    &mut current,
-                    Stream { config: config.clone(), bytes: Vec::new(), starts: Vec::new() },
-                ));
-                db = start_context(lang, config);
+            let source = SliceBytes::new(base + pos as u64, sample);
+            let root = decoder.decode(addr, &source, &db).ok().and_then(|p| p.root().and_then(|r| r.constructor()));
+            let _ = decoder.prepare(addr, &source, &mut db);
+            if let Some(target) = target {
+                current.starts.push((pos as u64, *target));
             }
+            current.bytes.extend_from_slice(&sample[..len]);
+            previous = Some((pos, len, root));
+            dirty |= committed;
         }
         if !current.bytes.is_empty() {
             streams.push(current);

@@ -6,6 +6,7 @@
 pub mod coverage;
 pub mod directed;
 pub mod real_code;
+pub mod recording;
 pub mod sweep;
 
 use std::collections::HashMap;
