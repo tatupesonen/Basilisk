@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): in table "sub" constructor starting at line 2
+error (line 2, located):    Size of export is unknown
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

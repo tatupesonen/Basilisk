@@ -1,0 +1,3 @@
+@include "prelude.sinc"
+:bi r0 is op=2 & r0 { c0 = r0 && c1; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

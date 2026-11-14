@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2, located): Multiple default spaces -- 'ram', 'ram2'
+=> no output

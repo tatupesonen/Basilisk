@@ -1,0 +1,4 @@
+#! -e
+@include "prelude.sinc"
+:lk r0 is op=2 & r0 { tmp = r0; r0 = tmp; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

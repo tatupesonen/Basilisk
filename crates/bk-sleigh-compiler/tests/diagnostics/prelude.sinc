@@ -1,0 +1,19 @@
+# Shared definitions of the diagnostic cases (written for basilisk).
+define endian=little;
+define alignment=1;
+define space ram type=ram_space size=4 default;
+define space register type=register_space size=4;
+define register offset=0 size=4 [ r0 r1 r2 r3 ];
+define register offset=0x40 size=2 [ h0 h1 ];
+define register offset=0x80 size=1 [ c0 c1 ];
+define register offset=0x100 size=8 [ q0 ];
+define register offset=0x200 size=4 [ contextreg ];
+define context contextreg mode=(0,1) flag=(2,2) noflow;
+define token instr(16)
+  op=(8,15)
+  reg=(0,1)
+  imm=(0,7)
+  simm=(0,7) signed
+  low4=(0,3)
+;
+define pcodeop sync;

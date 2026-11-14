@@ -39,7 +39,7 @@ fn every_spec_file_reads_in_strict_mode() {
     let ldefs_files = common::files_with_extension(&processors, ".ldefs");
     for file in &ldefs_files {
         let parsed = ldefs::read_file(file, Mode::Strict).unwrap_or_else(|e| panic!("{e}"));
-        assert!(parsed.warnings.is_empty());
+        assert_eq!(parsed.warnings, []);
         languages += parsed.value.languages.len();
     }
     let pspec_files = common::files_with_extension(&processors, ".pspec");
@@ -356,11 +356,10 @@ fn opinion_queries_on_the_real_corpus() {
     // secondary key: every MIPS language.
     assert_eq!(registry.query_opinions(ELF, Some("8"), Some("0")).len(), 56);
     // Unknown keys give nothing.
-    assert!(registry.query_opinions(ELF, Some("99999"), None).is_empty());
-    assert!(
-        registry
-            .query_opinions("No Such Loader", Some("62"), None)
-            .is_empty()
+    assert_eq!(registry.query_opinions(ELF, Some("99999"), None), []);
+    assert_eq!(
+        registry.query_opinions("No Such Loader", Some("62"), None),
+        []
     );
     // A loader constraint with no keys registers every language, which a
     // query without a primary key reaches (Ghidra does the same).

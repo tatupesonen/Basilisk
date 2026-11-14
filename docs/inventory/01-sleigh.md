@@ -1965,7 +1965,7 @@ Only `argv[i][1]` is examined; parsing stops at the first argument not starting 
 
 ### 10 (e) Hazards and unverified items
 
-1. **Float tie-breaks** in `chooseOptimalField` (c.8). This is the only place I found where a host library (`log`) can change the output.
+1. **Float tie-breaks** in `chooseOptimalField` (c.8). This is the only place I found where a host library (`log`) can change the output. A second host dependence, measured later: the compiler's floating-point contraction of `sc -= p * log(p)` in `getScore` (fused on AArch64, unfused on x86-64) decides 25 ties and changes 14 of the 150 `.sla` (ADR-032, `docs/research/sla-host-dependence.md`).
 2. **Undefined-behaviour-dependent arithmetic** in constraint expressions (`<<`, `>>`, `/` on `intb`, a.5).
 3. **Pointer-dependent text only**: the token-mismatch exception prints `Token*` values (PE.cc:120-125, 139-144). Pointer-keyed maps are lookup-only. There is no `std::sort` in the back half; the only sort in these files is `stable_sort` on the context table (SC.cc:2523), outside my scope.
 4. **`doOr` operand reversal and the Or-shift quirks** (b.5) affect disjunct order, and therefore the decision-tree list order.

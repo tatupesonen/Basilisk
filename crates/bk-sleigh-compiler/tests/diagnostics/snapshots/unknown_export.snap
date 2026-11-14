@@ -1,0 +1,8 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 2): Unknown export varnode: zork
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

@@ -216,15 +216,25 @@ data tests and a differential run of Ghidra's compiled C++
   takes the host FPU's: negative on x86-64, positive on AArch64. Ghidra's
   data test `floatprint.xml` folds `0.0f / 0.0f` and expects `-NAN`, so the
   x86-64 result is the tested one (the reference build on AArch64 fails that
-  test). A NaN *propagated* from an input keeps the sign of the first NaN
-  input (both hosts agree). (Changed from the first agent's positive NaN.)
+  test). A NaN *propagated* from a single NaN input keeps that input's sign
+  (both hosts agree). (Changed from the first agent's positive NaN.)
+- With **two NaN inputs**, `FLOAT_ADD` and `FLOAT_MULT` give the quiet NaN
+  with the sign of the *second* input, `FLOAT_SUB` and `FLOAT_DIV` that of
+  the *first*: what Ghidra compiled by GCC gives on x86-64 (SSE2 returns
+  the first source operand, and GCC puts `val2` there for the commutative
+  operations). AArch64 takes the first input's for all four. basilisk
+  computes the sign explicitly, never from the host's arithmetic. Seen in
+  the x86-64 oracle table (48 rows; `x86-oracle` track, 2026-11-14).
 - `FLOAT_TRUNC` of a NaN, an infinity or a value outside `i64` saturates
   (NaN gives 0). The C++ cast is undefined: x86-64 gives `i64::MIN`,
   AArch64 saturates. Java's `(long)` cast saturates and
   `FloatFormatTest.testOpTruncLongInt` and `OpBehaviorFloatTruncTest` pin
   that, so basilisk saturates; this is the one place it does not follow
   x86-64, and a differential test against a reference `decomp` built on
-  x86-64 will see the difference for out-of-range constants.
+  x86-64 will see the difference for out-of-range constants. In the x86-64
+  oracle table these are 58 rows (`cpp_oracle.rs`, class
+  `TruncSaturates`): x86-64 gives `i64::MIN` cut to the output size, so 0
+  at sizes below 8 for a positive overflow, where basilisk gives all ones.
 - A value that rounds up from the largest subnormal to the smallest normal
   encodes as the smallest normal. The C++ shifts by -1 there ("TODO handle
   round to normal case") and returns a signed zero on both hosts (seen in
@@ -244,6 +254,15 @@ data tests and a differential run of Ghidra's compiled C++
   differential run). basilisk returns the output, the correct input. Kept
   as a deliberate fix: the decompiler's only caller is jump-table
   recovery (`jumptable.cc`), where Ghidra simply fails on such a shift.
+- The oracle table (`tests/data/opbehavior_cpp.txt.gz`) is x86-64 Linux's
+  (2026-11-14). Against it, `tests/cpp_oracle.rs` accepts exactly three
+  classes of difference, each counted and each required to still occur:
+  out-of-range `FLOAT_TRUNC` (58 rows), the subnormal rounding to the
+  smallest normal (3 rows) and `recover_input_binary` of a shift by 0
+  (10 rows, below). `tests/host_independence.rs` pins the host-dependent
+  cases as literal bits so every CI host checks the same values.
+- `FLOAT_CEIL`, `FLOAT_FLOOR` and `FLOAT_ROUND` use the `libm` crate, not
+  the C library (`round()` is wrong on MinGW for 0.49999999999999994).
 - `printDecimal` prints non-finite values as `inf`, `-inf`, `nan`, `-nan`
   (the C++ prints what the C library prints). It reproduces libstdc++'s
   stream extraction, which stores the largest finite value on overflow

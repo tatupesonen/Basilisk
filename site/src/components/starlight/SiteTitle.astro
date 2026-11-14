@@ -1,0 +1,45 @@
+---
+// Starlight's site title, replaced by the basilisk logo and a "docs" label;
+// the logo links to the product site, the label to the documentation home.
+import Logo from '../Logo.astro';
+const base = import.meta.env.BASE_URL;
+---
+
+<span class="bk-sl-title">
+  <a href={base} class="bk-sl-logo" aria-label="basilisk home"><Logo height={28} /></a>
+  <a href={`${base}docs/`} class="bk-sl-docs">docs</a>
+</span>
+
+<style>
+  .bk-sl-title {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+  .bk-sl-logo {
+    display: flex;
+    color: var(--bk-text);
+    border-radius: var(--bk-radius-1);
+  }
+  .bk-sl-docs {
+    padding: 0.05rem 0.5rem;
+    border: 1px solid var(--bk-line-strong);
+    border-radius: 999px;
+    font-family: var(--bk-font-mono);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--bk-text-2);
+    text-decoration: none;
+  }
+  .bk-sl-docs:hover {
+    color: var(--bk-text);
+    border-color: var(--bk-text-muted);
+  }
+  @media (max-width: 30rem) {
+    .bk-sl-logo :global(svg) {
+      height: 22px;
+      width: auto;
+    }
+  }
+</style>

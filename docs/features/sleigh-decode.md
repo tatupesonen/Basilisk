@@ -393,6 +393,78 @@ in the same session:
 
 (The implementing track appends.)
 
+Appended by the `sleigh-decode` track:
+
+* **Errors are one flat enum** (`DecodeError`) with `class()` giving
+  Ghidra's exception class (`BadData`, `Unimplemented`, `Lowlevel`, which
+  is also `pcodedump`'s record kind), instead of nested `BadData::…`
+  variants. Each prints Ghidra's text and carries the address.
+* **A node whose constructor exports nothing has the constant-0 handle.**
+  Ghidra's node keeps whatever its reused state held.
+* **Operand values evaluated "out of band" where Ghidra's walker is left
+  uninitialised** (the named constructor is not above the current node,
+  or a nested reference from the stand-in node names another constructor)
+  are evaluated at the current position. The documented quirk that a
+  constructor-relative operand is placed from the stand-in node's offset is
+  kept.
+* **`inst_next` in an expression evaluated while the instruction is being
+  resolved** (before its length is known) is the instruction's own address;
+  Ghidra reads the stale value its reused parser state holds.
+* **Context words past the end of the array read as zero**, in decision
+  nodes, context patterns and context fields (Ghidra reads past the array);
+  a context operation shift of 32 or more is taken modulo 32 (x86-64).
+* **A completely filled table indexed by a negative field value** (a signed
+  field) is `NoTableEntry` when the operand is printed or its handle
+  resolved; Ghidra indexes outside its table. A varnode-list entry that is
+  unusable at print time is `NoTableEntry` (Ghidra dereferences null).
+* **`inst_next2`** is computed when the parse is decoded if an operand
+  prints or resolves through it, and before handles are resolved if an
+  export or a commit uses it, by decoding the next instruction with the
+  context the store holds then; if that look-ahead fails, a use reports
+  `Next2Unavailable` (Ghidra reports the look-ahead's own error). Only Toy
+  uses `inst_next2`, and only in p-code.
+* **Ghidra's operand limit is available as an option**:
+  `Decoder::set_operand_limit(Some(20))` fails as Ghidra's C++ does ("SLEIGH
+  parser out of state space"). The differential harness uses it so both
+  sweeps stay in step; basilisk's own decoding of those constructors is
+  checked separately (6.4 and the harness's `over-20` count).
+* **`prepare` bounds the delay-slot loop** to 16 instructions and stops at a
+  zero-length instruction (Ghidra's loop would not end).
+* `ContextDb::change_point` and `region` combine the value with a bitwise
+  OR without masking it, as Ghidra does; the by-variable forms mask.
+
 ## 9. Status
 
-Not started.
+Done (track `sleigh-decode`, 2026-11-14). Crate `crates/bk-sleigh`: `Language`
+(`from_sla`, `load`, `truncate_space`, `apply_processor_spec`, registers,
+user ops, context variables, `initial_context`), `ContextDb` with the
+`ContextSource`/`ContextSink` traits, `Decoder` (`decode`,
+`resolve_handles`, `apply_commits`, `prepare`, `disassemble`,
+`set_operand_limit`), `Parse` (nodes, handles, commits), text
+(`Language::mnemonic`, `body`), `Translate`/`Translator`, errors.
+
+Acceptance, as measured (details in `docs/agents/sleigh-decode.md`):
+
+1. The differential test passes for every language `pcodedump` can run (175
+   distinct `.sla`/`.pspec` pairs): no record differs; 419,098 of 421,932
+   root pairs confirmed (99.33 %), every language at or above 95 % of its
+   pairs and 90 % of its constructors except the two `DATA` languages,
+   which are in the exceptions file (`tests/data/coverage-exceptions.txt`);
+   tolerated differences: 3 (more than 20 operands), 1 (bytes past 16), 0;
+   36 oracle crashes (a Ghidra bug, below) split out. The coverage table is
+   the snapshot `tests/snapshots/differential__coverage_table.snap`.
+2. Tests of 6.3–6.5 pass; both fuzz targets ran 60 s clean.
+3. Benchmarks met except the 8-thread scaling (4.78× on a machine loaded by
+   other work); `docs/PERF.md`.
+4. `Language` and `ContextDb` are `Send + Sync`, sizes asserted.
+5. Gate green on macOS; Windows checked with `cargo clippy --target
+   x86_64-pc-windows-msvc` and the oracle-free tests run under Wine; Linux
+   rests on CI.
+
+Departures from this spec, with reasons, are in the track report: streams
+are cut on demand (when a sample no longer decodes to its target after
+earlier commits) with a cap of 1,000 invocations instead of after every
+commit with a cap of 200; the `T` record's error count is compared without
+`U` records (part 2); recordings of real languages need Ghidra's `.sla`
+and are skipped in CI, where the self-contained `bkfix` fixture's
+recording runs instead.

@@ -152,7 +152,7 @@ fn offsets_outside_the_bytes_are_errors() {
         Err(Error::OffsetOutOfRange { offset: 1, len: 1 })
     );
     let block = d.block(&[], 0).unwrap();
-    assert!(block.instructions.is_empty());
+    assert_eq!(block.instructions, []);
     assert_eq!(block.end, BlockEnd::Complete);
 }
 

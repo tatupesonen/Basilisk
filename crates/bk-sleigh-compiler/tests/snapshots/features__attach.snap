@@ -1,0 +1,124 @@
+---
+source: crates/bk-sleigh-compiler/tests/features.rs
+expression: "render(stringify! (attach), &\nspec(LITTLE,\n\"define register offset=0x200 size=4 [ ctx ];\ndefine context ctx mode=(0,1) sub=(2,3);\nattach variables [ reg ] [ r0 r1 r3 r0 ];\nattach names [ low4 ] [ a b c d e f g h i j k l m n o _ ];\nattach values [ hi4 ] [ 0 -1 2 3 4 5 6 7 8 9 10 11 12 13 14 0x7f ];\nattach values [ sub ] [ 10 20 30 40 ];\n:a reg, low4, hi4 is op=1 & reg & low4 & hi4 [ mode = 2; ] { reg = hi4; }\n:b sub is op=2 & sub { r0 = sub; }\n\"),\nOptions :: default())"
+---
+ctor.instruction.00000.context.00 = op word=0 shift=30 mask=0xc0000000 #2
+ctor.instruction.00000.first = 1
+ctor.instruction.00000.loc = test.slaspec:17 source=0
+ctor.instruction.00000.operands = [22, 23, 24]
+ctor.instruction.00000.print = "a" " " op22 "," " " op23 "," " " op24
+ctor.instruction.00000.tpl.main.head = delay=0 labels=0
+ctor.instruction.00000.tpl.main.numops = 1
+ctor.instruction.00000.tpl.main.op.0000 = COPY (h[22].space,h[22].offset,h[22].size) <- (h[24].space,h[24].offset,h[22].size)
+ctor.instruction.00001.first = 1
+ctor.instruction.00001.loc = test.slaspec:18 source=0
+ctor.instruction.00001.operands = [25]
+ctor.instruction.00001.print = "b" " " op25
+ctor.instruction.00001.tpl.main.head = delay=0 labels=0
+ctor.instruction.00001.tpl.main.numops = 1
+ctor.instruction.00001.tpl.main.op.0000 = COPY (space(register),#0x0,#0x4) <- (h[25].space,h[25].offset,#0x4)
+defaultspace = ram
+header.align = 2
+header.bigendian = 0
+header.maxdelay = 0
+header.numsections = 0
+header.uniqbase = 0x0
+header.uniqmask = 0x0
+scope.000000 = -
+scope.000001 = 0
+scope.000002 = 0
+scopes = 3
+sourcefile.000 = test.slaspec
+space.01 = space_other OTHER be=0 delay=0 size=8 wordsize=1 physical=0
+space.02 = space_unique unique be=0 delay=0 size=4 wordsize=1 physical=1
+space.03 = space ram be=0 delay=1 size=4 wordsize=1 physical=1
+space.04 = space register be=0 delay=0 size=4 wordsize=1 physical=1
+symbol.0000000.body = numct=2
+symbol.0000000.id = instruction scope=0 subtable_sym
+symbol.0000001.body = 
+symbol.0000001.id = inst_start scope=0 start_sym
+symbol.0000002.body = 
+symbol.0000002.id = inst_next scope=0 end_sym
+symbol.0000003.body = 
+symbol.0000003.id = inst_next2 scope=0 next2_sym
+symbol.0000004.body = space=register off=0x0 size=4
+symbol.0000004.id = r0 scope=0 varnode_sym
+symbol.0000005.body = space=register off=0x4 size=4
+symbol.0000005.id = r1 scope=0 varnode_sym
+symbol.0000006.body = space=register off=0xc size=4
+symbol.0000006.id = r3 scope=0 varnode_sym
+symbol.0000007.body = space=register off=0x40 size=2
+symbol.0000007.id = h0 scope=0 varnode_sym
+symbol.0000008.body = space=register off=0x42 size=2
+symbol.0000008.id = h1 scope=0 varnode_sym
+symbol.0000009.body = space=register off=0x80 size=1
+symbol.0000009.id = c0 scope=0 varnode_sym
+symbol.0000010.body = space=register off=0x81 size=1
+symbol.0000010.id = c1 scope=0 varnode_sym
+symbol.0000011.body = space=register off=0x100 size=8
+symbol.0000011.id = q0 scope=0 varnode_sym
+symbol.0000012.body = tok(be=0,sign=0,sb=8,eb=15,sby=1,eby=1,sh=0)
+symbol.0000012.id = op scope=0 value_sym
+symbol.0000013.body = tok(be=0,sign=0,sb=0,eb=1,sby=0,eby=0,sh=0) ["4", "5", "6", "4"]
+symbol.0000013.id = reg scope=0 varlist_sym
+symbol.0000014.body = tok(be=0,sign=0,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000014.id = imm scope=0 value_sym
+symbol.0000015.body = tok(be=0,sign=1,sb=0,eb=7,sby=0,eby=0,sh=0)
+symbol.0000015.id = simm scope=0 value_sym
+symbol.0000016.body = tok(be=0,sign=0,sb=0,eb=3,sby=0,eby=0,sh=0) ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "<none>"]
+symbol.0000016.id = low4 scope=0 name_sym
+symbol.0000017.body = tok(be=0,sign=0,sb=4,eb=7,sby=0,eby=0,sh=4) [0, -1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 127]
+symbol.0000017.id = hi4 scope=0 valuemap_sym
+symbol.0000018.body = index=0
+symbol.0000018.id = sync scope=0 userop
+symbol.0000019.body = space=register off=0x200 size=4
+symbol.0000019.id = ctx scope=0 varnode_sym
+symbol.0000020.body = varnode=19 low=0 high=1 flow=1 ctx(sign=0,sb=0,eb=1,sby=0,eby=0,sh=6)
+symbol.0000020.id = mode scope=0 context_sym
+symbol.0000021.body = ctx(sign=0,sb=2,eb=3,sby=0,eby=0,sh=4) [10, 20, 30, 40]
+symbol.0000021.id = sub scope=0 valuemap_sym
+symbol.0000022.body = def=13 code=0
+symbol.0000022.id = reg scope=1 operand_sym
+symbol.0000023.body = def=16 code=0
+symbol.0000023.id = low4 scope=1 operand_sym
+symbol.0000024.body = def=17 code=0
+symbol.0000024.id = hi4 scope=1 operand_sym
+symbol.0000025.body = def=21 code=0
+symbol.0000025.id = sub scope=2 operand_sym
+symbols = 26
+equation instruction[0] = ((([PExprId(4) = PExprId(3)] & operand(reg)) & operand(low4)) & operand(hi4))
+xml instruction[0] main:
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_handle val="0" s="0"/>
+      <const_handle val="0" s="1"/>
+      <const_handle val="0" s="2"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_handle val="2" s="0"/>
+      <const_handle val="2" s="1"/>
+      <const_handle val="0" s="2"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>
+equation instruction[1] = ([PExprId(8) = PExprId(7)] & operand(sub))
+xml instruction[1] main:
+
+<construct_tpl>
+  <null/>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_handle val="0" s="0"/>
+      <const_handle val="0" s="1"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>

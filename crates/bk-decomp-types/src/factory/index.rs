@@ -98,7 +98,7 @@ mod tests {
         idx.remove(7, a);
         assert_eq!(idx.candidates(7), &[b]);
         idx.remove(7, b);
-        assert!(idx.candidates(7).is_empty());
+        assert_eq!(idx.candidates(7), []);
         idx.remove(9, a);
     }
 }

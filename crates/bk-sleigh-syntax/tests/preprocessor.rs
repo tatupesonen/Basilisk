@@ -180,7 +180,7 @@ fn directives_only_in_column_one_and_comment_lines_are_blank() {
         "a.slaspec",
         " @define X 1\n# a comment\n  # indented comment\nkeep # trailing\n",
     )]);
-    assert!(p.diagnostics.is_empty());
+    assert_eq!(p.diagnostics, []);
     assert!(!p.defines.is_defined("X"));
     // The indented directive is ordinary text; the comment lines are blank.
     assert_eq!(output(&p), [" @define X 1", "keep # trailing"]);
@@ -306,7 +306,7 @@ fn missing_files_and_include_cycles() {
     let missing_root = run(&[("x.slaspec", "")]);
     let mut loader = MemoryLoader::new();
     let p = preprocess(Path::new("nope.slaspec"), &Defines::new(), &mut loader);
-    assert!(missing_root.diagnostics.is_empty());
+    assert_eq!(missing_root.diagnostics, []);
     assert_eq!(p.diagnostics.len(), 1);
     assert_eq!(
         p.diagnostics[0].message,

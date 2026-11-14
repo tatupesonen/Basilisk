@@ -1,0 +1,27 @@
+---
+// Listing or decompiler lines coloured with the interface's twelve syntax
+// roles (ui-design.md §5), set as real text. Each line is a list of
+// [role, text] tokens; roles map to .t-<role> classes in site.css.
+import Icon from './Icon.astro';
+
+type Token = [string, string];
+export interface Line {
+  tokens: Token[];
+  num?: number;
+  state?: 'cur' | 'linked';
+}
+interface Props {
+  title: string;
+  icon: string;
+  lines: Line[];
+  label: string;
+}
+const { title, icon, lines, label } = Astro.props;
+---
+
+<div class="bk-code" role="group" aria-label={label}>
+  <div class="bk-code-tab"><Icon name={icon} size="15" />{title}</div>
+  <pre><code>{lines.map((l) => (
+    <span class:list={['ln', l.state]}>{l.num !== undefined && <span class="num">{l.num}</span>}{l.tokens.map(([role, text]) => role === 'hl' ? <span class="hl t-function">{text}</span> : role === '' ? text : <span class={`t-${role}`}>{text}</span>)}</span>
+  ))}</code></pre>
+</div>

@@ -1,0 +1,6 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 3): Assigned bitrange extends past first 64 bits
+=> no output

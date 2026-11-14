@@ -1,0 +1,106 @@
+---
+source: crates/bk-sleigh-compiler/tests/features.rs
+expression: tpl.to_template(None).encode_xml(&spaces)
+---
+
+<construct_tpl labels="1">
+  <null/>
+  <op_tpl code="INT_ADD">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x8"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="STORE">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_spaceid space="ram"/>
+      <const_real val="0x8"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="INT_EQUAL">
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1020"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x4"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CBRANCH">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_relative val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1020"/>
+      <const_real val="0x1"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="CALLOTHER">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="LABEL">
+    <null/>
+    <varnode_tpl>
+      <const_spaceid space="const"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+  <op_tpl code="COPY">
+    <varnode_tpl>
+      <const_spaceid space="register"/>
+      <const_real val="0x0"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+    <varnode_tpl>
+      <const_spaceid space="unique"/>
+      <const_real val="0x1010"/>
+      <const_real val="0x4"/>
+    </varnode_tpl>
+  </op_tpl>
+</construct_tpl>

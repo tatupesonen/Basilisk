@@ -107,9 +107,35 @@ needed. Steps:
    this is the baseline the Rust decompiler is measured against. On macOS
    arm64 with Apple clang, 204 of 205 unit tests and 758 of 760 data-test
    checks pass (`double_decimal_precision` and two `floatprint.xml` checks
-   fail, apparently for host C++ library reasons); the stamp records the
-   exact result.
+   fail, for host reasons: see 9); on x86-64 Linux all pass. The stamp
+   records the exact result.
 6. Write `STAMP`.
+
+**Floating-point contraction is off.** Every C and C++ compile the script
+runs (the Makefile's objects through `ADDITIONAL_FLAGS`, `pcodedump`, the
+bundled zlib) gets `-ffp-contract=off`, and `STAMP` records it
+(`fp_flags`, `zlib_cflags`, `make_overrides`). Compilers targeting AArch64
+fuse `sc -= p * log(p)` in `DecisionNode::getScore` (`CPP/slghsymbol.cc`)
+into one multiply-subtract by default, which breaks score ties between
+candidate fields differently from x86-64: built that way on macOS, 14 of
+the 150 `.sla` files had different decision trees from the x86-64 Linux
+build (behaviourally identical, but not the same bytes). ADR-032 makes
+x86-64 Linux's bytes the oracle; with the flag a build on any host
+produces them (measured on this Mac: all 150 files byte-identical to
+`../reference-x86_64/x86_64-linux`). Evidence:
+`docs/research/sla-host-dependence.md`. The flag changed nothing else that
+was measured: Ghidra's unit and data-test logs, `pcodedump` output on
+1 MB of random bytes in ten languages, and the `decomp` console's output
+on all 93 data-test scripts are byte-identical with and without it
+(2026-11-14, track `ref-nofma`).
+
+**Building somewhere else.** `BASILISK_REFERENCE_DIR` chooses the output
+directory, so a complete new reference can be built beside the live one
+(`BASILISK_REFERENCE_DIR=../reference.staging scripts/build-reference.sh`)
+while other processes keep reading `../reference`, and then moved in file
+by file with `mv -f` (same file system: a reader sees the old file or the
+new one, never none). Nothing in the tree records its own path, so a
+moved tree stays valid and a rerun of the script over it does nothing.
 
 The script prints what it is doing in plain lines and ends with a short
 summary (tools built, languages compiled, tests passed, elapsed time).
@@ -227,10 +253,10 @@ under that licence. A patch that no longer applies stops the script.
 
 **Makefile overrides** (on the `make` command line, not patches; reasons in
 `tools/reference/README.md`): `ARCH_TYPE=` (the Makefile forces
-`-arch x86_64` on macOS); `ADDITIONAL_FLAGS="-w -DLOCAL_ZLIB"` and
+`-arch x86_64` on macOS); `ADDITIONAL_FLAGS="-w -DLOCAL_ZLIB -fsigned-char -ffp-contract=off"` and
 `LNK=../zlib/libz.a` (the bundled zlib, built as Ghidra's Gradle build
-`buildNatives.gradle` does — the Makefile itself links the system `-lz`);
-`BFDLIB=`; and `EXTRA` recomputed without the four sources that include the
+`buildNatives.gradle` does — the Makefile itself links the system `-lz`;
+`-fsigned-char` and `-ffp-contract=off` as in 4.2); `BFDLIB=`; and `EXTRA` recomputed without the four sources that include the
 BFD load image (`loadimage_bfd.cc`, `bfd_arch.cc`, `codedata.cc`,
 `analyzesigs.cc`), since the Makefile has no switch for BFD. The console
 and test runner therefore lack the `codedata` and signature-analysis
@@ -279,17 +305,20 @@ now always passes it. Linux x86-64 was not tried.
 
 | Host | Unit tests | Data-test checks (93 files) | Failing |
 |---|---|---|---|
-| macOS arm64, Apple clang 17 (libc++) | 204 / 205 | 758 / 760 | `double_decimal_precision`; `Float print #6`, `Float print #13` (`floatprint.xml`) |
-| Linux aarch64, g++ 14 (libstdc++) | 205 / 205 | 758 / 760 | `Float print #6`, `Float print #13` |
+| macOS arm64, Apple clang 17 (libc++), `-ffp-contract=off` (current `../reference`, 2026-11-14) | 204 / 205 | 758 / 760 | `double_decimal_precision`; `Float print #6`, `Float print #13` (`floatprint.xml`) |
+| macOS arm64, Apple clang 17 (libc++), before the flag | 204 / 205 | 758 / 760 | the same three; test logs byte-identical to the row above |
+| Linux aarch64, g++ 14 (libstdc++), before the flag | 205 / 205 | 758 / 760 | `Float print #6`, `Float print #13` |
+| Linux x86-64, g++ 14.4 (libstdc++), before the flag (`../reference-x86_64`) | 205 / 205 | 760 / 760 | none |
 
 `double_decimal_precision` (`testfloatemu.cc:187`) expects
 `1.79769313486232e+308` and gets `1.7976931348623157e+308` on macOS:
 Apple's libc++ parses the 15-digit text of `DBL_MAX` to infinity with
 failbit, so `FloatFormat::printDecimal` keeps adding digits (measured). It
 passes with libstdc++ (measured on Linux aarch64). The two `floatprint.xml`
-checks expect `-NAN` and the console prints `NAN` on both hosts; *inference,
-not verified*: the sign of the NaN differs between arm64 and x86-64, and
-both pass on x86-64. These three are host-dependent Ghidra results, not
+checks expect `-NAN` and the console prints `NAN` on both AArch64 hosts:
+the sign of a NaN the hardware creates differs between arm64 and x86-64,
+and both pass on x86-64 (measured since, ADR-029, ADR-021). Turning
+contraction off does not change any of the three. These three are host-dependent Ghidra results, not
 basilisk targets: a Rust port should produce Ghidra's intended output
 (`-NAN`, 15 digits).
 

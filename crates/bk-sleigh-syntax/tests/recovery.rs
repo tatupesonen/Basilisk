@@ -263,7 +263,7 @@ fn garbage_ends_in_diagnostics_quickly() {
     for input in inputs {
         let started = Instant::now();
         let parsed = parse_str("a.slaspec", &input, &Defines::new());
-        assert!(!parsed.diagnostics.is_empty());
+        assert_ne!(parsed.diagnostics, []);
         assert!(parsed.diagnostics.len() <= MAX_ERRORS + 1);
         assert!(
             started.elapsed() < Duration::from_secs(5),

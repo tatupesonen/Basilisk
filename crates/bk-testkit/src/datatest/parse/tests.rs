@@ -142,7 +142,7 @@ const CHECK: &str = "<stringmatch name=\"n\" min=\"1\" max=\"1\">x</stringmatch>
 fn minimal_test_parses() {
     let test = parse_data_test(&document(IMAGE, &format!("{SCRIPT}{CHECK}"))).unwrap();
     assert_eq!(test.script, ["quit"]);
-    assert!(test.image.chunks.is_empty());
+    assert_eq!(test.image.chunks, []);
 }
 
 #[test]

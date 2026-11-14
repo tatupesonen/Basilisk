@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+attach variables [ low4 ] [ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ];
+:nr low4 is op=2 & low4 { r0 = low4; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

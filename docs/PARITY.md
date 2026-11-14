@@ -4,7 +4,7 @@ Status of every Ghidra module against basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
-Last updated: 2026-11-14 (`bk-sla` and `bk-decomp-types` merged; CI green on Linux, macOS and Windows). 2026-11-13: (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
+Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `bk-sleigh-compiler` part 1 merged; CI green on Linux, macOS and Windows). 2026-11-13: (`bk-ui` merged on demo data; `bk-binutils-sys` and `bk-gnu-disasm` merged; SLEIGH tracks specified, `sla` in progress). M0 complete 2026-11-12.
 
 **Status legend**
 - **Done**: implemented, its Ghidra tests marked, on `master`.
@@ -21,8 +21,8 @@ Last updated: 2026-11-14 (`bk-sla` and `bk-decomp-types` merged; CI green on Lin
 |---|---|---|---|---|
 | SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
-| SoftwareModeling: SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | `bk-sla` on `master`: the compiled-language model, validating reader, byte-exact packed and XML writers, builder, structural diff; all 150 reference `.sla` round-trip. Missing: decoding, printing and p-code generation (`bk-sleigh`; tracks `sleigh-decode`, `sleigh-pcode`). |
-| SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | Partial | Front end done: preprocessor, lexer, parser, checked against Ghidra's compiled output for all 150 specs. Semantic analysis and `.sla` output are M2 |
+| SoftwareModeling: SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | On `master`: `bk-sla` (the compiled-language model, validating reader, byte-exact writers; all 150 reference `.sla` round-trip) and `bk-sleigh` part 1 (language loading, context database, instruction decoding, disassembly text: no record differs from `pcodedump` over 175 language configurations; faster than Ghidra's engine). Missing: p-code generation and `basilisk disasm` (track `sleigh-pcode`, paused), the Java-side language services (`sleigh-language`). |
+| SoftwareModeling: SLEIGH compiler | `bk-sleigh-syntax`, `bk-sleigh-compiler` | M0, M2 | Partial | Front end done: preprocessor, lexer, parser, checked against Ghidra's compiled output for all 150 specs. Semantic analysis (the compiler's front half) is on `master` and equals Ghidra's for all 150; pattern resolution, decision trees and `.sla` output remain (M2) |
 | SoftwareModeling: program model and database | `bk-program`, `bk-datatypes`, `bk-store` | M4 | Missing | |
 | SoftwareModeling: disassembler | `bk-disasm` | M5 | Missing | |
 | SoftwareModeling: assembler | `bk-asm` | M6 | Missing | |
@@ -39,8 +39,8 @@ Last updated: 2026-11-14 (`bk-sla` and `bk-decomp-types` merged; CI green on Lin
 | Ghidra part | basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
-| SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | `bk-sla` on `master`: the compiled-language model, validating reader, byte-exact packed and XML writers, builder, structural diff; all 150 reference `.sla` round-trip. Missing: decoding, printing and p-code generation (`bk-sleigh`; tracks `sleigh-decode`, `sleigh-pcode`). |
-| SLEIGH compiler | `bk-sleigh-compiler` | M2 | Missing | |
+| SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | On `master`: `bk-sla` (the compiled-language model, validating reader, byte-exact writers; all 150 reference `.sla` round-trip) and `bk-sleigh` part 1 (language loading, context database, instruction decoding, disassembly text: no record differs from `pcodedump` over 175 language configurations; faster than Ghidra's engine). Missing: p-code generation and `basilisk disasm` (track `sleigh-pcode`, paused), the Java-side language services (`sleigh-language`). |
+| SLEIGH compiler | `bk-sleigh-compiler` | M2 | Partial | Front half on `master`: elaboration to symbols, constructors, print pieces, context changes and templates, equal to Ghidra's compiled files for all 150 specifications; 92 diagnostic cases. Missing: pattern equations, decision trees, the `.sla` writer and `basilisk sleigh compile` (`sleigh-compiler-back`, ADR-032), p-code snippets (`sleigh-snippet`). |
 | Decompiler engine (DECCORE) | `bk-decomp-*`, `bk-cspec` (ADR-026) | M3 | Partial | Planned in 31 tracks (`features/decomp-plan.md`). On `master`: `bk-decomp-types` (D02: types, factory, orderings, XML, C declaration parser). Everything else is missing: ranges, `.cspec` and prototype models, block graph, IR, symbols, flow, heritage, rules, actions, merging, structuring, printing. |
 | Ghidra pipe protocol (GHIDRA) | trait in `bk-decomp` | M5 | Replaced | In process (ADR-004) |
 | Console and test runner | `basilisk decompile`, data-test runner | M3 | Missing | |

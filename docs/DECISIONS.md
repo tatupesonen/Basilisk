@@ -993,3 +993,135 @@ and ARM8m_le).
   reproduced the lent box's files exactly; the confirming command is in
   the research document, section 2); Ghidra's Java compiler was read and
   its shipped files measured, not run.
+
+## ADR-033 — `bk-pcode` follows x86-64 for NaN signs; float-to-integer truncation saturates
+(Coordinator, 2026-11-14, from the `x86-oracle` track; applies ADR-021
+and corrects ADR-029's last bullet.)
+
+* The checked-in oracle table for `bk-pcode`
+  (`crates/bk-pcode/tests/data/opbehavior_cpp.txt.gz`) is the one
+  generated on x86-64 Linux (GCC 14.4, the reference build there). The
+  generator now draws its random operands in a fixed order, so a table
+  made on any host has the same inputs line for line; regenerated on the
+  x86-64 box with the fixed generator, the text is identical to the
+  checked-in table (SHA-256 of the decompressed text `463b1dca…`,
+  2026-11-14).
+* **Two NaN inputs**: on x86-64 `FLOAT_ADD` and `FLOAT_MULT` return a NaN
+  with the sign of the second operand, `FLOAT_SUB` and `FLOAT_DIV` with
+  the sign of the first; AArch64 uses the first for all four. basilisk
+  computes x86-64's result from the inputs' bits on every host. With one
+  NaN input the result has that input's sign on both hosts; a NaN made
+  from non-NaN inputs is negative, as on x86-64. The wide and exact paths
+  follow Java's `BigFloat`, which has no NaN sign (always the positive
+  quiet NaN).
+* **`FLOAT_TRUNC` of a NaN or of a value outside `i64`** gives
+  `0x8000000000000000` cut to the output size in x86-64's C++, and
+  saturates in Ghidra's Java, where tests pin it
+  (`FloatFormatTest.testOpTruncLongInt`, `OpBehaviorFloatTruncTest`).
+  **basilisk saturates** (NaN gives 0): the Java behaviour is the tested
+  and the saner one. This is a documented difference from the C++ engine
+  (58 oracle rows, class `TruncSaturates`).
+* Correction: of the 161 rows that differ between the AArch64 and x86-64
+  tables on equal inputs, 111 are NaN signs and 50 are `FLOAT_TRUNC`
+  results, not all NaN signs as ADR-029 says.
+* `ceil`, `floor` and `round` go through `libm`, not the host's C library
+  (MinGW's `round()` is wrong for 0.49999999999999994).
+* A table of 188 directed cases with literal expected bits
+  (`tests/host_independence.rs`) runs on Linux x86-64, macOS AArch64 and
+  Windows in CI, so a host difference fails there.
+
+## ADR-034 — The reference build is unfused; one oracle for the SLEIGH compiler again
+(Coordinator, 2026-11-14, from the `ref-nofma` track. Closes the "until it
+is rebuilt" clause of ADR-032 and the split oracle of ADR-029.)
+
+`scripts/build-reference.sh` passes `-ffp-contract=off` to every compile
+(the decompiler's Makefile, `pcodedump`, the bundled zlib) and records it
+in `STAMP`. Rebuilt on macOS AArch64 that way, all 150 `.sla` are
+byte-identical to x86-64 Linux's; Ghidra's own unit and data tests, the
+`pcodedump` output on ten languages and the `decomp` console's output on
+all 93 data tests are unchanged from the fused build. `../reference` was
+replaced file by file (281 files) on 2026-11-14 and **is the oracle for
+all 150 specifications again**; `../reference-x86_64/x86_64-linux/` stays
+as the independent copy from real x86-64 hardware, and the 14 old
+fused-variant files are kept in `../reference.aarch64-fused/`. The flag
+does not make AArch64 equal x86-64 everywhere: the two `-NAN` checks and
+one decimal-precision unit test still fail on AArch64 (ADR-021, ADR-033).
+
+Ghidra's `pcodedump` crashes when a delay-slot (or crossbuild) instruction
+has no p-code: `SleighBuilder::delaySlot` leaves the builder pointing at a
+walker on its own stack when `UnimplError` unwinds, and the handler in
+`oneInstruction` uses it (`research/pcodedump-crashes.md`). basilisk
+returns "instruction not implemented in p-code" with the full flow length
+there, naming the innermost such instruction, and never leaves stale
+builder state behind an early return (ADR-009).
+
+## ADR-035 — Python hosts basilisk: the plugin bindings are an extension module, not an embedded interpreter
+(Owner decision, 2026-11-14, on the finding of the `spec-plugin` track;
+`features/plugin-api.md`, `docs/agents/spec-plugin.md`. **Replaces the
+embedding in ADR-014**; the rest of ADR-014 stands: plugins are Python
+through PyO3, with a flat scripting layer modelled on Ghidra's.)
+
+ADR-014 had `bk-plugin` embed CPython in the `basilisk` binary. Measured:
+a binary linked against libpython does not start where that library is
+missing, even when Python is never used, and is tied to one Python minor
+version and install path; linking CPython statically makes Python
+mandatory, fixes its version and stops third-party C extensions loading
+on Windows; PyO3 cannot load libpython at run time. That cannot coexist
+with "basilisk is a single binary" (`DIRECTION.md`) and ADR-022.
+
+* basilisk's Python bindings are a **Python extension module** (crate
+  `basilisk-py`, a `cdylib` built for the stable ABI), hosted by the
+  user's own CPython: `python -m basilisk` and `import basilisk`. This is
+  how Ghidra's PyGhidra works.
+* The `basilisk` binary contains no Python. When plugins or scripts are
+  wanted it hands over to a CPython it finds; without one, everything
+  except plugins works and the binary says what is missing.
+* **Supported Python: 3.10 and newer** (owner, 2026-11-14), one `abi3`
+  build for all of them (verified on 3.10 to 3.14 on macOS).
+* PyO3's macros put no `unsafe` into the binding crate (verified with
+  PyO3 0.30.1), so it keeps `forbid(unsafe_code)`; ADR-020's sentence
+  about `bk-plugin` is narrowed accordingly.
+* Not verified yet, and the first acceptance items of the host track
+  (P1): the hand-over from the binary to `python -m basilisk`, the
+  interface running inside a Python-hosted process, wheels on Linux and
+  Windows.
+
+## ADR-036 — Plugin API conventions; a failed script keeps its changes, as in Ghidra
+(Owner decisions, 2026-11-14, and the `spec-plugin` track's proposals.)
+
+* **A script that throws or is cancelled keeps the changes it has made**
+  (owner: "Keep changes, like Ghidra"). Ghidra commits a script's
+  transaction on every exit path, and scripts ported from Ghidra behave
+  identically. A script may **opt in** to rolling back on failure. This
+  reverses the default `features/plugin-api.md` proposed (roll back, opt
+  out); the spec is corrected by the first plugin track.
+* The flat scripting layer keeps Ghidra's method names
+  (`FlatProgramAPI`, `GhidraScript`: all 225 public methods are mapped in
+  the spec), and the object model keeps Ghidra's getter names beside
+  Python properties, so bundled scripts port with mechanical changes.
+* The plugin API has its own version, declared by each plugin package and
+  separate from basilisk's release version.
+* Plugin-defined views are declarative (described to the interface, not
+  drawn by Python); actions go through the interface's action registry,
+  which has to accept run-time entries first.
+* Proposers of names, comments and types (ADR-025 item 6) are off by
+  default; every applied proposal records its origin and the value it
+  replaced, so it can be removed.
+* A plugin that raises is isolated: it is reported and disabled, and the
+  tool keeps running.
+
+## ADR-037 — Specs state how they meet the plugin binding constraints
+(Coordinator, 2026-11-14, from the `spec-plugin` track.)
+
+`features/plugin-binding-constraints.md` lists 15 rules a Rust API must
+meet to be bound to Python without redesign (handles without lifetimes at
+the boundary, `Send + Sync` shared data, errors convertible to exceptions,
+paged iteration, identifiers stable across transactions, cancellation and
+progress through a monitor type that does not live in a UI crate, …).
+Every feature spec for the program model, storage, loaders, analysis, the
+decompiler's host trait and results, and the interface has a section
+saying which rules apply and how they are met, and reviews check it.
+Known work this causes: the monitor type moves out of `bk-ui` into a low
+crate; model edits record an origin and the replaced value; variables get
+a stable identity; decompiler results are `Arc` + `Sync` and outlive the
+call; `bk-ui`'s action registry and view kinds accept run-time entries.

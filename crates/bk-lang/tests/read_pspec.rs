@@ -32,7 +32,7 @@ fn pspec_reads_every_element_form() {
         SegmentedAddress, Volatile,
     };
     let parsed = pspec::parse(PSPEC, Mode::Strict).unwrap_or_else(|e| panic!("{e}"));
-    assert!(parsed.warnings.is_empty());
+    assert_eq!(parsed.warnings, []);
     let spec = parsed.value;
 
     // properties: one entry per key, the last value in the first position.
