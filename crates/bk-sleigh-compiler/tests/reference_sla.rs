@@ -87,6 +87,26 @@ fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report 
             report.total += 1;
         }
         Some(mine) => {
+            let warnings: Vec<String> = compiled
+                .diagnostics
+                .iter()
+                .filter(|d| !d.is_error())
+                .map(|d| format!("WARN  {}", d.ghidra_text(&parsed.sources)))
+                .collect();
+            let log = reference
+                .root()
+                .join("logs")
+                .join("sleigh")
+                .join(&spec.module)
+                .join(format!("{}.log", spec.name));
+            let log = std::fs::read_to_string(&log).unwrap();
+            let theirs: Vec<&str> = log.lines().filter(|l| l.starts_with("WARN  ")).collect();
+            if warnings != theirs {
+                report.total += 1;
+                report.differences.push(format!(
+                    "warnings differ: Basilisk {warnings:?} / Ghidra {theirs:?}"
+                ));
+            }
             let stream = mine.encode_packed().unwrap();
             if stream != reference_stream {
                 report.total += 1;
@@ -194,4 +214,75 @@ fn every_shipped_spec_compiles_to_the_reference_bytes() {
         failing, 0,
         "{failing} specifications differ from the reference"
     );
+}
+
+/// Spec 6.2: the XML form (`-y`) of every specification equals the text
+/// Ghidra's compiler writes with `-y` and the module's options.
+#[test]
+fn every_shipped_spec_writes_the_reference_xml() {
+    let Some(reference) = bk_testkit::skip::require_tool(bk_testkit::Tool::Sleigh) else {
+        return;
+    };
+    let filter = std::env::var("BK_SPEC_FILTER").ok();
+    let specs: Vec<_> = common::reference_specs(&reference)
+        .into_iter()
+        .filter(|s| {
+            filter
+                .as_deref()
+                .is_none_or(|f| s.name.contains(f) || s.module.contains(f))
+        })
+        .collect();
+    let out_dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("reference-xml");
+    std::fs::create_dir_all(&out_dir).unwrap();
+    let failures = Mutex::new(Vec::new());
+    let next = Mutex::new(0_usize);
+    std::thread::scope(|scope| {
+        for _ in 0..2 {
+            scope.spawn(|| {
+                loop {
+                    let i = {
+                        let mut n = next.lock().unwrap();
+                        *n += 1;
+                        *n - 1
+                    };
+                    let Some(spec) = specs.get(i) else { break };
+                    let switches = common::module_options(&reference, &spec.module);
+                    let mut sleigh = reference.sleigh().switch('y');
+                    for s in &switches {
+                        if let Some(c) = s.strip_prefix('-').and_then(|s| s.chars().next()) {
+                            sleigh = sleigh.switch(c);
+                        }
+                    }
+                    let out = out_dir.join(format!("{}-{}.sla", spec.module, spec.name));
+                    sleigh.compile(&spec.slaspec, &out).unwrap();
+                    let theirs = std::fs::read_to_string(&out).unwrap();
+                    let _ = std::fs::remove_file(&out);
+                    let options = Options::from_switches(switches.iter().map(String::as_str));
+                    let parsed = common::parse(&spec.slaspec);
+                    let ours = compile_parsed(&parsed, options).sla.unwrap().encode_xml().unwrap();
+                    if ours != theirs {
+                        let line = ours
+                            .lines()
+                            .zip(theirs.lines())
+                            .position(|(a, b)| a != b)
+                            .unwrap_or(0);
+                        failures
+                            .lock()
+                            .unwrap()
+                            .push(format!("{}/{} (first difference at line {})", spec.module, spec.name, line + 1));
+                    }
+                }
+            });
+        }
+    });
+    let failures = failures.into_inner().unwrap();
+    eprintln!(
+        "XML: {} compared, {} differ",
+        specs.len(),
+        failures.len()
+    );
+    for f in &failures {
+        eprintln!("XML MISMATCH {f}");
+    }
+    assert_eq!(failures, Vec::<String>::new());
 }

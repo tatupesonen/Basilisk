@@ -55,11 +55,18 @@ Worktree `/Users/tatu/slop/basilisk-wt/sleigh-compiler-back`, branch
 ## Done
 
 * Reading; this plan.
+* Steps 1–6: `decision::log` (glibc-equal: 16,383/16,383 table lines; GCC's
+  `-ffp-contract=fast` fusions written out with `libm::fma`), score, pattern
+  algebra, equations, constructors/tables, decision trees, lowering,
+  `compile_parsed`/`compile`. **All 150 specifications byte-identical**
+  (packed stream), XML equal to `REF/bin/sleigh -y` for all 150, warnings
+  equal to the reference logs for all 150 (`tests/reference_sla.rs`).
+  Mutation: fused score arithmetic → exactly the 14 files of ADR-029 differ.
 
 ## In progress
 
-* Step 1.
+* Step 7: `basilisk sleigh compile`.
 
 ## Next
 
-* Step 2.
+* Step 8 (tests 6.1/6.3/6.4, fuzz, bench, platforms, gate).
