@@ -1,6 +1,6 @@
 //! Replays the oracle tables: the results of Ghidra's compiled
-//! `CircleRange` (`rangeutil.cc`, reference build) for 156,000 cases over
-//! every method in scope, produced by `tests/oracle/circlerange_oracle.cc`
+//! `CircleRange` (`rangeutil.cc`, reference build) for the cases of
+//! every method in scope (152,913 rows), produced by `tests/oracle/circlerange_oracle.cc`
 //! (`tests/oracle/regen.sh`; format and provenance in
 //! `tests/data/README.md`). Kind S: runs everywhere.
 //!
@@ -43,10 +43,30 @@ const AARCH64: &[u8] = include_bytes!("data/circlerange_oracle.libcxx.txt.gz");
 
 /// Marks of the x86-64 table by kind (`ub=<check>@<file>:<line>`,
 /// `uninit`), as `regen.sh --marks` wrote them.
-const MARKS: &[(&str, usize)] = &[];
+const MARKS: &[(&str, usize)] = &[
+    ("ub=add_overflow@rangeutil.cc:1331", 184),
+    ("ub=mul_overflow@rangeutil.cc:1283", 1500),
+    ("ub=shift_out_of_bounds@address.cc:1003", 5364),
+    ("ub=shift_out_of_bounds@address.hh:605", 396),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1269", 1227),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1270", 1227),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1288", 1424),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1292", 1424),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1293", 1424),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1308", 776),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1309", 776),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1313", 724),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1334", 1500),
+    ("ub=shift_out_of_bounds@rangeutil.cc:1335", 1500),
+    ("ub=shift_out_of_bounds@rangeutil.cc:696", 570),
+    ("ub=shift_out_of_bounds@rangeutil.cc:949", 712),
+    ("ub=shift_out_of_bounds@rangeutil.cc:975", 712),
+    ("ub=shift_out_of_bounds@rangeutil.cc:pullBackBinary", 2716),
+    ("uninit", 2777),
+];
 
 /// Rows of the macOS table that differ, by cause.
-const HOST_ROWS: &[(Cause, usize)] = &[(Cause::NeonShiftLeft, 0)];
+const HOST_ROWS: &[(Cause, usize)] = &[(Cause::NeonShiftLeft, 834)];
 
 #[test]
 fn every_x86_64_row_agrees_with_basilisk() {
