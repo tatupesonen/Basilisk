@@ -241,6 +241,28 @@ test harness and memory the allocator kept after earlier runs, so it is an
 upper bound on the parse's own peak. Hot node sizes are asserted in
 `ast::tests::hot_node_sizes`: `Expr` 72 bytes, `Statement` 88, `PatExpr`
 32, `Equation` 36, `IntLit` 24, `DisplayPiece` 16.
+
+### `bk-sleigh-compiler` (front half: elaboration)
+
+2026-11-14, Apple M1 Pro, macOS, rustc 1.97.1, `--release` (thin LTO), one
+test thread, other agents' builds running on the machine (indicative).
+Parse = preprocess + lex + parse (`bk-sleigh-syntax`, reading from disk);
+elaborate = everything of `bk_sleigh_compiler::elaborate` (definitions,
+constructors, templates, macro expansion, the consistency checker and
+optimiser, purge, building the result). Best of 5 for the two largest,
+one run each for the corpus. Command:
+
+    BASILISK_REFERENCE_DIR=../reference CARGO_BUILD_JOBS=2 cargo test --release -p bk-sleigh-compiler --test bench -- --ignored --nocapture --test-threads=1
+
+| Input | Parse | Elaborate | Reference `sleigh`, whole compile (STAMP) |
+|---|---:|---:|---:|
+| x86-64 | 12.9 ms | 29.3 ms | 400 ms |
+| AARCH64 | 12.7 ms | 41.4 ms | 349 ms |
+| All 150, one after another | 338 ms | 654 ms (1.03 s with parse) | 11.5–11.8 s |
+
+Budget (spec 6.4): all 150 in under 4 s for this half, leaving room for the
+back half within the reference compiler's 11.5–11.8 s; measured 1.03 s.
+Peak memory not measured separately.
 None yet.
 
 ### bk-ui
