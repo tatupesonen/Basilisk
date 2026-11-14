@@ -13,6 +13,7 @@
 # Testbed (docs/agents/testbed.md; the work is in tools/testbed/):
 #   scripts/remote.sh wine [--no-ref] [--msvc] [-- CARGO-TEST-ARGS]   Windows tests under Wine
 #   scripts/remote.sh ubuntu [--no-ref]          C crates + reference tools, Ubuntu 26.04, GCC 15
+#   scripts/remote.sh arm64 [--no-ref] [-- CARGO-TEST-ARGS]  Linux AArch64 tests under qemu-user
 #   scripts/remote.sh long [--no-ref] miri|fuzz [SECONDS [TARGET...]]|proptest [CASES]|sanitizers|differential|all
 #   scripts/remote.sh publish                    send local master to the host (what the nightly run tests)
 #   scripts/remote.sh nightly install|remove|run|status
@@ -25,7 +26,7 @@
 # Also: BK_REMOTE_JOBS (CARGO_BUILD_JOBS there, default 20), BK_REMOTE_TIMEOUT
 # (seconds for gate/run, default 5400), BK_TESTBED_CORES (core budget of the
 # testbed commands, default 12), BK_TESTBED_TIMEOUT (their bound; default
-# 5400 for wine/ubuntu, 14400 for long).
+# 5400 for wine/ubuntu/arm64, 14400 for long).
 set -euo pipefail
 
 die() { printf 'remote: %s\n' "$*" >&2; exit 1; }
@@ -324,7 +325,7 @@ log)
   echo "remote: $log" >&2
   set +e
   mode=$(basename "$log" .log); mode=${mode#*-*-}
-  case "$mode" in long-*) TMO=${BK_TESTBED_TIMEOUT:-14400} ;; wine*|ubuntu) TMO=${BK_TESTBED_TIMEOUT:-5400} ;; esac
+  case "$mode" in long-*) TMO=${BK_TESTBED_TIMEOUT:-14400} ;; wine*|ubuntu|arm64) TMO=${BK_TESTBED_TIMEOUT:-5400} ;; esac
   case "$mode" in
     run|reference) follow "$log"; code=$? ;;
     *) follow "$log" > "$mode-remote.log"; code=$?; tail -n 25 "$mode-remote.log" ;;
@@ -363,6 +364,11 @@ ubuntu)
   TMO=${BK_TESTBED_TIMEOUT:-5400}
   testbed_job ubuntu "$ref" tools/testbed/ubuntu.sh "$@"
   ;;
+arm64)
+  [ "${1:-}" != -- ] || shift
+  TMO=${BK_TESTBED_TIMEOUT:-5400}
+  testbed_job arm64 "$ref" tools/testbed/arm64.sh "$@"
+  ;;
 long)
   what=${1:-}; [ $# -eq 0 ] || shift
   case "$what" in miri|fuzz|proptest|sanitizers|differential|all) ;;
@@ -387,5 +393,5 @@ nightly)
   esac
   ;;
 report) rcall 120 report "${1:-}" ;;
-*) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; [ "$cmd" = help ] || [ "$cmd" = -h ] || exit 2 ;;
+*) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; [ "$cmd" = help ] || [ "$cmd" = -h ] || exit 2 ;;
 esac

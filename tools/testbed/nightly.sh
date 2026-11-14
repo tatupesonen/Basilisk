@@ -5,7 +5,7 @@
 # Every night: the gate (with the reference) and the Windows tests under
 # Wine. Then one slot of the long runs, in rotation by date:
 #   0 fuzz (every target, 600 s each)   1 differential
-#   2 proptest (1,000,000 cases)        3 sanitizers, miri, ubuntu
+#   2 proptest (1,000,000 cases)        3 sanitizers, miri, ubuntu, arm64
 # within a core budget and a time bound, below normal priority. One report
 # per night: ~/bk/reports/<date>.txt (logs and results in ~/bk/reports/<date>/).
 #
@@ -46,7 +46,7 @@ if [ "$free_before" -lt "$min_free" ]; then
 fi
 
 # ------------------------------------------------------------------- items
-slots=("fuzz" "differential" "proptest" "sanitizers miri ubuntu")
+slots=("fuzz" "differential" "proptest" "sanitizers miri ubuntu arm64")
 slot=$(( $(date +%s) / 86400 % ${#slots[@]} ))
 items=${BK_NIGHTLY_ITEMS:-gate wine ${slots[$slot]}}
 
@@ -94,6 +94,7 @@ else
       sanitizers) run_item sanitizers 3600 "$TB_DIR/sanitizers.sh" ;;
       miri) run_item miri 3600 "$TB_DIR/long.sh" miri ;;
       ubuntu) run_item ubuntu 5400 "$TB_DIR/ubuntu.sh" ;;
+      arm64) run_item arm64 5400 "$TB_DIR/arm64.sh" ;;
       *) printf '%s\tSKIP\t0\tunknown item\n' "$item" >> "$dir/status.tsv" ;;
     esac
   done
