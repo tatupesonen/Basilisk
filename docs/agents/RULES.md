@@ -60,8 +60,10 @@ rules so merges are clean and the result is shippable.
   cores and 32 GB of memory, and the owner wants it used as much as
   possible: full gates, whole-workspace builds, long test, fuzz and
   benchmark runs go there, at full parallelism, through
-  `scripts/remote.sh` once your worktree has it (your brief says how
-  until then). On the Mac (8 cores, 16 GB, shared with other agents)
+  `scripts/remote.sh`. **Once your worktree has that script, using it is
+  the rule, not an option** (owner, 2026-11-14): builds, tests and both
+  gate runs happen on the build machine; say in your report if anything
+  had to run on the Mac and why. On the Mac (8 cores, 16 GB, shared with other agents)
   cargo's default parallelism is fine for the small builds you do while
   developing.
 - While developing, build and test only your crates
@@ -127,9 +129,9 @@ rules so merges are clean and the result is shippable.
   the Bash tool's timeout parameter or
   `perl -e 'alarm N; exec @ARGV' <cmd> …` (N in seconds).
 - **Do not fan out.** The owner caps the number of running workers (two
-  as of 2026-11-14; `DIRECTION.md` has the current figure), and the
-  coordinator fills every slot. Work alone: start no
-  helper subagents.
+  on 2026-11-14, one from the moment `scripts/remote.sh` is on `master`;
+  `DIRECTION.md` has the current figure), and the coordinator fills
+  every slot. Work alone: start no helper subagents.
 - **A usage limit can stop you at any moment.** Write results to files as
   you go, commit every finished piece, and keep `docs/agents/<track>.md`
   current (done / in progress / next) so the work can be continued from

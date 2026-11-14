@@ -172,6 +172,13 @@ and a sane architecture in mind.
     2026-11-14: "remove the requirement for two build jobs, use the
     machine as much as you can" — "the kassini one"). Heavy builds and
     runs go to kassini at full parallelism.
+  - *One subagent at a time once the remote build setup is done, and
+    every subagent uses the remote from then on* (owner, 2026-11-14:
+    "Limit to one subagent for now once the remote is done, and then all
+    subagents should use remote from now on"). This replaces the cap of
+    two as soon as track `remote-build` is merged: one running worker,
+    counting helpers. Agents build, test and run their gates on kassini
+    through `scripts/remote.sh`; the Mac is for editing.
   - *Priority with two slots: finish SLEIGH first* (the compiler back
     half), then the decompiler's remaining first-wave tracks.
   - *Rust 1.100.0 is committed directly* (done, `144859f`); what the newer

@@ -17,7 +17,9 @@ shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
 
 **Working rules in force** (all in `DIRECTION.md`): two running workers
-for now, counting helpers (agents start none); new agents are Opus 5.5 at
+until track `remote-build` is merged, **then one** (owner, 2026-11-14),
+counting helpers (agents start none); from then on every agent builds,
+tests and gates on kassini through `scripts/remote.sh`; new agents are Opus 5.5 at
 medium effort; the coordinator does no hands-on work; existing work is
 never thrown away — agents are paused at a safe point and resumed by id,
 worktrees and branches are removed only when their content is on
