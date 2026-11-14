@@ -91,8 +91,8 @@ missing), `fuzz/fuzz_targets/bk_sleigh_compiler_elaborate.rs`,
   `bk-gnu-disasm-win` linux/amd64 container (`target/windows/dock.sh gnu
   test -p bk-sleigh-compiler`, scripts copied from the windows-ci
   worktree): all passed (unit 13, diagnostics 2 with 92 snapshots,
-  features 16, properties 2; the reference test skipped), on the tree as
-  of commit 63fecf3.
+  features 16, properties 2, CRLF 1; the reference test skipped), on the
+  final tree (commit eb50366).
 * Linux: not run locally; rests on CI. The Wine run was on x86-64 Linux
   (emulated) but tested the Windows build.
 * Without oracles (`BASILISK_REFERENCE_DIR`/`BASILISK_GHIDRA_DIR` unset):
@@ -159,7 +159,10 @@ uses an in-memory loader).
 
 ## Gate
 
-See the final message for the gate's result line.
+`CARGO_BUILD_JOBS=2 scripts/gate.sh > gate.log 2>&1; echo $?` → `0`; last
+line `tests: 1743 passed, 0 failed` (macOS arm64, run without the oracle
+variables, commit eb50366). `scripts/check-dep-age.py master`: 0 new
+registry packages.
 
 ## Commits
 
