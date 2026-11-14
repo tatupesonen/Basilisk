@@ -212,3 +212,58 @@ panic on it, which was a latent ADR-009 violation in `bk-cspec`.
   funcproto_real 1, fuzz replay 1, bench 2 ignored).
 - Mac: `cargo clippy -p bk-cspec --all-targets --all-features --target
   x86_64-pc-windows-msvc -- -D warnings` clean.
+- Build host (x86-64 Linux, a 20-vCPU VM), with the reference variables,
+  `cargo test -p bk-cspec`: all pass, the same counts; the replay prints
+  A 56, B 24, C 38, D 1, 0 unexplained, 83 tie groups; `oracle_regen`
+  regenerated the libstdc++ table and found it equal (4.95 s). (Run from a
+  detached HEAD of the same commit because the valgrind job held the
+  branch's lock; `remote.sh` gives a detached HEAD its own slug.)
+- `scripts/check-dep-age.py master`: 0 new registry packages.
+
+## Ghidra defects worth reporting upstream
+
+1. `ParamListMerged` leaves `numgroup`, `maxdelay`, `thisbeforeret`,
+   `autoKilledByCall` uninitialised (fspec.hh:630, 732);
+   `ProtoModel::assignParameterStorage` (fspec.cc:2416) reads `numgroup` in
+   `allocateStatus` (fspec.cc:790) before the merged list throws, so the
+   intended error can become `std::length_error` or a huge allocation.
+   Fix: initialise the fields in `ParamListStandard(void)`, or throw before
+   `allocateStatus` for an unresolved merged model.
+2. `ParamTrial::operator<` (fspec.cc:1881) is not a strict weak ordering
+   (reverse-stack flag read from one side only; offset compared only within
+   one exclusive entry), which makes `std::sort` undefined behaviour.
+3. Results that depend on the library's `std::sort` order for equal keys:
+   effect lists (fspec.cc:2680, 3673) feeding `lookupEffect`/`lookupRecord`
+   (fspec.cc:2463, 2501) and `intersectEffects` (fspec.cc:2767); trials
+   (fspec.hh:322/323) feeding which duplicate trial is kept and the order
+   of entry-less trials; `ScoreProtoModel::doScore` (fspec.cc:2728). Ghidra's
+   own Linux, macOS and Windows builds answer differently for RISC-V and
+   NDS32 (`hasEffect` on `ra`/`lp`). Fix: `std::stable_sort`.
+
+## Gaps
+
+- **Windows (MSVC's library)** is a third `std::sort`, not run. MSVC's
+  `std::sort` uses insertion sort (stable) for ranges of ≤ 32 elements
+  (`_ISORT_MAX`) and introsort above. So a Windows Ghidra should equal the
+  rule on every effect list and trial list of ≤ 32 records — among the
+  differing rows: the RV32I/IC/IMC and RV64I/IC lists (32 records), the
+  tricore (17) and Loongarch (17, 23) trial rows — and is unknown on
+  NDS32 (35 effects), the 64-record RISC-V lists and the x86-64 golang trial
+  row (54). To check: build the reference objects and the generator with
+  MSVC (or clang-cl against the MSVC STL), run `regen.sh`'s steps, and diff
+  the result with both tables; if it is a third table the harness takes it
+  as one more column (`Lib`).
+- Cause D's exact order is not computed independently by the test (it is
+  what a chain of stable sorts leaves); the test checks the head and the
+  set, and the unit tests check that the sort is stable.
+- The valgrind run of the generator from before the fix (to show the
+  uninitialised read in valgrind's words) did not finish in 40 minutes —
+  see "valgrind".
+
+## Follow-ups
+
+- Coordinator: record the ADR text above as ADR-038 (the code and README
+  already cite that number).
+- Nothing needed in `bk-decomp-types` or `bk-lang`.
+- `docs/agents/decomp-cspec.md` and `docs/agents/remote-build.md` still
+  describe the single table; superseded by this report (not mine to edit).
