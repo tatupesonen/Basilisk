@@ -12,7 +12,9 @@ use flate2::write::GzEncoder;
 
 /// The crate's `tests/data` directory.
 pub(crate) fn data_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("data")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("data")
 }
 
 pub(crate) fn escape(s: &str) -> String {

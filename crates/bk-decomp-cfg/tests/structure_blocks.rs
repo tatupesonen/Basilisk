@@ -1,4 +1,13 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 //! The `structure blocks` cross-check (`docs/features/decomp-cfg.md` 6.2):
 //! generated graphs in Ghidra's block XML, structured by the reference
 //! console's own command, compared byte for byte with Basilisk's encoder.
@@ -37,7 +46,8 @@ fn cases() -> impl Iterator<Item = (Class, u64)> {
 
 /// Runs the reference console once over every case and returns the table.
 fn regen_rows(reference: &bk_testkit::ReferenceDir, ghidra: &bk_testkit::GhidraDir) -> String {
-    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("bk-cfg-xml-{}", std::process::id()));
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("bk-cfg-xml-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let elseif = ghidra.data_tests_dir().join("elseif.xml");
@@ -60,8 +70,13 @@ fn regen_rows(reference: &bk_testkit::ReferenceDir, ghidra: &bk_testkit::GhidraD
                 .run_script([load.as_str(), cmd.as_str()]);
             let row = match alone {
                 Err(bk_testkit::ToolError::Timeout { .. }) => "hang\t".to_owned(),
-                Ok(_) if output.is_file() => format!("ok\t{}", escape(&std::fs::read_to_string(&output).unwrap())),
-                other => panic!("{} {seed}: expected the reference to hang: {other:?}", class.name()),
+                Ok(_) if output.is_file() => {
+                    format!("ok\t{}", escape(&std::fs::read_to_string(&output).unwrap()))
+                }
+                other => panic!(
+                    "{} {seed}: expected the reference to hang: {other:?}",
+                    class.name()
+                ),
             };
             hangs.insert((class.name(), seed), row);
             continue;
@@ -107,10 +122,18 @@ fn regen() {
     };
     let first = regen_rows(&reference, &ghidra);
     let second = regen_rows(&reference, &ghidra);
-    assert!(first == second, "the reference console gave different outputs in two runs");
-    let out = std::env::var_os("BK_CFG_TABLE_OUT").map_or_else(|| data_dir().join(TABLE), PathBuf::from);
+    assert!(
+        first == second,
+        "the reference console gave different outputs in two runs"
+    );
+    let out =
+        std::env::var_os("BK_CFG_TABLE_OUT").map_or_else(|| data_dir().join(TABLE), PathBuf::from);
     write_gz(&out, &first);
-    eprintln!("wrote {} ({} rows)", out.display(), first.lines().count() - 1);
+    eprintln!(
+        "wrote {} ({} rows)",
+        out.display(),
+        first.lines().count() - 1
+    );
 }
 
 #[test]

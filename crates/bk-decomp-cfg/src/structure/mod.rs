@@ -193,7 +193,7 @@ pub struct Structured {
 
 /// `BlockGraph::newBlockCopy` (block.cc:1686) for every node of `source`'s
 /// list, in list order, into a new arena whose leaf ids equal the input ids.
-fn build_copy(source: &Graph, input: &Graph, facts: &BlockFacts) -> Graph {
+pub(crate) fn build_copy(source: &Graph, input: &Graph, facts: &BlockFacts) -> Graph {
     let mut g = Graph {
         nodes: Vec::with_capacity(source.nodes.len() + source.list.len()),
         list: Vec::with_capacity(source.list.len()),

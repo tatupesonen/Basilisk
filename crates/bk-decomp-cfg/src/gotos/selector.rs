@@ -421,3 +421,61 @@ impl GotoSelector for GhidraGotoSelector {
         Ok(None)
     }
 }
+
+/// One loop as `orderLoopBodies` leaves it (`LoopBody`), for the oracle's
+/// `bk cfg analyze` (`docs/features/decomp-oracle.md` 4.6).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LoopInfo {
+    /// The head.
+    pub head: NodeId,
+    /// The nesting depth.
+    pub depth: i32,
+    /// The chosen exit, if any.
+    pub exit: Option<NodeId>,
+    /// The number of distinct head and tail nodes.
+    pub uniquecount: usize,
+    /// The tails, in order.
+    pub tails: Vec<NodeId>,
+    /// The exit edges (top, bottom), in order.
+    pub exit_edges: Vec<(NodeId, NodeId)>,
+    /// The head of the immediately containing loop.
+    pub immed_container: Option<NodeId>,
+}
+
+/// Runs `orderLoopBodies` (blockaction.cc:1148) on a copy of `graph`, whose
+/// analyses are taken as given (run [`Cfg::structure_loops`] and
+/// [`Cfg::forward_dominators`] first for a bare graph), and returns the loop
+/// bodies in Ghidra's final `loopbody` order (deepest first).
+pub fn loop_bodies(
+    graph: &crate::Cfg,
+    facts: &crate::BlockFacts,
+    limits: &crate::Limits,
+) -> Result<Vec<LoopInfo>, CfgError> {
+    let input = &graph.g;
+    let budget = limits.budget(input.list.len(), input.edge_count())?;
+    let work = crate::structure::build_copy(input, input, facts);
+    let mut c = Collapse::new(work, input, facts, budget, false);
+    c.g.clear_visit_count();
+    let mut sel = GhidraGotoSelector::new();
+    sel.order_loop_bodies(&mut c)?;
+    let mut out = Vec::new();
+    for &bi in &sel.order {
+        let Some(b) = sel.bodies.get(bi) else {
+            continue;
+        };
+        let Some(head) = b.head else { continue };
+        out.push(LoopInfo {
+            head,
+            depth: b.depth,
+            exit: b.exitblock,
+            uniquecount: b.uniquecount,
+            tails: b.tails.clone(),
+            exit_edges: b.exitedges.clone(),
+            immed_container: b
+                .immed_container
+                .and_then(|ic| sel.bodies.get(ic))
+                .and_then(|cb| cb.head),
+        });
+    }
+    Ok(out)
+}

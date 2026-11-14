@@ -106,10 +106,17 @@ impl GenGraph {
     /// The graph as a [`Cfg`], indices `0..n` in node order.
     pub(crate) fn to_cfg(&self) -> Cfg {
         let mut cfg = Cfg::new();
-        let ids: Vec<NodeId> = (0..self.outs.len()).map(|_| cfg.add_node(0).unwrap()).collect();
+        let ids: Vec<NodeId> = (0..self.outs.len())
+            .map(|_| cfg.add_node(0).unwrap())
+            .collect();
         for (t, list) in self.ins.iter().enumerate() {
             for &(s, slot) in list {
-                let label = self.labels.get(s).and_then(|l| l.get(slot)).copied().unwrap_or(0);
+                let label = self
+                    .labels
+                    .get(s)
+                    .and_then(|l| l.get(slot))
+                    .copied()
+                    .unwrap_or(0);
                 cfg.add_edge_at(ids[s], slot, ids[t], label).unwrap();
             }
         }
@@ -227,7 +234,11 @@ fn gen_stmt(rng: &mut ChaCha8Rng, depth: u32, budget: &mut i32, in_loop: bool) -
     match r {
         0..=24 => {
             let k = 2 + below(rng, 3);
-            Stmt::Seq((0..k).map(|_| gen_stmt(rng, depth + 1, budget, in_loop)).collect())
+            Stmt::Seq(
+                (0..k)
+                    .map(|_| gen_stmt(rng, depth + 1, budget, in_loop))
+                    .collect(),
+            )
         }
         25..=37 => Stmt::If(Box::new(gen_stmt(rng, depth + 1, budget, in_loop))),
         38..=49 => Stmt::IfElse(
@@ -413,7 +424,8 @@ fn add_facts(rng: &mut ChaCha8Rng, g: &mut GenGraph) {
 /// the structured classes). With `facts`, about 10 % of graphs get random
 /// facts and labels.
 pub(crate) fn generate(class: Class, seed: u64, max_nodes: usize, facts: bool) -> GenGraph {
-    let mut rng = ChaCha8Rng::seed_from_u64(seed ^ (class as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15));
+    let mut rng =
+        ChaCha8Rng::seed_from_u64(seed ^ (class as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15));
     let n = 1 + below(&mut rng, max_nodes);
     let mut g = match class {
         Class::Func => gen_func(&mut rng, n),
