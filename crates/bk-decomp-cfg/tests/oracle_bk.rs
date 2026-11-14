@@ -189,8 +189,14 @@ fn return_tie(class: Class, seed: u64, mode: &str) -> bool {
             >= 2
 }
 
-/// Rows where the two builds' tables differ, recognised by cause: pinned.
-const HOST_RETURN_TIES: usize = 0;
+/// Rows where a build's `orderBlocks` breaks a RETURN tie differently from
+/// Basilisk's stable sort (ADR-040), per library: pinned, measured.
+const RETURN_TIE_ROWS: [(Library, usize); 2] = [
+    (Library::Libcxx, LIBCXX_TIES),
+    (Library::Libstdcxx, LIBSTDCXX_TIES),
+];
+const LIBCXX_TIES: usize = 1;
+const LIBSTDCXX_TIES: usize = 15;
 
 #[test]
 fn replay() {
@@ -202,58 +208,52 @@ fn replay() {
         eprintln!("skipped: no cfg_oracle table (tests/oracle/regen.sh)");
         return;
     }
-    let (mut equal, mut differ, mut host_ties, mut unexplained) = (0, Vec::new(), 0, Vec::new());
+    let mut equal = vec![0usize; tables.len()];
+    let mut ties = vec![0usize; tables.len()];
+    let mut builds_differ = 0usize;
+    let mut differ = Vec::new();
     for (class, seed) in cases() {
         let g = generate(class, seed, MAX_NODES, true);
         for (mode, dump) in basilisk_dumps(class, &g) {
             let key = (class.name().to_owned(), seed, mode.to_owned());
-            let rows: Vec<(Library, &(String, String))> = tables
-                .iter()
-                .filter_map(|(lib, t)| t.get(&key).map(|r| (*lib, r)))
-                .collect();
-            assert_eq!(rows.len(), tables.len(), "{key:?} missing from a table");
-            let agree = rows.windows(2).all(|w| w[0].1 == w[1].1);
-            if !agree {
-                if return_tie(class, seed, mode) {
-                    host_ties += 1;
+            let rows: Vec<&(String, String)> = tables.iter().map(|(_, t)| &t[&key]).collect();
+            if rows.windows(2).any(|w| w[0] != w[1]) {
+                builds_differ += 1;
+            }
+            for (i, row) in rows.iter().enumerate() {
+                if matches(&dump, row) {
+                    equal[i] += 1;
+                } else if return_tie(class, seed, mode) {
+                    ties[i] += 1;
                 } else {
-                    unexplained.push(format!("{key:?}"));
-                }
-                // Basilisk sorts stably; it must equal one of the builds.
-                if !rows.iter().any(|(_, r)| matches(&dump, r)) {
                     differ.push(format!(
-                        "{} {seed} {mode}: ours {:?}",
+                        "{} {} {seed} {mode}: ours {:?}, Ghidra {:?}",
+                        tables[i].0.name(),
                         class.name(),
-                        header_of(&dump)
+                        header_of(&dump),
+                        row.0
                     ));
                 }
-                continue;
-            }
-            if matches(&dump, rows[0].1) {
-                equal += 1;
-            } else {
-                differ.push(format!(
-                    "{} {seed} {mode}: ours {:?}, Ghidra {:?}",
-                    class.name(),
-                    header_of(&dump),
-                    rows[0].1.0
-                ));
             }
         }
     }
-    eprintln!(
-        "oracle replay ({} table(s)): {equal} dumps equal, {} differ, {host_ties} host differences from RETURN ties, {} unexplained",
-        tables.len(),
-        differ.len(),
-        unexplained.len()
-    );
-    assert!(
-        unexplained.is_empty(),
-        "builds differ without known cause: {unexplained:?}"
-    );
-    if tables.len() == 2 {
-        assert_eq!(host_ties, HOST_RETURN_TIES, "host differences moved");
+    for (i, (lib, _)) in tables.iter().enumerate() {
+        eprintln!(
+            "oracle replay {}: {} dumps equal, {} recognised as orderBlocks RETURN ties",
+            lib.name(),
+            equal[i],
+            ties[i]
+        );
+        let pinned = RETURN_TIE_ROWS
+            .iter()
+            .find(|(l, _)| l == lib)
+            .map_or(0, |(_, n)| *n);
+        assert_eq!(ties[i], pinned, "{}: tie count moved", lib.name());
     }
+    eprintln!(
+        "rows where the two builds differ: {builds_differ}; unexplained: {}",
+        differ.len()
+    );
     assert!(differ.is_empty(), "{:#?}", &differ[..differ.len().min(20)]);
 }
 
