@@ -251,6 +251,13 @@ impl Tables {
             .unwrap_or_default()
     }
 
+    /// All operands of a constructor.
+    #[inline]
+    pub(crate) fn ops_of(&self, ctor: &CtorInfo) -> Option<&[OpInfo]> {
+        self.ops
+            .get(ctor.ops as usize..ctor.ops.wrapping_add(ctor.num_ops) as usize)
+    }
+
     pub(crate) fn op(&self, ctor: &CtorInfo, index: u32) -> Option<&OpInfo> {
         if index >= ctor.num_ops {
             return None;

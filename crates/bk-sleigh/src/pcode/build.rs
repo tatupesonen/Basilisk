@@ -115,9 +115,11 @@ where
                 OpCode::MultiEqual => self.append_build(tpl, op, section, w, slots)?,
                 OpCode::Indirect => self.delay_slot(w, slots)?,
                 OpCode::PtrAdd => {
+                    // Ghidra `setLabel` hands the sum to `addLabel(uint4)`:
+                    // the label number is its low 32 bits (the Java engine's
+                    // `(int)` cast agrees below 2^31).
                     let id = Self::real(tpl, op, 0).wrapping_add(u64::from(self.label_base));
-                    let id = u32::try_from(id).unwrap_or(u32::MAX);
-                    self.buf.place_label(id, self.address)?;
+                    self.buf.place_label(label_number(id), self.address)?;
                 }
                 OpCode::PtrSub => self.cross_build(tpl, op, section, w, slots)?,
                 _ => self.dump(tpl, op, &w)?,
@@ -366,6 +368,11 @@ where
         }
         Ok(())
     }
+}
+
+/// A label number as Ghidra keeps it: the low 32 bits (`uint4`).
+pub(crate) const fn label_number(value: u64) -> u32 {
+    (value & 0xffff_ffff) as u32
 }
 
 /// The template of `ctor` for `section` (`None` = main).

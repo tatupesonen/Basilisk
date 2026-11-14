@@ -54,11 +54,13 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), Fault> {
             .tables
             .ctor(ctor_id)
             .ok_or(Fault::Model(What::Constructor))?;
-        for oper in 0..info.num_ops {
-            let op = *lang
-                .tables
-                .op(&info, oper)
-                .ok_or(Fault::Model(What::Operand))?;
+        // A failure here only sends the parse to `resolve_in_order`, which
+        // reports it at Ghidra's point.
+        let ops = lang
+            .tables
+            .ops_of(&info)
+            .ok_or(Fault::Model(What::Operand))?;
+        for (oper, op) in (0u32..).zip(ops) {
             if let OpDef::Subtable(_) = op.def {
                 continue;
             }
