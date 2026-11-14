@@ -108,7 +108,7 @@ start)  # slug sha mode timeout jobs ref|noref cmd...
   cd "$wt"
   # Every platform's crates: the gate's `cargo deny --offline` reads the
   # metadata of all of them, and a build downloads only the host's.
-  timeout 600 cargo fetch --locked -q >&2 || echo "remote: cargo fetch failed; continuing" >&2
+  timeout 600 cargo fetch --locked -q >/dev/null 2>&1 || echo "remote: cargo fetch failed; continuing" >&2
   # Detached from the ssh session and bounded: a dropped connection neither
   # stops the job nor leaves it running for ever. timeout signals the whole
   # process group.
