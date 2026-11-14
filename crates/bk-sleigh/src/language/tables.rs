@@ -87,6 +87,8 @@ pub(crate) struct CtorInfo {
     pub(crate) changes: u32,
     /// Number of context changes.
     pub(crate) num_changes: u32,
+    /// The main template's export in [`Tables::exports`], or `NONE`.
+    pub(crate) export: u32,
 }
 
 /// The precomputed tables of a language.
@@ -106,6 +108,9 @@ pub(crate) struct Tables {
     pub(crate) trees: super::decide::Trees,
     /// Every constructor's context changes, in order ([`CtorInfo::changes`]).
     pub(crate) changes: Vec<bk_sla::ContextChange>,
+    /// The exports of the constructors' main templates ([`CtorInfo::export`]),
+    /// side by side so that handle resolution need not reach the templates.
+    pub(crate) exports: Vec<bk_sla::HandleTpl>,
 }
 
 impl Tables {
@@ -183,6 +188,7 @@ impl Tables {
             let changes = tables.changes.len() as u32;
             tables.changes.extend_from_slice(sla.context_changes(ctor));
             tables.ctors.push(CtorInfo {
+                export: crate::decode::tree::NONE,
                 changes,
                 num_changes: tables.changes.len() as u32 - changes,
                 ops: start,
@@ -201,7 +207,23 @@ impl Tables {
             });
         }
         tables.next2_anywhere |= tables.uses_next2;
+        for index in 0..tables.ctors.len() {
+            let id = ConstructorId::new(index as u32);
+            let export = tables
+                .main_template(sla, id)
+                .and_then(|template| template.result().copied());
+            if let (Some(export), Some(info)) = (export, tables.ctors.get_mut(index)) {
+                info.export = tables.exports.len() as u32;
+                tables.exports.push(export);
+            }
+        }
         tables
+    }
+
+    /// The export of a constructor's main template (`None` when it has no
+    /// main template or the template exports nothing).
+    pub(crate) fn export(&self, ctor: &CtorInfo) -> Option<&bk_sla::HandleTpl> {
+        self.exports.get(ctor.export as usize)
     }
 
     /// The main template of constructor `id` (`None` for `unimpl`).

@@ -66,12 +66,8 @@ fn resolve_backwards(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErr
                 *slot = handle;
             }
         }
-        let export = lang
-            .tables
-            .main_template(lang.sla(), ctor_id)
-            .and_then(|template| template.result().copied());
-        if let Some(export) = export {
-            let handle = fix(&env(lang, parse, naddr), &export, cur)?;
+        if let Some(export) = lang.tables.export(&info) {
+            let handle = fix(&env(lang, parse, naddr), export, cur)?;
             if let Some(slot) = parse.handles.get_mut(cur as usize) {
                 *slot = handle;
             }
@@ -134,12 +130,8 @@ fn resolve_in_order(lang: &Language, parse: &mut Parse) -> Result<(), DecodeErro
         if descended {
             continue;
         }
-        let export = lang
-            .tables
-            .main_template(lang.sla(), ctor_id)
-            .and_then(|template| template.result().copied());
-        if let Some(export) = export {
-            let handle = fix(&env(lang, parse, naddr), &export, cur)?;
+        if let Some(export) = lang.tables.export(&info) {
+            let handle = fix(&env(lang, parse, naddr), export, cur)?;
             if let Some(slot) = parse.handles.get_mut(cur as usize) {
                 *slot = handle;
             }

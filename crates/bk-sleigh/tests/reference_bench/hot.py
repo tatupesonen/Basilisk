@@ -2,12 +2,13 @@
 """Instruction-level profile of one symbol from a `perf record` file, for
 hosts where `perf annotate` cannot read Rust's debug information.
 
-    hot.py PERF_DATA BINARY SYMBOL [MIN_PERCENT]
+    hot.py PERF_DATA BINARY SYMBOL [MIN_PERCENT] [--lines]
 
 Counts the samples per offset in SYMBOL (`perf script -F ip,sym,symoff`),
 disassembles SYMBOL with `llvm-objdump` (with source lines, `-l`), and
 prints each instruction holding at least MIN_PERCENT (default 0.5) of the
-symbol's samples, with the source line before it. Development tooling only.
+symbol's samples, with the source line before it; with --lines, the
+samples summed per source line instead. Development tooling only.
 """
 
 import collections
@@ -19,7 +20,10 @@ import sys
 
 def main():
     data, binary, symbol = sys.argv[1:4]
-    minimum = float(sys.argv[4]) if len(sys.argv) > 4 else 0.5
+    lines = "--lines" in sys.argv
+    args = [a for a in sys.argv[4:] if a != "--lines"]
+    minimum = float(args[0]) if args else 0.5
+    by_line = collections.Counter()
     script = subprocess.run(
         ["perf", "script", "--no-demangle", "-i", data, "-F", "ip,sym,symoff"],
         capture_output=True, text=True, check=True).stdout
@@ -52,8 +56,14 @@ def main():
             continue
         offset = int(m.group(1), 16) - start
         share = 100.0 * counts.get(offset, 0) / total
-        if share >= minimum:
+        by_line[source] += share
+        if share >= minimum and not lines:
             print("%6.2f%%  +0x%-5x %-50s %s" % (share, offset, m.group(2)[:50], source[-70:]))
+
+    if lines:
+        for source, share in by_line.most_common():
+            if share >= minimum:
+                print("%6.2f%%  %s" % (share, source[-90:]))
 
 
 if __name__ == "__main__":
