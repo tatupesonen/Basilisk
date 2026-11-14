@@ -12,6 +12,7 @@ use std::process::ExitCode;
 
 mod cmd {
     pub(crate) mod disasm;
+    pub(crate) mod sleigh_compile;
 }
 
 fn main() -> ExitCode {
@@ -27,6 +28,17 @@ fn main() -> ExitCode {
         Some("disasm") => {
             let rest: Vec<std::ffi::OsString> = std::env::args_os().skip(2).collect();
             cmd::disasm::run(&rest)
+        }
+        Some("sleigh") => {
+            let rest: Vec<std::ffi::OsString> = std::env::args_os().skip(3).collect();
+            match args.get(1).map(String::as_str) {
+                Some("compile") => cmd::sleigh_compile::run(&rest),
+                _ => {
+                    eprintln!("basilisk sleigh: expected a subcommand: compile");
+                    eprint!("{}", cmd::sleigh_compile::USAGE);
+                    ExitCode::from(2)
+                }
+            }
         }
         Some("--version" | "-V" | "version") => {
             println!("basilisk {}", env!("CARGO_PKG_VERSION"));

@@ -446,6 +446,8 @@ dependencies = [
  "bk-pcode",
  "bk-sla",
  "bk-sleigh",
+ "bk-sleigh-compiler",
+ "bk-sleigh-syntax",
  "bk-testkit",
  "bk-ui",
  "tempfile",

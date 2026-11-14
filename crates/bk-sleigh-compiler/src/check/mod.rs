@@ -60,6 +60,34 @@ impl Compiler<'_> {
             return;
         }
         self.shift_unique_offsets();
+        self.check_field_usage();
+    }
+
+    /// Java's `checkFieldUsage` (`-f`): token fields no lookup ever found.
+    fn check_field_usage(&mut self) {
+        if !self.options.warn_unused_fields {
+            return;
+        }
+        let unused: Vec<(Option<bk_sleigh_syntax::Span>, String)> = self
+            .symbols
+            .iter()
+            .filter(|(id, s)| {
+                !self.symbols.was_sought(*id)
+                    && matches!(
+                        s.kind.pattern_value(),
+                        Some(crate::pattern::PatValue::Token(..))
+                    )
+                    && !matches!(s.kind, SymbolKind::Context { .. })
+            })
+            .map(|(_, s)| (s.defined_at, self.text(s.name).to_owned()))
+            .collect();
+        for (at, name) in unused {
+            let message = format!("token field '{name}' defined but never used");
+            match at {
+                Some(at) => self.diags.warning_at(at, message),
+                None => self.diags.warning(None, message),
+            }
+        }
     }
 
     /// Ghidra sets its crossbuild flag while parsing any `crossbuild`.

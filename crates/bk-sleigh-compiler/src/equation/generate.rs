@@ -38,6 +38,13 @@ fn value_range(leaf: &PExpr) -> Result<(i64, i64), EqError> {
     }
 }
 
+/// Java's `EqualEquation.isValueInRange`: `min <= value <= max` compared
+/// as unsigned 64-bit numbers (spec 4.1), so a constraint on a 64-bit field
+/// can match.
+pub(crate) const fn is_value_in_range(value: i64, min: i64, max: i64) -> bool {
+    (value as u64) >= (min as u64) && (value as u64) <= (max as u64)
+}
+
 /// `advance_combo`: the next assignment, the first value varying fastest.
 fn advance(cur: &mut [i64], ranges: &[(i64, i64)]) -> bool {
     for (v, &(min, max)) in cur.iter_mut().zip(ranges) {
@@ -247,7 +254,7 @@ impl Generator<'_, '_> {
             let val = evaluate(self.view, expr, &cur, &mut 0, 0)?;
             if op == ConstraintOp::Equal {
                 // Java's unsigned range test (spec 4.1).
-                if (val as u64) >= (lhs_min as u64) && (val as u64) <= (lhs_max as u64) {
+                if is_value_in_range(val, lhs_min, lhs_max) {
                     add(build(val, &cur)?)?;
                 }
             } else {
@@ -302,4 +309,34 @@ pub(crate) fn generate(
     };
     let p = g.visit(root, 0)?;
     Ok((p, g.shapes))
+}
+
+/// Ghidra's `EqualEquationTest` (`ghidra.pcodeCPort.slghpatexpress`).
+#[cfg(test)]
+mod equal_equation_test {
+    use super::is_value_in_range;
+
+    #[test]
+    fn normal_range() {
+        assert!(is_value_in_range(0x1234, 0, 0xffff));
+        assert!(!is_value_in_range(-1, 0, 0xffff));
+    }
+
+    #[test]
+    fn full_width_unsigned_range() {
+        assert!(is_value_in_range(0, 0, -1));
+        assert!(is_value_in_range(i64::MAX, 0, -1));
+        assert!(is_value_in_range(i64::MIN, 0, -1));
+        assert!(is_value_in_range(-1, 0, -1));
+    }
+
+    #[test]
+    fn unsigned_range_crossing_signed_boundary() {
+        assert!(!is_value_in_range(4, 5, -2));
+        assert!(is_value_in_range(5, 5, -2));
+        assert!(is_value_in_range(i64::MAX, 5, -2));
+        assert!(is_value_in_range(i64::MIN, 5, -2));
+        assert!(is_value_in_range(-2, 5, -2));
+        assert!(!is_value_in_range(-1, 5, -2));
+    }
 }
