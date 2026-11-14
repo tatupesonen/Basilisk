@@ -27,6 +27,7 @@ use bk_cspec::{CompilerSpec, ParamActive, ProtoModel, ReadOptions};
 use common::testtypes::{CSizes, TestTypes};
 use common::toy_manager;
 use proptest::prelude::*;
+use std::fmt::Write as _;
 
 const TYPES: [&str; 7] = [
     "int1",
@@ -43,20 +44,25 @@ const TYPES: [&str; 7] = [
 fn model_text(general: usize, floats: usize, stack_align: u32) -> String {
     let mut s = String::from(r#"<prototype name="g" extrapop="0"><input>"#);
     for i in 0..floats {
-        s.push_str(&format!(
+        write!(
+            s,
             r#"<pentry minsize="1" maxsize="4" metatype="float"><register name="r{}"/></pentry>"#,
             i + 1
-        ));
+        )
+        .unwrap();
     }
     for i in 0..general {
-        s.push_str(&format!(
+        write!(
+            s,
             r#"<pentry minsize="1" maxsize="4"><register name="r{}"/></pentry>"#,
             12 - i
-        ));
+        )
+        .unwrap();
     }
-    s.push_str(&format!(
+    write!(s,
         r#"<pentry minsize="1" maxsize="500" align="{stack_align}"><addr offset="0" space="stack"/></pentry></input><output><pentry minsize="1" maxsize="4"><register name="r0"/></pentry></output></prototype>"#
-    ));
+    )
+    .unwrap();
     s
 }
 
