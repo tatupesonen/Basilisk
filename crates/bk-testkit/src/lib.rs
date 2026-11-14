@@ -18,6 +18,8 @@
 //!   `pcodedump` and `snippetdump` with a time limit.
 //! * [`datatest`] — Ghidra's `<decompilertest>` files as plain data.
 //! * [`corpus`] — every language directory, `.slaspec` and data test.
+//! * [`oracle`] — the decompiler oracle's formats (graph files, analysis
+//!   and structure dumps, action lists), read and written as typed data.
 //!
 //! A differential test typically reads:
 //!
@@ -36,6 +38,7 @@
 
 pub mod corpus;
 pub mod datatest;
+pub mod oracle;
 pub mod paths;
 pub mod skip;
 pub mod tools;

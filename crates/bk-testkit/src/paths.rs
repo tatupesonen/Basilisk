@@ -156,8 +156,11 @@ impl GhidraDir {
     }
 }
 
-/// One of the programs in the reference directory's `bin`.
+/// One of the programs in the reference directory's `bin`. Open for more
+/// (a `GhidraHeadless` entry is expected, `docs/features/decomp-oracle.md`
+/// 4.13).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Tool {
     /// Ghidra's SLEIGH compiler (`sleigh_opt`).
     Sleigh,
@@ -169,16 +172,25 @@ pub enum Tool {
     Pcodedump,
     /// Basilisk's p-code snippet oracle (`tools/reference/snippetdump.cc`).
     Snippetdump,
+    /// Ghidra's decompiler console built with `CPUI_DEBUG` (`decomp_dbg`).
+    DecompDbg,
+    /// The decompiler console with Basilisk's extension (`tools/reference/consoleext`).
+    DecompBk,
+    /// The `CPUI_DEBUG` console with Basilisk's extension.
+    DecompBkDbg,
 }
 
 impl Tool {
     /// Every tool, in the order the build script lists them.
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 8] = [
         Self::Sleigh,
         Self::Decomp,
         Self::DecompTest,
         Self::Pcodedump,
         Self::Snippetdump,
+        Self::DecompDbg,
+        Self::DecompBk,
+        Self::DecompBkDbg,
     ];
 
     /// The tool's file name under `bin`.
@@ -189,6 +201,9 @@ impl Tool {
             Self::DecompTest => "decomp_test",
             Self::Pcodedump => "pcodedump",
             Self::Snippetdump => "snippetdump",
+            Self::DecompDbg => "decomp_dbg",
+            Self::DecompBk => "decomp_bk",
+            Self::DecompBkDbg => "decomp_bk_dbg",
         }
     }
 }
@@ -405,7 +420,10 @@ mod tests {
                 "decomp",
                 "decomp_test",
                 "pcodedump",
-                "snippetdump"
+                "snippetdump",
+                "decomp_dbg",
+                "decomp_bk",
+                "decomp_bk_dbg"
             ]
         );
     }

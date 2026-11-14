@@ -13,9 +13,12 @@ use crate::paths::Tool;
 /// The prompt the console echoes before each command of an `-i` script.
 const SCRIPT_PROMPT: &str = "init> ";
 
-/// Runs `bin/decomp`. Obtain one with [`crate::ReferenceDir::decomp`].
+/// Runs one of the decompiler consoles: `bin/decomp`, or `decomp_dbg`,
+/// `decomp_bk`, `decomp_bk_dbg` (`docs/features/decomp-oracle.md`). Obtain
+/// one with [`crate::ReferenceDir::decomp`] and its siblings.
 #[derive(Debug, Clone)]
 pub struct Decomp {
+    tool: Tool,
     program: PathBuf,
     sleigh_home: PathBuf,
     timeout: Duration,
@@ -24,8 +27,9 @@ pub struct Decomp {
 impl Decomp {
     const DEFAULT_TIMEOUT: Duration = Duration::from_mins(2);
 
-    pub(crate) fn new(program: PathBuf, sleigh_home: PathBuf) -> Self {
+    pub(crate) fn new(tool: Tool, program: PathBuf, sleigh_home: PathBuf) -> Self {
         Self {
+            tool,
             program,
             sleigh_home,
             timeout: Self::DEFAULT_TIMEOUT,
@@ -50,10 +54,8 @@ impl Decomp {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        let io_error = |source| ToolError::Io {
-            tool: Tool::Decomp,
-            source,
-        };
+        let tool = self.tool;
+        let io_error = |source| ToolError::Io { tool, source };
         let mut script = tempfile::Builder::new()
             .prefix("bk-decomp-")
             .suffix(".script")
@@ -70,15 +72,17 @@ impl Decomp {
         }
         script.flush().map_err(io_error)?;
 
-        let mut invocation = Invocation::new(Tool::Decomp, &self.program, self.timeout)
+        let mut invocation = Invocation::new(tool, &self.program, self.timeout)
             .arg("-i")
             .arg(script.path());
         // The console finds languages through SLEIGHHOME when it is not
-        // running from inside a Ghidra installation.
+        // running from inside a Ghidra installation. LC_ALL=C keeps the
+        // output free of the locale (decomp-oracle.md 4.11).
         invocation
             .envs
             .push(("SLEIGHHOME", self.sleigh_home.clone().into_os_string()));
-        let output = invocation.run()?.require_success(Tool::Decomp)?;
+        invocation.envs.push(("LC_ALL", "C".into()));
+        let output = invocation.run()?.require_success(tool)?;
         Ok(DecompTranscript::parse(output))
     }
 
@@ -86,10 +90,8 @@ impl Decomp {
     /// console printed: Ghidra's actual output for the test, where
     /// `decomp_test` only says whether its patterns matched.
     pub fn run_data_test(&self, test: &DataTest) -> Result<DecompTranscript, ToolError> {
-        let io_error = |source| ToolError::Io {
-            tool: Tool::Decomp,
-            source,
-        };
+        let tool = self.tool;
+        let io_error = |source| ToolError::Io { tool, source };
         let mut image = tempfile::Builder::new()
             .prefix("bk-decomp-")
             .suffix(".xml")
@@ -99,7 +101,7 @@ impl Decomp {
             .write_all(test.image.to_xml().as_bytes())
             .map_err(io_error)?;
         image.flush().map_err(io_error)?;
-        let load = load_command(image.path())?;
+        let load = load_command(tool, image.path())?;
         self.run_script(
             std::iter::once(load.as_str()).chain(test.script.iter().map(String::as_str)),
         )
@@ -109,11 +111,11 @@ impl Decomp {
 /// The console command that loads the image at `path`. The console splits
 /// commands at white space and has no quoting, so such a path cannot be
 /// loaded.
-fn load_command(path: &Path) -> Result<String, ToolError> {
+fn load_command(tool: Tool, path: &Path) -> Result<String, ToolError> {
     match path.to_str() {
         Some(text) if !text.contains(char::is_whitespace) => Ok(format!("load file {text}")),
         _ => Err(ToolError::Unsupported {
-            tool: Tool::Decomp,
+            tool,
             reason: format!(
                 "the console cannot load a file whose path has white space or is not UTF-8: {}",
                 path.display()
@@ -212,10 +214,10 @@ mod tests {
     #[test]
     fn load_command_needs_a_plain_path() {
         assert_eq!(
-            load_command(Path::new("/tmp/a.xml")).unwrap(),
+            load_command(Tool::Decomp, Path::new("/tmp/a.xml")).unwrap(),
             "load file /tmp/a.xml"
         );
-        let error = load_command(Path::new("/tmp/my files/a.xml")).unwrap_err();
+        let error = load_command(Tool::Decomp, Path::new("/tmp/my files/a.xml")).unwrap_err();
         assert!(
             matches!(
                 error,
@@ -231,6 +233,7 @@ mod tests {
     #[test]
     fn a_missing_console_is_reported() {
         let decomp = Decomp::new(
+            Tool::Decomp,
             PathBuf::from("/nonexistent/bin/decomp"),
             PathBuf::from("/nonexistent"),
         );

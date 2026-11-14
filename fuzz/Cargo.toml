@@ -29,6 +29,7 @@ bk-sleigh = { path = "../crates/bk-sleigh" }
 bk-sleigh-compiler = { path = "../crates/bk-sleigh-compiler" }
 bk-sleigh-snippet = { path = "../crates/bk-sleigh-snippet" }
 bk-sleigh-syntax = { path = "../crates/bk-sleigh-syntax" }
+bk-testkit = { path = "../crates/bk-testkit" }
 libfuzzer-sys = "0.4.13"
 
 [[bin]]
@@ -109,15 +110,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bk_sleigh_compiler_elaborate"
-path = "fuzz_targets/bk_sleigh_compiler_elaborate.rs"
+name = "bk_sleigh_compiler_compile"
+path = "fuzz_targets/bk_sleigh_compiler_compile.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "bk_sleigh_snippet_compile"
-path = "fuzz_targets/bk_sleigh_snippet_compile.rs"
+name = "bk_sleigh_compiler_elaborate"
+path = "fuzz_targets/bk_sleigh_compiler_elaborate.rs"
 test = false
 doc = false
 bench = false
@@ -130,6 +131,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "bk_sleigh_hostile_sla"
+path = "fuzz_targets/bk_sleigh_hostile_sla.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "bk_sleigh_lift"
 path = "fuzz_targets/bk_sleigh_lift.rs"
 test = false
@@ -137,8 +145,8 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bk_sleigh_hostile_sla"
-path = "fuzz_targets/bk_sleigh_hostile_sla.rs"
+name = "bk_sleigh_snippet_compile"
+path = "fuzz_targets/bk_sleigh_snippet_compile.rs"
 test = false
 doc = false
 bench = false
@@ -151,8 +159,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "bk_sleigh_compiler_compile"
-path = "fuzz_targets/bk_sleigh_compiler_compile.rs"
+name = "bk_testkit_graph"
+path = "fuzz_targets/bk_testkit_graph.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_testkit_structure"
+path = "fuzz_targets/bk_testkit_structure.rs"
 test = false
 doc = false
 bench = false
