@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 17:00)
+## Now — RESUME HERE (2026-11-14 16:35)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -33,7 +33,7 @@ the fuzz crate — check it with `cargo metadata --manifest-path
 fuzz/Cargo.toml`). Branches that touch only docs and development scripts
 may be merged directly.
 
-**`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 ~17:00; CI
+**`master` is green on Rust 1.100.0** (`9a156d9`, 2026-11-14 16:34; CI
 run 43605009924 on `integration`, every job green on Linux, macOS and
 Windows). The pin was committed directly at the owner's choice
 (`144859f`) and track `toolchain-1.100` made the workspace pass: rustfmt
@@ -41,7 +41,7 @@ in `bk-elf`; 52 clippy findings from four new lints (`assert_is_empty`
 44, `float_cmp_const` 5, `chunks_exact_to_as_chunks` 2,
 `manual_bit_width` 1); no lint weakened, no `#[expect]` added, lock files
 unchanged; report `docs/agents/toolchain-1.100.md`. Both running agents
-were told at ~17:00 to commit, run `git merge master` in their worktrees
+were told at 16:34 to commit, run `git merge master` in their worktrees
 (a one-time exception to the no-merge rule), `cargo fmt --all`, clippy on
 their own crates, and to run their final gates only after that. Agents
 resumed later (the paused Fable ones write no Rust) and new agents start
