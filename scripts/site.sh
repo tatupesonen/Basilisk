@@ -19,6 +19,12 @@
 #
 # Environment: SITE_BASE (base path, default /), SITE_URL (canonical origin),
 # SITE_TIMEOUT (seconds per container, default 1200).
+# Resources: each container gets min(3, the CPUs Docker has) CPUs and
+# min(6 GiB, 3/4 of the memory Docker has) — asked of Docker, not the host,
+# since on macOS Docker runs in a VM; a GitHub runner has 2 CPUs. Override
+# with SITE_CPUS / SITE_MEMORY (e.g. 2, 5g). SITE_PLATFORM=linux/amd64 builds
+# and runs the image for that platform (under emulation on an arm64 Mac), to
+# reproduce CI.
 #
 # The image: site/container/Dockerfile starts FROM the Playwright image pinned
 # by digest; its header says how to move that digest. This script tags the
@@ -29,7 +35,7 @@ cd "$(dirname "$0")/.."
 repo=$(pwd)
 
 cmd=${1:-}
-[ -n "$cmd" ] || { sed -n '2,24p' "$0"; exit 2; }
+[ -n "$cmd" ] || { sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 2; }
 shift || true
 
 limit=${SITE_TIMEOUT:-1200}
@@ -40,11 +46,23 @@ else
   hash=$(shasum -a 256 "$dockerfile" | cut -c1-12)
 fi
 image="bk-site/build:$hash"
+platform=()
+if [ -n "${SITE_PLATFORM:-}" ]; then
+  platform=(--platform "$SITE_PLATFORM")
+  image="$image-$(printf '%s' "$SITE_PLATFORM" | tr '/' '-')"
+fi
 
 if ! docker image inspect "$image" >/dev/null 2>&1; then
   echo "site: building image $image"
-  docker build --pull=false -t "$image" -f "$dockerfile" site/container
+  docker build --pull=false ${platform[@]+"${platform[@]}"} -t "$image" -f "$dockerfile" site/container
 fi
+
+# Resource limits from what Docker reports (its VM on macOS).
+read -r docker_cpus docker_mem < <(docker info --format '{{.NCPU}} {{.MemTotal}}')
+cpus=${SITE_CPUS:-$(( docker_cpus < 3 ? docker_cpus : 3 ))}
+mem_mib=$(( docker_mem / 1048576 * 3 / 4 ))
+[ "$mem_mib" -gt 6144 ] && mem_mib=6144
+memory=${SITE_MEMORY:-${mem_mib}m}
 
 name="bk-site-$$"
 cleanup() { docker rm -f "$name" >/dev/null 2>&1 || true; }
@@ -60,7 +78,7 @@ run() {
   while [ "$1" != "--" ]; do args+=("$1"); shift; done
   shift
   docker run --rm --init --name "$name" ${tty[@]+"${tty[@]}"} \
-    --cpus 3 --memory 6g --shm-size 1g \
+    ${platform[@]+"${platform[@]}"} --cpus "$cpus" --memory "$memory" --shm-size 1g \
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp/home \
     -e npm_config_cache=/repo/site/.cache/npm \
@@ -74,9 +92,10 @@ run() {
     timeout --kill-after=15 "$secs" bash -euo pipefail -c "$1"
 }
 
-# Install node_modules from the lock file when missing or out of date.
+# Install node_modules from the lock file when missing, out of date, or
+# installed for another architecture (native packages differ).
 deps='
-lock_sha=$(sha256sum package-lock.json | cut -c1-16)
+lock_sha=$(sha256sum package-lock.json | cut -c1-16)-$(uname -m)
 if [ "$(cat node_modules/.bk-lock-sha 2>/dev/null)" != "$lock_sha" ]; then
   echo "site: npm ci"
   npm ci --no-audit --no-fund --loglevel=error
@@ -120,7 +139,7 @@ case "$cmd" in
       echo "site: resolving versions published before $before"
       rm -rf node_modules
       npm install --before="$before" --save-exact --no-audit --no-fund --loglevel=error
-      lock_sha=$(sha256sum package-lock.json | cut -c1-16)
+      lock_sha=$(sha256sum package-lock.json | cut -c1-16)-$(uname -m)
       echo "$lock_sha" > node_modules/.bk-lock-sha'
     ;;
   shell)
