@@ -184,6 +184,7 @@ pub(crate) fn run_language(
     let mut rng = Rng::new(seed(id));
     let mut plan = plan(lang, budget.samples_per_pair, &mut rng);
     extend_for_coverage(lang, &mut plan, &mut rng, budget.coverage_attempts);
+    super::features::extend_for_features(lang, &mut plan, &mut rng, budget.coverage_attempts, 8);
     result.targeted = plan.targets.len();
     result.inexpressible = plan.inexpressible.len();
     result.over_20 = plan.over_20.len();

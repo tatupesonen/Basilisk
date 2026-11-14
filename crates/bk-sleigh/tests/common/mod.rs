@@ -6,6 +6,7 @@
 pub(crate) mod cache;
 pub(crate) mod coverage;
 pub(crate) mod directed;
+pub(crate) mod features;
 pub(crate) mod real_code;
 pub(crate) mod recording;
 pub(crate) mod sweep;
