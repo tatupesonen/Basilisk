@@ -1,17 +1,20 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 17:26)
+## Now — RESUME HERE (2026-11-14 17:50)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
-**Milestone M0 is complete and on `master`**; `master` also has `bk-ui`
-the GNU disassembler crates, `bk-sla`, `bk-decomp-types`, `bk-sleigh`
-part 1, `bk-sleigh-compiler` part 1 and the website (gate green, 1,819
-tests). M0:
-`bk-core`, `bk-marshal`, `bk-pcode`, `bk-sleigh-syntax`, `bk-lang`,
-`bk-bin`, `bk-elf`, `bk-testkit`, the shared `fuzz/` crate (5 targets), the
-reference tools in `../reference/`. Per-track history is in the log below.
+**Milestone M0 is complete and on `master`**; `master` (`a961ff3` plus
+docs) also has `bk-ui`, the GNU disassembler crates, `bk-sla`,
+`bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2 (decoding and
+p-code generation, `basilisk disasm`), `bk-sleigh-compiler` part 1 and
+the website; the gate is green on Rust 1.100.0 with 1,966 tests and the
+last CI run on the merged tree, 43610564062, is green on every job on
+Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+`bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
+shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
+history is in the log below.
 
 **Working rules in force** (all in `DIRECTION.md`): two running workers
 for now, counting helpers (agents start none); new agents are Opus 5.5 at
@@ -102,32 +105,47 @@ rename of the repository needs a redeploy.
 | `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`, cut from `integration` `c613bd2`) | Opus | `a41574e3f4a6e75b9` | started 17:14, stopped by the full disk before writing anything, resumed 17:25. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Findings so far (in its hand-back, to be written to its status file first): `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` has to be ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. |
 | `ui-flake` (worktree `../basilisk-wt/ui-flake`, cut from `name-case`) | Opus | `afdc9312b2424f522` | started 17:12, stopped by the full disk, resumed 17:25. `bk-ui` test `task::tests::requests_complete_off_thread_and_wake` fails about one run in three on a busy machine (the worker stores the result, then wakes; the test asserts the wake at once). Diagnosis from reading: a test bug, plus a real gap (a request finished before `set_waker` wakes nobody; hidden today by the views' fallback repaints) and a panic in a task leaving `running` raised. It fixes all three, reproduces before and after under load, runs the gate. |
 
-**Finished, on branch `integration`** (worktree
-`../basilisk-wt/integration`, `c613bd2`, not pushed yet): `brand-name`
-(`a4515848d0bb9b7be`; the wordmark reads "Basilisk", the emblem is
-byte-identical, the brand set's generator scripts were recovered from the
-logo agent's transcript and are in `assets/brand/tools/` with a
-`build.py`; site build and check passed), `sleigh-pcode`
-(`a392a8e6a16d0c340`; `bk-sleigh` part 2 and `basilisk disasm`: all 175
-language pairs match `pcodedump` on every record kind, the tolerated
-differences are three Ghidra behaviours that depend on stale memory or
-its parse cache; 37 instructions that crash `pcodedump` lift; gate 1,861
-tests; not shown: 8-thread scaling ≥ 6×, measured 4.7–5.7× on a loaded
-machine) and `decomp-cspec` (`aaa90a7df42087601`; D03 `bk-cspec`: 294
-language/compiler pairs replayed, 127,088 rows, none unexplained; gate
-1,924 tests). One conflict, two sections appended to `docs/PERF.md`,
-resolved by reading; both manifests and lock files parse. **The gate,
-`check-dep-age.py master` and the advisory check are running on it
-(started 17:25).** Green → push, `gh workflow run CI --ref integration`,
-green on every job → merge to `master`, delete the branch, delete the
-build output of the merged worktrees, update PLAN and PARITY (M1
-`sleigh-pcode` ✔, M3 wave 1 D03 ✔), write the ADR the pcode track
-proposes (where Ghidra's p-code depends on its parse cache or on
-uninitialised memory, Basilisk gives the result of a fresh parse).
+**Merged on 2026-11-14 after the toolchain fix** (worktrees and branches
+removed, build output deleted; the Wine scratch scripts of the two code
+tracks are kept in `../basilisk-wt/windows-ci/target/windows-from-*`):
 
-**Merged today besides the toolchain fix:** `name-case` (`2250a58`, CI
-run 43608295113; the Haiku agent `ae31b5f684cd62440` was stopped at the
-owner's word with its work committed; 163 files, text only).
+* `name-case` (`2250a58`, CI run 43608295113): the name is written
+  "Basilisk" in prose, UI strings and the site; 163 files, text only. The
+  Haiku agent was stopped at the owner's word with its work committed.
+* `brand-name`, `sleigh-pcode`, `decomp-cspec` together (`a961ff3`, CI
+  run 43610564062, local gate 1,966 tests, 0 new packages, advisories
+  ok). `brand-name`: the wordmark reads "Basilisk", the emblem is
+  byte-identical, the brand set's generator scripts were recovered from
+  the logo agent's transcript into `assets/brand/tools/` (`build.py`
+  runs the chain and reproduces every brand file byte for byte).
+  `sleigh-pcode`: all 175 language pairs match `pcodedump` on every
+  record kind; the tolerated differences are the three Ghidra behaviours
+  of ADR-038; 37 instructions that crash `pcodedump` lift; decode + lift
+  1.61 M instructions/s against Ghidra's 1.60 M, no allocation per
+  instruction. `decomp-cspec`: D03 `bk-cspec`, 294 language/compiler
+  pairs replayed, 127,088 rows, none unexplained.
+
+Open from those reports, none blocking:
+* `bk-sleigh` 8-thread scaling ≥ 6× is not shown (4.7–5.7× measured on a
+  loaded machine); re-measure on an idle machine. Its benchmarks were
+  taken on Rust 1.97.1; the CLI tests were not run under Wine.
+* `bk-cspec`: regenerate its oracle table on x86-64 Linux (kassini) —
+  Ghidra's `std::sort` ties (89 effect-list ties, one trial row) may be
+  ordered differently by libstdc++; a hook at function-type creation in
+  `bk-decomp-types` (`PrototypeCodec::finish_signature` or a stored
+  parameter count) removes the 11 8051 compare records (goes into the
+  D07 brief, which also installs the codec); `<global>` ranges and the
+  user ops of fix-ups are resolved by D06/D07.
+* Three Ghidra bugs worth reporting upstream (delay-slot walker left
+  dangling after an error; uninitialised `FixedHandle` read for
+  export-less subtables; parse cache clobbered by a delay slot's
+  `inst_next2` look-up) — the owner's call whether and how.
+* Second `name-case` pass over `crates/bk-sleigh`, `crates/basilisk`,
+  `fuzz/`, `docs/PERF.md`, `docs/inventory/tests/` and the two specs and
+  status files the first pass skipped; best done when
+  `sleigh-compiler-back` is not editing `crates/basilisk`, or limited to
+  the files it does not own.
+* 8 cargo warnings about unused `[workspace.dependencies]` entries.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
