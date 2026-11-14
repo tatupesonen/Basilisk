@@ -55,7 +55,7 @@ say "$(now) ${cmd[*]} (Wine, $TB_CORES cores)"
 start=$(date +%s)
 set +e
 tb_docker "wine-$flavour" "${BK_TESTBED_WINE_TIMEOUT:-5000}" "${mounts[@]}" "$image" \
-  bash -c 'wine --version; wineboot -i >/dev/null 2>&1; exec "$@"' wine "${cmd[@]}" 2>&1 | tee "$log"
+  bash -c 'mkdir -p "$WINEPREFIX"; wine --version; wineboot -i >/dev/null 2>&1; exec "$@"' wine "${cmd[@]}" 2>&1 | tee "$log"
 code=${PIPESTATUS[0]}
 set -e
 counts=$(tb_counts "$log")
