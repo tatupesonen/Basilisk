@@ -116,6 +116,71 @@ tests 760/760, 24 s with 20 jobs. **All 150 `.sla` files are byte-identical
 to the Mac's `../reference` (Darwin arm64, Apple clang 17,
 `-ffp-contract=off`)**, which confirms ADR-032 on a real x86-64 host.
 
+## The gate on Linux x86-64 (Deliverable 2)
+
+Branch `kassini-setup` (master 12056c8 plus this track's script and docs;
+no crate changed), `CARGO_BUILD_JOBS=20`, test threads the default (20).
+Wall times are measured on the Mac around `scripts/remote.sh gate` and so
+include the push, checkout and `cargo fetch` (about 3 s).
+
+| Run | Exit | Tests | Wall |
+|---|---|---|---|
+| reference set, cold (fresh branch, empty `target/`) | 0 | 1,966 passed, 0 failed | **174 s** |
+| reference set, warm (nothing changed) | 0 | 1,966 passed, 0 failed | **64 s** |
+| both variables unset, warm | 0 | 1,966 passed, 0 failed (54 tests print SKIPPED) | 13 s |
+| two branches at once, both warm, reference set | 0 / 0 | 1,966 / 1,966 | 66 s / 75 s |
+
+The Mac's last gate on `master`: 1,966 tests with the variables set. Same
+count here, and with the reference set nothing prints SKIPPED (32 tests
+are `#[ignore]`d, benchmarks among them, as on the Mac). The Mac was not
+timed: other agents were building (load average 4–9), so a number would
+not mean much.
+
+Findings:
+
+* **One failure in one run, not Linux-specific**: the first complete
+  test run failed `bk-ui` `task::tests::requests_complete_off_thread_and_wake`
+  (task.rs:320, the wake count asserted right after the result is seen).
+  This is the known flake the `ui-flake` track is fixing (PROGRESS.md); it
+  did not recur in the six later full test runs. Because `cargo test` stops at the
+  first failing binary, that run counted only 1,937 tests.
+* **cargo-deny on a fresh machine**: `cargo deny --offline` failed with
+  `failed to download accesskit_consumer` because a build downloads only
+  the host platform's crates and `cargo metadata` wants all of them. On
+  the Mac the registry cache already had everything. `remote.sh` now runs
+  `cargo fetch --locked` before every job. Any new machine or CI runner
+  running the gate's deny step offline needs the same.
+* Cargo 1.100 prints `unused workspace dependency` warnings for `anyhow`,
+  `bk-cspec`, `bk-decomp-types`, `bk-gnu-disasm`, `bk-sleigh-compiler`,
+  `memmap2`, `rayon` and an unused `workspace.package.authors`; the gate
+  does not fail on them (Cargo.toml is not mine to change).
+
+## Build output: one `target/` per branch
+
+Measured (gate with the reference set, 20 jobs):
+
+| | Wall |
+|---|---|
+| new branch, own empty `target/` (cold) | 174 s |
+| new branch, `CARGO_TARGET_DIR` = another branch's warm `target/` | 91 s |
+| same branch again, own `target/` (warm) | 64 s |
+
+A shared target saves about 80 s the first time a branch is built (the
+third-party crates; the workspace crates rebuild anyway, since their
+fingerprints include the checkout's path). It costs cargo's build-directory
+lock: two agents building different branches at once would wait for each
+other for the whole build, which is exactly the case this machine is for.
+Disk is not the constraint: a branch's `target/` after a gate is 13 GB, so
+430 GB holds about 30 branches, and `remote.sh` refuses to start below
+40 GB free. **Decision: one `target/` per branch** (`~/bk/wt/<branch>/target`),
+removed with `remote.sh clean`.
+
+`CARGO_BUILD_JOBS` default **20** (all cores): peak memory in use during
+the cold gate was 8.5 GB of 31 GB (sampled every 2 s), the load average
+peaked about 12, so neither memory at link time nor anything else
+measured is a reason to go lower; two branches building at once still
+fit in memory (about 17 GB). Override with `BK_REMOTE_JOBS`.
+
 ## Done / in progress / next
 
 - [x] `scripts/remote.sh` and the setup on the machine
