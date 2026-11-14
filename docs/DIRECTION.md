@@ -111,6 +111,11 @@ and a sane architecture in mind.
   its design choices stand (dark default theme, fixed-height listing rows
   with instruction bytes cut at six, Functions/Defined Strings/References
   open beside the Console, twelve syntax colours).
+* **A website for basilisk** (owner, 2026-11-14): "design a great
+  looking site for Basilisk. You can choose tech freely but make it
+  static. In same monorepo." It shares one Astro project with the
+  documentation (ADR-031). Tracks `site-design` and `docs-content` in
+  `PROGRESS.md`.
 * **A documentation site for users** (owner, 2026-11-14): "great
   looking docs for the usage of the whole program and how each aspect of
   the program works" — a **static** site made with **Starlight**, with
