@@ -62,7 +62,9 @@ part 1, `bk-pcode` on the x86-64 oracle, the website and documentation
 shell (`site/`), the unfused reference build. Last green CI: run 43605009924 (all jobs, all three
 systems; gate 1,819 tests).
 
-**The site is published** at `https://tatupesonen.github.io/basilisk/`
+**The site is published** at `https://tatupesonen.github.io/Basilisk/`
+(the owner renamed the repository to `tatupesonen/Basilisk` on
+2026-11-14; `origin` points there)
 (docs under `/docs/`), at the owner's word on 2026-11-14 ("you can do it,
 set up auto build as well"). Pages is enabled with source "GitHub
 Actions"; `.github/workflows/pages.yml` deploys on every push to `master`
@@ -78,7 +80,7 @@ documentation is still a shell; `docs-content` fills it.
 |---|---|---|---|
 | `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | `bk-sleigh` part 2 from `features/sleigh-pcode.md`; 9 commits at 16:22: builder, emitters, `lift`, `basilisk disasm`, differential over every language with only tolerated differences, properties, benchmarks; fuzz target for `lift` in progress. Told at 16:29 how the move to 1.100.0 goes (see above); final gates only after it merges `master`. |
 | `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 16:29 from `43cd830`. D03, `bk-cspec`: the crate is written (about 10,400 lines); `testfuncproto.cc` 21/21 and `testparamstore.cc` 5/5 ported; the Java tests pass; the oracle replay over all 294 language/compiler pairs has no unexplained row. Left: `tests/derived.rs` (never compiled), a corpus counts test, property tests, the fuzz target, benchmarks, docs, two gates, the Windows clippy check. Same toolchain instructions as `sleigh-pcode`. |
-| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | see the log of this session | started 2026-11-14 ~16:50 at the owner's explicit request, beside the cap: writes the product name as "Basilisk" in prose everywhere on `master` (rules in `DIRECTION.md`), leaving identifiers, commands, paths and URLs lower-case. It does **not** touch files the two running tracks own or append to (`crates/bk-sleigh`, `crates/basilisk`, `fuzz/`, their specs and status files, `docs/PERF.md`, `docs/inventory/tests/`) — a second pass covers those after they merge — and does not redraw artwork. |
+| `name-case` (worktree `../basilisk-wt/name-case`) | Haiku | see the log of this session | started 2026-11-14 16:45 at the owner's explicit request, beside the cap: writes the product name as "Basilisk" in prose everywhere on `master` (rules in `DIRECTION.md`), leaving identifiers, commands, paths and URLs lower-case. It does **not** touch files the two running tracks own or append to (`crates/bk-sleigh`, `crates/basilisk`, `fuzz/`, their specs and status files, `docs/PERF.md`, `docs/inventory/tests/`) — a second pass covers those after they merge — and does not redraw artwork. |
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 

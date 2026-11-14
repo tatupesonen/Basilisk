@@ -143,7 +143,7 @@ and a sane architecture in mind.
     deployment until the documentation content exists and the owner says
     so. **Superseded the same day** (owner, 2026-11-14, later: "you can
     do it, set up auto build as well"): the site is published on GitHub
-    Pages at `https://tatupesonen.github.io/basilisk/` and is redeployed
+    Pages at `https://tatupesonen.github.io/Basilisk/` and is redeployed
     automatically on every push to `master` that changes it.
   - *The name is written "Basilisk", with a capital B* (owner,
     2026-11-14: "that is the new name, needs to also update the existing
@@ -151,7 +151,11 @@ and a sane architecture in mind.
     material (the drawn wordmark in the logos included) use "Basilisk".
     Lower case stays only where the name is an identifier: the crate and
     binary `basilisk`, commands (`basilisk disasm`), the Python module,
-    paths, file names, URLs and the repository name. The mechanical text
+    local paths and file names. The owner renamed the GitHub repository
+    to `tatupesonen/Basilisk` the same day, so repository URLs are
+    `github.com/tatupesonen/Basilisk` and the site is
+    `https://tatupesonen.github.io/Basilisk/` (the local checkout is
+    still `slop/basilisk`). The mechanical text
     pass is done by a Haiku agent at the owner's explicit request (an
     extra agent beside the two-worker cap, for that task only).
   - *Priority with two slots: finish SLEIGH first* (the compiler back
@@ -166,7 +170,7 @@ and a sane architecture in mind.
   crates being built are shaped for it.
 * **Commits and pushes** (owner, 2026-11-12): the coordinator commits on
   its own and pushes on its own to `origin`
-  (`git@github.com:tatupesonen/basilisk.git`, branch `master`) after each
+  (`git@github.com:tatupesonen/Basilisk.git`, branch `master`) after each
   green gate. Agents commit in their worktrees only and never push.
 * **Brand**: a minimal logo, in the spirit of Ghidra's but its own design
   (`assets/brand/`). Colour: ember orange (owner's pick, 2026-11-12).
