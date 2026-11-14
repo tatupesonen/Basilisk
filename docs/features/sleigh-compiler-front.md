@@ -267,6 +267,93 @@ compared in part 2 (they need the whole pipeline).
 
 (The implementing track appends.)
 
+Appended by the implementing track (2026-11-14):
+
+* **Where Ghidra's compiler dies, basilisk reports and goes on.**
+  `constrainOperand` returns a null equation for "Constraining currently
+  undefined operand", which the grammar then combines with `&` (Ghidra
+  crashes); `expandMacros` deletes the macro placeholder and returns
+  without replacing the op list after an expansion error, leaving a
+  dangling op (Ghidra dies of a memory error after "Cannot currently
+  assign to bitrange of macro parameter that is a temporary"). basilisk
+  abandons the constructor in the first case and reports "Could not expand
+  macros" with the usual "in table …" lines in the second. The diagnostic
+  test lists both (`GHIDRA_CRASHES` in `tests/diagnostics.rs`) and checks
+  that everything Ghidra printed before dying is reported.
+* **Unrecoverable errors stop the elaboration** at the point Ghidra
+  aborts ("Localtemp size mismatch", "Read of temporary before write",
+  "Requested bit range out of bounds", "No register attached to: N",
+  "Context field not contained within one machine int", …); they are
+  ordinary errors with Ghidra's text, without "Unrecoverable error: ".
+* **Errors that come from a name's token class** (an unknown name in a
+  pattern, a table name where a varnode is expected, …) are reported as
+  Ghidra's "syntax error" at the construct, and the constructor is
+  abandoned. Ghidra's parser recovers at the next `}`, which after an
+  `unimpl` constructor can swallow following constructors; basilisk
+  resumes at the next item, so later diagnostics can differ in such
+  files.
+* **Operand collisions**: a table already visited while collecting one
+  operand's exported temporaries is not entered again. The set of offsets
+  is the same; Ghidra would recurse forever on a table that exports its
+  own operand.
+* **A `BUILD` of an operand index the constructor does not have** (only
+  possible through a macro parameter) is "Unnecessary BUILD statements";
+  Ghidra indexes out of bounds.
+* **Masks of bit ranges wider than 64 bits** are computed with the shift
+  count taken modulo 64 (x86-64's result, ADR-021) where the C++ shift is
+  undefined; such ranges are errors anyway unless they truncate to whole
+  bytes, where the mask is unused.
+* **Reachability stands in for "has a pattern"** in this half: the purge
+  and the "Unreferenced table" warnings use the tables reachable from
+  `instruction` through operands defined by tables, which is exactly the
+  set `buildPatterns` gives a pattern when it succeeds. The back half's
+  pattern errors stop the compile before the purge in Ghidra; in basilisk
+  they will stop it after this half has run.
+* **Limits** (4.5): 2^24 symbols, 2^20 scopes, 1,000,000 ops per section
+  after macro expansion, 1,024 context words, 1,000,000 errors ("Too many
+  errors: Aborting", Ghidra's limit). Each breach is an error.
+* **Messages this half cannot produce.** "Duplicate symbol name 'N'"
+  (a section name is looked up first, so it is never new and taken),
+  "Superfluous bitrange" and "Problem with bit range operator in macro"
+  (their conditions cannot hold after the checks that precede them),
+  "Could not construct requested bit range" (a varnode with a real offset
+  always has a real size), "Expression has no output", and "Unknown
+  pointer varnode" (Ghidra's parser reduces the name to an assignment
+  target first and reports "Unknown assignment varnode", which basilisk
+  does too). "Expecting integer but saw", "Must specify an indirect
+  parameter for return" and the "redefined" forms of a single
+  unbracketed name are found by `bk-sleigh-syntax` before elaboration.
+
 ## 9. Status
 
-Not started.
+Done (2026-11-14), branch `sleigh-compiler-front`. Crate
+`crates/bk-sleigh-compiler`, modules: `compiler/` (the walk: definitions,
+context layout, attach, constructors, display, pattern atoms and context
+blocks, `with`, sections, macros, finalize, the resolver), `pcode/` (the
+public builder over `SymbolResolver`, expressions, statements, bit ranges,
+size propagation, snippets), `check/` (sizes, truncations, optimisation,
+collisions, crossbuild shift, NOPs, case check, cross references),
+`symbols/`, `template`, `pattern`, `purge`, `elaborated`, `canon`,
+`options`, `diag`.
+
+* 6.2: all **150 of 150** shipped specifications equal the reference
+  `.sla` in every compared category (header and spaces, scopes, every
+  symbol id, name, scope and kind, every symbol's contents, print pieces,
+  context changes, every template). Mutation check: swapping operand
+  evaluation order (templates of 133 specifications differ), allocating
+  the export temporary at the start of the section (82 fail), skipping the
+  context-layout sort (18 fail on symbols and context changes).
+* 6.3: 92 cases in `tests/diagnostics/`, every message of this half that
+  can occur (list in the test), equal to `REF/bin/sleigh` in success and
+  the multiset of messages; two listed Ghidra crashes.
+* 6.4: 16 feature fixtures with `insta` snapshots, each also compared
+  with Ghidra's compiled file when the reference tools are present (all
+  equal); 2 property tests; fuzz target `bk_sleigh_compiler_elaborate`
+  60 s clean (216,321 runs); benchmark: all 150 parsed and elaborated in
+  1.03 s (budget 4 s), `docs/PERF.md`.
+* The builder is driven without a constructor in
+  `tests/features.rs::snippet_builder_without_a_constructor`.
+
+Gaps: none against section 7 known to the track; see the status report
+(`docs/agents/sleigh-compiler-front.md`) for what was verified on which
+platform.
