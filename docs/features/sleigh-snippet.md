@@ -239,6 +239,13 @@ Spec items this section corrects (spec text left as written):
   `tools/reference/README.md`; languages with `<truncate_space>` (AARCH64
   ilp32, MIPS 64-32addr, PowerPC 64-32) need `Options::truncate_space`.
 
+Note of 2026-11-14 (track `sleigh-fixups`): **the bit-range item above is
+no longer a difference.** `bk-sleigh-compiler`'s builder now computes
+`(numbits+7)/8` and `bitoffset+numbits` as Ghidra's `uint4` does, wrapping
+at 2³² (`byteoffset+numbytes` cannot wrap: both are below 2²⁹). The
+generated comparison has no tolerance any more: 200,000 bodies, 0
+differences; the hand-written cases include bit ranges near 2³².
+
 ## 9. Status
 
 Done (track `sleigh-snippet`, 2026-11-14). Crate `bk-sleigh-snippet`:
