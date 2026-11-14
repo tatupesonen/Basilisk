@@ -136,8 +136,16 @@ mod tests {
 
     #[test]
     fn sign_extend_matches_bits_where_defined() {
-        for (v, i, o) in [(0x80u64, 1, 2), (0x7f, 1, 8), (0x8000, 2, 4), (0xffff_ffff, 4, 8)] {
-            assert_eq!(sign_extend_sizes(v, i, o), bk_core::bits::sign_extend(v, i, o));
+        for (v, i, o) in [
+            (0x80u64, 1, 2),
+            (0x7f, 1, 8),
+            (0x8000, 2, 4),
+            (0xffff_ffff, 4, 8),
+        ] {
+            assert_eq!(
+                sign_extend_sizes(v, i, o),
+                bk_core::bits::sign_extend(v, i, o)
+            );
         }
         // Narrowing: (v << 32) >> 48 (arithmetic), then >> 48.
         assert_eq!(sign_extend_sizes(0x8000_0000, 4, 2), 0xffff);

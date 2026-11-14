@@ -4,7 +4,9 @@
 
 use bk_pcode::OpCode;
 
-use crate::arith::{count, mask_of, rem_step, sar, shl, shr, sign_extend_bit, sign_extend_sizes, wide};
+use crate::arith::{
+    count, mask_of, rem_step, sar, shl, shr, sign_extend_bit, sign_extend_sizes, wide,
+};
 use crate::range::CircleRange;
 
 impl CircleRange {
@@ -17,7 +19,13 @@ impl CircleRange {
     /// `INT_NEGATE`, `BOOL_NEGATE`, `FLOAT_NAN`. An empty input gives an
     /// empty result and `true`; any other operation gives `false`. `self`
     /// may be changed even when the answer is `false`.
-    pub fn push_forward_unary(&mut self, op: OpCode, in1: &Self, in_size: u32, out_size: u32) -> bool {
+    pub fn push_forward_unary(
+        &mut self,
+        op: OpCode,
+        in1: &Self,
+        in_size: u32,
+        out_size: u32,
+    ) -> bool {
         if in1.empty {
             self.empty = true;
             return true;
@@ -211,7 +219,9 @@ impl CircleRange {
             let size1 = if in1.left < in1.right {
                 in1.right - in1.left
             } else {
-                in1.mask.wrapping_sub(in1.left.wrapping_sub(in1.right)).wrapping_add(step1)
+                in1.mask
+                    .wrapping_sub(in1.left.wrapping_sub(in1.right))
+                    .wrapping_add(step1)
             };
             self.left = in1.left.wrapping_add(in2.left) & self.mask;
             self.right = in1
@@ -330,7 +340,9 @@ impl CircleRange {
             self.right = 0;
         } else {
             self.left = shr(in1.left, count(sa)) & self.mask;
-            self.right = shr(in1.right.wrapping_sub(wide(in1.step)), count(sa)).wrapping_add(wide(self.step)) & self.mask;
+            self.right = shr(in1.right.wrapping_sub(wide(in1.step)), count(sa))
+                .wrapping_add(wide(self.step))
+                & self.mask;
             self.normalize();
         }
         true

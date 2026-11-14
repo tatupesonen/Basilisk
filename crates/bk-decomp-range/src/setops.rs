@@ -6,7 +6,7 @@ use core::cmp::Ordering;
 
 use bk_core::bits::{bit_transitions, leastsigbit_set, mostsigbit_set};
 
-use crate::arith::{mask_of, narrow, rem32, rem_step, wide};
+use crate::arith::{mask_of, narrow, rem_step, rem32, wide};
 use crate::overlap::{Overlap, encode};
 use crate::range::CircleRange;
 
@@ -25,7 +25,14 @@ pub enum Combined {
 /// Ghidra's private static `newStride`: restricts `[left, right)`, which
 /// has step `old_step`, to the values congruent to `rem` modulo the larger
 /// `step`. Returns `true` when the result is empty.
-fn new_stride(mask: u64, step: i32, old_step: i32, rem: u32, left: &mut u64, right: &mut u64) -> bool {
+fn new_stride(
+    mask: u64,
+    step: i32,
+    old_step: i32,
+    rem: u32,
+    left: &mut u64,
+    right: &mut u64,
+) -> bool {
     if old_step != 1 {
         let old_rem = rem_step(*left, old_step) as u32;
         if old_rem != rem32(rem, narrow(old_step)) {
@@ -134,7 +141,14 @@ impl CircleRange {
         let new_step = match self.step.cmp(&other.step) {
             Ordering::Less => {
                 let rem = rem_step(op2left, other.step) as u32;
-                if new_stride(self.mask, other.step, self.step, rem, &mut myleft, &mut myright) {
+                if new_stride(
+                    self.mask,
+                    other.step,
+                    self.step,
+                    rem,
+                    &mut myleft,
+                    &mut myright,
+                ) {
                     self.empty = true;
                     return Combined::Done;
                 }
@@ -142,7 +156,14 @@ impl CircleRange {
             }
             Ordering::Greater => {
                 let rem = rem_step(myleft, self.step) as u32;
-                if new_stride(other.mask, self.step, other.step, rem, &mut op2left, &mut op2right) {
+                if new_stride(
+                    other.mask,
+                    self.step,
+                    other.step,
+                    rem,
+                    &mut op2left,
+                    &mut op2right,
+                ) {
                     self.empty = true;
                     return Combined::Done;
                 }
@@ -328,7 +349,10 @@ impl CircleRange {
         self.mask |= other.mask;
         match encode(self.left, a_right, other.left, b_right) {
             Overlap::A => {
-                let vacant1 = self.left.wrapping_add(self.mask.wrapping_sub(b_right)).wrapping_add(1);
+                let vacant1 = self
+                    .left
+                    .wrapping_add(self.mask.wrapping_sub(b_right))
+                    .wrapping_add(1);
                 let vacant2 = other.left.wrapping_sub(a_right);
                 if vacant1 < vacant2 {
                     self.left = other.left;
@@ -338,7 +362,10 @@ impl CircleRange {
                 }
             }
             Overlap::F => {
-                let vacant1 = other.left.wrapping_add(self.mask.wrapping_sub(a_right)).wrapping_add(1);
+                let vacant1 = other
+                    .left
+                    .wrapping_add(self.mask.wrapping_sub(a_right))
+                    .wrapping_add(1);
                 let vacant2 = self.left.wrapping_sub(b_right);
                 if vacant1 < vacant2 {
                     self.right = b_right;
@@ -389,8 +416,13 @@ impl CircleRange {
         if new_step == 1 {
             return;
         }
-        self.left = self.left.wrapping_sub(rem_step(self.left, new_step)).wrapping_add(rem);
-        let a_right = a_right.wrapping_sub(rem_step(a_right, new_step)).wrapping_add(rem);
+        self.left = self
+            .left
+            .wrapping_sub(rem_step(self.left, new_step))
+            .wrapping_add(rem);
+        let a_right = a_right
+            .wrapping_sub(rem_step(a_right, new_step))
+            .wrapping_add(rem);
         self.right = a_right.wrapping_add(wide(new_step));
         if !everything && self.left == self.right {
             self.empty = true;

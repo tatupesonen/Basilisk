@@ -47,7 +47,13 @@ impl CircleRange {
                 let val = mask_of(in_size);
                 let rem = rem_step(self.left, self.step);
                 // The largest range a zero extension can produce.
-                let zext = Self::from_parts(rem, val.wrapping_add(1).wrapping_add(rem), self.mask, self.step, false);
+                let zext = Self::from_parts(
+                    rem,
+                    val.wrapping_add(1).wrapping_add(rem),
+                    self.mask,
+                    self.step,
+                    false,
+                );
                 if self.intersect(&zext) != Combined::Done {
                     return false;
                 }
@@ -122,7 +128,14 @@ impl CircleRange {
     /// boolean), `INT_ADD`, `INT_SUB`, and `INT_RIGHT` and `INT_SRIGHT` for
     /// a range of step 1. Shift amounts are used modulo 64, as both
     /// reference builds of Ghidra do. Any other operation gives `false`.
-    pub fn pull_back_binary(&mut self, op: OpCode, val: u64, slot: u32, in_size: u32, out_size: u32) -> bool {
+    pub fn pull_back_binary(
+        &mut self,
+        op: OpCode,
+        val: u64,
+        slot: u32,
+        in_size: u32,
+        out_size: u32,
+    ) -> bool {
         let _ = out_size; // As in Ghidra, the output size is not used.
         if self.empty {
             return true;
@@ -205,7 +218,11 @@ impl CircleRange {
             self.left = 0;
             self.right = 0;
         } else {
-            let left = if left > right_bound { right_bound } else { left };
+            let left = if left > right_bound {
+                right_bound
+            } else {
+                left
+            };
             let right = if right > right_bound { 0 } else { right };
             self.left = shl(left, val) & self.mask;
             self.right = shl(right, val) & self.mask;
@@ -223,12 +240,22 @@ impl CircleRange {
         let rightb = leftb ^ full;
         let leftb = leftb.wrapping_add(1);
         let (left, right) = (self.left, self.right);
-        if (left >= leftb && left <= rightb && right >= leftb && right <= rightb && left >= right) || left == right {
+        if (left >= leftb && left <= rightb && right >= leftb && right <= rightb && left >= right)
+            || left == right
+        {
             self.left = 0;
             self.right = 0;
         } else {
-            let left = if left > leftb && left < rightb { leftb } else { left };
-            let right = if right > leftb && right < rightb { rightb } else { right };
+            let left = if left > leftb && left < rightb {
+                leftb
+            } else {
+                left
+            };
+            let right = if right > leftb && right < rightb {
+                rightb
+            } else {
+                right
+            };
             self.left = shl(left, val) & self.mask;
             self.right = shl(right, val) & self.mask;
             if self.left == self.right {
