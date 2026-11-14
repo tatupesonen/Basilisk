@@ -62,6 +62,9 @@ item() {  # name: runs one item, appends to table and fails
   say "$(now) $name"
   "run_${name//-/_}" > "$log" 2>&1 && code=0 || code=$?
   note=$(tail -n 1 "$TB_OUT/$name.note" 2>/dev/null || echo "")
+  # Snapshots a failing test wrote come back with the results.
+  find crates -name '*.snap.new' -newer "$TB_OUT/table.txt" 2>/dev/null | while IFS= read -r f; do
+    mkdir -p "$TB_OUT/snapshots"; mv "$f" "$TB_OUT/snapshots/"; done
   if [ "$code" -ne 0 ]; then
     rc=1
     tb_failed "$log" | sed "s/^/$name /" > "$TB_OUT/one.tmp"
@@ -75,8 +78,14 @@ item() {  # name: runs one item, appends to table and fails
 run_sleigh_every_language() {
   BK_THREADS=$TB_CORES timeout -k 30 7200 cargo test --release --locked -p bk-sleigh --test differential \
     -- --ignored --exact every_language --nocapture
-  local c=$?
-  grep -E 'root pairs|constructors|languages' "$TB_OUT/sleigh-every-language.log" | tail -n 3 > "$TB_OUT/sleigh-every-language.note" || true
+  local c=$? log="$TB_OUT/sleigh-every-language.log" snap
+  # The test prints "<language>: <record difference>" for each difference
+  # and "<language>: oracle crashed on …" for each pcodedump crash; the
+  # coverage table is an insta snapshot (checked first).
+  snap=ok; grep -q 'snapshot assertion for .coverage_table. failed' "$log" && snap=DIFFERS
+  grep '│[-+]' "$log" > "$TB_OUT/coverage-table.diff" || true
+  echo "$(grep -E '^[^ ]+:[A-Z]+:[0-9]+:[^ ]+: ' "$log" | grep -vc ': oracle crashed on ') record differences, $(grep -c ': oracle crashed on ' "$log") oracle crashes, coverage snapshot $snap" \
+    > "$TB_OUT/sleigh-every-language.note"
   return $c
 }
 run_require_reference() {
