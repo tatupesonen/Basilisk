@@ -15,7 +15,7 @@ is merged.
       `docs/PERF.md`, spec sections 8–10 appended.
 - [x] 6.3/6.4 oracle tests written against D00's formats; they skip until
       `decomp_bk` and the table exist.
-- [x] Testbed checks and both gates (results below).
+- [x] Testbed checks and both gates (results under Verification).
 - [ ] **When D00 lands** (coordinator's message, or `bin/decomp_bk` in the
       reference directories and D00 on `master`): `git merge master`;
       replace `tests/support/dump.rs` and the console runner in
@@ -223,8 +223,16 @@ oracle table.
   `cargo metadata --manifest-path fuzz/Cargo.toml` clean;
   `scripts/check-dep-age.py master`: 0 new packages; the `structure blocks`
   table (libc++).
-- Build host: the `structure blocks` table (libstdc++), benchmarks, the
-  testbed checks and both gates below.
+- Build host: the `structure blocks` table (libstdc++), benchmarks, and:
+  - `scripts/remote.sh long fuzz 300 bk_decomp_cfg_structure bk_decomp_cfg_xml`:
+    0 findings (120,332 and 10,900,372 executions);
+  - `scripts/remote.sh wine -- -p bk-decomp-cfg`: 104 passed, 0 failed,
+    6 ignored;
+  - `scripts/remote.sh arm64 -- -p bk-decomp-cfg`: 104 passed, 0 failed,
+    6 ignored, 0 skipped;
+  - `scripts/remote.sh gate; echo $?` → `0` (tests: 2349 passed, 0 failed);
+  - `scripts/remote.sh gate --no-ref; echo $?` → `0` (tests: 2349 passed,
+    0 failed).
 
 ## Commits
 
