@@ -224,6 +224,42 @@ already explains (pair order, the "heavy" pair per `.cspec` chosen by
 readdir order, `std::sort` tie orders in libstdc++ against libc++); the
 generator did not abort this time (it aborted in 3 of 4 runs there).
 
+### After merging master (2026-11-14, `long differential`, 3 min 2 s)
+
+Master merged once into this branch, as the coordinator asked, to take in
+`sleigh-snippet`, `cspec-host` and `sleigh-fixups`. `cspec-oracle` now uses
+master's two-table layout (ADR-040): `regen.sh REF DIR` with
+`REGEN_RUNS=3`, compared byte for byte with
+`tests/data/cspec_oracle.<lib>.txt.gz`.
+
+| Item | Result | Wall |
+|---|---|---|
+| `sleigh-every-language` | FAIL, snapshot only: the same `ARM:LE:32:v8-m` row (oracle crashes 4 here, 5 recorded); 0 record differences | 41 s |
+| `require-reference` | **2,095 passed, 0 failed, 35 ignored, 0 SKIPPED** | 2 min 10 s |
+| `gnu-objdump` | 2 passed against objdump 2.41 (cached) | <1 s |
+| `cspec-oracle` | **libstdcxx: 152,046 records, 3 runs byte-identical, identical to the checked-in table** (the 5,362 differences of the old single table are gone) | 11 s |
+
+## `remote.sh` regression checks (after the changes)
+
+Re-run on this branch (`6e9bb41`) from the checks in `remote-build.md`:
+
+| Check | Result |
+|---|---|
+| `env -u BK_REMOTE BK_REMOTE_CONFIG=/nonexistent remote.sh status` | exit 2 with the message |
+| `remote.sh help` / unknown command | usage printed; exit 0 / 2 |
+| `sync` | exit 0, `remote: testbed at 6e9bb41 …` |
+| `run -- bash -c '…; exit 3'` | output streamed, exit 3 |
+| `run --no-ref -- …` | both variables unset in the job |
+| `BK_REMOTE_TIMEOUT=5 run -- sleep 60` | exit 124 |
+| `run`, `sync`, `wine` while a `long differential` of the branch runs | exit 75 each, "branch testbed is busy" |
+| local side killed mid-job (alarm, exit 142), then `log` | the job went on; `log` replayed the whole output and returned the job's exit 7 |
+| `clean --target <slug>` on a scratch (detached) checkout | build output gone, checkout kept (status: `target -`) |
+| `clean <slug>` | checkout, logs and ref removed |
+| `gate`, `gate --no-ref` | below |
+
+`clean --merged` and `clean --all` were not run, because they would remove
+other agents' checkouts. Their code did not change.
+
 ## Proposed text (not edited by this track)
 
 For `docs/LOOP.md`, a subsection after "The build host":
