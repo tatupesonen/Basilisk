@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 18:04)
+## Now — RESUME HERE (2026-11-14 18:37)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -103,12 +103,32 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 18:04)
+### Running (state at 2026-11-14 18:37)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`) | Opus | `a41574e3f4a6e75b9` | resumed 17:25 after the full disk. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Its findings: `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` is ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. Cut from the integration branch that is now `master` `a961ff3`. |
-| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:02. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
+| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:02. `scripts/remote.sh` exists and is in use on kassini (the remote is read from `~/.config/basilisk/remote` or the environment, never from the repository; default 20 jobs); still to report: the gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there, `bk-sleigh` thread scaling. **When it is merged the cap is one agent** and every running agent is told how to use the script (see below). |
+| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`, cut from `integration` `293c05c`) | Opus | `af1bd08864645b02b` | started 18:37. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md` (p-code snippets of `.cspec`/`.pspec` files compiled against a loaded language). Told to keep local builds to its own crate and to wait for the coordinator's message before any gate: its gates run on kassini. |
+
+**Finished, gate running:** `sleigh-compiler-back` (`a41574e3f4a6e75b9`)
+on branch `integration` (worktree `../basilisk-wt/sleigh-compiler-back`,
+`293c05c`). `bk-sleigh-compiler` part 2 and `basilisk sleigh compile`:
+all 150 specifications compile to `.sla` byte-identical to the
+reference, the `-y` XML and the warning sequences are identical too, no
+tolerated difference; 2.9× faster than the reference compiler over all
+150 (3.83 s against 11.21 s); its gate 2,026 tests with and without the
+oracle variables. Finding: glibc's `log` is reproduced only when every
+product GCC fuses (GNU C mode) is written as an FMA, not just the one
+explicit FMA that spec section 4.3 and ADR-032 name — bit-equal on all
+16,383 table lines; needs an ADR amending ADR-032 after the merge.
+Follow-ups from its report: `bk-sleigh-syntax` should strip a leading
+byte-order mark (done in the compiler for now); `module_options` is
+copied in four test files (`bk-testkit` should own it); Wine runs need
+`INSTA_WORKSPACE_ROOT`; no cancellation or progress in a compile
+(plugin constraint 7; needs the monitor type in a low crate); three
+diagnostics have no test because no input reaching them was found.
+Gate green → push, CI, merge, PLAN (`sleigh-compiler-back` ✔, M2
+complete apart from snippets) and PARITY.
 
 **Merged:** `ui-flake` (`afdc9312b2424f522`; CI run 43613387498 green
 on every job, local gate 1,970 tests; worktree and branch removed). The
