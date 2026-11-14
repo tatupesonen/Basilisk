@@ -401,3 +401,16 @@ reuses the last decode explicitly instead of decoding twice), handles
 resolved last node first instead of the depth-first walk with re-entry,
 precomputed main-template ids, varnode symbols and space classes, operand
 varnodes resolved with one handle look-up, and no `Arc` clone per lift.
+
+### `bk-cspec`
+
+Command: `BASILISK_GHIDRA_DIR=../ghidra CARGO_BUILD_JOBS=2 cargo test -p
+bk-cspec --release --test bench -- --ignored --nocapture --test-threads=1`
+(kind G: reads the real `.cspec` files; spaces and registers from the
+checked-in oracle table). 2026-11-14, M1 Pro, Rust 1.100.0, other agents'
+builds running.
+
+| Benchmark | Result |
+|---|---:|
+| Read the largest `.cspec` (`x86-64-golang.cspec`, 15,994 bytes, 3 models with 100+ entries and rules each) into a `CompilerSpec` | **160 µs** per read (2,000 reads) |
+| Storage assignment, x86-64 gcc `__stdcall`, four signatures in turn (2–8 parameters, a hidden return, a `join_dual_class` structure) | **1,000,000 assignments in 460 ms (460 ns each)**; the status array is inline (no allocation per call beyond the output vector, which is reused) |
