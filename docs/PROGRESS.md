@@ -1,18 +1,18 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 01:37)
+## Now — RESUME HERE (2026-11-15 01:43)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`374fd08` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, `bk-ui`, the GNU disassembler crates,
+(`a8eceba` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
 `bk-sleigh-snippet`), `scripts/remote.sh` and the website; the gate is
-green on Rust 1.100.0 with 2,358 tests and the last CI run on the merged
-tree, 43649366489, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
+green on Rust 1.100.0 with 2,420 tests and the last CI run on the merged
+tree, 43653928732, is green on every job on Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 `bk-sleigh-syntax`, `bk-lang`, `bk-bin`, `bk-elf`, `bk-testkit`, the
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 01:37)
+### Running (state at 2026-11-15 01:43)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -169,17 +169,19 @@ D09 runs the 3d flow comparison and the data tests' map, context,
 volatile and comment commands over D06's API and commits the overlay
 after every `decompile`.
 
-**Finished; first CI run failed on Windows only, fixed, CI rerunning as
-43653928732 (since 01:34 on 2026-11-15):** the first run (43653108247)
-had 9 `bk-testkit` tests fail on `windows-latest`: the new text samples
-(`crates/bk-testkit/tests/data/oracle/*`) were checked out with CRLF and
-the exact readers reject a CR. The coordinator pinned those files and
-`fixtures/decomp-oracle/**` to LF in `.gitattributes` on `integration`
-(`fce1f28`; no code change, so the Linux gate was not rerun). The Wine
-check cannot catch this (a Linux checkout has LF): **a track that
-checks in text read by an exact reader pins it to LF or gzips it** —
-said in the D06 brief; to go into `RULES.md`. Integration gate green
-before that (2,420 tests, 0 new packages, advisories ok):
+**Merged: `decomp-oracle`** (`a8eceba`, CI run 43653928732 green on
+all 8 jobs; worktree and branches removed, the host cleaned and
+`master` published at 01:42 on 2026-11-15; `scripts/remote.sh nightly
+run oracle` started once after that — read `scripts/remote.sh report`).
+The first CI run (43653108247) had 9 `bk-testkit` tests fail on
+`windows-latest`: the new text samples
+(`crates/bk-testkit/tests/data/oracle/*`) were checked out with CRLF
+and the exact readers reject a CR. The coordinator pinned those files
+and `fixtures/decomp-oracle/**` to LF in `.gitattributes` on
+`integration` (`fce1f28`; no code change, so the Linux gate was not
+rerun); the rule is now in `RULES.md` ("Checked-in data and line
+ends"). Integration gate before that: 2,420 tests, 0 new packages,
+advisories ok. The track:
 `decomp-oracle` (`a5bfa968bedb8543f`) on branch
 `integration` (worktree `../basilisk-wt/decomp-oracle`, `fce1f28`). D00
 is built: `scripts/build-reference.sh` step 1b makes `bin/decomp_dbg`,
@@ -218,8 +220,7 @@ under load and passes 20 of 20 alone — a race, for the next `ui` track
 fails an integration gate, rerun and record. After the merge:
 `scripts/remote.sh publish`, then `scripts/remote.sh nightly run
 oracle` once and read the report (the run from the branch said `oracle
-SKIP unknown item` because the host's `master` did not have it). Gate
-green → push, CI, merge, delete, clean.
+SKIP unknown item` because the host's `master` did not have it).
 
 **Merged, oracle acceptance still owed: `decomp-cfg`**
 (`ae8492491a7ef480f`; `374fd08`, CI run 43649366489 green on all 8
@@ -723,10 +724,7 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
-   `decomp-oracle`: CI rerun → merge (state above); then tell
-   `decomp-cfg-oracle` that `master` has one more commit than its base
-   (`.gitattributes` only), publish, and run `scripts/remote.sh nightly
-   run oracle` once. `decomp-cfg-oracle` reports → merge; in its slot
+   `decomp-oracle` is merged (above). `decomp-cfg-oracle` reports → merge; in its slot
    resume the D00 agent for **`decomp-oracle-v2`** (the dump's `@scope`
    section), then **D05 `decomp-ir`** (`features/decomp-ir.md`,
    ADR-046). `decomp-symbols` reports → merge. The monitor type (queue
