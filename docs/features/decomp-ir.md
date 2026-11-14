@@ -489,3 +489,24 @@ from the source and the captures: the exact `order` numbering scheme of
 `PcodeOp`/`Varnode` queries need `TypeOp` or a type factory; whether the
 `alttree` index is used by anything in this track's scope; whether D00
 can log mutation calls without patching Ghidra (test 4).
+
+## Corrections, 2026-11-14 (coordinator; from `docs/agents/spec-decomp-wave1.md`)
+
+To be folded in when this track is briefed; until then these override
+the text above.
+
+* 4.2 and 6.3: Ghidra's two `VarnodeBank` orders depend on heap
+  addresses for `iop`, `fspec` and space-constant varnodes and differ
+  between runs of one binary. D00's state dump writes both orders with
+  canonical keys (op time, call-spec position, space index); this track
+  takes ids and both orders from the dump and reproduces those keys.
+  `CallSpecId` is the call specification's position in `qlst` at dump
+  time.
+* 6 item 1: "after `ActionStart`" means a start breakpoint on the
+  following action (`constbase`, position 0002); there is no "break
+  after". Actions whose names occur twice are addressed by position
+  (`features/decomp-oracle.md` 4.5).
+* The oracle is `decomp_bk`/`decomp_bk_dbg` and the formats of
+  `features/decomp-oracle.md` (ADR-042), not a file compiled into
+  Ghidra's Makefile.
+

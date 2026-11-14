@@ -12,7 +12,7 @@ defect was reproduced against the reference build (a crash, or output
 that changes from run to run), and **read** when it follows from the
 source alone. What Basilisk does instead is recorded in the feature
 specs' "Differences from Ghidra" sections and in ADR-024, ADR-038,
-ADR-039, ADR-040 and ADR-041. Paths are relative to
+ADR-039, ADR-040, ADR-041 and ADR-042. Paths are relative to
 `Ghidra/Features/Decompiler/src/decompile/cpp/` unless they say
 otherwise.
 
@@ -42,6 +42,9 @@ and the coordinator adds it here.
 | 20 | Value ranges (`CircleRange::pushForwardBinary`, `INT_MULT`, lines 1235–1239) | With a constant whose low 32 bits are 0 and a step bound above 2³⁰ the doubling loop reaches 0 and never ends | Hang. Not reachable from Ghidra's own callers | read | `agents/decomp-range.md`, ADR-041 |
 | 21 | Value ranges, unsound results (`rangeutil.cc`) | `contains` of a full stepped range ignores the phase (314); `intersect` never compares the phases of equal steps, and `newStride` misreads ranges that wrap or round past the top (111–128, 595); `pullBackBinary` for `INT_SUB` with the variable in slot 1 does not reverse the bounds (942–943); the `INT_RIGHT`/`INT_SRIGHT` push-forward of a wrapping range is one value short (1313, 1329–1335); a comparison pull-back of a range holding both outcomes gives `[0,2)` instead of everything (820 and similar); `minimalContainer` of a full range returns the other range and leaves `right - step + 1` unmasked (478–495); `getMaxInfo` ignores the step and the sign bit, so the `INT_MULT` and `INT_LEFT` push-forwards can miss a wrap (280–297, 1241, 1272); `SUBPIECE` of a full stepped range loses its phase (1289); `pullBackUnary` for `INT_SEXT` uses `left & step` where `left % step` is evidently meant (774) | A range that does not contain every value the variable can take, or contains values it cannot: possible wrong jump-table bounds or value-set results. Basilisk reproduces each (the decompiler's output depends on them) | confirmed by enumeration against the oracle's results (property tests) | `agents/decomp-range.md`; `crates/bk-decomp-range/tests/properties.rs`, `edge_cases.rs` |
 | 22 | Value ranges, undefined arithmetic and uninitialised reads (`rangeutil.cc`) | 18 sites with shifts by 64 or more or by a negative count, an `int4` multiplication overflow (1283) and an `int64` addition overflow (1331); `getMax`, `getMaxInfo`, `setStride`, `minimalContainer` and `widen` read the bounds of an empty range, which no constructor initialises | Undefined behaviour; results depend on the compiler and on memory contents (13,085 and 2,777 of 152,913 oracle rows) | confirmed (UndefinedBehaviorSanitizer with per-row handlers; valgrind) | `agents/decomp-range.md`, ADR-041 |
+| 24 | Block structuring (`BlockGraph::structureLoops`, `block.cc:2212–2228`; `findSpanningTree`, `block.cc:1058`) | When `findIrreducible` reports an irreducible tree edge it asks for a rebuild, but `findSpanningTree` clears the irreducible flags at the start of every pass, so the same tree and edge would come back forever | Latent endless loop; by the same reading the branch cannot be reached (a tree edge is never reported). Basilisk bounds the loop | read | `agents/spec-decomp-wave1.md`, `features/decomp-cfg.md` |
+| 25 | Block structuring (`TraceDAG::selectBadEdge`, `blockaction.cc:749`) | `(*iter).exitproto` on `badedgelist.begin()` without a check that the list is not empty | Possible dereference of an empty list | read; not reproduced on 3,000 random graphs | `agents/spec-decomp-wave1.md` |
+| 26 | Block XML (`FlowBlock::decodeNextInEdge`, `block.cc:89–101`) | Out-edge slots that no in-edge names stay default-constructed, with an indeterminate pointer | `structure blocks` on a malformed document is undefined behaviour | read | `agents/spec-decomp-wave1.md` |
 
 ## Results that depend on the host
 
@@ -51,6 +54,8 @@ and the coordinator adds it here.
 | 15 | Prototype models, effect lists and trials | `std::sort`, which is not stable, on elements that compare equal, and lookups answered from the resulting order: effect records at one address (`ProtoModel::decode`, `fspec.cc:2680`, comparator `fspec.hh:1786`), `lookupEffect` (`fspec.cc:2463`) returning the last tied record, identical trials (`sortTrials`, `fspec.hh:322`), trials without an entry (`fspec.cc:1881`). Latent in `intersectEffects` (`fspec.cc:2767`), `lookupRecord` (`fspec.cc:2501`), the `FuncProto` effect sort (`fspec.cc:3673`), `ScoreProtoModel::doScore` (`fspec.cc:2728`). The fix upstream is `std::stable_sort` | With libstdc++ and libc++ the decompiler's own tables differ in 119 of 152,046 rows: 56 reordered effect rows (NDS32, RISC-V gcc), 24 different `hasEffect` answers (3 on macOS, 1 or 2 on Linux), 39 trial results (tricore, Loongarch lp64f, x86-64 golang). Ghidra's Linux, macOS and Windows releases use three different libraries | confirmed (both tables generated 20 times each, byte-identical per library; valgrind clean) | `agents/cspec-host.md`, ADR-040 |
 | 16 | P-code snippet lexer, numbers | An octal literal holding an 8 or a 9 (`09`) is read through the stream's number parser | 0 with libstdc++, an overflow error with libc++ | confirmed | `features/sleigh-snippet.md` §8 |
 | 23 | Value ranges (`CircleRange::pushForwardBinary`, `INT_LEFT`, `rangeutil.cc:1269–1270`) | A shift amount of 64 or more is undefined; g++ on x86-64 shifts modulo 64, Apple clang on AArch64 vectorises the two shifts into one `USHL` that reads the amount as a signed byte | The same Ghidra source gives different ranges on Linux x86-64 and macOS arm64 (834 of 152,913 oracle rows) | confirmed (two oracle tables) | `agents/decomp-range.md`, ADR-041 |
+| 27 | Varnode bank (`varnode.cc:39`, `73`) | The offsets of `iop` and `fspec` varnodes and of `LOAD`/`STORE` space constants are heap pointers, and the bank's two orders compare them | `print tree varnode` lists varnodes in a different order in two runs of one binary (43 of the 93 data tests on macOS). No effect on decompiled output observed | confirmed (two runs compared) | `agents/spec-decomp-wave1.md`, `research/decomp-wave1/runs.md` R5, ADR-042 |
+| 28 | Block ordering (`FlowBlock::compareFinalOrder`, `block.cc:718`; used by `orderBlocks`, `block.hh:448`) | Not a strict weak ordering: index 0 compares less than itself, and two blocks ending in `RETURN` compare equal | `std::sort` leaves the order of such blocks to the C++ library (same kind as entry 15) | read; how often a tie occurs is open | `agents/spec-decomp-wave1.md`, `features/decomp-cfg.md` §10 |
 
 ## Smaller observations
 
@@ -73,6 +78,17 @@ and the coordinator adds it here.
 * `defineBitrange` (`slgh_compile.cc` 2800–2822) computes
   `(size-bitoffset-numb)/8` in 32-bit unsigned arithmetic, wrapping like
   entry 13 (`agents/sleigh-fixups.md`).
+* The console's breakpoint specifiers cannot address an action or rule
+  whose name occurs twice (`ActionGroup::getSubAction`, `action.cc:456`;
+  `getSubRule`, 481, 777): `break start blockstructure` fails (ran;
+  `agents/spec-decomp-wave1.md`). The oracle adds breakpoints by position.
+* `BlockCondition` is created with opcode `INT_OR`/`INT_AND`, toggled
+  between `BOOL_AND` and `BOOL_OR` and printed by testing `== BOOL_AND`
+  (`block.cc:1790`, 3073, 3091, 3107; `printc.cc:3001`) — right only
+  because `ruleBlockOr` always creates the `INT_OR` case; the encoded
+  attribute shows `INT_OR`.
+* `ruleCaseFallthru`'s comment "Check exit block matches the 1
+  nonfallthru exit" (`blockaction.cc:1761`) has no code behind it.
 * The SLEIGH compiler's token-mismatch message prints pointers
   (`features/sleigh-compiler-back.md` §8).
 * `FileManage::matchListDir` (`filemanage.cc:177–203`) returns files in

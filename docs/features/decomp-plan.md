@@ -856,3 +856,58 @@ neither corpus): `scarry`, `rightshiftand`,
 `splitflow`, `ptrflow`, `negatenegate`, `orpredicate`, `floatcast`,
 `ptrsubundo`, `segment`, `piecepathology`, `doublestore`, `subright`,
 `floatsigncleanup`, `extensionpush`, `andstructure`.
+
+## 11. Amendments, 2026-11-14 (from the D00 and D04 specifications)
+
+Writing `features/decomp-oracle.md` and `features/decomp-cfg.md`
+against the source and the built console found the following wrong or
+unworkable in this plan (`docs/agents/spec-decomp-wave1.md`; decided in
+ADR-042). Where this section and an earlier one disagree, this section
+and the two specifications hold.
+
+1. **4.2, "compiled into the source copy so the Makefile compiles
+   it"**: not possible — the Makefile has no per-file flags and the file
+   would enter `decomp`, `decomp_test` and `libdecomp`. The extension is
+   compiled separately (`tools/reference/consoleext/`) and linked into
+   two extra consoles, `decomp_bk` and `decomp_bk_dbg`; `decomp` and
+   `decomp_dbg` stay Ghidra's.
+2. **4.1, 4.2, section 6 (D04, D05, D11), breakpoints by name**:
+   Ghidra's specifier cannot reach an action whose name occurs twice
+   (`blockstructure`, `prefercomplement`, `structuretransform`,
+   `dynamicsymbols`, `deadcode`, …). D00 adds breakpoints by position;
+   D07 and D11 address such actions by position.
+3. **3.3 and `decomp-ir.md` 4.2, 6.3, the two orders of
+   `VarnodeBank` "tested against Ghidra's dumps"**: Ghidra's orders
+   depend on heap addresses for `iop`, `fspec` and space-constant
+   varnodes and differ between runs. The dump writes both orders with
+   canonical keys (op time, call-spec position, space index); D05
+   reproduces those.
+4. **4.1 and inventory section 8, "drop `internal=`"**: not enough to
+   make `print tree varnode` comparable; pointer-valued constants and
+   their order vary too. Comparisons use the state dump.
+5. **Section 6 (D00) and section 7, "an x86-64 Linux container
+   target"**: obsolete. The build host builds the reference natively
+   with the same script; every oracle output is generated on both
+   reference builds and compared (ADR-040's form).
+6. **Section 6 (D04) and 8 (3b), `structure blocks` as D04's oracle**:
+   too lossy (its XML drops edge labels, writes `ifnoexit` as `ifelse`,
+   has no overflow flag and no flips; plain blocks are always complex;
+   it never calls `orderBlocks`). It stays as a cross-check that works
+   before D00 exists; the oracle is `bk structure` on graphs that carry
+   the per-block facts. Inventory section 8 is wrong that `structure
+   blocks` runs `orderBlocks`.
+7. **9.1 item 1 and ADR-028**: there are eight `negateCondition` sites,
+   not ten, and the open point is settled by reading — no structuring
+   rule reads back what a negation changed.
+8. **9.1, the facts "two-way branch, complexity, last-op kind"**: the
+   facts are `complex`, `switch_out`, `ends_in_return` and
+   `negation_changes_dataflow`, and the structurer takes the graph's
+   analyses as given (labels, order, indices), because
+   `ActionBlockStructure` does not recompute them.
+9. **`decomp-ir.md` 6 item 1, "dumps … after `ActionStart`"**: there is
+   no "break after"; it is a start breakpoint on the following action
+   (`constbase`, position 0002).
+10. **Section 6 (D04), corpus graphs "exported with `bk dump state`"**:
+    the graph input is `bk dump blocks` at each actual structuring run,
+    and one function can give several runs.
+

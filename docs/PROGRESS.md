@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 22:47)
+## Now — RESUME HERE (2026-11-14 23:10)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 22:47)
+### Running (state at 2026-11-14 23:10)
 
 **The cap is two agents** (owner, 2026-11-14 about 20:17: "You can
 start two agents", "That's the limit for now"), and every agent builds,
@@ -138,6 +138,33 @@ payload order (`docs/agents/sleigh-snippet.md`, Follow-ups). These are
 queue item 3 below (`sleigh-fixups`). On the Mac the track added
 `bin/snippetdump` to `../reference` (the script also rebuilt
 `bin/pcodedump` from the same source and rewrote `STAMP`).
+
+**Merged: `spec-decomp-wave1`** (`a3e1e4fb110ba60cf`; `d702880`, merged
+directly at 23:08, docs only; worktree and branch removed).
+`features/decomp-oracle.md` (D00, 829 lines) and
+`features/decomp-cfg.md` (D04, 997 lines), each statement read from the
+source or run on the reference (runs R1–R9 and the inventory of every
+`std::sort` and pointer-keyed container in the engine are in
+`docs/research/decomp-wave1/`). What it found is decided in **ADR-042**
+(the oracle is a console extension in separate consoles; dumps use
+reproducible keys; ADR-028 item 3b verified) and listed in
+`decomp-plan.md` section 11 "Amendments" and at the end of
+`decomp-ir.md` (corrections for D05). On both reference builds 3,000
+random graphs structure byte-identically; the data tests agree between
+the hosts except for lines carrying heap pointers and the known
+`NAN`/`-NAN` case. `GHIDRA-BUGS.md` entries 24–28 and three smaller
+observations. Open items it left (the specs' section 10): how often two
+`RETURN` blocks tie in `orderBlocks`; whether `selectBadEdge`'s empty
+list is reachable; the structurer's default work limit; whether the
+dump's jump-table, load-guard and trial fields are enough for D13, D10
+and D07; whether the hook patches for the optional logs are practical;
+17 `std::sort` sites to be classified by the tracks that port their
+modules (`research/decomp-wave1/sorts.md`). For the briefs: D04's
+`structure blocks` cross-check works before D00 exists, its `rand` and
+`rand_chacha` need the dependency-age check, edge-order mutations are
+ported exactly; D05 takes ids and both bank orders from the dump; D15
+applies flips by parity and needs `finalizePrinting`'s case order; D07
+and D11 address duplicated action names by position.
 
 **Merged: `decomp-range`** (`a8550db77f2254819`; `5f3c417`, CI run
 43638494204 green on all 8 jobs, integration gate on the build host
@@ -247,7 +274,7 @@ left as they are).
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `sleigh-perf-linux` (worktree `../basilisk-wt/sleigh-perf-linux`, cut from `master` `12f1705`) | Opus | `a20fadd7bd1040732` | started 22:03. Queue item 4 below: re-measure `bk-sleigh` against the reference on the build host's new CPU model, profile both with `perf`, close the single-thread gap without `unsafe` or output changes, numbers on both machines; plus label numbers truncated to 32 bits as in Ghidra and the host-dependent oracle-crash count taken out of the `every_language` snapshot. May touch `bk-sla` if the profile points there. |
-| `spec-decomp-wave1` (worktree `../basilisk-wt/spec-decomp-wave1`, cut from `master` `6f8d705`) | Opus | `a3e1e4fb110ba60cf` | started 22:33. Queue item 6 below: writes `features/decomp-oracle.md` (D00: the reference console and its extension, dump formats, state loading, recorded p-code, determinism and both reference builds, Ghidra headless as a later oracle) and `features/decomp-cfg.md` (D04: `bk-decomp-cfg`, the block graph and structuring, ADR-025 item 3b); docs only; every statement read or run. It was told the next ADR number is 041, which `decomp-range`'s decision has since taken: renumber its proposals when recording. |
+| `decomp-oracle` (worktree `../basilisk-wt/decomp-oracle`, cut from `master` `e8041d6`) | Opus | `a5bfa968bedb8543f` | started 23:09. D00 from `features/decomp-oracle.md` (ADR-042): the console extension (`tools/reference/consoleext/`, consoles `decomp_bk`, `decomp_bk_dbg`, plus `decomp_dbg`), the dump, graph, structure, trace and p-code-recording formats, their readers in `bk-testkit`, a nightly `oracle` item. Told to deliver `bk structure` and `bk cfg` first (D04 needs them), to develop against scratch copies of the reference, and to run the new build script on the two shared reference directories only at the end, adding files only, with before/after hashes in its report. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -474,7 +501,7 @@ start a fresh agent briefed from the branch's files.
    `features/decomp-range.md` (117 `testcirclerange` tests); spec
    complete. The decompiler (M3, `features/decomp-plan.md`; ADR-026,
    027, 028) is the main line from here on: one slot stays on it.
-6. **Specs for D00 (oracle tooling) and D04 (`bk-decomp-cfg`)** (running since 22:33) — an
+6. **Specs for D00 and D04 written and merged (23:08); D00 `decomp-oracle` running since 23:09; D04 `decomp-cfg` next.** The brief the spec agent had — an
    Opus agent writes `features/decomp-oracle.md` and
    `features/decomp-cfg.md`; the plan's sections 4.2, 6 and 9.1 are the
    briefs (the earlier spec agent `a0c25da932de14a37` was Fable; its
@@ -553,12 +580,16 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 
 1. `cspec-host` is merged (above).
 2. `sleigh-fixups` and `testbed` are merged (above).
-   `decomp-range` is merged (above).
-   `sleigh-perf-linux` reports → merge; start queue item 7 (the monitor
-   type). `spec-decomp-wave1` reports → review both specs, amend
-   `decomp-plan.md` where it found the plan wrong, merge directly (docs
-   only), start D00 `decomp-oracle` and then D04 `decomp-cfg`. After
-   each merge: `scripts/remote.sh publish`.
+   `decomp-range` and `spec-decomp-wave1` are merged (above).
+   `sleigh-perf-linux` reports → merge; start **D04 `decomp-cfg`**
+   (`features/decomp-cfg.md`; it begins with the `structure blocks`
+   cross-check and takes `bk structure`/`bk cfg` from `decomp-oracle`'s
+   branch state or from `master` once D00's first step is merged — if
+   D00 has committed that step, ask it to say so and merge it early).
+   `decomp-oracle` reports → check the before/after hashes of both
+   reference directories, merge through `integration`, start queue
+   item 7 (the monitor type). After each merge: `scripts/remote.sh
+   publish`.
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
