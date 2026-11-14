@@ -80,3 +80,16 @@ jobs:
       - run: rustup toolchain install nightly --component miri
       - uses: Swatinem/rust-cache@v2
       - run: scripts/miri.sh
+
+  site:
+    # The website and documentation (ADR-030, ADR-031): built in the same
+    # container image as on a developer's machine, then links, external
+    # requests and Mermaid diagrams are checked at / and under /basilisk/.
+    name: site (build + links + diagrams)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/site.sh check
+        env:
+          SITE_TIMEOUT: "1200"

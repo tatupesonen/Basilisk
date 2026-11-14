@@ -1,0 +1,211 @@
+/*
+ * basilisk design tokens for the website and the documentation.
+ *
+ * Colours are the desktop interface's (docs/features/ui-design.md, §5, and
+ * crates/bk-ui/src/design/tokens.rs) and the brand's (assets/brand/README.md),
+ * so the site, the documentation and the program read as one product.
+ * Dark is the default, as in the program. The light theme applies when
+ * <html data-theme="light">, or, before any script has run (or without
+ * scripts), when the system prefers light.
+ *
+ * Ember marks only "where you are": the current page, the current sidebar
+ * entry, focus, the primary action, the current milestone. Nothing else is
+ * orange.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../generated/fonts/Inter-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../generated/fonts/Inter-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../generated/fonts/JetBrainsMonoNL-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../generated/fonts/JetBrainsMonoNL-SemiBold.woff2') format('woff2');
+}
+
+:root {
+  /* Brand (assets/brand/README.md). */
+  --bk-ember: #ff6a2b;
+  --bk-ember-deep: #e8551a;
+  --bk-soot: #150f0d;
+  --bk-bone: #f1ece6;
+
+  /* Type. */
+  --bk-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bk-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --bk-text-xs: 0.75rem;
+  --bk-text-sm: 0.875rem;
+  --bk-text-base: 1rem;
+  --bk-text-lg: 1.125rem;
+  --bk-text-xl: 1.375rem;
+  --bk-text-2xl: 1.75rem;
+  --bk-text-3xl: clamp(2rem, 1.4rem + 2.4vw, 2.75rem);
+  --bk-text-display: clamp(2.5rem, 1.2rem + 5.2vw, 4.75rem);
+
+  /* Spacing: the interface's scale (2 … 40 px), then layout steps. */
+  --bk-space-0: 2px;
+  --bk-space-1: 4px;
+  --bk-space-2: 6px;
+  --bk-space-3: 8px;
+  --bk-space-4: 12px;
+  --bk-space-5: 16px;
+  --bk-space-6: 24px;
+  --bk-space-7: 40px;
+  --bk-space-8: 64px;
+  --bk-space-9: 96px;
+  --bk-space-10: 128px;
+
+  /* Radii: controls, menus, dialogs (ui-design.md §5). */
+  --bk-radius-1: 4px;
+  --bk-radius-2: 6px;
+  --bk-radius-3: 8px;
+
+  --bk-content: 72rem;
+  --bk-prose: 40rem;
+
+  color-scheme: dark;
+
+  /* Surfaces, dark. */
+  --bk-chrome: #15100e;
+  --bk-surface: #1d1815;
+  --bk-raised: #27211d;
+  --bk-selection: #45291c;
+  --bk-cursor-line: #2c241f;
+  --bk-linked: #262421;
+  --bk-highlight: #4a3d17;
+  --bk-line: #2f2723;
+  --bk-line-strong: #463b35;
+
+  /* Text, dark. */
+  --bk-text: #ece5dd;
+  --bk-text-2: #b3a89e;
+  --bk-text-muted: #968c82;
+  --bk-accent: #ff6a2b;
+  --bk-accent-text: #ff8a57;
+  --bk-on-accent: #150f0d;
+  --bk-mark: #ff6a2b;
+
+  /* Syntax, dark (the twelve roles). */
+  --bk-syn-mnemonic: #e4dcd3;
+  --bk-syn-register: #8db8e8;
+  --bk-syn-number: #a8dca0;
+  --bk-syn-label: #e3ac7e;
+  --bk-syn-function: #eac86e;
+  --bk-syn-global: #ee98b0;
+  --bk-syn-variable: #c0d2ea;
+  --bk-syn-parameter: #b5a6f5;
+  --bk-syn-keyword: #da94d0;
+  --bk-syn-type: #4ec5c1;
+  --bk-syn-string: #d3d98a;
+  --bk-syn-comment: #968c82;
+
+  --bk-shadow: 0 1px 0 rgb(0 0 0 / 0.4), 0 24px 64px -24px rgb(0 0 0 / 0.7);
+  --bk-hero-ring: rgb(255 106 43 / 0.13);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bk-chrome: #efeae4;
+  --bk-surface: #fbf8f4;
+  --bk-raised: #ffffff;
+  --bk-selection: #f8d9c6;
+  --bk-cursor-line: #f3ece4;
+  --bk-linked: #f5f0e6;
+  --bk-highlight: #f7e39a;
+  --bk-line: #e4dbd1;
+  --bk-line-strong: #cdbfb2;
+  --bk-text: #1e1814;
+  --bk-text-2: #5e554e;
+  --bk-text-muted: #6e645c;
+  --bk-accent: #e8551a;
+  --bk-accent-text: #b93d0a;
+  --bk-on-accent: #150f0d;
+  --bk-mark: #e8551a;
+  --bk-syn-mnemonic: #2a221d;
+  --bk-syn-register: #1d5fa8;
+  --bk-syn-number: #276b1a;
+  --bk-syn-label: #9a4e12;
+  --bk-syn-function: #7a5a00;
+  --bk-syn-global: #b02a5e;
+  --bk-syn-variable: #3f5163;
+  --bk-syn-parameter: #5b45c7;
+  --bk-syn-keyword: #9a2f96;
+  --bk-syn-type: #006a75;
+  --bk-syn-string: #5f5e00;
+  --bk-syn-comment: #6e655d;
+  --bk-shadow: 0 1px 0 rgb(30 24 20 / 0.06), 0 24px 64px -28px rgb(30 24 20 / 0.35);
+  --bk-hero-ring: rgb(232 85 26 / 0.16);
+}
+
+/* Without scripts (or before they run) follow the system's preference. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bk-chrome: #efeae4;
+    --bk-surface: #fbf8f4;
+    --bk-raised: #ffffff;
+    --bk-selection: #f8d9c6;
+    --bk-cursor-line: #f3ece4;
+    --bk-linked: #f5f0e6;
+    --bk-highlight: #f7e39a;
+    --bk-line: #e4dbd1;
+    --bk-line-strong: #cdbfb2;
+    --bk-text: #1e1814;
+    --bk-text-2: #5e554e;
+    --bk-text-muted: #6e645c;
+    --bk-accent: #e8551a;
+    --bk-accent-text: #b93d0a;
+    --bk-on-accent: #150f0d;
+    --bk-mark: #e8551a;
+    --bk-syn-mnemonic: #2a221d;
+    --bk-syn-register: #1d5fa8;
+    --bk-syn-number: #276b1a;
+    --bk-syn-label: #9a4e12;
+    --bk-syn-function: #7a5a00;
+    --bk-syn-global: #b02a5e;
+    --bk-syn-variable: #3f5163;
+    --bk-syn-parameter: #5b45c7;
+    --bk-syn-keyword: #9a2f96;
+    --bk-syn-type: #006a75;
+    --bk-syn-string: #5f5e00;
+    --bk-syn-comment: #6e655d;
+    --bk-shadow: 0 1px 0 rgb(30 24 20 / 0.06), 0 24px 64px -28px rgb(30 24 20 / 0.35);
+    --bk-hero-ring: rgb(232 85 26 / 0.16);
+  }
+}
+
+/* Theme-paired content: hide the copy that does not match the active theme
+ * (hiding only, so each element keeps its own display value). */
+:root[data-theme='light'] .bk-only-dark,
+:root[data-theme='dark'] .bk-only-light {
+  display: none !important;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .bk-only-dark {
+    display: none !important;
+  }
+}
+@media not (prefers-color-scheme: light) {
+  :root:not([data-theme]) .bk-only-light {
+    display: none !important;
+  }
+}

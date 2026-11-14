@@ -1,0 +1,333 @@
+/* The status matrix (components/StatusTable.astro) and the roadmap. */
+
+.bk-status-summary {
+  margin-top: var(--bk-space-8);
+  max-width: 48rem;
+}
+.bk-status-body {
+  padding-block: var(--bk-space-8) var(--bk-space-9);
+}
+.bk-status-foot {
+  display: flex;
+  gap: var(--bk-space-3);
+  align-items: baseline;
+  margin-top: var(--bk-space-7);
+  font-size: var(--bk-text-sm);
+}
+
+/* Filter: radio inputs styled as a segmented control; :has() hides rows. */
+.bk-filter {
+  position: sticky;
+  top: 3.75rem;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bk-space-2);
+  margin: 0 0 var(--bk-space-7);
+  padding: var(--bk-space-4) 0;
+  border: 0;
+  background: var(--bk-surface);
+  border-bottom: 1px solid var(--bk-line);
+}
+.bk-filter label {
+  position: relative;
+  cursor: pointer;
+}
+.bk-filter input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.bk-filter label > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bk-space-2);
+  padding: var(--bk-space-1) var(--bk-space-4);
+  border: 1px solid var(--bk-line);
+  border-radius: 999px;
+  font-size: var(--bk-text-sm);
+  color: var(--bk-text-2);
+  background: var(--bk-surface);
+}
+.bk-filter label > span b {
+  font-family: var(--bk-font-mono);
+  font-size: var(--bk-text-xs);
+  font-weight: 400;
+  color: var(--bk-text-muted);
+}
+.bk-filter label:hover > span {
+  border-color: var(--bk-line-strong);
+  color: var(--bk-text);
+}
+.bk-filter input:checked + span {
+  background: var(--bk-selection);
+  border-color: var(--bk-accent);
+  color: var(--bk-text);
+}
+.bk-filter input:focus-visible + span {
+  outline: 2px solid var(--bk-accent);
+  outline-offset: 2px;
+}
+.bk-filter .bk-status-dot {
+  background: var(--bk-status);
+}
+
+.bk-matrix:has(input[value='done']:checked) tbody tr:not([data-status='done']),
+.bk-matrix:has(input[value='partial']:checked) tbody tr:not([data-status='partial']),
+.bk-matrix:has(input[value='progress']:checked) tbody tr:not([data-status='progress']),
+.bk-matrix:has(input[value='reused']:checked) tbody tr:not([data-status='reused']),
+.bk-matrix:has(input[value='replaced']:checked) tbody tr:not([data-status='replaced']),
+.bk-matrix:has(input[value='missing']:checked) tbody tr:not([data-status='missing']),
+.bk-matrix:has(input[value='out']:checked) tbody tr:not([data-status='out']) {
+  display: none;
+}
+.bk-matrix:has(input[value='done']:checked) .bk-matrix-section:not(:has(tr[data-status='done'])),
+.bk-matrix:has(input[value='partial']:checked) .bk-matrix-section:not(:has(tr[data-status='partial'])),
+.bk-matrix:has(input[value='progress']:checked) .bk-matrix-section:not(:has(tr[data-status='progress'])),
+.bk-matrix:has(input[value='reused']:checked) .bk-matrix-section:not(:has(tr[data-status='reused'])),
+.bk-matrix:has(input[value='replaced']:checked) .bk-matrix-section:not(:has(tr[data-status='replaced'])),
+.bk-matrix:has(input[value='missing']:checked) .bk-matrix-section:not(:has(tr[data-status='missing'])),
+.bk-matrix:has(input[value='out']:checked) .bk-matrix-section:not(:has(tr[data-status='out'])) {
+  display: none;
+}
+
+.bk-matrix-section + .bk-matrix-section {
+  margin-top: var(--bk-space-8);
+}
+.bk-matrix-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bk-space-4);
+  margin-bottom: var(--bk-space-5);
+  font-size: var(--bk-text-xl);
+  scroll-margin-top: 8rem;
+}
+.bk-matrix-section h2 .bk-muted {
+  font-family: var(--bk-font-mono);
+  font-size: var(--bk-text-sm);
+  font-weight: 400;
+}
+.bk-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--bk-line);
+  border-radius: var(--bk-radius-3);
+  background: var(--bk-surface);
+}
+.bk-matrix table {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: collapse;
+  font-size: var(--bk-text-sm);
+}
+.bk-matrix thead th {
+  position: sticky;
+  top: 0;
+  padding: var(--bk-space-3) var(--bk-space-5);
+  background: var(--bk-chrome);
+  border-bottom: 1px solid var(--bk-line-strong);
+  font-family: var(--bk-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--bk-text-muted);
+}
+.bk-matrix tbody th,
+.bk-matrix tbody td {
+  padding: var(--bk-space-4) var(--bk-space-5);
+  border-bottom: 1px solid var(--bk-line);
+  text-align: left;
+  vertical-align: top;
+}
+.bk-matrix tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.bk-matrix tbody tr:hover {
+  background: var(--bk-cursor-line);
+}
+.bk-matrix tbody th {
+  width: 24%;
+  font-weight: 600;
+  color: var(--bk-text);
+}
+.bk-matrix .bk-crates {
+  width: 17%;
+  color: var(--bk-text-2);
+}
+.bk-matrix .bk-ms {
+  width: 7%;
+  font-family: var(--bk-font-mono);
+  font-size: var(--bk-text-xs);
+  color: var(--bk-text-2);
+  white-space: nowrap;
+}
+.bk-matrix .bk-notes {
+  color: var(--bk-text-2);
+  line-height: 1.55;
+}
+.bk-matrix code {
+  font-size: 0.8125rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+.bk-matrix .bk-notes code,
+.bk-matrix .bk-crates code {
+  color: var(--bk-text);
+}
+.bk-matrix a {
+  color: var(--bk-text);
+  text-decoration-color: var(--bk-line-strong);
+  text-underline-offset: 0.2em;
+}
+.bk-matrix a:hover {
+  color: var(--bk-accent-text);
+}
+
+/* ---- Roadmap ------------------------------------------------------------- */
+
+.bk-roadmap {
+  margin: 0;
+  padding: var(--bk-space-8) 0 var(--bk-space-9);
+  list-style: none;
+}
+.bk-roadmap > li {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--bk-space-5);
+}
+.bk-rm-marker {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.bk-rm-marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--bk-line-strong);
+}
+.bk-roadmap > li:first-child .bk-rm-marker::before {
+  top: 0.75rem;
+}
+.bk-roadmap > li:last-child .bk-rm-marker::before {
+  bottom: auto;
+  height: 0.75rem;
+}
+.bk-rm-node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--bk-line-strong);
+  background: var(--bk-surface);
+  color: var(--bk-surface);
+}
+.rm-done .bk-rm-node {
+  background: var(--bk-syn-number);
+  border-color: var(--bk-syn-number);
+}
+.rm-current .bk-rm-node {
+  border: 2px solid var(--bk-accent);
+}
+.rm-current .bk-rm-node .bk-pupil {
+  width: 0.4rem;
+  height: 0.875rem;
+}
+.bk-rm-body {
+  padding-bottom: var(--bk-space-8);
+  min-width: 0;
+}
+.bk-rm-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--bk-space-4);
+  font-family: var(--bk-font-mono);
+  font-size: var(--bk-text-xs);
+}
+.bk-rm-id {
+  font-weight: 600;
+  color: var(--bk-text);
+}
+.bk-rm-state {
+  color: var(--bk-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.rm-current .bk-rm-state {
+  color: var(--bk-accent-text);
+}
+.rm-done .bk-rm-state {
+  color: var(--bk-syn-number);
+}
+.bk-rm-body h2 {
+  margin-top: var(--bk-space-3);
+  font-size: var(--bk-text-2xl);
+}
+.rm-planned .bk-rm-body h2 {
+  color: var(--bk-text-2);
+}
+.bk-rm-remark {
+  margin-top: var(--bk-space-2);
+  font-size: var(--bk-text-sm);
+}
+.bk-rm-intro {
+  margin-top: var(--bk-space-4);
+  max-width: 46rem;
+  font-size: var(--bk-text-sm);
+  color: var(--bk-text-2);
+}
+.bk-rm-items {
+  display: grid;
+  gap: var(--bk-space-3);
+  max-width: 50rem;
+  margin: var(--bk-space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--bk-text-sm);
+  color: var(--bk-text-2);
+}
+.bk-rm-items li {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: var(--bk-space-3);
+}
+.bk-rm-items .bk-icon {
+  margin-top: 0.2rem;
+}
+.bk-rm-items .yes .bk-icon {
+  color: var(--bk-syn-number);
+}
+.bk-rm-items .no .bk-icon {
+  color: var(--bk-text-muted);
+}
+.bk-rm-items code {
+  font-size: 0.8125rem;
+}
+.bk-rm-items a {
+  color: inherit;
+}
+@media (max-width: 40rem) {
+  .bk-roadmap > li {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: var(--bk-space-4);
+  }
+}
+.bk-rm-items a code,
+.bk-rm-intro a code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bk-text-2);
+}

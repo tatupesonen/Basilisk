@@ -27,6 +27,7 @@ bk-ui = { path = "crates/bk-ui" }
 bk-sla = { path = "crates/bk-sla" }
 bk-decomp-types = { path = "crates/bk-decomp-types" }
 bk-sleigh = { path = "crates/bk-sleigh" }
+bk-sleigh-compiler = { path = "crates/bk-sleigh-compiler" }
 
 # Foundations (exact versions, each at least two weeks old; see docs/LOOP.md)
 thiserror = "2.0.21"

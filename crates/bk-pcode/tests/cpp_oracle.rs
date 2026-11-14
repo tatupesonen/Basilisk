@@ -5,14 +5,18 @@
 //! operations: every opcode, sizes 0 to 8, edge and random operands, both
 //! `recoverInput*` functions. It was produced by
 //! `tests/oracle/opbehavior_oracle.cc`, linked against the reference build's
-//! `libsla.a`, on macOS AArch64 (`tests/oracle/regen.sh` rebuilds it).
+//! `libsla.a`, on x86-64 Linux with GCC (`tests/oracle/regen.sh` rebuilds
+//! it). Where Ghidra's result depends on the host, basilisk takes x86-64's
+//! (ADR-021), so the table is x86-64's.
 //!
 //! Every row must agree bit for bit, except the documented differences
 //! (`docs/features/pcode.md`, section 8), each recognised by a narrow rule
 //! and counted:
 //!
-//! - a NaN created by an operation: the table, made on AArch64, has the
-//!   positive NaN; basilisk has the negative one Ghidra gives on x86-64;
+//! - `FLOAT_TRUNC` of a NaN or of a value outside the `i64` range: x86-64's
+//!   `cvttsd2si` gives `i64::MIN` (cut to the output size); basilisk
+//!   saturates and maps NaN to 0, as Java's `(long)` cast does and Ghidra's
+//!   Java tests pin (ADR-021);
 //! - a subnormal that rounds up to the smallest normal value: the C++ gives
 //!   zero; basilisk the smallest normal;
 //! - recovering the input of a shift by 0 of an 8-byte value: the C++
@@ -36,7 +40,7 @@ use std::io::Read;
 use bk_pcode::behavior::{
     evaluate_binary, evaluate_ternary, evaluate_unary, recover_input_binary, recover_input_unary,
 };
-use bk_pcode::{FloatClass, FloatFormat, FloatFormats, OpCode};
+use bk_pcode::{FloatFormat, FloatFormats, OpCode};
 
 const TABLE: &[u8] = include_bytes!("data/opbehavior_cpp.txt.gz");
 
@@ -55,7 +59,7 @@ fn size(field: &str) -> u32 {
 /// Why a row may differ from the C++ table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Explained {
-    CreatedNanSign,
+    TruncSaturates,
     SubnormalRoundsToNormal,
     RecoverShiftByZero,
 }
@@ -89,17 +93,26 @@ fn is_float_op(op: OpCode) -> bool {
 /// `input_format`. `None` means unexplained.
 fn explain(
     op: OpCode,
+    size_out: u32,
     out: &FloatFormat,
     input_format: &FloatFormat,
     inputs: &[u64],
     cpp: u64,
     ours: u64,
 ) -> Option<Explained> {
-    let no_nan_input = inputs
-        .iter()
-        .all(|&input| input_format.class(input) != FloatClass::Nan);
-    if no_nan_input && cpp == out.nan_encoding(false) && ours == out.nan_encoding(true) {
-        return Some(Explained::CreatedNanSign);
+    if op == OpCode::FloatTrunc {
+        let mask = bk_pcode::mask::calc_mask(size_out);
+        let value = input_format.host_float(inputs[0]).0;
+        // 2^63: the `i64` range is [-2^63, 2^63).
+        let limit = (1u64 << 63) as f64;
+        let in_range = (-limit..limit).contains(&value);
+        // x86-64's "integer indefinite" value.
+        let x86_indefinite = 1u64 << 63;
+        let saturated = value as i64 as u64;
+        if !in_range && cpp == x86_indefinite & mask && ours == saturated & mask {
+            return Some(Explained::TruncSaturates);
+        }
+        return None;
     }
     let sign = 1u64 << (out.size() * 8 - 1);
     let smallest_normal = 1u64 << out.frac_size();
@@ -195,7 +208,7 @@ fn u64_path_equals_ghidra_cpp() {
             (value, Ok(ours), Some((out, input, inputs)))
                 if value != "E" && is_float_op(opcode) =>
             {
-                explain(opcode, out, input, inputs, hex(value), ours)
+                explain(opcode, size(f[2]), out, input, inputs, hex(value), ours)
             }
             _ => None,
         };
@@ -214,6 +227,12 @@ fn u64_path_equals_ghidra_cpp() {
         "{} rows differ from Ghidra's C++",
         unexplained.len()
     );
-    // The two explained differences are exercised by the table.
-    assert!(explained.contains_key(&Explained::CreatedNanSign));
+    // Every explained class is still exercised by the table.
+    for class in [
+        Explained::TruncSaturates,
+        Explained::SubnormalRoundsToNormal,
+        Explained::RecoverShiftByZero,
+    ] {
+        assert!(explained.contains_key(&class), "{class:?} no longer occurs");
+    }
 }

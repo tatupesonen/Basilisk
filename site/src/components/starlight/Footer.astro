@@ -1,0 +1,44 @@
+---
+// Starlight's footer (edit link, pagination) plus the licence, source and
+// the Ghidra credit that every page carries (ADR-031).
+import EditLink from 'virtual:starlight/components/EditLink';
+import Pagination from 'virtual:starlight/components/Pagination';
+import { repo, ghidra, licence } from '../../lib/site-config.mjs';
+---
+
+<footer class="bk-sl-footer">
+  <div class="bk-sl-meta"><EditLink /></div>
+  <Pagination />
+  <p class="bk-sl-legal">
+    basilisk is a reimplementation of <a href={ghidra}>Ghidra</a>, independent and not affiliated with or endorsed by
+    Ghidra’s authors or the NSA. Licensed {licence} · <a href={repo}>Source</a> ·{' '}
+    <a href={`${repo}/blob/master/NOTICE`}>Notice</a>
+  </p>
+</footer>
+
+<style>
+  .bk-sl-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .bk-sl-meta {
+    margin-top: 3rem;
+    font-size: var(--sl-text-sm);
+    color: var(--bk-text-muted);
+  }
+  .bk-sl-legal {
+    margin-top: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--bk-line);
+    font-size: var(--sl-text-xs);
+    line-height: 1.6;
+    color: var(--bk-text-muted);
+  }
+  .bk-sl-legal a {
+    color: var(--bk-text-2);
+  }
+  .bk-sl-legal a:hover {
+    color: var(--bk-accent-text);
+  }
+</style>

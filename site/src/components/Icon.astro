@@ -1,0 +1,35 @@
+---
+// A Phosphor icon (MIT, the family the program uses: docs/features/ui-design.md
+// §5), inlined at build time from @phosphor-icons/core so no icon font or
+// external request is needed.
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+
+interface Props {
+  name: string;
+  weight?: 'regular' | 'bold' | 'fill';
+  size?: number | string;
+  class?: string;
+  label?: string;
+}
+const { name, weight = 'regular', size = '1em', class: cls, label } = Astro.props;
+// Resolve from the project, not from the bundled chunk this ends up in.
+const require = createRequire(join(process.cwd(), 'package.json'));
+const file = weight === 'regular' ? `${name}.svg` : `${name}-${weight}.svg`;
+const raw = readFileSync(require.resolve(`@phosphor-icons/core/assets/${weight}/${file}`), 'utf8');
+const inner = raw.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  fill="currentColor"
+  width={size}
+  height={size}
+  class:list={['bk-icon', cls]}
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  set:html={inner}
+/>

@@ -1,0 +1,9 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 5, located): Context field 'cf' high must be less than context size
+error (line 6, located): Scope of bitfield 'cf' extends beyond the size of context register
+warning: 1 NOP constructors found
+warning: Use -n switch to list each individually
+=> no output

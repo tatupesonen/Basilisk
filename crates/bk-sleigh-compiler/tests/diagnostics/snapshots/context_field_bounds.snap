@@ -1,0 +1,7 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+error (line 5, located): Context field 'cf' starts at 5 and ends at 3
+error (line 5, located): Context field 'cg' high must be less than context size
+=> no output

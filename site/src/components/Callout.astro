@@ -1,0 +1,15 @@
+---
+// A call-out: a quiet panel with a coloured rule (syntax hues, never ember).
+interface Props {
+  kind?: 'note' | 'today' | 'planned' | 'caution';
+  title?: string;
+}
+const { kind = 'note', title } = Astro.props;
+const icons = { note: 'info', today: 'check-circle', planned: 'hourglass-medium', caution: 'warning' };
+import Icon from './Icon.astro';
+---
+
+<aside class={`bk-callout bk-callout-${kind}`}>
+  <p class="bk-callout-title"><Icon name={icons[kind]} size="1.1em" />{title ?? kind}</p>
+  <div class="bk-callout-body"><slot /></div>
+</aside>

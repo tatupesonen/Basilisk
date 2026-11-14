@@ -1,0 +1,7 @@
+#! -c
+@include "prelude.sinc"
+define unique offset=0x10000 size=4 [ ux ];
+sub: is op=2 { export ux; }
+s2: is op=3 { export ux; }
+:cl sub, s2 is op=2 & sub; s2 { r0 = sub + s2; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }

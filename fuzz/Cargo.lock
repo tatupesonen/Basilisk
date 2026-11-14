@@ -34,6 +34,7 @@ dependencies = [
  "bk-pcode",
  "bk-sla",
  "bk-sleigh",
+ "bk-sleigh-compiler",
  "bk-sleigh-syntax",
  "libfuzzer-sys",
 ]
@@ -151,6 +152,16 @@ dependencies = [
  "bk-pcode",
  "bk-sla",
  "thiserror",
+]
+
+[[package]]
+name = "bk-sleigh-compiler"
+version = "0.0.1"
+dependencies = [
+ "bk-pcode",
+ "bk-sla",
+ "bk-sleigh-syntax",
+ "rustc-hash",
 ]
 
 [[package]]

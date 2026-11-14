@@ -1,0 +1,4 @@
+@include "prelude.sinc"
+sub: imm is imm { export imm; }
+:ez sub is op=4 & sub { r0 = sub; }
+:inc r0 is op=1 & r0 { r0 = r0 + 1; }
