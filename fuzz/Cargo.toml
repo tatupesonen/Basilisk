@@ -21,6 +21,7 @@ bk-elf = { path = "../crates/bk-elf" }
 bk-lang = { path = "../crates/bk-lang" }
 bk-marshal = { path = "../crates/bk-marshal" }
 bk-sla = { path = "../crates/bk-sla" }
+bk-sleigh-compiler = { path = "../crates/bk-sleigh-compiler" }
 bk-sleigh-syntax = { path = "../crates/bk-sleigh-syntax" }
 libfuzzer-sys = "0.4.13"
 
@@ -69,6 +70,13 @@ bench = false
 [[bin]]
 name = "bk_sla_read"
 path = "fuzz_targets/bk_sla_read.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_sleigh_compiler_elaborate"
+path = "fuzz_targets/bk_sleigh_compiler_elaborate.rs"
 test = false
 doc = false
 bench = false

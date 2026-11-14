@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 355bd1da9333126b69db4e5f04e75c8efa08720288a6c45f518cda4f5d3e7dfb # shrinks to statements = ["r0 = zext((r0):2);"]
+cc c8ec97b9e127e208b6b0c912f7fbe617d24f25613f08e654799860fc27203d6c # shrinks to statements = ["r0 = *[ram]:4 ((0 << r0) << r0);"]
+cc 6fbb0ea9cb4d5e6c45abe15e5ccc055ce82eeffe6d2d065d5edaeee88fbfa808 # shrinks to statements = ["c0 = (0 + 0) == (0 << r0);"]
