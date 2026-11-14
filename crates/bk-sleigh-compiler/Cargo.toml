@@ -1,0 +1,23 @@
+[package]
+name = "bk-sleigh-compiler"
+description = "basilisk: the SLEIGH compiler (part 1: symbols, constructors, p-code templates, checks)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-pcode.workspace = true
+bk-sla.workspace = true
+bk-sleigh-syntax.workspace = true
+rustc-hash.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+bk-testkit.workspace = true
+insta.workspace = true
+proptest.workspace = true
+
+[lints]
+workspace = true
