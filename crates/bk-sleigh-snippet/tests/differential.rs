@@ -50,9 +50,9 @@ fn every_shipped_snippet_matches_ghidra() {
     let Some((ghidra, reference)) = common::roots() else {
         return;
     };
-    let Some(tool) = common::snippetdump(&reference) else {
+    if bk_testkit::require_tool(bk_testkit::Tool::Snippetdump).is_none() {
         return;
-    };
+    }
     let registry = common::registry(ghidra.root(), reference.root());
     let mut cache: HashMap<PathBuf, Vec<Snippet>> = HashMap::new();
     let mut snippets = |path: &PathBuf| -> Vec<Snippet> {
@@ -127,7 +127,7 @@ fn every_shipped_snippet_matches_ghidra() {
             .into_iter()
             .map(|chunk| {
                 let registry = &registry;
-                let tool = &tool;
+                let tool = &reference;
                 let root = reference.root();
                 scope.spawn(move || {
                     let mut t = Tally::default();
@@ -192,7 +192,7 @@ fn every_shipped_snippet_matches_ghidra() {
 
 fn run_job(
     registry: &bk_lang::LanguageRegistry,
-    tool: &std::path::Path,
+    tool: &bk_testkit::ReferenceDir,
     root: &std::path::Path,
     job: &Job,
     t: &mut Tally,

@@ -82,7 +82,8 @@ fn bench_compile_against_reference() {
     std::fs::create_dir_all(&out_dir).unwrap();
     let ours = |spec: &common::Spec| {
         let options = Options::from_switches(
-            common::module_options(&reference, &spec.module)
+            reference
+                .module_options(&spec.module)
                 .iter()
                 .map(String::as_str),
         );
@@ -95,7 +96,7 @@ fn bench_compile_against_reference() {
     };
     let theirs = |spec: &common::Spec| {
         let mut sleigh = reference.sleigh();
-        for s in common::module_options(&reference, &spec.module) {
+        for s in reference.module_options(&spec.module) {
             if let Some(c) = s.strip_prefix('-').and_then(|s| s.chars().next()) {
                 sleigh = sleigh.switch(c);
             }

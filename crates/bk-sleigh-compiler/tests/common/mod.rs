@@ -34,21 +34,6 @@ pub(crate) fn reference_specs(reference: &bk_testkit::ReferenceDir) -> Vec<Spec>
         .collect()
 }
 
-/// The options the reference build compiled a module with
-/// (`.state/lang/<Module>.opts`).
-pub(crate) fn module_options(reference: &bk_testkit::ReferenceDir, module: &str) -> Vec<String> {
-    let path = reference
-        .root()
-        .join(".state")
-        .join("lang")
-        .join(format!("{module}.opts"));
-    std::fs::read_to_string(path)
-        .unwrap_or_default()
-        .split_whitespace()
-        .map(str::to_owned)
-        .collect()
-}
-
 /// Parses a specification from disk with no preprocessor definitions (what
 /// Ghidra's build passes).
 pub(crate) fn parse(path: &Path) -> Parsed {

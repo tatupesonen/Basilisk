@@ -3,6 +3,7 @@
 //! operand expression depends on itself. A model that passes can be used
 //! with unchecked-by-construction indices.
 
+pub(crate) mod labels;
 mod tables;
 
 pub(crate) use tables::check_template;

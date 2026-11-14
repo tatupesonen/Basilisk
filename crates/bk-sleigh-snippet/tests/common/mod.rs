@@ -8,7 +8,7 @@ pub(crate) mod corpus;
 pub(crate) mod fixture;
 pub(crate) mod oracle;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use bk_lang::{LanguageId, LanguageRegistry, RegistryBuilder};
@@ -21,22 +21,6 @@ pub(crate) fn roots() -> Option<(GhidraDir, ReferenceDir)> {
     let ghidra = bk_testkit::skip::require_ghidra()?;
     let reference = bk_testkit::skip::require_reference()?;
     Some((ghidra, reference))
-}
-
-/// The `snippetdump` binary of the reference build, or `None` after printing
-/// why the test is skipped.
-pub(crate) fn snippetdump(reference: &ReferenceDir) -> Option<PathBuf> {
-    let path = reference.root().join("bin").join("snippetdump");
-    if path.is_file() {
-        Some(path)
-    } else {
-        let line = format!(
-            "SKIPPED: {} not built (run scripts/build-reference.sh)\n",
-            path.display()
-        );
-        let _ = std::io::Write::write_all(&mut std::io::stderr(), line.as_bytes());
-        None
-    }
 }
 
 /// A registry over the Ghidra tree with the reference `.sla` overlay.

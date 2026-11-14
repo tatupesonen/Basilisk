@@ -21,7 +21,8 @@ mod common;
 use std::fmt::Write as _;
 
 use bk_sleigh_snippet::{Options, Parameter, SnippetCompiler};
-use common::oracle::{Base, Outcome, Record, escape, run_basilisk, run_oracle, unescape};
+use bk_testkit::tools::snippetdump::{escape, unescape};
+use common::oracle::{Base, Outcome, Record, run_basilisk, run_oracle};
 
 const BASE: u32 = 0x1_0000;
 
@@ -108,16 +109,13 @@ fn hand_written_cases_match_ghidra() {
     let actual = run_basilisk(&compiler, BASE, &recs);
     insta::assert_snapshot!("fixture_cases", render(&bodies, &actual));
 
-    let Some(reference) = bk_testkit::skip::require_reference() else {
-        return;
-    };
-    let Some(tool) = common::snippetdump(&reference) else {
+    let Some(reference) = bk_testkit::require_tool(bk_testkit::Tool::Snippetdump) else {
         return;
     };
     let root = common::fixture::write_root(
         &std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("snippet-fixture"),
     );
-    let expected = run_oracle(&tool, &root, common::fixture::LANGUAGE_ID, &recs);
+    let expected = run_oracle(&reference, &root, common::fixture::LANGUAGE_ID, &recs);
     // ADR-021: Basilisk follows the x86-64 Linux reference (libstdc++). A
     // reference built on macOS reads numbers with libc++, whose `num_get`
     // fails on an octal literal holding an 8 or a 9 (stage 2 collects every

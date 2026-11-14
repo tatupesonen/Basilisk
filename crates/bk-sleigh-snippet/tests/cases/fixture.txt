@@ -243,3 +243,19 @@ EAX = &ES;
 x = &io:2;
 goto 0x10[io];
 local t; EAX = t; *:2 EBX = t;
+//
+// Bit ranges whose arithmetic wraps at 2^32 (Ghidra computes offsets and
+// widths as uint4: `(numbits+7)/8`, `bitoffset+numbits`)
+AL = in1[0,0xffffffff];
+AL = in1[8,0xfffffff9];
+AL = in1[0,0xfffffff8];
+AL = in1[0x100000000,0x100000008];
+in1[0,0xffffffff] = 1;
+in1[8,0xfffffff9] = 1;
+in1[0xfffffff8,9] = 1;
+EAX[8,0xfffffff9] = 1;
+EAX[0xfffffff8,16] = AL;
+EAX[0x100000008,8] = AL;
+AL = EAX[8,0xfffffff8];
+AL = EAX[0xfffffff9,7];
+AL = EAX[0x100000008,8];

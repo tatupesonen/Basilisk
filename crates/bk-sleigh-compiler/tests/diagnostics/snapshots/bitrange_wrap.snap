@@ -1,0 +1,5 @@
+---
+source: crates/bk-sleigh-compiler/tests/diagnostics.rs
+expression: rendered
+---
+=> elaborated
