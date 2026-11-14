@@ -12,10 +12,10 @@ reference for egui practice.
 
 ## 1. Purpose
 
-basilisk's desktop interface: where a reverse engineer reads disassembly
+Basilisk's desktop interface: where a reverse engineer reads disassembly
 and decompiled code, navigates, renames and annotates. The owner's brief:
 **good-looking and intuitive**. Ghidra's interface is powerful and famously
-awkward; basilisk keeps the power — the same views, the same information,
+awkward; Basilisk keeps the power — the same views, the same information,
 the same arrangement — and improves how it looks and feels (ADR-001; see
 "Familiar to Ghidra users" below). This track builds the
 application shell, the design system and the first core views, against a
@@ -26,7 +26,7 @@ data interface that the real program model will implement later.
 "Make the UI somewhat represent old Ghidra; if you are proficient in Ghidra
 it should be easy to work in basilisk." This ranks above the freedom to
 rethink in the paragraph above. Someone who knows Ghidra's CodeBrowser must
-be able to sit down and work at once, so by default basilisk keeps:
+be able to sit down and work at once, so by default Basilisk keeps:
 
 - **Ghidra's default layout**: Program Trees, Symbol Tree and Data Type
   Manager stacked on the left, the Listing in the centre, the Decompiler
@@ -38,7 +38,7 @@ be able to sit down and work at once, so by default basilisk keeps:
 - **Ghidra's menu structure** (File, Edit, Analysis, Navigation, Search,
   Select, Tools, Window, Help) with actions where a Ghidra user looks for
   them, and Ghidra's right-click menus on the listing and decompiler.
-- **Ghidra's default key bindings** as basilisk's defaults, not an
+- **Ghidra's default key bindings** as Basilisk's defaults, not an
   optional preset: `G`, `L`, `;`, `D`, `C`, `Ctrl+Shift+E`,
   `Alt+Left`/`Alt+Right` and the rest, from Ghidra's help.
 - **The listing's field layout** as Ghidra draws it — address, bytes,
@@ -157,9 +157,9 @@ free of anything those cannot provide and of anything egui-specific.
 - **Actions and key bindings**: one registry of actions (name,
   description, default shortcut, enabled-when); menus, palette, context
   menus and shortcuts all come from it. Bindings are remappable and
-  stored. Ghidra's default bindings are basilisk's defaults for
+  stored. Ghidra's default bindings are Basilisk's defaults for
   every action the two share (take them from Ghidra's help), so Ghidra
-  users are at home; say where and why basilisk differs.
+  users are at home; say where and why Basilisk differs.
 - **Navigation**: one location model shared by all views; back/forward
   history; views follow the current location according to a clear rule
   (and can be pinned).

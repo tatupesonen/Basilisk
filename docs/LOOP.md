@@ -1,6 +1,6 @@
 # Development protocol
 
-basilisk is built by a coordinator and implementation agents (ADR-015).
+Basilisk is built by a coordinator and implementation agents (ADR-015).
 Every session starts from zero conversational memory and must be able to
 continue purely from the files in this repository. This document is the
 contract every session follows.
@@ -14,7 +14,7 @@ contract every session follows.
 | `docs/PLAN.md` | Architecture, crate map, milestones and the task checklist (`- [ ]` / `- [x]`). |
 | `docs/PROGRESS.md` | `## Now` (current wave and next steps), `## Blockers`, and an append-only `## Log` (newest first). |
 | `docs/DECISIONS.md` | Architecture decision records (ADR-NNN). Append; never silently rewrite. |
-| `docs/PARITY.md` | Status of every Ghidra module against basilisk. |
+| `docs/PARITY.md` | Status of every Ghidra module against Basilisk. |
 | `docs/PERF.md` | Performance budgets, benchmark commands and measured numbers. |
 | `docs/features/*.md` | One document per feature: the spec before it is built, the reference after. |
 | `docs/inventory/*.md` | What Ghidra contains, by area. `inventory/tests/` is the test-parity checklist. |
@@ -156,7 +156,7 @@ formatting in `rustfmt.toml`. The gate turns every warning into an error.
 - **Differential tests** (ADR-007) wherever Ghidra's output defines
   correct behaviour, through `bk-testkit`. Tests needing the spec root
   (`BASILISK_GHIDRA_DIR`; in tests the default is `../ghidra` beside the
-  basilisk checkout, resolved from the workspace root, not the current
+  Basilisk checkout, resolved from the workspace root, not the current
   directory — library code takes an explicit root) or the reference tools
   (`../reference/`) skip with a printed reason when those are absent — they
   never fail for that reason and never pass silently when present.

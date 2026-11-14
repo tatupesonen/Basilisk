@@ -1,6 +1,6 @@
 [package]
 name = "bk-lang"
-description = "basilisk: Ghidra language definitions (.ldefs), processor specs (.pspec), loader opinions (.opinion) and the language registry"
+description = "Basilisk: Ghidra language definitions (.ldefs), processor specs (.pspec), loader opinions (.opinion) and the language registry"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

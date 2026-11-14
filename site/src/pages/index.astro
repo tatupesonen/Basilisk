@@ -21,7 +21,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
 
 <SiteLayout
   current="home"
-  description="basilisk is a reimplementation of Ghidra in Rust — loaders, SLEIGH, p-code, analysis, the decompiler and a desktop interface. Early development: see what works today and what is planned."
+  description="Basilisk is a reimplementation of Ghidra in Rust — loaders, SLEIGH, p-code, analysis, the decompiler and a desktop interface. Early development: see what works today and what is planned."
 >
   <section class="bk-hero" aria-labelledby="hero-title">
     <div class="bk-wrap">
@@ -34,7 +34,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           </a>
           <h1 id="hero-title">Reverse engineering, rebuilt in Rust.</h1>
           <p class="bk-lede">
-            basilisk is a reimplementation of <a class="bk-link" href={ghidra}>Ghidra</a> — loaders, SLEIGH, p-code,
+            Basilisk is a reimplementation of <a class="bk-link" href={ghidra}>Ghidra</a> — loaders, SLEIGH, p-code,
             analysis, the decompiler and a desktop interface — that reads Ghidra’s processor specifications unchanged.
             It aims for full parity first, then better.
           </p>
@@ -58,8 +58,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-hero-shot">
         <Screenshot
           name="main"
-          alt="basilisk's main window: Program Trees and Symbol Tree on the left, the Listing in the centre, the Decompiler on the right and the Console below, showing the function main of the demo program."
-          caption="The CodeBrowser layout Ghidra users know: Listing, Decompiler, trees and tables, on basilisk’s built-in demo program."
+          alt="Basilisk's main window: Program Trees and Symbol Tree on the left, the Listing in the centre, the Decompiler on the right and the Console below, showing the function main of the demo program."
+          caption="The CodeBrowser layout Ghidra users know: Listing, Decompiler, trees and tables, on Basilisk’s built-in demo program."
           tag="bk-ui · screenshot test"
           sizes="(min-width: 1200px) 1152px, calc(100vw - 32px)"
           widths={[640, 960, 1440, 2000]}
@@ -74,7 +74,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-section-head">
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x10</span> The interface</p>
-          <h2 class="bk-h2" id="interface-title">If you know Ghidra, you already know basilisk.</h2>
+          <h2 class="bk-h2" id="interface-title">If you know Ghidra, you already know Basilisk.</h2>
           <p class="bk-lede">
             The same windows in the same places, Ghidra’s names, menus and default keys — with type, colour and
             spacing tuned for long sessions, and a few additions that take nothing away.
@@ -169,7 +169,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-eyebrow"><span class="bk-addr">0x30</span> Where it stands</p>
           <h2 class="bk-h2" id="status-title">Early, and honest about it.</h2>
           <p class="bk-lede">
-            basilisk is being built foundations first. This summary is generated from the project’s parity matrix
+            Basilisk is being built foundations first. This summary is generated from the project’s parity matrix
             (updated {parity.updated}), so it cannot claim more than the matrix does.
           </p>
         </div>
@@ -206,7 +206,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
     <div class="bk-wrap">
       <div class="bk-section-head">
         <div>
-          <p class="bk-eyebrow"><span class="bk-addr">0x40</span> Why basilisk</p>
+          <p class="bk-eyebrow"><span class="bk-addr">0x40</span> Why Basilisk</p>
           <h2 class="bk-h2" id="why-title">Everything Ghidra does. Then better.</h2>
         </div>
       </div>
@@ -238,13 +238,13 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         <div>
           <span class="bk-why-icon"><Icon name="code" size="20" /></span>
           <h3>Python plugins</h3>
-          <p>Scripts, analyzers, loaders and exporters in Python through an embedded interpreter, and basilisk importable from Python. Planned for milestone M9.</p>
+          <p>Scripts, analyzers, loaders and exporters in Python through an embedded interpreter, and Basilisk importable from Python. Planned for milestone M9.</p>
           <span class="bk-tag">ADR-014 · planned</span>
         </div>
         <div>
           <span class="bk-why-icon"><Icon name="desktop" size="20" /></span>
           <h3>One binary, three systems</h3>
-          <p>Windows, macOS and Linux are all first-class, checked in CI on every change. basilisk ships as a single binary.</p>
+          <p>Windows, macOS and Linux are all first-class, checked in CI on every change. Basilisk ships as a single binary.</p>
           <span class="bk-tag">ADR-022</span>
         </div>
       </div>
@@ -296,12 +296,12 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-eyebrow"><span class="bk-addr">0x60</span> Credit</p>
           <h2 class="bk-h2" id="credit-title" style="font-size: var(--bk-text-2xl)">Standing on Ghidra’s work.</h2>
           <p style="margin-top: var(--bk-space-5)">
-            basilisk reimplements <a class="bk-link" href={ghidra}>Ghidra</a>, the software reverse-engineering
-            framework developed at the National Security Agency and published under the Apache License 2.0. basilisk
+            Basilisk reimplements <a class="bk-link" href={ghidra}>Ghidra</a>, the software reverse-engineering
+            framework developed at the National Security Agency and published under the Apache License 2.0. Basilisk
             ports its behaviour and its tests, and reads its processor specifications as they are.
           </p>
           <p>
-            basilisk is an independent project. It is not affiliated with, sponsored or endorsed by the NSA or Ghidra’s
+            Basilisk is an independent project. It is not affiliated with, sponsored or endorsed by the NSA or Ghidra’s
             authors. It is free software under the GPL, version 3 or later; see the{' '}
             <a class="bk-link" href={`${repo}/blob/master/NOTICE`}>notice</a>.
           </p>

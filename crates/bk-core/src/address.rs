@@ -115,7 +115,7 @@ impl Address {
 
     /// A constant that names an address space, as the first input of a
     /// `LOAD` or `STORE` does (Ghidra `AddrSpaceManager::createConstFromSpace`).
-    /// Ghidra puts the host pointer to the space in the constant; basilisk
+    /// Ghidra puts the host pointer to the space in the constant; Basilisk
     /// puts the space's index, which
     /// [`VarnodeData::space_from_const`](crate::VarnodeData::space_from_const)
     /// reads back.

@@ -1,4 +1,4 @@
-# basilisk interface design
+# Basilisk interface design
 
 The design system and the reasoning behind the interface of `bk-ui`: what
 it looks like, why, and where it departs from Ghidra. The contract it
@@ -132,9 +132,9 @@ Linux, Cmd on macOS; labels show the platform's name.
 | Undo / Redo | Ctrl+Z / Ctrl+Shift+Z | `UndoAction.java`, `RedoAction.java` |
 | Open / Close / Save | Ctrl+O / Ctrl+W / Ctrl+S | `ProgramManagerPlugin.java:522`, … |
 | Copy | Ctrl+C | `ClipboardPlugin.java:398` |
-| **Command Palette** (basilisk) | Ctrl+Shift+P | — (unused by Ghidra) |
-| **Follow Reference** (basilisk) | Enter | — (Ghidra: double-click only) |
-| Exit (basilisk) | Ctrl+Q | — |
+| **Command Palette** (Basilisk) | Ctrl+Shift+P | — (unused by Ghidra) |
+| **Follow Reference** (Basilisk) | Enter | — (Ghidra: double-click only) |
+| Exit (Basilisk) | Ctrl+Q | — |
 
 Bindings are remappable in Edit → Tool Options → Key Bindings by pressing
 the new keys; taking a key from another action says so; "Restore Ghidra

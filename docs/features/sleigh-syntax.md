@@ -23,9 +23,9 @@ Ghidra has two front ends, and they are shaped differently:
 
 | Source | What it is |
 |---|---|
-| `G/SleighLexer.g`, `BaseLexer.g`, `DisplayLexer.g`, `SemanticLexer.g`, `SleighParser.g`, `DisplayParser.g`, `SemanticParser.g`, `BooleanExpression.g`, `README.txt` | The **Java/ANTLR front end**: a modal lexer (base, display and semantic modes switched by the parser) and a parser that builds an AST **without consulting a symbol table**. `SleighCompiler.g` is the tree walker that resolves symbols afterwards. **This is the model for basilisk's AST.** |
+| `G/SleighLexer.g`, `BaseLexer.g`, `DisplayLexer.g`, `SemanticLexer.g`, `SleighParser.g`, `DisplayParser.g`, `SemanticParser.g`, `BooleanExpression.g`, `README.txt` | The **Java/ANTLR front end**: a modal lexer (base, display and semantic modes switched by the parser) and a parser that builds an AST **without consulting a symbol table**. `SleighCompiler.g` is the tree walker that resolves symbols afterwards. **This is the model for Basilisk's AST.** |
 | `SM/ghidra/sleigh/grammar/` (`SleighPreprocessor`, `ConditionalHelper`, `ExpressionEnvironment`, `Location`, `LocationUtil`, `SourceFileIndexer`, `LineArrayListWriter`, …) | The Java preprocessor and the source-location bookkeeping |
-| `CPP/slghscan.l` | The **C++ lexer and preprocessor**: start states for the display section, semantic section, pattern section and macro bodies; the preprocessor (`@define`, `@undef`, `@include`, `@ifdef`, `@ifndef`, `@if`, `@elif`, `@else`, `@endif`, `$(NAME)` expansion). Its tokens depend on symbol-table lookups, which basilisk's parser does not do |
+| `CPP/slghscan.l` | The **C++ lexer and preprocessor**: start states for the display section, semantic section, pattern section and macro bodies; the preprocessor (`@define`, `@undef`, `@include`, `@ifdef`, `@ifndef`, `@if`, `@elif`, `@else`, `@endif`, `$(NAME)` expansion). Its tokens depend on symbol-table lookups, which Basilisk's parser does not do |
 | `CPP/slghparse.y` | The C++ grammar. Use it as the precise statement of what is legal and of operator precedence |
 | `SM/ghidra/pcodeCPort/slgh_compile/SleighCompileLauncher.java`, `SleighCompileOptions.java` | How defines reach the preprocessor from the command line (`-D name=value`) and from module paths |
 | `SMT/ghidra/sleigh/grammar/` | The tests (section 6) |
@@ -88,7 +88,7 @@ regular expressions at the top of `SleighPreprocessor.java`:
 
 Every output line must keep its origin: file, line, and the include chain.
 Ghidra threads this through as marker lines in the preprocessed text
-(`\b` location markers) and re-reads them in the lexer; basilisk keeps a
+(`\b` location markers) and re-reads them in the lexer; Basilisk keeps a
 line map beside the text instead (or lexes straight from the include
 stack) so every token carries a `(file, line, column)` span that points
 at the original source. `SourceFileIndexer` shows what the compiler later

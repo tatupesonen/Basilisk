@@ -20,10 +20,10 @@ pub use layout::{Layout, Tab};
 pub use tool::{Prefs, Tool};
 pub use workspace::Workspace;
 
-/// Opens the basilisk window on the demo program and runs until it closes.
+/// Opens the Basilisk window on the demo program and runs until it closes.
 pub fn run_native() -> eframe::Result {
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title("basilisk")
+        .with_title("Basilisk")
         .with_inner_size([1440.0, 900.0])
         .with_min_inner_size([800.0, 500.0]);
     if let Some(icon) = brand::icon() {
@@ -37,7 +37,7 @@ pub fn run_native() -> eframe::Result {
         ..eframe::NativeOptions::default()
     };
     eframe::run_native(
-        "basilisk",
+        "Basilisk",
         options,
         Box::new(move |cc| {
             let app = BasiliskApp::from_creation_context(cc);

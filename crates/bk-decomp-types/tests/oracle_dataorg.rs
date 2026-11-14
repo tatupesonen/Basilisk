@@ -123,7 +123,7 @@ fn data_organisation_of_every_cspec() {
         cspecs.insert(p.cspec.clone());
         if org_fields(&org) != p.org_text {
             bad.push(format!(
-                "{id} ({}): ghidra {} basilisk {}",
+                "{id} ({}): ghidra {} Basilisk {}",
                 p.cspec.display(),
                 p.org_text,
                 org_fields(&org)

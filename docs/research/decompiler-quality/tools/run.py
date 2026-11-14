@@ -22,7 +22,7 @@ Directives in a case file (lines starting with `//!`):
     //! vectorize: yes                       leave the compiler's auto-vectoriser on
 
 Environment: `BK_GCC_IMAGE_A64`, `BK_GCC_IMAGE_X64` (container images for the
-`gcc` targets), `BK_REFERENCE` (default: `reference/` beside the basilisk
+`gcc` targets), `BK_REFERENCE` (default: `reference/` beside the Basilisk
 checkout, where `scripts/build-reference.sh` puts the tools), `BK_CLANG`, `BK_LLD`, `BK_OBJDUMP`.
 """
 

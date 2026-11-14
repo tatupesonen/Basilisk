@@ -1,12 +1,12 @@
 ---
 title: How it works
-description: basilisk's architecture — the headless data flow, the crate map, SLEIGH, p-code, the decompiler pipeline and the program database.
+description: Basilisk's architecture — the headless data flow, the crate map, SLEIGH, p-code, the decompiler pipeline and the program database.
 sidebar:
   order: 1
   label: Overview
 ---
 
-basilisk is a workspace of focused Rust crates. Dependencies point one way: format parsers know nothing about
+Basilisk is a workspace of focused Rust crates. Dependencies point one way: format parsers know nothing about
 programs, the SLEIGH crates know nothing about programs, and nothing below the interface depends on it. It
 ships as a single binary.
 
@@ -36,10 +36,10 @@ flowchart LR
 
 Crates with a solid green border exist today; dashed ones are planned. Dependencies point down only.
 
-```mermaid title="basilisk's crates by layer; each layer depends only on the layers below it (docs/PLAN.md, Architecture)"
+```mermaid title="Basilisk's crates by layer; each layer depends only on the layers below it (docs/PLAN.md, Architecture)"
 block-beta
   columns 6
-  l1["APPLICATION"] basilisk["basilisk"] ui["bk-ui"] plugin["bk-plugin"] headless["bk-headless"] space
+  l1["APPLICATION"] basilisk["Basilisk"] ui["bk-ui"] plugin["bk-plugin"] headless["bk-headless"] space
   l2["ANALYSIS"] analysis["bk-analysis"] analyzers["bk-analyzers-*"] disasm["bk-disasm"] space:2
   l3["DECOMPILER"] decomp["bk-decomp"] passes["bk-decomp-*"] cspec["bk-cspec"] space:2
   l4["PROGRAM"] program["bk-program"] datatypes["bk-datatypes"] store["bk-store"] space:2
@@ -54,7 +54,7 @@ block-beta
 ## SLEIGH
 
 SLEIGH is Ghidra's language for describing instruction sets: how bytes decode into instructions, how they
-print, and what each one does as p-code. basilisk reads Ghidra's SLEIGH specifications unchanged; it parses
+print, and what each one does as p-code. Basilisk reads Ghidra's SLEIGH specifications unchanged; it parses
 all 150 of them today and reads and writes the compiled `.sla` form byte for byte. Decoding (milestone M1)
 and the compiler (M2) come next.
 
@@ -63,7 +63,7 @@ and the compiler (M2) come next.
 P-code is a small, processor-independent set of operations — copy, load, store, arithmetic, branches,
 calls — over varnodes (an address space, an offset and a size). Every instruction lifts to a short p-code
 sequence, and everything after the language layer, the emulator and the decompiler included, works on
-p-code alone. basilisk's p-code model, opcodes and floating-point formats exist today.
+p-code alone. Basilisk's p-code model, opcodes and floating-point formats exist today.
 
 ## The decompiler pipeline
 
@@ -72,6 +72,6 @@ simplified by rules, given types and variables, and structured into C. Planned f
 
 ## The program database
 
-Everything basilisk learns about a binary — memory, code units, symbols, references, functions, types,
+Everything Basilisk learns about a binary — memory, code units, symbols, references, functions, types,
 comments — lives in a program database written through transactions with undo. Its storage engine is being
 chosen by experiment (ADR-003); the program model is milestone M4.

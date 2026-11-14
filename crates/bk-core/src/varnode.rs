@@ -68,7 +68,7 @@ impl VarnodeData {
     /// first input of a `LOAD` or `STORE` does, and returns that space
     /// (Ghidra `getSpaceFromConst`).
     ///
-    /// Ghidra stores the host pointer to the space in the constant; basilisk
+    /// Ghidra stores the host pointer to the space in the constant; Basilisk
     /// stores the space's index (see
     /// [`Address::const_from_space`]).
     pub fn space_from_const(&self) -> Option<SpaceId> {

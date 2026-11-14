@@ -1,4 +1,4 @@
-// pcodedump: basilisk's disassembly and p-code oracle.
+// pcodedump: Basilisk's disassembly and p-code oracle.
 //
 // Loads one SLEIGH language with Ghidra's own C++ engine (libsla), applies the
 // context defaults of its processor specification, decodes a byte buffer as a
@@ -12,7 +12,7 @@
 // never part of the product (ADR-005).
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Part of basilisk, under the project licence (LICENSE at the repository root).
+// Part of Basilisk, under the project licence (LICENSE at the repository root).
 // The patches under tools/reference/patches/ modify Ghidra's Apache-2.0 source
 // and stay under that source's licence.
 

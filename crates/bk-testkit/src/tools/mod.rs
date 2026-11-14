@@ -8,7 +8,7 @@
 //! | [`Sleigh`] | Ghidra's SLEIGH compiler | the compiler's messages |
 //! | [`Decomp`] | Ghidra's decompiler console | the transcript, command by command |
 //! | [`DecompTest`] | Ghidra's test runner | pass or fail per test |
-//! | [`Pcodedump`] | basilisk's p-code oracle | parsed instructions and p-code ops |
+//! | [`Pcodedump`] | Basilisk's p-code oracle | parsed instructions and p-code ops |
 //!
 //! Arguments are passed as an argument vector; nothing goes through a shell.
 

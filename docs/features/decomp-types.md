@@ -126,7 +126,7 @@ Use Rust enums with explicit discriminants; `metatype2string` and
   set. Where the C++ compares component pointers ("Compare absolute
   pointers": `TypePointer`, `TypeArray`, `TypePointerRel`,
   `TypePartialStruct`, `TypePartialUnion`, `TypePartialEnum`,
-  `TypeCode`'s parameters) basilisk compares the components' **`TypeId`s**.
+  `TypeCode`'s parameters) Basilisk compares the components' **`TypeId`s**.
   This changes no equality (two types are identical exactly when Ghidra's
   are) and replaces an order that follows heap addresses with one that
   follows creation; it is the one deliberate difference in this section

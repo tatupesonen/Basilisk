@@ -1,6 +1,6 @@
 [package]
 name = "bk-gnu-disasm"
-description = "basilisk: GNU binutils' disassembly of any architecture, in process, as Ghidra's gdis provides it"
+description = "Basilisk: GNU binutils' disassembly of any architecture, in process, as Ghidra's gdis provides it"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

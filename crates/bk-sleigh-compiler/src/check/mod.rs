@@ -25,7 +25,7 @@ pub(crate) struct CheckFatal(pub(crate) String);
 impl Compiler<'_> {
     /// Runs the post-parse passes of this half in Ghidra's order. The back
     /// half's `buildPatterns` and `buildDecisionTrees` belong between the
-    /// collision check and the register cross references; basilisk's own
+    /// collision check and the register cross references; Basilisk's own
     /// reachability stands in for "has a pattern" here.
     pub(crate) fn post_parse(&mut self) {
         self.mark_crossbuild();

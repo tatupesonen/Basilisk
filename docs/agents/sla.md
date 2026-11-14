@@ -63,7 +63,7 @@ container errors), `properties` 4 (proptest), `fuzz_regressions` 2,
 Reference loader: `crates/bk-sla/tests/reference_loader/slaload.cc` (build
 line in the file). 2026-11-14, M1 Pro, load 8–11, same session:
 
-| | basilisk | Ghidra C++ `Sleigh::initialize` |
+| | Basilisk | Ghidra C++ `Sleigh::initialize` |
 |---|---:|---:|
 | x86-64 `read_file` | 17.9 ms (inflate 2.5, decode+validate 15.4) | 30.8 ms |
 | AARCH64BE `read_file` | 16.1 ms | 28.0 ms |

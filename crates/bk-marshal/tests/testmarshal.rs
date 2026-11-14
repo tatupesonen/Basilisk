@@ -520,14 +520,14 @@ fn marshal_closemismatch_packed() {
 }
 
 /// Ghidra has no XML variant of this test, because its XML decoder checks for
-/// unread children only in debug builds. basilisk's always checks.
+/// unread children only in debug builds. Basilisk's always checks.
 #[test]
 fn marshal_closemismatch_xml() {
     test_closemismatch(Form::Xml);
 }
 
 /// Ghidra's test fills exactly one 1,024-byte ingest buffer to exercise the
-/// padding byte its decoder appends. basilisk decodes a contiguous slice (see
+/// padding byte its decoder appends. Basilisk decodes a contiguous slice (see
 /// "Differences from Ghidra" in `docs/features/core-marshal.md`); what the
 /// test checks still holds: all 511 attributes decode, no child is seen at the
 /// end of the data, and the element closes.

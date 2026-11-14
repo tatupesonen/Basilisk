@@ -1,6 +1,6 @@
 [package]
 name = "bk-elf"
-description = "basilisk: a complete, tolerant ELF parser exposing everything Ghidra's ELF loader needs"
+description = "Basilisk: a complete, tolerant ELF parser exposing everything Ghidra's ELF loader needs"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

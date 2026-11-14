@@ -1,6 +1,6 @@
 [package]
 name = "bk-testkit"
-description = "basilisk test support: locating Ghidra and the reference tools, running them, decompiler data tests"
+description = "Basilisk test support: locating Ghidra and the reference tools, running them, decompiler data tests"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

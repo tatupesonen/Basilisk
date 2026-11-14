@@ -6,7 +6,7 @@ through the reference `pcodedump`, die with SIGSEGV: `sla-host-diff` on
 its directed sweeps (SPARC 32 and 64: 30, ARM v8-m LE/BE: 5, MIPS micro
 BE: 1), described there as "a delay-slot instruction with an `unimpl`
 body". This note gives minimal reproducers, the faulting code, and what
-basilisk does instead.
+Basilisk does instead.
 
 Ghidra commit `42db038f3c`; `CPP` =
 `Ghidra/Features/Decompiler/src/decompile/cpp`. Reference tools:
@@ -116,9 +116,9 @@ decompiler (`decomp`, `decomp_test`) and anything else that calls
 [judgement; not run]. The cause is in Ghidra, not in `pcodedump`. Ghidra's
 Java engine was not examined.
 
-## What basilisk does instead (ADR-009)
+## What Basilisk does instead (ADR-009)
 
-basilisk must not crash, and should give the result Ghidra evidently
+Basilisk must not crash, and should give the result Ghidra evidently
 meant to give:
 
 * Lifting an instruction whose delay slot (at any depth, including an

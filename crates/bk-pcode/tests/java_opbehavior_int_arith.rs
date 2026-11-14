@@ -30,8 +30,8 @@
 //!   (`AbstractOpBehaviorTest.assertEquals(expected, result, 16)`), the row
 //!   here has the compared size as both sizes; each such test says so.
 //!
-//! Where basilisk deliberately differs from the Java, the row asserts
-//! basilisk's result and a `// Java:` comment keeps the Java expectation.
+//! Where Basilisk deliberately differs from the Java, the row asserts
+//! Basilisk's result and a `// Java:` comment keeps the Java expectation.
 
 use bk_pcode::behavior::{self, wide};
 use bk_pcode::{EvalError, FloatFormats, OpCode, Wide};
@@ -372,7 +372,7 @@ fn int_div_evaluate_binary_long() {
     check_binary_results(
         OpCode::IntDiv,
         &[
-            // Java: 0. basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
+            // Java: 0. Basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
             (4, 4, 1, 0, Err(EvalError::DivideByZero)), // divide by zero
             (4, 4, 65, 5, Ok(13)),
             (4, 4, 0, 1, Ok(0)),
@@ -387,7 +387,7 @@ fn int_div_evaluate_binary_long() {
             (4, 4, 0x7fff_ffff, 0x8000_0000, Ok(0)),
             (4, 4, 0x8000_0000, 0x8000_0000, Ok(1)),
             (4, 4, 0x7fff_ffff, 0x7fff_ffff, Ok(1)),
-            // Java: 0. basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
+            // Java: 0. Basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
             (8, 8, 1, 0, Err(EvalError::DivideByZero)), // divide by zero
             (8, 8, 0x25_1234_5678, 0x99, Ok(0x3e07_08ee)),
             (8, 8, 0, 1, Ok(0)),
@@ -413,7 +413,7 @@ fn int_div_evaluate_binary_big_integer() {
     check_binary_wide_results(
         OpCode::IntDiv,
         &[
-            // Java: 0. basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
+            // Java: 0. Basilisk fails as the C++ does (and as Java does for SDIV, REM, SREM).
             (16, 16, 1, 0, Err(EvalError::DivideByZero)),
             (8, 8, 0x25_1234_5678, 0x99, Ok(0x3e07_08ee)),
             (16, 16, 0, 1, Ok(0)),

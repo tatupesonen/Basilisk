@@ -30,7 +30,7 @@
 //!   comparisons return `BigInteger.ONE`/`ZERO`; the wide path returns 1/0
 //!   cut to `size_out` bytes.
 //!
-//! basilisk's wide-path comparisons are IEEE where Java's compare `BigFloat`
+//! Basilisk's wide-path comparisons are IEEE where Java's compare `BigFloat`
 //! representations (`docs/features/pcode.md` section 8), but no expectation
 //! here involves a signed zero or a NaN ordering, so none differs from the
 //! Java.

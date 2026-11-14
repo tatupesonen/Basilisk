@@ -145,7 +145,7 @@ The test extracts every `<pcode>` element (body text, `<input>` and
 `<output>` names in order) from all `.cspec` and `.pspec` files of the
 Ghidra tree with `bk-marshal`'s XML reader, assigns parameter indices in
 order (inputs, then outputs), runs each language's snippets through the
-tool and through basilisk in the same order with the same starting base,
+tool and through Basilisk in the same order with the same starting base,
 and requires **the same XML text** per snippet (`Template::encode_xml`),
 or the same failure. Tolerated differences: none.
 

@@ -299,7 +299,7 @@ come from a `RegisterLookup`; sizes are suppressed when they equal the
 register's or the default. `printVarnodeTree` prints each varnode in
 `def` order: type name, ` = `, the raw form, flag words as names
 (`mapped`, `tlock`, `nlock`, `implied`, …), `(consumed=0x…)`,
-`(internal=…)` and `(create=0x…)` — basilisk omits `internal=` and the
+`(internal=…)` and `(create=0x…)` — Basilisk omits `internal=` and the
 comparison strips it from Ghidra's text. Exact formats are defined by
 the captured console output; where this section and a capture disagree,
 the capture is right and this section is corrected.

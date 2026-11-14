@@ -1,7 +1,7 @@
 //! Replays the oracle table `tests/data/types_oracle.txt.gz` (Ghidra's
 //! compiled `TypeFactory` and C parser on `tests/oracle/decls.txt` for six
 //! languages; see `tests/oracle/types_oracle.cc`): every record is rebuilt
-//! with basilisk and compared line for line. Kind S: needs nothing outside
+//! with Basilisk and compared line for line. Kind S: needs nothing outside
 //! the repository.
 #![allow(
     clippy::unwrap_used,
@@ -435,7 +435,7 @@ fn oracle_table_replays() {
                 .unwrap_or(0);
             let from = at.saturating_sub(150);
             eprintln!(
-                "line {k} at {at}\n  ghidra:   {}\n  basilisk: {}",
+                "line {k} at {at}\n  ghidra:   {}\n  Basilisk: {}",
                 truncate(e.get(from..).unwrap_or(e)),
                 truncate(g.get(from..).unwrap_or(g))
             );

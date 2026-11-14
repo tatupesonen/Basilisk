@@ -3,7 +3,7 @@
 //! Names and numbers are Ghidra's: those of `type.cc` first, then the few of
 //! `address.cc`, `fspec.cc` and `jumptable.cc` that the type marshalling uses
 //! (Ghidra defines each id once, in the file that owns it; no other crate of
-//! basilisk defines these yet).
+//! Basilisk defines these yet).
 
 use bk_marshal::{AttributeId, ElementId, IdTable};
 

@@ -6,7 +6,7 @@
 //! are defined in terms of `BigDecimal`: its `MathContext` rounding, its
 //! canonical `toString` (when it switches to scientific notation and how it
 //! writes the exponent) and its `String` constructor. Those rules decide the
-//! text basilisk prints for a float, so they are implemented here on top of
+//! text Basilisk prints for a float, so they are implemented here on top of
 //! `num_bigint`; a general decimal crate formats and parses by different
 //! rules.
 

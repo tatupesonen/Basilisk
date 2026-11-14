@@ -1,4 +1,4 @@
-//! basilisk's desktop interface: the design system, the application shell
+//! Basilisk's desktop interface: the design system, the application shell
 //! and the core views (listing, decompiler, symbol tree, functions, defined
 //! strings, references, console), in egui.
 //!

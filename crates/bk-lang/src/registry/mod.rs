@@ -33,7 +33,7 @@ pub const SPEC_ROOT_ENV: &str = "BASILISK_GHIDRA_DIR";
 /// is unset or empty.
 ///
 /// There is deliberately no fallback here. The project's convention,
-/// "`../ghidra` beside the basilisk checkout", is about a source checkout,
+/// "`../ghidra` beside the Basilisk checkout", is about a source checkout,
 /// which a library cannot locate: a path relative to the current directory
 /// means something different for every process (under `cargo test` it is
 /// the crate's directory), and a path fixed at compile time is wrong for an

@@ -15,7 +15,7 @@ impl SpaceManager {
     /// The checks are Ghidra's: the reserved kinds carry their reserved names,
     /// there is at most one of each special space and one space called
     /// `stack`, the constant space has index 0 and `OTHER` index 1, indices
-    /// and names are unique. basilisk adds one: no space but the constant
+    /// and names are unique. Basilisk adds one: no space but the constant
     /// space may take index 0, which lets an address tell whether it is a
     /// constant without the manager. Inserting an overlay marks its base
     /// space as overlaid. The space is given a shortcut character.

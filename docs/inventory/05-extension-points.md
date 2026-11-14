@@ -260,7 +260,7 @@ its useful output needs the UI hooks.
 - **Opinions**: `QueryOpinionService.query(loaderName, primaryKey,
   secondaryKey)` reads the processors' `.opinion` files to turn a format's
   machine code into language/compiler pairs [src `QueryOpinionService.java:115`].
-  basilisk already ports this (`bk-lang`, `QueryOpinionServiceTest` ported).
+  Basilisk already ports this (`bk-lang`, `QueryOpinionServiceTest` ported).
 
 ## 6. Exporters
 
@@ -284,11 +284,11 @@ Eight in Base (ASCII, C/C++, binary, Intel hex, XML, SARIF, GZF, …) [cmd 3].
   `highlightChanged` [src `BASE/app/plugin/ProgramPlugin.java:150-232`].
 - Actions (`DockingAction`) are created by plugins and registered with
   the tool: menu path, popup path, toolbar icon, key binding,
-  enablement by `ActionContext` [J, Docking framework; basilisk replaces
+  enablement by `ActionContext` [J, Docking framework; Basilisk replaces
   it with `bk-ui`'s action registry].
 - 237 concrete plugin classes [cmd 3]. ADR-001 rules out a
-  plugin/service-locator framework in basilisk's own structure; this is
-  the part of Ghidra's surface basilisk reproduces least literally.
+  plugin/service-locator framework in Basilisk's own structure; this is
+  the part of Ghidra's surface Basilisk reproduces least literally.
 
 ## 8. Other extension points
 

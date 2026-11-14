@@ -5,7 +5,7 @@
 //! Key bindings are Ghidra's defaults, taken from its action definitions
 //! (`KeyBindingData` in `Features/Base/.../plugin/core/*` and
 //! `Features/Decompiler/.../decompile/actions/*`); see `ui-design.md` for
-//! the list with sources and the few additions basilisk makes.
+//! the list with sources and the few additions Basilisk makes.
 
 use super::keymap::KeyChord;
 
@@ -36,7 +36,7 @@ pub enum ActionId {
     ToolOptions,
     /// Edit → Theme → Switch Theme (dark/light).
     SwitchTheme,
-    /// Edit → Theme → Compact Rows (basilisk).
+    /// Edit → Theme → Compact Rows (Basilisk).
     ToggleDensity,
     // Analysis
     /// Analysis → Auto Analyze...
@@ -92,7 +92,7 @@ pub enum ActionId {
     /// Snapshot: open a copy of the view that does not follow navigation.
     Snapshot,
     // Tools
-    /// Tools → Command Palette (basilisk).
+    /// Tools → Command Palette (Basilisk).
     CommandPalette,
     // Window
     /// Window → Listing
@@ -111,14 +111,14 @@ pub enum ActionId {
     ShowReferencesWindow,
     /// Window → Console
     ShowConsole,
-    /// Window → Reset Window Layout (basilisk).
+    /// Window → Reset Window Layout (Basilisk).
     ResetLayout,
     /// Window → Detach Window: move the active pane into its own native window.
     DetachWindow,
     /// Window → Dock Window: put a detached window's panes back in the main window.
     DockWindow,
     // Help
-    /// Help → About basilisk
+    /// Help → About Basilisk
     About,
     /// Help → Key Bindings (opens the options at that page).
     ShowKeyBindings,
@@ -226,7 +226,7 @@ pub const ACTIONS: &[Action] = &[
     a(ActionId::OpenProgram, "Open...", "Open a program", Some(Menu::File), 0, &[k(Key::O, true, false, false)], Scope::Global, false),
     a(ActionId::CloseProgram, "Close", "Close the program and return to the start screen", Some(Menu::File), 0, &[k(Key::W, true, false, false)], Scope::Program, false),
     a(ActionId::SaveProgram, "Save", "Save changes to the program", Some(Menu::File), 1, &[k(Key::S, true, false, false)], Scope::Unavailable("Saving arrives with the program database"), false),
-    a(ActionId::Exit, "Exit", "Quit basilisk", Some(Menu::File), 2, &[k(Key::Q, true, false, false)], Scope::Global, false),
+    a(ActionId::Exit, "Exit", "Quit Basilisk", Some(Menu::File), 2, &[k(Key::Q, true, false, false)], Scope::Global, false),
     // Edit
     a(ActionId::Undo, "Undo", "Undo the last change", Some(Menu::Edit), 0, &[k(Key::Z, true, false, false)], Scope::Program, false),
     a(ActionId::Redo, "Redo", "Redo the last undone change", Some(Menu::Edit), 0, &[k(Key::Z, true, true, false)], Scope::Program, false),
@@ -279,7 +279,7 @@ pub const ACTIONS: &[Action] = &[
     a(ActionId::ResetLayout, "Reset Window Layout", "Put every window back where it starts (Ghidra's CodeBrowser layout)", Some(Menu::Window), 3, NO_KEYS, Scope::Global, false),
     // Help
     a(ActionId::ShowKeyBindings, "Key Bindings", "List and change key bindings", Some(Menu::Help), 0, NO_KEYS, Scope::Global, false),
-    a(ActionId::About, "About basilisk", "Version and licences", Some(Menu::Help), 1, NO_KEYS, Scope::Global, false),
+    a(ActionId::About, "About Basilisk", "Version and licences", Some(Menu::Help), 1, NO_KEYS, Scope::Global, false),
 ];
 
 #[expect(

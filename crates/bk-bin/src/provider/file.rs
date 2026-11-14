@@ -25,7 +25,7 @@ use crate::provider::traits::ByteProvider;
 /// every buffer the garbage collector has not reclaimed and serialises all
 /// reads on one monitor.)
 ///
-/// basilisk forbids `unsafe`, so there is no memory-mapped provider here
+/// Basilisk forbids `unsafe`, so there is no memory-mapped provider here
 /// (ADR-005). A crate that is allowed to map files can hand the mapping to
 /// [`MemoryProvider`](crate::MemoryProvider).
 pub struct FileProvider {

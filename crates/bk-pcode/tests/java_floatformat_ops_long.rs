@@ -11,7 +11,7 @@
 )]
 //! Port of Ghidra's JUnit class `ghidra.pcode.floatformat.FloatFormatTest`,
 //! part 3 of 5: the p-code float operations through Java's `long` overloads,
-//! which are basilisk's host level (`u64` encodings computed through `f64`).
+//! which are Basilisk's host level (`u64` encodings computed through `f64`).
 //!
 //! Java methods ported here (each is one `#[test]` with the same name in
 //! snake case): `testOpEqualLongLong`, `testOpNotEqualLongLong`,
@@ -311,7 +311,7 @@ fn test_op_trunc_long_int() {
     assert_eq!((-2_i64) as u64, ff.op_trunc(a, 8));
 
     // Saturation at the infinities and 0 for a NaN are Java's `(long)` cast;
-    // the C++ leaves these undefined and basilisk follows Java.
+    // the C++ leaves these undefined and Basilisk follows Java.
     let a = ff.encoding(INF);
     assert_eq!(i64::MAX as u64, ff.op_trunc(a, 8));
 

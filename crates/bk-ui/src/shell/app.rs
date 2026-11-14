@@ -23,7 +23,7 @@ use crate::views::Request;
 /// The key the preferences are stored under.
 pub const PREFS_KEY: &str = "basilisk-prefs";
 
-/// The basilisk application.
+/// The Basilisk application.
 #[derive(Debug)]
 pub struct BasiliskApp {
     tool: Arc<Mutex<Tool>>,

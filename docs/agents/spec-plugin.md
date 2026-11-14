@@ -25,7 +25,7 @@ progress.
   nine tracks with acceptance checks, differences from Ghidra.
 - **`docs/features/plugin-binding-constraints.md`** — 15 rules for the
   other specs, each with reason, conforming and non-conforming
-  signatures, and where basilisk's crates and specs stand (cited).
+  signatures, and where Basilisk's crates and specs stand (cited).
 - **`docs/agents/spec-plugin-experiments/`** — the script census tool
   and output; two PyO3 0.30.1 experiments with commands and results
   (README).
@@ -39,7 +39,7 @@ progress.
    one minor version and install path. Static linking makes Python
    mandatory, fixes its version, and on Windows third-party C extensions
    cannot bind to it (ADR-022 gap). Run-time loading is not supported by
-   PyO3 (data-symbol imports). The spec therefore makes basilisk a Python
+   PyO3 (data-symbol imports). The spec therefore makes Basilisk a Python
    **extension module** hosted by the user's CPython (`python -m
    basilisk`, or `import basilisk`), with the binary handing over to a
    found interpreter — Ghidra's own PyGhidra architecture. ADR candidate A
@@ -72,7 +72,7 @@ progress.
 (Coordinator, <date>, from the `spec-plugin` track; `features/plugin-api.md` 4.1,
 `docs/agents/spec-plugin-experiments/README.md`. Refines ADR-014.)
 
-ADR-014 says `bk-plugin` "embeds CPython"; `DIRECTION.md` says basilisk is a
+ADR-014 says `bk-plugin` "embeds CPython"; `DIRECTION.md` says Basilisk is a
 single binary. A `basilisk` executable that links libpython does not start
 where the library is absent (measured on macOS: `dyld: Library not loaded`,
 exit 134, even in a mode that never uses Python) and is tied to one minor
@@ -93,7 +93,7 @@ extensions (ADR-022); PyO3 cannot load libpython at run time. Therefore:
   installs it into a managed virtual environment, as Ghidra's PyGhidra
   launcher does. "Single binary" keeps meaning one executable and no helper
   programs.
-* "Embedding" in ADR-014 is read as: CPython and basilisk share one process
+* "Embedding" in ADR-014 is read as: CPython and Basilisk share one process
   and Rust calls Python callbacks in it; CPython's executable owns `main`.
 ```
 

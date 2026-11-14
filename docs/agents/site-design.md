@@ -115,7 +115,7 @@ to `docs-content`.
   underline and turn ember only under the pointer. Statuses and call-outs
   use the syntax hues (Done = number green, Partial = function gold, …),
   so colour keeps meaning.
-- **The basilisk twist, kept restrained**: the slit pupil is the
+- **The Basilisk twist, kept restrained**: the slit pupil is the
   "you are here" marker everywhere (an SVG mask, so it scales); the mark's
   ring becomes faint iris rings behind the hero mark; section labels are
   set like listing addresses (`0x10 · The interface`, `0xdeadbeef` on the
@@ -129,7 +129,7 @@ to `docs-content`.
 - **Honest copy**: "Works today" / "Not yet" panels state only what
   `PARITY.md` and the repository support; the hero pill says "Early
   development"; Python plugins are tagged "planned"; every footer says
-  basilisk is independent and not affiliated with or endorsed by Ghidra's
+  Basilisk is independent and not affiliated with or endorsed by Ghidra's
   authors or the NSA, with GPL-3.0-or-later and the source link.
 - **No scripts needed to read**: theme follows the system without JS;
   screenshot links open the image; the status filter is radio inputs and
@@ -245,7 +245,7 @@ the published pages, compatible with GPL-3.0-or-later); fonts SIL OFL 1.1.
    Source: "GitHub Actions"**.
 2. Run the **Pages** workflow (Actions tab → Pages → Run workflow, or
    `gh workflow run Pages`). It builds with the base path GitHub reports
-   (`/basilisk/` for `https://tatupesonen.github.io/basilisk/`) and deploys.
+   (`/basilisk/` for `https://tatupesonen.github.io/Basilisk/`) and deploys.
 3. For a custom domain: set it under Settings → Pages; the workflow then
    builds at `/` automatically (`configure-pages` reports an empty base
    path). To deploy on every push to `master`, add `push: branches:

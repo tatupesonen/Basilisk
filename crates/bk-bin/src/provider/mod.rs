@@ -3,7 +3,7 @@
 //! The [`ByteProvider`] trait is the contract; the other types are the
 //! providers Ghidra supplies in `ghidra.app.util.bin`, with its semantics:
 //!
-//! | basilisk | Ghidra |
+//! | Basilisk | Ghidra |
 //! |---|---|
 //! | [`MemoryProvider`] | `ByteArrayProvider` |
 //! | [`FileProvider`] | `FileByteProvider` |

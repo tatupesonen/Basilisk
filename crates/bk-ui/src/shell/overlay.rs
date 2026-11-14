@@ -107,7 +107,7 @@ pub enum Overlay {
     Comment(CommentEdit),
     /// Search Program Text / Search Memory.
     Search(SearchBox),
-    /// About basilisk.
+    /// About Basilisk.
     About,
 }
 
@@ -512,7 +512,7 @@ fn search_ui(ctx: &egui::Context, env: &Env<'_>, s: &mut SearchBox) -> Outcome {
 
 fn about_ui(ctx: &egui::Context, env: &Env<'_>) -> Outcome {
     let t = env.tokens;
-    let out = dialog(ctx, t, "About basilisk", |ui| {
+    let out = dialog(ctx, t, "About Basilisk", |ui| {
         ui.horizontal(|ui| {
             if let Some(tex) = super::brand::mark(ui.ctx(), t.kind) {
                 ui.add(egui::Image::new(&tex).fit_to_exact_size(vec2(56.0, 56.0)));
@@ -520,7 +520,7 @@ fn about_ui(ctx: &egui::Context, env: &Env<'_>) -> Outcome {
             ui.add_space(space::LG);
             ui.vertical(|ui| {
                 ui.label(
-                    RichText::new("basilisk")
+                    RichText::new("Basilisk")
                         .text_style(typography::style::display())
                         .color(t.palette.text),
                 );

@@ -33,7 +33,7 @@
 //! second `INT_SLESS`. The tests here keep the Java class names and test the
 //! operation the Java class tests.
 //!
-//! On the `u64` path basilisk compares a shift amount with `8 * size_out` as
+//! On the `u64` path Basilisk compares a shift amount with `8 * size_out` as
 //! the C++ does, where Java uses `8 * size_in`; every shift row here has equal
 //! sizes, so the Java expectations hold unchanged.
 

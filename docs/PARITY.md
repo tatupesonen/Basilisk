@@ -1,6 +1,6 @@
-# basilisk ↔ Ghidra parity matrix
+# Basilisk ↔ Ghidra parity matrix
 
-Status of every Ghidra module against basilisk. Updated by the coordinator
+Status of every Ghidra module against Basilisk. Updated by the coordinator
 whenever a branch merges. Module contents are described in
 `inventory/00-overview.md`; test status per class is in `inventory/tests/`.
 
@@ -11,13 +11,13 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 - **Partial**: some of it exists; the Notes say what is missing.
 - **In progress**: a track is working on it now.
 - **Missing**: nothing on `master` yet.
-- **Replaced**: basilisk provides the function by different means, by
+- **Replaced**: Basilisk provides the function by different means, by
   decision; Notes name the ADR.
 - **Out of scope**: excluded by an owner decision (`DIRECTION.md`). None so far.
 
 ## Framework
 
-| Ghidra module | basilisk | Milestone | Status | Notes |
+| Ghidra module | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | SoftwareModeling: address, p-code model, float formats, op behaviour | `bk-core`, `bk-pcode` | M0 | Partial | `bk-pcode` and `bk-core` done for the decompiler/SLEIGH side (C++ model). Java's program-model address API and its 11 test classes wait for M4 |
 | SoftwareModeling: language definitions (`.ldefs`, `.pspec`, opinions) | `bk-lang` | M0 | Partial | Readers, registry and opinion queries done. `.cspec` arrives with the decompiler (M3); old-language translators M8; `SleighLanguageProviderTest` partly ported (rest needs M2) |
@@ -36,7 +36,7 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 
 ## Decompiler (C++)
 
-| Ghidra part | basilisk | Milestone | Status | Notes |
+| Ghidra part | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | CORE (xml, marshal, space, address, translate, opcodes, float) | `bk-core`, `bk-marshal`, `bk-pcode` | M0 | Partial | Done except `Translate`/`PcodeEmit`, `PcodeOpRaw` and the context database (M1) |
 | SLEIGH runtime | `bk-sla`, `bk-sleigh` | M1 | Partial | On `master`: `bk-sla` (the compiled-language model, validating reader, byte-exact writers; all 150 reference `.sla` round-trip) and `bk-sleigh` part 1 (language loading, context database, instruction decoding, disassembly text: no record differs from `pcodedump` over 175 language configurations; faster than Ghidra's engine). Missing: p-code generation and `basilisk disasm` (track `sleigh-pcode`, paused), the Java-side language services (`sleigh-language`). |
@@ -49,7 +49,7 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 
 ## Features
 
-| Ghidra module | basilisk | Milestone | Status | Notes |
+| Ghidra module | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | Base: byte providers, `BinaryReader` | `bk-bin` | M0 | Done | Ghidra's reader and provider tests ported. `MemoryByteProvider` needs program memory (M4) |
 | Base: ELF format | `bk-elf` | M0 | Partial | Parser done (tolerant; checked against `object` and lld). Not ported: GNU build attributes, data-type layouts. The ELF loader and relocation handlers are M4 |
@@ -87,7 +87,7 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 
 ## Processors
 
-| Ghidra part | basilisk | Milestone | Status | Notes |
+| Ghidra part | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | Language data for 39 processor modules | read in place | M0–M2 | Reused | ADR-002 |
 | Relocation handlers | `bk-loader-*` | M4 | Missing | |
@@ -96,7 +96,7 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 
 ## Debug, Extensions
 
-| Ghidra module | basilisk | Milestone | Status | Notes |
+| Ghidra module | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | Framework-TraceModeling, Debugger, Debugger-api, Debugger-rmi-trace, agents, ISF, TaintAnalysis, ProposedUtils | `bk-debug-*` | M10 | Missing | |
 | Extensions (Jython, BSimElastic, MachineLearning, Lisa, SymbolicSummaryZ3, samples) | — | M10 | Missing | Decide per extension when reached |
@@ -106,7 +106,7 @@ Last updated: 2026-11-14 (`bk-sla`, `bk-decomp-types`, `bk-sleigh` part 1 and `b
 
 Ported like any other code, as ordinary crates called directly.
 
-| Ghidra module | basilisk | Milestone | Status | Notes |
+| Ghidra module | Basilisk | Milestone | Status | Notes |
 |---|---|---|---|---|
 | GPL/DemanglerGnu (libiberty demangler, versions 2.24 and 2.41) | `bk-demangle-gnu` | M6 | Missing | |
 | GPL/GnuDisassembler (`gdis` over binutils) | `bk-binutils-sys`, `bk-gnu-disasm` | M10 | Partial | On `master`: binutils 2.41 built from source (ADR-019), safe API, `.gdis` configuration, all 65 of Ghidra's `gnu` names resolve. Missing: the listing field (M7) and the block script (M9) that use it; `bk-lang`'s external names are not wired to it yet. Windows verified under Wine only. |

@@ -4,7 +4,7 @@ Track `sla-host-diff`, 2026-11-14. Question from ADR-029: 14 of the 150
 reference `.sla` files differ between the macOS AArch64 build
 (`../reference`, Apple clang 17, libc++) and the x86-64 Linux build
 (`../reference-x86_64/x86_64-linux`, GCC 14.4, libstdc++). What differs,
-why, does it matter, and what should basilisk do?
+why, does it matter, and what should Basilisk do?
 
 Each claim is marked **[measured]** (command or experiment given),
 **[source]** (file and line read) or **[judgement]**. Tools:
@@ -65,7 +65,7 @@ under `docs/research/sla-host-dependence/`: `classify-mac-vs-x86.txt`,
   (built from source on Apple silicon) agrees with fdlibm [measured].
 * **Recommendation**: keep x86-64 Linux as the byte oracle for all 150 —
   its result is now a defined computation (unfused IEEE `f64` arithmetic,
-  glibc's `log`), not an accident. basilisk must compute the score
+  glibc's `log`), not an accident. Basilisk must compute the score
   without contraction (Rust never contracts) and with a `log` bit-equal to
   glibc's on every `k/n` the compiler can produce, checked by an exhaustive
   test; not `libm::log`. Add `-ffp-contract=off` to the reference build so
@@ -349,7 +349,7 @@ release, which supports keeping it as the oracle.
 
 ## 6. Recommendation
 
-### 6.1 What basilisk's compiler does
+### 6.1 What Basilisk's compiler does
 
 Compute the score exactly as x86-64 C++ (and Java) does, as a defined
 computation:
@@ -373,7 +373,7 @@ computation:
 3. Test (oracle-free, all platforms): the checked-in table
    `logtable-glibc.txt` (16,384 lines; produced by
    `containers/logtable/logtable.c` in the `gcc:14` container, md5
-   `a9e120b2c0f1bd977abb3f70640effbb`) must equal basilisk's `log` hashed
+   `a9e120b2c0f1bd977abb3f70640effbb`) must equal Basilisk's `log` hashed
    the same way. Under a second exhaustively; it pins the arithmetic that
    decides the 25 ties without needing the reference.
 
@@ -428,7 +428,7 @@ algorithm.
 ### 6.4 Proposed ADR-029 revision (ready to paste)
 
 ```markdown
-## ADR-029 — Ghidra's SLEIGH compiler output depends on floating-point contraction; basilisk computes the score as x86-64 does
+## ADR-029 — Ghidra's SLEIGH compiler output depends on floating-point contraction; Basilisk computes the score as x86-64 does
 (Coordinator, 2026-11-14; revised 2026-11-14 from the `sla-host-diff`
 track, evidence in `docs/research/sla-host-dependence.md`. Follows
 ADR-021; replaces ADR-024's `libm` bullet.)
@@ -449,7 +449,7 @@ x86-64 at all 25 nodes, but its `Math.log` is host-dependent (Homebrew's
 12.0 built on Apple silicon differs from the 11.4.2 release in ARM8_le
 and ARM8m_le).
 
-* **basilisk's score** is unfused IEEE `f64` arithmetic in Ghidra's
+* **Basilisk's score** is unfused IEEE `f64` arithmetic in Ghidra's
   order, with a `log` bit-equal to glibc's (FMA variant) on every `k/n`,
   1 ≤ k < n ≤ 16,384, verified against a checked-in table. Not
   `libm::log`: fdlibm's `log` changes ARM8_le and ARM8m_le. The output is

@@ -222,19 +222,19 @@ data tests and a differential run of Ghidra's compiled C++
   with the sign of the *second* input, `FLOAT_SUB` and `FLOAT_DIV` that of
   the *first*: what Ghidra compiled by GCC gives on x86-64 (SSE2 returns
   the first source operand, and GCC puts `val2` there for the commutative
-  operations). AArch64 takes the first input's for all four. basilisk
+  operations). AArch64 takes the first input's for all four. Basilisk
   computes the sign explicitly, never from the host's arithmetic. Seen in
   the x86-64 oracle table (48 rows; `x86-oracle` track, 2026-11-14).
 - `FLOAT_TRUNC` of a NaN, an infinity or a value outside `i64` saturates
   (NaN gives 0). The C++ cast is undefined: x86-64 gives `i64::MIN`,
   AArch64 saturates. Java's `(long)` cast saturates and
   `FloatFormatTest.testOpTruncLongInt` and `OpBehaviorFloatTruncTest` pin
-  that, so basilisk saturates; this is the one place it does not follow
+  that, so Basilisk saturates; this is the one place it does not follow
   x86-64, and a differential test against a reference `decomp` built on
   x86-64 will see the difference for out-of-range constants. In the x86-64
   oracle table these are 58 rows (`cpp_oracle.rs`, class
   `TruncSaturates`): x86-64 gives `i64::MIN` cut to the output size, so 0
-  at sizes below 8 for a positive overflow, where basilisk gives all ones.
+  at sizes below 8 for a positive overflow, where Basilisk gives all ones.
 - A value that rounds up from the largest subnormal to the smallest normal
   encodes as the smallest normal. The C++ shifts by -1 there ("TODO handle
   round to normal case") and returns a signed zero on both hosts (seen in
@@ -242,7 +242,7 @@ data tests and a differential run of Ghidra's compiled C++
   case no Ghidra test pins.
 - `INT_SEXT` with `size_out < size_in`, or a size of 0: the C++ shifts by a
   negative amount or by 64; both hosts take the count modulo 64, and
-  basilisk now does the same, reproducing Ghidra's compiled result bit for
+  Basilisk now does the same, reproducing Ghidra's compiled result bit for
   bit. (The first agent returned the input unchanged; the differential run
   found it.)
 - Shift counts outside `0..64` that the C++ reaches only with a size of 0
@@ -251,7 +251,7 @@ data tests and a differential run of Ghidra's compiled C++
 - `recover_input_binary` of `INT_LEFT`/`INT_RIGHT`/`INT_SRIGHT` by 0 at 8
   bytes: the C++ shifts by 64, which both hosts take as 0, so it reports
   every non-zero output as "not in range" (seen on AArch64 in the
-  differential run). basilisk returns the output, the correct input. Kept
+  differential run). Basilisk returns the output, the correct input. Kept
   as a deliberate fix: the decompiler's only caller is jump-table
   recovery (`jumptable.cc`), where Ghidra simply fails on such a shift.
 - The oracle table (`tests/data/opbehavior_cpp.txt.gz`) is x86-64 Linux's
@@ -271,7 +271,7 @@ data tests and a differential run of Ghidra's compiled C++
 
 **C++/Java disagreements for sizes up to 8 bytes (the C++ wins)**
 
-- `INT_DIV` by zero: the C++ throws; Java returns 0. basilisk:
+- `INT_DIV` by zero: the C++ throws; Java returns 0. Basilisk:
   `DivideByZero`, on the wide path too (Java's `BigInteger` overload also
   returns 0, while its `INT_SDIV`/`INT_REM`/`INT_SREM` throw).
 - `FLOAT_ROUND`: the C++ uses `round()` (halfway cases away from zero);

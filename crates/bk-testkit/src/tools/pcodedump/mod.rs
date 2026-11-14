@@ -1,4 +1,4 @@
-//! basilisk's disassembly and p-code oracle (`tools/reference/pcodedump.cc`):
+//! Basilisk's disassembly and p-code oracle (`tools/reference/pcodedump.cc`):
 //! Ghidra's SLEIGH engine decoding a byte buffer as a linear sweep.
 
 mod model;

@@ -1,6 +1,6 @@
 ---
 title: The decompiler
-description: basilisk's decompiler, a port of Ghidra's C++ decompiler — planned for milestone M3.
+description: Basilisk's decompiler, a port of Ghidra's C++ decompiler — planned for milestone M3.
 sidebar:
   order: 1
   label: Overview
@@ -11,8 +11,8 @@ The decompiler is milestone M3. Its port plan is written and its first crates ar
 decompile anything yet. The Decompiler view in the interface shows demo output today.
 :::
 
-basilisk's decompiler is a port of Ghidra's C++ decompiler, written as a set of Rust crates. It runs in the
-same process as the rest of basilisk (Ghidra runs its decompiler as a separate process), and it decompiles
+Basilisk's decompiler is a port of Ghidra's C++ decompiler, written as a set of Rust crates. It runs in the
+same process as the rest of Basilisk (Ghidra runs its decompiler as a separate process), and it decompiles
 functions in parallel.
 
 ## The pipeline

@@ -50,7 +50,7 @@ unit and data-test logs (byte-identical; 204/205 and 758/760, the same
 three failures: `double_decimal_precision`, `Float print #6`, `#13`);
 `pcodedump` output on 1 MB of random bytes in 10 languages; `decomp`
 console output (stdout, stderr, exit status) on all 93 data-test scripts;
-basilisk's workspace tests (1,747 passed before and after the swap, same
+Basilisk's workspace tests (1,747 passed before and after the swap, same
 per-test list).
 
 **Spec edits** (`sleigh-compiler-back.md`): 4.3 floating point now

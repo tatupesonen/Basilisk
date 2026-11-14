@@ -116,7 +116,7 @@ fn compare_with_ghidra(name: &str, source: &str, ours: Option<&Elaborated>) {
         }
         (None, None) => {}
         (ours, theirs) => panic!(
-            "{name}: basilisk produced {} but Ghidra {}",
+            "{name}: Basilisk produced {} but Ghidra {}",
             ours.is_some(),
             theirs.is_some()
         ),
