@@ -91,6 +91,20 @@ pub(crate) struct CtorInfo {
     pub(crate) export: u32,
 }
 
+/// An expression that is a leaf, with its field copied in, so that the
+/// common operand values (a token field, a constant) are one look-up.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Leaf {
+    /// `Expr::TokenField` with its field.
+    Token(bk_sla::Field),
+    /// `Expr::ContextField` with its field.
+    Context(bk_sla::Field),
+    /// `Expr::Constant`.
+    Constant(i64),
+    /// Anything else (evaluated by `Env::eval`).
+    Other,
+}
+
 /// The precomputed tables of a language.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Tables {
@@ -111,6 +125,8 @@ pub(crate) struct Tables {
     /// The exports of the constructors' main templates ([`CtorInfo::export`]),
     /// side by side so that handle resolution need not reach the templates.
     pub(crate) exports: Vec<bk_sla::HandleTpl>,
+    /// Every expression as a [`Leaf`], indexed by expression id.
+    pub(crate) leaves: Vec<Leaf>,
 }
 
 impl Tables {
@@ -207,6 +223,17 @@ impl Tables {
             });
         }
         tables.next2_anywhere |= tables.uses_next2;
+        let mut id = 0u32;
+        while let Some(expr) = sla.expr(ExprId::new(id)) {
+            let field = |f: bk_sla::FieldId| sla.field(f).copied();
+            tables.leaves.push(match *expr {
+                Expr::TokenField(f) => field(f).map_or(Leaf::Other, Leaf::Token),
+                Expr::ContextField(f) => field(f).map_or(Leaf::Other, Leaf::Context),
+                Expr::Constant(value) => Leaf::Constant(value),
+                _ => Leaf::Other,
+            });
+            id += 1;
+        }
         for index in 0..tables.ctors.len() {
             let id = ConstructorId::new(index as u32);
             let export = tables

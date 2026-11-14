@@ -10,7 +10,7 @@ use super::fault::{Fault, What};
 use super::tree::{NONE, Parse};
 use crate::error::Limit;
 use crate::language::Language;
-use crate::language::tables::{OpDef, sign_extend, zero_extend};
+use crate::language::tables::{Leaf, OpDef, sign_extend, zero_extend};
 
 /// How deeply expression evaluation may recurse (operand expressions refer
 /// to other operands; `bk-sla` rejects cycles, this bounds the rest).
@@ -159,12 +159,10 @@ impl Env<'_> {
     /// without the recursive call.
     #[inline]
     pub(crate) fn value(&self, id: ExprId, point: Point) -> Result<i64, Fault> {
-        match self.sla.expr(id) {
-            Some(Expr::TokenField(field)) => {
-                let field = self.sla.field(*field).ok_or(Fault::Model(What::Field))?;
-                self.token_field(field, self.offset_of(point))
-            }
-            Some(Expr::Constant(value)) => Ok(*value),
+        match self.lang.tables.leaves.get(id.index() as usize) {
+            Some(Leaf::Token(field)) => self.token_field(field, self.offset_of(point)),
+            Some(Leaf::Constant(value)) => Ok(*value),
+            Some(Leaf::Context(field)) => Ok(self.context_field(field)),
             _ => self.eval(id, point, 0),
         }
     }
