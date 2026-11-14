@@ -494,3 +494,26 @@ builds running.
 |---|---:|
 | Read the largest `.cspec` (`x86-64-golang.cspec`, 15,994 bytes, 3 models with 100+ entries and rules each) into a `CompilerSpec` | **160 µs** per read (2,000 reads) |
 | Storage assignment, x86-64 gcc `__stdcall`, four signatures in turn (2–8 parameters, a hidden return, a `join_dual_class` structure) | **1,000,000 assignments in 460 ms (460 ns each)**; the status array is inline (no allocation per call beyond the output vector, which is reused) |
+
+### `bk-sleigh-snippet`
+
+Command: `BASILISK_GHIDRA_DIR=… BASILISK_REFERENCE_DIR=… cargo test -p
+bk-sleigh-snippet --release --test bench -- --ignored --nocapture
+--test-threads=1` (on the build host: `scripts/remote.sh run -- cargo test
+…`). 2026-11-14, Rust 1.100.0. The hot paths are preparing a compiler for a
+language (once per program) and compiling a payload (once per payload,
+when a language's specifications are loaded). Ghidra's own snippet
+compiler was not timed (it has no standalone driver beyond `snippetdump`,
+whose time is dominated by loading the language).
+
+| Benchmark | x86-64 Linux VM, 20 vCPUs, host CPU model (AMD Zen 4 class), idle | Mac (M1 Pro, shared with other agents' builds) |
+|---|---:|---:|
+| `SnippetCompiler::new` for x86-64 (visible names and spaces of a 3,000-register `.sla`) | **0.15 ms** | 0.16 ms |
+| The 16 snippets of `x86-64-gcc.cspec` compiled in library order | **27.6 µs** together | 36.7 µs |
+| One 10-statement snippet (fixture language), 200,000 compiles | **5.5 µs** per compile | 6.4 µs |
+
+Per compile the parser builds a small syntax tree and the builder a
+template; there is no per-language work after `new`. The whole shipped
+corpus (588 compilations in 116 languages) is compiled in well under a
+millisecond of compile time; the differential test's 0.5 s is spent
+loading `.sla` files and running the oracle.

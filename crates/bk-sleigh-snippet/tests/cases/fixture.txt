@@ -1,0 +1,245 @@
+// Snippet bodies compiled against the fixture language (tests/fixture) with
+// the parameters in1 (0), in2 (1), out1 (2); one per line, `\n` `\t` `\\` `\0` escaped.
+// Each is checked against the snippetdump oracle when it is present and
+// against the snapshot always (tests/oracle_cases.rs).
+//
+// Statements
+EAX = 1;
+EAX = EBX;
+EAX = EBX + ECX * 2;
+tmp = EAX; EBX = tmp;
+tmp:4 = 5; EBX = tmp;
+local tmp = EAX + 1; EBX = tmp;
+local tmp:2 = AX; BX = tmp;
+local tmp; tmp = 3; EAX = tmp;
+local tmp:1; tmp = 3; AL = tmp;
+local tmp:1; AL = tmp;
+local x:4 = 1; local y:4 = x; EAX = y;
+*[ram]:4 EAX = EBX;
+*[ram] EAX = EBX;
+*:4 EAX = EBX;
+* EAX = EBX;
+*[register]:4 0 = 1:4;
+EAX = *[ram]:4 EBX;
+EAX = *:4 EBX;
+EAX = *EBX;
+EAX = *[ram] EBX + 1;
+segment(ES, EAX);
+EAX = segment(ES, EBX);
+syscall();
+EAX = syscall();
+segment(,ES,EAX);
+goto inst_next;
+goto inst_start;
+goto inst_next2;
+goto inst_dest;
+goto inst_ref;
+goto 0x1000;
+goto 0x10[ram];
+goto 0x10[register];
+goto 0x10[const];
+goto [EAX];
+call [EAX];
+call inst_dest;
+call 0x400000;
+call <lab>; <lab>
+return [EAX];
+return [*:4 ESP];
+if (EAX == 0) goto inst_next;
+if EAX == 0 goto inst_next;
+if (EAX != 1) goto <skip>; EAX = 1; <skip>
+<top> EAX = EAX - 1; if (EAX != 0) goto <top>;
+<a> <b> goto <a>; goto <b>;
+goto <never>;
+<placed>
+<twice> <twice>
+in1 = in2 + 7;
+out1 = in1 & in2;
+in1 = 5;
+EAX = in1;
+EAX = in1:4;
+EAX = in1(2);
+AL = in1[0,8];
+AX = in1:2;
+in1[0,8] = 1;
+in1[4,4] = 1;
+EAX[0,8] = 1;
+EAX[8,8] = AL;
+EAX[3,5] = AL;
+EAX[0,32] = 1;
+EAX[0,0] = 1;
+EAX[30,8] = 1;
+EAX[60,8] = 1;
+inst_dest = 1;
+EAX = inst_dest;
+EAX = inst_ref;
+EAX = inst_start;
+EAX = inst_next;
+EAX = &EBX;
+EAX = &:2 EBX;
+EAX = &in1;
+EAX = &:4 inst_next;
+EAX = &&EBX;
+EAX = &5:4;
+EAX = 5:4;
+EAX = 010;
+EAX = 09;
+EAX = 08;
+EAX = 00;
+EAX = 0779;
+EAX = 0189;
+EAX = 0777777777777777777777;
+EAX = 02000000000000000000000;
+EAX = 0x;
+EAX = 0xffffffffffffffff;
+EAX = 0x1ffffffffffffffff;
+EAX = 18446744073709551616;
+goto 0x1ffffffffffffffff;
+goto 0x1ffffffffffffffff[ram];
+EAX = &0x1ffffffffffffffff;
+// Expressions
+EAX = -EBX;
+EAX = ~EBX;
+AL = !AL;
+EAX = f- EBX;
+EAX = (EBX + ECX) * EDX;
+EAX = EBX - ECX - EDX;
+EAX = EBX << 2 >> 1 s>> 3;
+AL = EAX < EBX;
+AL = EAX > EBX;
+AL = EAX <= EBX;
+AL = EAX >= EBX;
+AL = EAX s< EBX;
+AL = EAX s> EBX;
+AL = EAX s<= EBX;
+AL = EAX s>= EBX;
+AL = EAX == EBX;
+AL = EAX != EBX;
+AL = EAX f< EBX;
+AL = EAX f> EBX;
+AL = EAX f<= EBX;
+AL = EAX f>= EBX;
+AL = EAX f== EBX;
+AL = EAX f!= EBX;
+AL = EAX < EBX < ECX;
+AL = EAX == EBX == ECX;
+AL = AL && BL || CL ^^ DL;
+EAX = EAX | EBX ^ ECX & EDX;
+EAX = EAX / EBX % ECX s/ EDX s% ESI;
+EAX = EAX f+ EBX f- ECX f* EDX f/ ESI;
+EAX = EAX*EBX;
+EAX = zext(AL);
+EAX = sext(AL);
+AL = carry(EAX, EBX);
+AL = scarry(EAX, EBX);
+AL = sborrow(EAX, EBX);
+AL = nan(EAX);
+EAX = abs(EAX);
+EAX = sqrt(EAX);
+EAX = ceil(EAX);
+EAX = floor(EAX);
+EAX = round(EAX);
+EAX = int2float(EAX);
+EAX = float2float(EAX);
+EAX = trunc(EAX);
+EAX = borrow(EAX, EBX);
+EAX = popcount(EBX);
+EAX = lzcount(EBX);
+EAX = cpool(EBX, 1);
+EAX = newobject(EBX);
+AL = EAX(3);
+AL = EAX:1;
+AX = EAX[16,16];
+AL = EAX[3,5];
+AL = EAX[0,0];
+AL = EAX[30,8];
+EAX = EAX[0,32];
+AL = EAX[0,72];
+EAX = zext(AL) + sext(BL) * 3;
+EAX = EBX + (ECX;
+EAX = carry(EAX);
+EAX = zext(EAX, EBX);
+// Temporaries and sizes
+tmp = EAX + EBX;
+tmp = 1 + 2;
+tmp = 1;
+EAX = tmp;
+x = 1; y = x + EAX;
+x = 1:2; y:4 = zext(x); EAX = y;
+x:2 = 1; x = EAX;
+local x:2 = 1; x:4 = 2;
+build = 1; EAX = build;
+cpool = EAX; EBX = cpool;
+export = 1;
+delayslot(1);
+// Errors of grammar rules
+EAX:4 = 1;
+EAX(2) = 1;
+EAX(2);
+5:4:2 = 1;
+5(1) = 1;
+local EAX = 1;
+local EAX;
+local in1 = 1;
+foo = bar;
+EAX = bar;
+foo[0,8] = 1;
+foo(1);
+EAX = foo(1);
+goto foo;
+goto EAX;
+goto in1;
+goto [foo];
+return;
+return EAX;
+if (EAX) goto [EBX];
+EAX
+EAX = 1
+EAX == 1;
+ram = 1;
+EAX = ram;
+<EAX>
+<lab
+goto <EAX>;
+<lab> lab = 1;
+EAX = 1; @
+EAX = 1 @;
+EAX = foo @;
+EAX = $;
+EAX = 1;\0 garbage $$$
+# comment only
+EAX = 1; # trailing comment
+\n\t EAX\t=\r\n1 ;\r\n
+s = 1;
+f = 2;
+s/ = 1;
+EAX = EBX s/EBX;
+.x = 1; EAX = .x;
+a.b = 1; EAX = a.b;
+
+;
+EAX = 1;;
+EAX = ((((((((((EBX))))))))));
+x = EBX[0,8] + ;
+x = EAX[0,0] + ;
+x = 0x1ffffffffffffffff + ;
+x = 0x1ffffffffffffffff:4;
+EAX = 1; y = foo; z = 0x1ffffffffffffffff;
+EAX[0,0] = 1; goto foo;
+z = 0x1ffffffffffffffff; y = foo;
+tmp:1 = EAX; tmp:4 = 1;
+tmp:1 = EAX; EBX = zext(tmp) + tmp:4;
+x = *[ram]:4 EAX; y:2 = x;
+x:1 = 1; EAX[0,8] = x; x[0,16] = 1;
+local t; AX = t; EAX = t;
+local t; EAX = zext(t); AX = t;
+x = 1; AX = x; EAX = x;
+x = zext(AL); AX = x; EAX = x;
+local t; t = t + AX; EAX = t + 1;
+local t:2; EAX = zext(t) + t;
+local t; EAX = t; AX = t:2; AL = t(1);
+EAX = *[io]:4 &EBX; EAX = &:2 *[io] EBX;
+EAX = &ES;
+x = &io:2;
+goto 0x10[io];
+local t; EAX = t; *:2 EBX = t;
