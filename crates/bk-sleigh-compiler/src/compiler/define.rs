@@ -101,7 +101,8 @@ impl Compiler<'_> {
         self.tokens = self.tokens.wrapping_add(1);
         self.add_symbol(d.name.name, SymbolKind::Token(token), d.span);
         for field in &d.fields {
-            if !self.token_field(field, size, big_endian) {
+            let tok = crate::pattern::Tok { index: token, size };
+            if !self.token_field(field, tok, big_endian) {
                 return;
             }
         }
@@ -114,7 +115,8 @@ impl Compiler<'_> {
     }
 
     /// `addTokenField`; false stops the statement (`YYERROR`).
-    fn token_field(&mut self, field: &FieldDef, token_size: u32, big_endian: bool) -> bool {
+    fn token_field(&mut self, field: &FieldDef, tok: crate::pattern::Tok, big_endian: bool) -> bool {
+        let token_size = tok.size;
         if self.redefined(field.name, ": redefined as field") {
             return false;
         }
@@ -144,15 +146,18 @@ impl Compiler<'_> {
         } else {
             (start / 8, end / 8)
         };
-        let value = PatValue::Token(Field {
-            big_endian,
-            sign_bit: field.signed,
-            start_bit: start,
-            end_bit: end,
-            start_byte,
-            end_byte,
-            shift: start % 8,
-        });
+        let value = PatValue::Token(
+            Field {
+                big_endian,
+                sign_bit: field.signed,
+                start_bit: start,
+                end_bit: end,
+                start_byte,
+                end_byte,
+                shift: start % 8,
+            },
+            tok,
+        );
         self.add_symbol(field.name.name, SymbolKind::Value(value), field.span);
         true
     }

@@ -23,10 +23,9 @@ use crate::template::Tpl;
 pub(crate) struct CheckFatal(pub(crate) String);
 
 impl Compiler<'_> {
-    /// Runs the post-parse passes of this half in Ghidra's order. The back
-    /// half's `buildPatterns` and `buildDecisionTrees` belong between the
-    /// collision check and the register cross references; Basilisk's own
-    /// reachability stands in for "has a pattern" here.
+    /// Runs the post-parse passes in Ghidra's order (`process`), including
+    /// the back half's `buildPatterns` and `buildDecisionTrees` between the
+    /// collision check and the register cross references.
     pub(crate) fn post_parse(&mut self) {
         self.mark_crossbuild();
         self.check_nops();
@@ -49,10 +48,14 @@ impl Compiler<'_> {
         if self.diags.errors() > 0 {
             return;
         }
-        self.warn_unreferenced_tables();
+        let Some(state) = self.build_patterns() else {
+            return;
+        };
+        let trees = self.build_decision_trees(&state);
         if self.diags.errors() > 0 {
             return;
         }
+        self.back = Some(crate::build::BackHalf { state, trees });
         if !self.check_xrefs() {
             return;
         }
@@ -187,25 +190,6 @@ impl Compiler<'_> {
                 _ => None,
             })
             .collect()
-    }
-
-    /// The "Unreferenced table" warnings of `buildPatterns`.
-    fn warn_unreferenced_tables(&mut self) {
-        let reached = self.reachable_tables();
-        for (i, table) in self.tables.iter().enumerate().skip(1) {
-            if reached.get(i).copied().unwrap_or(false) {
-                continue;
-            }
-            let name = self
-                .symbols
-                .get(table.symbol)
-                .map_or("", |s| self.names.resolve(s.name));
-            let message = format!("Unreferenced table '{name}'");
-            match table.at {
-                Some(at) => self.diags.warning_at(at, message),
-                None => self.diags.warning(None, message),
-            }
-        }
     }
 
     /// `buildXrefs`: two registers may not share (space, offset, size).

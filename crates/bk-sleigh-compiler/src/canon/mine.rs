@@ -34,7 +34,7 @@ impl Writer<'_> {
 
     fn expr(&self, id: PExprId, out: &mut String) {
         match self.spec.patterns.get_expr(id) {
-            Some(PExpr::Field(PatValue::Token(f))) => field_text(false, f, out),
+            Some(PExpr::Field(PatValue::Token(f, _))) => field_text(false, f, out),
             Some(PExpr::Field(PatValue::Context(f))) => field_text(true, f, out),
             Some(PExpr::Constant(v)) => {
                 let _ = write!(out, "#{v}");
@@ -249,7 +249,7 @@ impl Writer<'_> {
 
 fn value_text(v: &PatValue, out: &mut String) {
     match v {
-        PatValue::Token(f) => field_text(false, f, out),
+        PatValue::Token(f, _) => field_text(false, f, out),
         PatValue::Context(f) => field_text(true, f, out),
     }
 }

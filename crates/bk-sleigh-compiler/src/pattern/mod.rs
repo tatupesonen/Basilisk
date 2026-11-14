@@ -20,8 +20,8 @@ use crate::ids::{EquationId, OperandId, PExprId};
 /// A token or context field (`TokenField`, `ContextField`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PatValue {
-    /// Bits of the instruction bytes.
-    Token(Field),
+    /// Bits of the instruction bytes of a token.
+    Token(Field, Tok),
     /// Bits of the context words.
     Context(Field),
 }
@@ -30,7 +30,7 @@ impl PatValue {
     /// The field.
     pub const fn field(&self) -> &Field {
         match self {
-            Self::Token(field) | Self::Context(field) => field,
+            Self::Token(field, _) | Self::Context(field) => field,
         }
     }
 
@@ -183,11 +183,14 @@ mod tests {
     #[test]
     fn max_value_is_all_ones_over_the_width() {
         let field = |s, e| {
-            PatValue::Token(Field {
-                start_bit: s,
-                end_bit: e,
-                ..Field::default()
-            })
+            PatValue::Token(
+                Field {
+                    start_bit: s,
+                    end_bit: e,
+                    ..Field::default()
+                },
+                Tok { index: 0, size: 8 },
+            )
         };
         assert_eq!(field(0, 0).max_value(), 1);
         assert_eq!(field(4, 7).max_value(), 15);

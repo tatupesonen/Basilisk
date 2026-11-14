@@ -20,10 +20,12 @@
 //! - [`canon`]: the canonical form used to compare an elaboration with a
 //!   compiled `.sla` file.
 
+mod build;
 pub mod canon;
 mod check;
 mod compiler;
-mod decision;
+pub mod decision;
+mod equation;
 pub mod diag;
 pub mod elaborated;
 pub mod ids;
