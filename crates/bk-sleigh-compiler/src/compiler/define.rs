@@ -422,7 +422,7 @@ impl Compiler<'_> {
                         Some(SymbolKind::Value(_) | SymbolKind::Context { .. })
                     ) =>
                 {
-                    list.push(Some(id))
+                    list.push(Some(id));
                 }
                 None if bracketed && i > 0 => {
                     let message = format!("{}: is not a value pattern", self.text(name));
@@ -534,7 +534,7 @@ impl Compiler<'_> {
                 IdentOrWild::Wildcard(_) => list.push(None),
                 IdentOrWild::Ident(ident) => match self.lookup(ident.name) {
                     Some(id) if matches!(self.kind(id), Some(SymbolKind::Varnode(_))) => {
-                        list.push(Some(id))
+                        list.push(Some(id));
                     }
                     None => {
                         let message = format!("{}: is not a varnode symbol", self.text(ident.name));

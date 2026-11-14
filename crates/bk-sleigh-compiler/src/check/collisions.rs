@@ -18,7 +18,7 @@ impl Compiler<'_> {
     fn local_values(&self, symbol: SymbolId, out: &mut Vec<u64>, visited: &mut Vec<TableId>) {
         match self.kind(symbol) {
             Some(SymbolKind::Varnode(vn)) if vn.space == crate::template::UNIQUE_SPACE => {
-                out.push(vn.offset)
+                out.push(vn.offset);
             }
             Some(SymbolKind::Subtable(table)) => {
                 if visited.contains(table) {
