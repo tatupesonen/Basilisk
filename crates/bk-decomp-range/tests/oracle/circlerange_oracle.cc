@@ -638,7 +638,10 @@ int main(int argc, char **argv) {
       uintb run = (hi == 63 ? ~(uintb)0 : (((uintb)1 << (hi + 1)) - 1)) & ~(((uintb)1 << lo) - 1);
       for (int4 size : {2, 4, 8}) nzmask(run, size);
     }
-  for (int i = 0; i < 2000; ++i) nzmask(interesting(~(uintb)0), SIZES[below(3)]);
+  for (int i = 0; i < 2000; ++i) {
+    uintb v = interesting(~(uintb)0);  // two statements: argument order is unspecified
+    nzmask(v, SIZES[below(3)]);
+  }
   for (int4 size : {0, 3, 9}) {
     nzmask(0xf0, size);
     nzmask(0xff, size);
