@@ -61,7 +61,11 @@ impl Compiler<'_> {
 
     /// Ghidra sets its crossbuild flag while parsing any `crossbuild`.
     fn mark_crossbuild(&mut self) {
-        let uses = |tpl: &Tpl| tpl.ops.iter().any(|op| op.opcode == crate::template::CROSSBUILD);
+        let uses = |tpl: &Tpl| {
+            tpl.ops
+                .iter()
+                .any(|op| op.opcode == crate::template::CROSSBUILD)
+        };
         self.crossbuild = self.macro_templates.iter().any(uses)
             || self
                 .ctors
@@ -80,9 +84,11 @@ impl Compiler<'_> {
             }
         }
         let count = self.nops.len();
-        self.diags.warning(None, format!("{count} NOP constructors found"));
+        self.diags
+            .warning(None, format!("{count} NOP constructors found"));
         if !self.options.warn_all_nops {
-            self.diags.warning(None, "Use -n switch to list each individually");
+            self.diags
+                .warning(None, "Use -n switch to list each individually");
         }
     }
 
@@ -103,9 +109,16 @@ impl Compiler<'_> {
             return;
         }
         let mut seen: FxHashMap<String, SymbolId> = FxHashMap::default();
-        for id in self.symbols.scope_symbols_by_name(ScopeId::GLOBAL, &self.names) {
-            let Some(symbol) = self.symbols.get(id) else { continue };
-            let SymbolKind::Varnode(vn) = &symbol.kind else { continue };
+        for id in self
+            .symbols
+            .scope_symbols_by_name(ScopeId::GLOBAL, &self.names)
+        {
+            let Some(symbol) = self.symbols.get(id) else {
+                continue;
+            };
+            let SymbolKind::Varnode(vn) = &symbol.kind else {
+                continue;
+            };
             let processor = self
                 .spaces
                 .get(vn.space as usize)
@@ -144,7 +157,9 @@ impl Compiler<'_> {
             *r = true;
         }
         while let Some(table) = work.pop() {
-            let Some(t) = self.tables.get(table.slot()) else { continue };
+            let Some(t) = self.tables.get(table.slot()) else {
+                continue;
+            };
             for &ctor in &t.ctors {
                 for sub in self.subtable_operands_of(ctor) {
                     if let Some(r) = reached.get_mut(sub.slot())
@@ -181,7 +196,10 @@ impl Compiler<'_> {
             if reached.get(i).copied().unwrap_or(false) {
                 continue;
             }
-            let name = self.symbols.get(table.symbol).map_or("", |s| self.names.resolve(s.name));
+            let name = self
+                .symbols
+                .get(table.symbol)
+                .map_or("", |s| self.names.resolve(s.name));
             let message = format!("Unreferenced table '{name}'");
             match table.at {
                 Some(at) => self.diags.warning_at(at, message),
@@ -194,8 +212,13 @@ impl Compiler<'_> {
     fn check_xrefs(&mut self) -> bool {
         let mut seen: FxHashMap<VarnodeData, SymbolId> = FxHashMap::default();
         let mut pairs = Vec::new();
-        for id in self.symbols.scope_symbols_by_name(ScopeId::GLOBAL, &self.names) {
-            let Some(symbol) = self.symbols.get(id) else { continue };
+        for id in self
+            .symbols
+            .scope_symbols_by_name(ScopeId::GLOBAL, &self.names)
+        {
+            let Some(symbol) = self.symbols.get(id) else {
+                continue;
+            };
             if let SymbolKind::Varnode(vn) = symbol.kind {
                 match seen.get(&vn) {
                     Some(&old) => pairs.push((id, old)),
@@ -209,8 +232,17 @@ impl Compiler<'_> {
             return true;
         }
         for (a, b) in pairs {
-            let name = |id: SymbolId| self.symbols.get(id).map_or("", |s| self.names.resolve(s.name)).to_owned();
-            let message = format!("Duplicate (offset,size) pair for registers: {} and {}\n", name(a), name(b));
+            let name = |id: SymbolId| {
+                self.symbols
+                    .get(id)
+                    .map_or("", |s| self.names.resolve(s.name))
+                    .to_owned()
+            };
+            let message = format!(
+                "Duplicate (offset,size) pair for registers: {} and {}\n",
+                name(a),
+                name(b)
+            );
             self.diags.error(None, message);
         }
         false

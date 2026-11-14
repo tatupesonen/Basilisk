@@ -41,8 +41,16 @@ pub(crate) fn adjust_truncation(vn: &mut Vn, size: i32, big_endian: bool) -> boo
 
 impl Compiler<'_> {
     /// `checkVarnodeTruncation` on `slot` of `op`.
-    fn check_truncation(&mut self, checker: &Checker, op: &mut Op, slot: i32, ctor: CtorId) -> Result<bool, CheckFatal> {
-        let Some(vn) = op.slot(slot).copied() else { return Ok(true) };
+    fn check_truncation(
+        &mut self,
+        checker: &Checker,
+        op: &mut Op,
+        slot: i32,
+        ctor: CtorId,
+    ) -> Result<bool, CheckFatal> {
+        let Some(vn) = op.slot(slot).copied() else {
+            return Ok(true);
+        };
         let ConstTpl::Handle {
             select: HandleSelect::OffsetPlus,
             ..
@@ -60,7 +68,9 @@ impl Compiler<'_> {
             return Ok(false);
         }
         let big = self.big_endian;
-        let ok = op.slot_mut(slot).is_some_and(|v| adjust_truncation(v, size, big));
+        let ok = op
+            .slot_mut(slot)
+            .is_some_and(|v| adjust_truncation(v, size, big));
         if !ok {
             self.op_error(op, ctor, slot, slot, "Truncation operator out of bounds");
             return Ok(false);
@@ -73,9 +83,17 @@ impl Compiler<'_> {
         let mut ok = true;
         for table in checker.postorder.clone() {
             for ctor in self.table_ctors(table) {
-                let sections = self.ctors.get(ctor.slot()).map_or(0, |c| c.named.len() as i32);
+                let sections = self
+                    .ctors
+                    .get(ctor.slot())
+                    .map_or(0, |c| c.named.len() as i32);
                 for k in -1..sections {
-                    let Some(mut tpl) = self.ctors.get_mut(ctor.slot()).and_then(|c| section_mut(c, k)).map(std::mem::take) else {
+                    let Some(mut tpl) = self
+                        .ctors
+                        .get_mut(ctor.slot())
+                        .and_then(|c| section_mut(c, k))
+                        .map(std::mem::take)
+                    else {
                         continue;
                     };
                     let mut result = Ok(());
@@ -94,7 +112,11 @@ impl Compiler<'_> {
                             }
                         }
                     }
-                    if let Some(slot) = self.ctors.get_mut(ctor.slot()).and_then(|c| section_mut(c, k)) {
+                    if let Some(slot) = self
+                        .ctors
+                        .get_mut(ctor.slot())
+                        .and_then(|c| section_mut(c, k))
+                    {
                         *slot = tpl;
                     }
                     result?;
@@ -106,23 +128,39 @@ impl Compiler<'_> {
 
     /// The constructors of a table.
     pub(crate) fn table_ctors(&self, table: TableId) -> Vec<CtorId> {
-        self.tables.get(table.slot()).map(|t| t.ctors.clone()).unwrap_or_default()
+        self.tables
+            .get(table.slot())
+            .map(|t| t.ctors.clone())
+            .unwrap_or_default()
     }
 
     /// `checkLargeTemporaries` over every section of the post order.
     fn test_large_temporaries(&mut self, checker: &Checker) {
         for table in checker.postorder.clone() {
             for ctor in self.table_ctors(table) {
-                let Some(c) = self.ctors.get(ctor.slot()) else { continue };
+                let Some(c) = self.ctors.get(ctor.slot()) else {
+                    continue;
+                };
                 let big = |tpl: &crate::template::Tpl| {
                     tpl.ops.iter().any(|op| {
-                        op.output.iter().chain(op.inputs.iter()).any(|v| v.is_local_temp() && real(&v.size) > 256)
+                        op.output
+                            .iter()
+                            .chain(op.inputs.iter())
+                            .any(|v| v.is_local_temp() && real(&v.size) > 256)
                     })
                 };
-                let count = c.main.iter().chain(c.named.iter().flatten()).filter(|t| big(t)).count();
+                let count = c
+                    .main
+                    .iter()
+                    .chain(c.named.iter().flatten())
+                    .filter(|t| big(t))
+                    .count();
                 let at = c.at;
                 for _ in 0..count {
-                    self.diags.error_at(at, "Constructor uses temporary varnode larger than 256 bytes.");
+                    self.diags.error_at(
+                        at,
+                        "Constructor uses temporary varnode larger than 256 bytes.",
+                    );
                 }
             }
         }
@@ -138,16 +176,30 @@ impl Compiler<'_> {
             return Ok(());
         }
         if !self.options.warn_unnecessary_pcode && checker.unnecessary > 0 {
-            self.diags.warning(None, format!("{} unnecessary extensions/truncations were converted to copies", checker.unnecessary));
-            self.diags.warning(None, "Use -u switch to list each individually");
+            self.diags.warning(
+                None,
+                format!(
+                    "{} unnecessary extensions/truncations were converted to copies",
+                    checker.unnecessary
+                ),
+            );
+            self.diags
+                .warning(None, "Use -u switch to list each individually");
         }
         self.optimize_all(&mut checker)?;
         if checker.read_no_write > 0 {
             return Ok(());
         }
         if !self.options.warn_dead_temps && checker.write_no_read > 0 {
-            self.diags.warning(None, format!("{} operations wrote to temporaries that were not read", checker.write_no_read));
-            self.diags.warning(None, "Use -t switch to list each individually");
+            self.diags.warning(
+                None,
+                format!(
+                    "{} operations wrote to temporaries that were not read",
+                    checker.write_no_read
+                ),
+            );
+            self.diags
+                .warning(None, "Use -t switch to list each individually");
         }
         self.test_large_temporaries(&checker);
         Ok(())

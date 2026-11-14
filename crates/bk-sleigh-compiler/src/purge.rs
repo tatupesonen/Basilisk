@@ -26,7 +26,11 @@ fn survivors(c: &Compiler<'_>, reachable: &[bool]) -> Vec<bool> {
             continue;
         }
         match &symbol.kind {
-            SymbolKind::Space(_) | SymbolKind::Token(_) | SymbolKind::Epsilon | SymbolKind::Section(_) | SymbolKind::Bitrange { .. } => {
+            SymbolKind::Space(_)
+            | SymbolKind::Token(_)
+            | SymbolKind::Epsilon
+            | SymbolKind::Section(_)
+            | SymbolKind::Bitrange { .. } => {
                 remove(id, &mut keep);
             }
             SymbolKind::Macro(m) => {
@@ -40,7 +44,11 @@ fn survivors(c: &Compiler<'_>, reachable: &[bool]) -> Vec<bool> {
             SymbolKind::Subtable(t) if !reachable.get(t.slot()).copied().unwrap_or(false) => {
                 remove(id, &mut keep);
                 for &ctor in c.tables.get(t.slot()).map_or(&[][..], |t| &t.ctors[..]) {
-                    for op in c.ctors.get(ctor.slot()).map_or(&[][..], |c| &c.operands[..]) {
+                    for op in c
+                        .ctors
+                        .get(ctor.slot())
+                        .map_or(&[][..], |c| &c.operands[..])
+                    {
                         if let Some(data) = c.operands.get(op.slot()) {
                             remove(data.symbol, &mut keep);
                         }
@@ -101,7 +109,8 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
             next += 1;
         }
     }
-    let map_symbol = |id: SymbolId| SymbolId::new(symbol_map.get(id.slot()).copied().unwrap_or(GONE));
+    let map_symbol =
+        |id: SymbolId| SymbolId::new(symbol_map.get(id.slot()).copied().unwrap_or(GONE));
 
     let mut table_map = vec![GONE; c.tables.len()];
     let mut tables = Vec::new();
@@ -116,7 +125,9 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
         let new_table = TableId::new(tables.len() as u32);
         let mut list = Vec::with_capacity(table.ctors.len());
         for &ctor in &table.ctors {
-            let Some(data) = c.ctors.get(ctor.slot()) else { continue };
+            let Some(data) = c.ctors.get(ctor.slot()) else {
+                continue;
+            };
             list.push(CtorId::new(constructors.len() as u32));
             constructors.push(Constructor {
                 table: new_table,
@@ -131,13 +142,18 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
                     .context
                     .iter()
                     .map(|change| match *change {
-                        ContextChange::Commit { symbol, word, mask, flow } => ContextChange::Commit {
+                        ContextChange::Commit {
+                            symbol,
+                            word,
+                            mask,
+                            flow,
+                        } => ContextChange::Commit {
                             symbol: map_symbol(symbol),
                             word,
                             mask,
                             flow,
                         },
-                        other => other,
+                        op @ ContextChange::Op { .. } => op,
                     })
                     .collect(),
                 main: data.main.clone(),
@@ -156,15 +172,26 @@ pub(crate) fn finish(c: &Compiler<'_>) -> Elaborated {
         .filter(|(id, _)| keep.get(id.slot()).copied().unwrap_or(false))
         .map(|(_, s)| {
             let kind = match &s.kind {
-                SymbolKind::Context { varnode, low, high, flow, field } => SymbolKind::Context {
+                SymbolKind::Context {
+                    varnode,
+                    low,
+                    high,
+                    flow,
+                    field,
+                } => SymbolKind::Context {
                     varnode: map_symbol(*varnode),
                     low: *low,
                     high: *high,
                     flow: *flow,
                     field: *field,
                 },
-                SymbolKind::VarnodeList(field, list) => SymbolKind::VarnodeList(*field, list.iter().map(|e| e.map(map_symbol)).collect()),
-                SymbolKind::Subtable(t) => SymbolKind::Subtable(TableId::new(table_map.get(t.slot()).copied().unwrap_or(GONE))),
+                SymbolKind::VarnodeList(field, list) => SymbolKind::VarnodeList(
+                    *field,
+                    list.iter().map(|e| e.map(map_symbol)).collect(),
+                ),
+                SymbolKind::Subtable(t) => SymbolKind::Subtable(TableId::new(
+                    table_map.get(t.slot()).copied().unwrap_or(GONE),
+                )),
                 other => other.clone(),
             };
             SymbolData {

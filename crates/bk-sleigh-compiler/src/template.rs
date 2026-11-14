@@ -32,12 +32,16 @@ pub fn const_eq(a: &ConstTpl, b: &ConstTpl) -> bool {
         (ConstTpl::Real(x), ConstTpl::Real(y)) => x == y,
         (
             ConstTpl::Handle {
-                index: i, select: s, ..
+                index: left_index,
+                select: left_select,
+                ..
             },
             ConstTpl::Handle {
-                index: j, select: t, ..
+                index: right_index,
+                select: right_select,
+                ..
             },
-        ) => i == j && s == t,
+        ) => left_index == right_index && left_select == right_select,
         (ConstTpl::Space(x), ConstTpl::Space(y)) => x == y,
         _ => std::mem::discriminant(a) == std::mem::discriminant(b),
     }
@@ -146,7 +150,7 @@ impl Vn {
     }
 
     /// The value as the file writes it.
-    pub const fn to_sla(&self) -> VarnodeTpl {
+    pub const fn to_sla(self) -> VarnodeTpl {
         VarnodeTpl {
             space: self.space,
             offset: self.offset,
@@ -178,7 +182,8 @@ impl Op {
 
     /// `OpTpl::isZeroSize`: the output or an input has size zero.
     pub fn is_zero_size(&self) -> bool {
-        self.output.as_ref().is_some_and(Vn::is_zero_size) || self.inputs.iter().any(Vn::is_zero_size)
+        self.output.as_ref().is_some_and(Vn::is_zero_size)
+            || self.inputs.iter().any(Vn::is_zero_size)
     }
 
     /// The varnode in `slot` (−1 = output).
@@ -240,8 +245,8 @@ impl Tpl {
         let mut inputs = Vec::new();
         for op in &self.ops {
             inputs.clear();
-            inputs.extend(op.inputs.iter().map(Vn::to_sla));
-            template.push_op(op.opcode, op.output.as_ref().map(Vn::to_sla), &inputs);
+            inputs.extend(op.inputs.iter().map(|v| v.to_sla()));
+            template.push_op(op.opcode, op.output.map(Vn::to_sla), &inputs);
         }
         template
     }

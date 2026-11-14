@@ -7,16 +7,28 @@
 //! A case's first line may be `#! -x -y`: the command-line switches it is
 //! compiled with.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use bk_sleigh_compiler::{Options, Severity, elaborate};
 
 fn cases_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join("diagnostics")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("diagnostics")
 }
 
 fn cases() -> Vec<PathBuf> {
@@ -57,7 +69,7 @@ fn normalize(message: &str) -> String {
 fn ours(path: &Path) -> (bool, Vec<(String, String)>, String) {
     let options = Options::from_switches(switches(path).iter().map(String::as_str));
     let parsed = common::parse(path);
-    let outcome = elaborate(&parsed, &options);
+    let outcome = elaborate(&parsed, options);
     let mut list = Vec::new();
     let mut rendered = String::new();
     for d in &parsed.diagnostics {
@@ -74,13 +86,23 @@ fn ours(path: &Path) -> (bool, Vec<(String, String)>, String) {
         let loc = d
             .span
             .and_then(|s| parsed.sources.locate(s.start))
-            .map(|l| format!(" (line {}{})", l.line, if d.located { ", located" } else { "" }))
+            .map(|l| {
+                format!(
+                    " (line {}{})",
+                    l.line,
+                    if d.located { ", located" } else { "" }
+                )
+            })
             .unwrap_or_default();
-        rendered.push_str(&format!("{severity}{loc}: {}\n", d.message.trim_end()));
+        let _ = writeln!(rendered, "{severity}{loc}: {}", d.message.trim_end());
         list.push((severity.to_owned(), normalize(&d.message)));
     }
     let ok = outcome.spec.is_some();
-    rendered.push_str(if ok { "=> elaborated\n" } else { "=> no output\n" });
+    rendered.push_str(if ok {
+        "=> elaborated\n"
+    } else {
+        "=> no output\n"
+    });
     (ok, list, rendered)
 }
 
@@ -99,9 +121,18 @@ const GHIDRA_CRASHES: &[(&str, &str)] = &[
 ];
 
 /// Ghidra's diagnostics for a case, and whether it was killed by a signal.
-fn theirs(reference: &bk_testkit::ReferenceDir, path: &Path) -> (bool, Vec<(String, String)>, bool) {
-    let out = std::env::temp_dir().join(format!("bk-diag-{}-{}.sla", std::process::id(), path.file_stem().unwrap().to_string_lossy()));
-    let mut sleigh = reference.sleigh().timeout(std::time::Duration::from_secs(60));
+fn theirs(
+    reference: &bk_testkit::ReferenceDir,
+    path: &Path,
+) -> (bool, Vec<(String, String)>, bool) {
+    let out = std::env::temp_dir().join(format!(
+        "bk-diag-{}-{}.sla",
+        std::process::id(),
+        path.file_stem().unwrap().to_string_lossy()
+    ));
+    let mut sleigh = reference
+        .sleigh()
+        .timeout(std::time::Duration::from_mins(1));
     for s in switches(path) {
         if let Some(letter) = s.strip_prefix('-').and_then(|r| r.chars().next()) {
             sleigh = sleigh.switch(letter);
@@ -109,11 +140,17 @@ fn theirs(reference: &bk_testkit::ReferenceDir, path: &Path) -> (bool, Vec<(Stri
     }
     let (ok, stderr, crashed) = match sleigh.compile(path, &out) {
         Ok(o) => (true, format!("{}{}", o.stdout, o.stderr), false),
-        Err(bk_testkit::ToolError::Failed { stdout, stderr, code, .. }) => {
+        Err(bk_testkit::ToolError::Failed {
+            stdout,
+            stderr,
+            code,
+            ..
+        }) => {
             // A failed compile ends with "No output produced" or an
             // "Unrecoverable error"; anything else died of a memory error.
             let text = format!("{stdout}{stderr}");
-            let crashed = code.is_none() || !(text.contains("No output produced") || text.contains("Unrecoverable error"));
+            let crashed = code.is_none()
+                || !(text.contains("No output produced") || text.contains("Unrecoverable error"));
             (false, text, crashed)
         }
         Err(e) => panic!("{e}"),
@@ -141,9 +178,12 @@ fn theirs(reference: &bk_testkit::ReferenceDir, path: &Path) -> (bool, Vec<(Stri
 
 #[test]
 fn diagnostics_match_snapshots_and_ghidra() {
-    let reference = bk_testkit::reference_dir().filter(|r| r.tool(bk_testkit::Tool::Sleigh).is_some());
+    let reference =
+        bk_testkit::reference_dir().filter(|r| r.tool(bk_testkit::Tool::Sleigh).is_some());
     if reference.is_none() {
-        eprintln!("SKIPPED (oracle part only): reference sleigh compiler not found; comparing with snapshots");
+        eprintln!(
+            "SKIPPED (oracle part only): reference sleigh compiler not found; comparing with snapshots"
+        );
     }
     let mut mismatches = Vec::new();
     let mut settings = insta::Settings::clone_current();
@@ -162,7 +202,14 @@ fn diagnostics_match_snapshots_and_ghidra() {
             let agree = if crashed {
                 // Everything Ghidra printed before dying must be ours too.
                 let mut rest = list.clone();
-                expect_crash && !ok && their_list.iter().all(|m| rest.iter().position(|o| o == m).map(|i| rest.remove(i)).is_some())
+                expect_crash
+                    && !ok
+                    && their_list.iter().all(|m| {
+                        rest.iter()
+                            .position(|o| o == m)
+                            .map(|i| rest.remove(i))
+                            .is_some()
+                    })
             } else {
                 !expect_crash && ok == their_ok && list == their_list
             };
@@ -171,7 +218,12 @@ fn diagnostics_match_snapshots_and_ghidra() {
             }
         }
     }
-    assert!(mismatches.is_empty(), "{} cases differ from Ghidra:\n{}", mismatches.len(), mismatches.join("\n"));
+    assert!(
+        mismatches.is_empty(),
+        "{} cases differ from Ghidra:\n{}",
+        mismatches.len(),
+        mismatches.join("\n")
+    );
 }
 
 /// The messages of this half (inventory 9, 10 d, 10 c.5) that every case
@@ -286,6 +338,10 @@ fn every_message_has_a_case() {
     for case in cases() {
         all.push_str(&ours(&case).2);
     }
-    let missing: Vec<&str> = MESSAGES.iter().copied().filter(|m| !all.contains(m)).collect();
+    let missing: Vec<&str> = MESSAGES
+        .iter()
+        .copied()
+        .filter(|m| !all.contains(m))
+        .collect();
     assert!(missing.is_empty(), "messages without a case: {missing:#?}");
 }

@@ -19,7 +19,7 @@ use bk_sleigh_syntax::ast::Item;
 use bk_sleigh_syntax::{Interner, Parsed, SourceFileIndexer, Span, Symbol as Name};
 
 use crate::diag::Diagnostics;
-use crate::ids::{CtorId, EquationId, MacroId, OperandId, PExprId, ScopeId, SymbolId, TableId};
+use crate::ids::{CtorId, EquationId, MacroId, OperandId, PExprId, SymbolId, TableId};
 use crate::options::Options;
 use crate::pattern::{PExpr, PatternArena};
 use crate::pcode::BuildEnv;
@@ -88,13 +88,6 @@ pub(crate) struct TableData {
     pub(crate) at: Option<Span>,
 }
 
-/// A token (`Token`).
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct TokenData {
-    pub(crate) size: u32,
-    pub(crate) big_endian: bool,
-}
-
 /// A context field waiting for the layout (`FieldContext`).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PendingField {
@@ -109,7 +102,6 @@ pub(crate) struct PendingField {
 /// A macro (`MacroSymbol`).
 #[derive(Clone, Debug)]
 pub(crate) struct MacroData {
-    pub(crate) symbol: SymbolId,
     /// The index the macro is called by: the size of the macro table when
     /// it was defined (`MacroSymbol::index`).
     pub(crate) index: u32,
@@ -135,7 +127,7 @@ pub(crate) struct Compiler<'a> {
     pub(crate) default_space: Option<u32>,
     pub(crate) big_endian: bool,
     pub(crate) align: i32,
-    pub(crate) tokens: Vec<TokenData>,
+    pub(crate) tokens: u32,
     pub(crate) pending_context: Vec<PendingField>,
     pub(crate) context_locked: bool,
     pub(crate) userop_count: u32,
@@ -176,7 +168,7 @@ impl<'a> Compiler<'a> {
             default_space: None,
             big_endian: false,
             align: 1,
-            tokens: Vec::new(),
+            tokens: 0,
             pending_context: Vec::new(),
             context_locked: false,
             userop_count: 0,
@@ -326,7 +318,13 @@ impl<'a> Compiler<'a> {
 
     /// Creates an operand symbol in the current scope (`newOperand`,
     /// `defineInvisibleOperand`, macro parameters).
-    pub(crate) fn new_operand(&mut self, name: Name, index: u32, ctor: Option<CtorId>, at: Span) -> OperandId {
+    pub(crate) fn new_operand(
+        &mut self,
+        name: Name,
+        index: u32,
+        ctor: Option<CtorId>,
+        at: Span,
+    ) -> OperandId {
         let id = OperandId::next(self.operands.len());
         let local_expr = self.pexpr(PExpr::Operand(id));
         let symbol = self.add_symbol(name, SymbolKind::Operand(id), at);
@@ -345,7 +343,9 @@ impl<'a> Compiler<'a> {
 
     /// The location of a constructor (`getLocation(ct)`).
     pub(crate) fn ctor_at(&self, ctor: CtorId) -> Span {
-        self.ctors.get(ctor.slot()).map_or_else(Span::default, |c| c.at)
+        self.ctors
+            .get(ctor.slot())
+            .map_or_else(Span::default, |c| c.at)
     }
 
     /// `Constructor::printInfo`.
@@ -359,11 +359,6 @@ impl<'a> Compiler<'a> {
             .and_then(|t| self.symbols.get(t.symbol))
             .map_or("", |s| self.names.resolve(s.name));
         format!("table \"{table}\" constructor starting at line {}", c.line)
-    }
-
-    /// The current scope.
-    pub(crate) fn scope(&self) -> ScopeId {
-        self.symbols.current()
     }
 
     /// The language facts the p-code builder needs, shared until a space

@@ -112,13 +112,13 @@ impl<R: SymbolResolver> Builder<'_, R> {
     /// The space and size of a `*[space]:size` (`sizedstar`).
     pub(crate) fn star(&mut self, star: &SizedStar) -> Result<(ConstTpl, u64), Stop> {
         let space = match star.space {
-            Some(ident) => match self.lookup(ident) {
-                NameRef::Space(index) => index,
-                _ => {
+            Some(ident) => {
+                let NameRef::Space(index) = self.lookup(ident) else {
                     self.syntax_error(ident.span);
                     return Err(Stop::Abort);
-                }
-            },
+                };
+                index
+            }
             // With no default space Ghidra uses a null space here; the
             // missing default is reported at the end of the compile.
             None => self.env.default_space.unwrap_or(u32::MAX),
@@ -157,7 +157,9 @@ impl<R: SymbolResolver> Builder<'_, R> {
         let nodes = self.nodes;
         match &nodes[id] {
             Expr::Ident(ident) => self.specific_varnode(*ident),
-            Expr::Int(_) | Expr::SizedInt { .. } | Expr::AddressOf { .. } => self.integer_varnode(id),
+            Expr::Int(_) | Expr::SizedInt { .. } | Expr::AddressOf { .. } => {
+                self.integer_varnode(id)
+            }
             other => {
                 self.syntax_error(other.span());
                 Err(Stop::Abort)
@@ -211,10 +213,16 @@ impl<R: SymbolResolver> Builder<'_, R> {
         };
         let offset = match (var.offset, space) {
             (ConstTpl::Real(off), Some(space)) => ConstTpl::Real(space.byte_to_address(off)),
-            (ConstTpl::Real(off), None) if matches!(var.space, ConstTpl::Space(_)) => ConstTpl::Real(off),
+            (ConstTpl::Real(off), None) if matches!(var.space, ConstTpl::Space(_)) => {
+                ConstTpl::Real(off)
+            }
             (offset, _) => offset,
         };
-        Vn::new(ConstTpl::Space(CONST_SPACE), offset, ConstTpl::Real(u64::from(size)))
+        Vn::new(
+            ConstTpl::Space(CONST_SPACE),
+            offset,
+            ConstTpl::Real(u64::from(size)),
+        )
     }
 
     /// `createOp` with one input: the op's output is a new temporary.
@@ -231,7 +239,12 @@ impl<R: SymbolResolver> Builder<'_, R> {
     }
 
     /// `createOp` with two inputs.
-    pub(crate) fn create_op2(&mut self, opcode: OpCode, mut a: ExprTree, mut b: ExprTree) -> ExprTree {
+    pub(crate) fn create_op2(
+        &mut self,
+        opcode: OpCode,
+        mut a: ExprTree,
+        mut b: ExprTree,
+    ) -> ExprTree {
         let out = self.temp();
         a.ops.append(&mut b.ops);
         let x = a.out.take().unwrap_or_else(|| Vn::constant(0, 0));
@@ -278,7 +291,9 @@ impl<R: SymbolResolver> Builder<'_, R> {
     pub(crate) fn expr(&mut self, id: ExprId) -> Result<ExprTree, Stop> {
         let nodes = self.nodes;
         match &nodes[id] {
-            Expr::Int(_) | Expr::SizedInt { .. } | Expr::AddressOf { .. } => Ok(ExprTree::leaf(self.integer_varnode(id)?)),
+            Expr::Int(_) | Expr::SizedInt { .. } | Expr::AddressOf { .. } => {
+                Ok(ExprTree::leaf(self.integer_varnode(id)?))
+            }
             Expr::Ident(ident) => match self.lookup(*ident) {
                 NameRef::Bitrange {
                     varnode,
@@ -406,7 +421,10 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 let (ops, mut values) = self.args(args)?;
                 let out = self.temp();
                 values.insert(0, Vn::constant(u64::from(index), 4));
-                let mut tree = ExprTree { ops, out: Some(out) };
+                let mut tree = ExprTree {
+                    ops,
+                    out: Some(out),
+                };
                 tree.ops.push(Op {
                     opcode: OpCode::CallOther,
                     output: Some(out),
@@ -414,7 +432,10 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 });
                 Ok(tree)
             }
-            NameRef::Varnode(_) | NameRef::Special(_) | NameRef::Jump(_) | NameRef::Operand { .. } => {
+            NameRef::Varnode(_)
+            | NameRef::Special(_)
+            | NameRef::Jump(_)
+            | NameRef::Operand { .. } => {
                 let nodes = self.nodes;
                 let [arg] = nodes.exprs(args) else {
                     self.syntax_error(span);

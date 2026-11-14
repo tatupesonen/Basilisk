@@ -14,15 +14,18 @@ use crate::template::{Op, Vn};
 /// `(2 << (bits - 1)) - 1` with x86 shift semantics (the count taken modulo
 /// 64), which is what Ghidra's C++ computes where the shift is undefined.
 fn low_mask(bits: u32) -> u64 {
-    2_u64
-        .wrapping_shl(bits.wrapping_sub(1))
-        .wrapping_sub(1)
+    2_u64.wrapping_shl(bits.wrapping_sub(1)).wrapping_sub(1)
 }
 
 impl<R: SymbolResolver> Builder<'_, R> {
     /// `buildTruncatedVarnode`: the bytes of `base` that a byte-aligned bit
     /// range selects, if they can be expressed as a varnode.
-    pub(crate) fn truncated_varnode(&self, base: &Vn, bit_offset: u32, bits: u32) -> Result<Option<Vn>, Stop> {
+    pub(crate) fn truncated_varnode(
+        &self,
+        base: &Vn,
+        bit_offset: u32,
+        bits: u32,
+    ) -> Result<Option<Vn>, Stop> {
         let byte_offset = bit_offset / 8;
         let num_bytes = bits / 8;
         let mut full = 0_u64;
@@ -35,7 +38,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 return Err(Stop::Fatal("Requested bit range out of bounds".to_owned()));
             }
         }
-        if bit_offset % 8 != 0 || bits % 8 != 0 {
+        if !bit_offset.is_multiple_of(8) || !bits.is_multiple_of(8) {
             return Ok(None);
         }
         let offset = match base.offset {
@@ -46,7 +49,9 @@ impl<R: SymbolResolver> Builder<'_, R> {
             },
             ConstTpl::Real(off) => {
                 if !matches!(base.size, ConstTpl::Real(_)) {
-                    return Err(Stop::Fatal("Could not construct requested bit range".to_owned()));
+                    return Err(Stop::Fatal(
+                        "Could not construct requested bit range".to_owned(),
+                    ));
                 }
                 let plus = if self.env.default_big_endian() {
                     full.wrapping_sub(u64::from(byte_offset) + u64::from(num_bytes))
@@ -57,22 +62,37 @@ impl<R: SymbolResolver> Builder<'_, R> {
             }
             _ => return Ok(None),
         };
-        Ok(Some(Vn::new(base.space, offset, ConstTpl::Real(u64::from(num_bytes)))))
+        Ok(Some(Vn::new(
+            base.space,
+            offset,
+            ConstTpl::Real(u64::from(num_bytes)),
+        )))
     }
 
     /// `createBitRange`: the value of bits `[bit_offset, bit_offset + bits)`
     /// of `vn` (the varnode of the symbol `sym`).
-    pub(crate) fn create_bit_range(&mut self, sym: Ident, mut vn: Vn, mut bit_offset: u32, bits: u32) -> Result<ExprTree, Stop> {
+    pub(crate) fn create_bit_range(
+        &mut self,
+        sym: Ident,
+        mut vn: Vn,
+        mut bit_offset: u32,
+        bits: u32,
+    ) -> Result<ExprTree, Stop> {
         let mut message = None;
         if bits == 0 {
             message = Some("Size of bitrange is zero".to_owned());
         }
         let final_size = bits.div_ceil(8);
         let mut trunc_shift = 0;
-        let mut mask_needed = bits % 8 != 0;
+        let mut mask_needed = !bits.is_multiple_of(8);
         let mut trunc_needed = true;
 
-        if message.is_none() && bit_offset == 0 && !mask_needed && matches!(vn.space, ConstTpl::Handle { .. }) && vn.is_zero_size() {
+        if message.is_none()
+            && bit_offset == 0
+            && !mask_needed
+            && matches!(vn.space, ConstTpl::Handle { .. })
+            && vn.is_zero_size()
+        {
             vn.size = ConstTpl::Real(u64::from(final_size));
             return Ok(ExprTree::leaf(vn));
         }
@@ -95,7 +115,7 @@ impl<R: SymbolResolver> Builder<'_, R> {
             }
         }
         let mask = low_mask(bits);
-        if trunc_needed && bit_offset % 8 == 0 {
+        if trunc_needed && bit_offset.is_multiple_of(8) {
             trunc_shift = bit_offset / 8;
             bit_offset = 0;
         }
@@ -124,14 +144,22 @@ impl<R: SymbolResolver> Builder<'_, R> {
             self.append_op(OpCode::IntAnd, &mut tree, mask, u64::from(final_size));
         }
         if let Some(out) = tree.out.as_mut() {
-            force_size(out, ConstTpl::Real(u64::from(final_size)), &mut tree.ops).map_err(|e| Stop::Fatal(e.to_string()))?;
+            force_size(out, ConstTpl::Real(u64::from(final_size)), &mut tree.ops)
+                .map_err(|e| Stop::Fatal(e.to_string()))?;
         }
         Ok(tree)
     }
 
     /// `assignBitRange`: stores the value of `rhs` into bits
     /// `[bit_offset, bit_offset + bits)` of `vn`, keeping the other bits.
-    pub(crate) fn assign_bit_range(&mut self, vn: Vn, bit_offset: u32, bits: u32, mut rhs: ExprTree, span: Span) -> Result<Vec<Op>, Stop> {
+    pub(crate) fn assign_bit_range(
+        &mut self,
+        vn: Vn,
+        bit_offset: u32,
+        bits: u32,
+        mut rhs: ExprTree,
+        span: Span,
+    ) -> Result<Vec<Op>, Stop> {
         let mut message = None;
         if bits == 0 {
             message = Some("Size of bitrange is zero");
@@ -157,7 +185,8 @@ impl<R: SymbolResolver> Builder<'_, R> {
             return Ok(rhs.ops);
         }
         if let Some(out) = rhs.out.as_mut() {
-            force_size(out, ConstTpl::Real(u64::from(small_size)), &mut rhs.ops).map_err(|e| Stop::Fatal(e.to_string()))?;
+            force_size(out, ConstTpl::Real(u64::from(small_size)), &mut rhs.ops)
+                .map_err(|e| Stop::Fatal(e.to_string()))?;
         }
         let mut late = None;
         let ops = if let Some(final_out) = self.truncated_varnode(&vn, bit_offset, bits)? {
@@ -186,7 +215,10 @@ impl<R: SymbolResolver> Builder<'_, R> {
             let b = rhs.out.unwrap_or_else(|| Vn::constant(0, 0));
             ops.push(Op {
                 opcode: OpCode::IntOr,
-                output: Some(Vn { unnamed: false, ..vn }),
+                output: Some(Vn {
+                    unnamed: false,
+                    ..vn
+                }),
                 inputs: vec![a, b],
             });
             ops

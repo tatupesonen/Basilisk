@@ -43,14 +43,18 @@ pub use options::Options;
 /// The parse's own diagnostics are not repeated. The result holds every
 /// diagnostic of this half and, if there was no error (none in the parse
 /// either), the elaborated specification.
-pub fn elaborate(parsed: &bk_sleigh_syntax::Parsed, options: &Options) -> Outcome {
-    let mut compiler = compiler::Compiler::new(parsed, *options);
+pub fn elaborate(parsed: &bk_sleigh_syntax::Parsed, options: Options) -> Outcome {
+    let mut compiler = compiler::Compiler::new(parsed, options);
     compiler.run();
     if !compiler.fatal {
         compiler.post_parse();
     }
     let failed = compiler.fatal || compiler.diags.errors() > 0 || parsed.has_errors();
-    let spec = if failed { None } else { Some(purge::finish(&compiler)) };
+    let spec = if failed {
+        None
+    } else {
+        Some(purge::finish(&compiler))
+    };
     Outcome {
         diagnostics: std::mem::take(&mut compiler.diags.list),
         spec,

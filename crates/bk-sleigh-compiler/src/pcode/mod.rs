@@ -171,7 +171,12 @@ pub struct Builder<'b, R: SymbolResolver> {
 
 impl<'b, R: SymbolResolver> Builder<'b, R> {
     /// A builder over the expressions `nodes` whose names are in `names`.
-    pub fn new(env: &'b BuildEnv, resolver: &'b mut R, names: &'b Interner, nodes: &'b Nodes) -> Self {
+    pub fn new(
+        env: &'b BuildEnv,
+        resolver: &'b mut R,
+        names: &'b Interner,
+        nodes: &'b Nodes,
+    ) -> Self {
         Self {
             env,
             resolver,
@@ -213,7 +218,10 @@ impl<'b, R: SymbolResolver> Builder<'b, R> {
                         self.error(Some(statement.span()), "Multiple delayslot declarations");
                         return Err(Stop::Abort);
                     }
-                    tpl.delay = op.inputs.first().map_or(0, |v| crate::template::real(&v.offset) as u32);
+                    tpl.delay = op
+                        .inputs
+                        .first()
+                        .map_or(0, |v| crate::template::real(&v.offset) as u32);
                 } else if op.opcode == crate::template::LABEL {
                     tpl.labels = tpl.labels.wrapping_add(1);
                 }
@@ -238,7 +246,11 @@ impl<'b, R: SymbolResolver> Builder<'b, R> {
     /// The label problems of section `section`, as Ghidra's `checkSymbols`
     /// writes them (labels in name order); empty if none.
     pub fn label_problems_in(&self, section: u32) -> String {
-        let mut labels: Vec<&LabelState> = self.labels.iter().filter(|l| l.section == section).collect();
+        let mut labels: Vec<&LabelState> = self
+            .labels
+            .iter()
+            .filter(|l| l.section == section)
+            .collect();
         labels.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
         let mut text = String::new();
         for label in labels {
@@ -274,7 +286,8 @@ impl<'b, R: SymbolResolver> Builder<'b, R> {
     }
 
     fn error_at(&mut self, span: Option<Span>, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::error(span, message).located());
+        self.diagnostics
+            .push(Diagnostic::error(span, message).located());
     }
 
     fn syntax_error(&mut self, span: Span) {

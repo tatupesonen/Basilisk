@@ -35,9 +35,12 @@ impl Compiler<'_> {
         }
         match data.def_symbol.and_then(|s| self.kind(s)) {
             Some(SymbolKind::Varnode(vn)) => Self::fixed_varnode(vn),
-            Some(kind @ (SymbolKind::Epsilon | SymbolKind::Start | SymbolKind::End | SymbolKind::Next2)) => {
-                special_varnode(kind).unwrap_or_else(|| Vn::operand(data.index, false))
-            }
+            Some(
+                kind @ (SymbolKind::Epsilon
+                | SymbolKind::Start
+                | SymbolKind::End
+                | SymbolKind::Next2),
+            ) => special_varnode(kind).unwrap_or_else(|| Vn::operand(data.index, false)),
             Some(SymbolKind::ValueMap(..) | SymbolKind::Name(..)) => Vn::operand(data.index, true),
             _ => Vn::operand(data.index, false),
         }
@@ -58,7 +61,11 @@ impl Compiler<'_> {
                 index: self.operands.get(op.slot()).map_or(0, |o| o.index),
                 varnode: self.operand_varnode(*op),
             },
-            SymbolKind::Bitrange { varnode, offset, bits } => {
+            SymbolKind::Bitrange {
+                varnode,
+                offset,
+                bits,
+            } => {
                 let parent = match self.kind(*varnode) {
                     Some(SymbolKind::Varnode(vn)) => Self::fixed_varnode(vn),
                     _ => Vn::constant(0, 0),
@@ -89,8 +96,18 @@ impl Compiler<'_> {
     /// compiled.
     fn current_operand(&self, index: u32) -> Option<OperandId> {
         match (self.cur_ctor, self.cur_macro) {
-            (Some(c), _) => self.ctors.get(c.slot())?.operands.get(index as usize).copied(),
-            (None, Some(m)) => self.macros.get(m.slot())?.params.get(index as usize).copied(),
+            (Some(c), _) => self
+                .ctors
+                .get(c.slot())?
+                .operands
+                .get(index as usize)
+                .copied(),
+            (None, Some(m)) => self
+                .macros
+                .get(m.slot())?
+                .params
+                .get(index as usize)
+                .copied(),
             (None, None) => None,
         }
     }
@@ -98,7 +115,10 @@ impl Compiler<'_> {
     /// `newSectionSymbol`: a global section symbol with the next number.
     pub(crate) fn new_section_symbol(&mut self, name: bk_sleigh_syntax::Symbol, at: Span) -> u32 {
         let number = self.sections.len() as u32;
-        let id = match self.symbols.add_global(name, SymbolKind::Section(number), Some(at)) {
+        let id = match self
+            .symbols
+            .add_global(name, SymbolKind::Section(number), Some(at))
+        {
             Ok(id) | Err(AddError::Duplicate(id)) => {
                 if self.symbols.lookup_from(crate::ids::ScopeId::GLOBAL, name) != Some(id) {
                     let message = format!("Duplicate symbol name '{}'", self.text(name));
@@ -122,7 +142,11 @@ fn special_varnode(kind: &SymbolKind) -> Option<Vn> {
         SymbolKind::Epsilon => ConstTpl::Real(0),
         _ => return None,
     };
-    Some(Vn::new(ConstTpl::Space(CONST_SPACE), offset, ConstTpl::Real(0)))
+    Some(Vn::new(
+        ConstTpl::Space(CONST_SPACE),
+        offset,
+        ConstTpl::Real(0),
+    ))
 }
 
 impl SymbolResolver for CtorResolver<'_, '_> {
@@ -158,7 +182,10 @@ impl SymbolResolver for CtorResolver<'_, '_> {
         };
         match c.symbols.add(name, SymbolKind::Varnode(data), Some(at)) {
             Ok(_) => Ok(()),
-            Err(AddError::Duplicate(_)) => Err(DefineError(format!("Duplicate symbol name: {}", c.text(name)))),
+            Err(AddError::Duplicate(_)) => Err(DefineError(format!(
+                "Duplicate symbol name: {}",
+                c.text(name)
+            ))),
             Err(AddError::Full) => Err(DefineError("Too many symbols".to_owned())),
         }
     }
@@ -173,7 +200,10 @@ impl SymbolResolver for CtorResolver<'_, '_> {
         };
         match c.symbols.add(name, kind, Some(at)) {
             Ok(_) => Ok(()),
-            Err(AddError::Duplicate(_)) => Err(DefineError(format!("Duplicate symbol name: {}", c.text(name)))),
+            Err(AddError::Duplicate(_)) => Err(DefineError(format!(
+                "Duplicate symbol name: {}",
+                c.text(name)
+            ))),
             Err(AddError::Full) => Err(DefineError("Too many symbols".to_owned())),
         }
     }

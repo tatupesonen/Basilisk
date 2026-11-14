@@ -1,7 +1,16 @@
 //! Spec 6.2: for every shipped specification, the elaboration equals
 //! Ghidra's compiled `.sla` in the canonical form (`bk_sleigh_compiler::canon`).
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 
 mod common;
 
@@ -23,9 +32,13 @@ struct Report {
 
 fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report {
     let name = format!("{}/{}", spec.module, spec.name);
-    let options = Options::from_switches(common::module_options(reference, &spec.module).iter().map(String::as_str));
+    let options = Options::from_switches(
+        common::module_options(reference, &spec.module)
+            .iter()
+            .map(String::as_str),
+    );
     let parsed = common::parse(&spec.slaspec);
-    let outcome = elaborate(&parsed, &options);
+    let outcome = elaborate(&parsed, options);
     let mut report = Report {
         name,
         differences: Vec::new(),
@@ -33,13 +46,24 @@ fn compare(reference: &bk_testkit::ReferenceDir, spec: &common::Spec) -> Report 
         categories: BTreeMap::new(),
     };
     if parsed.has_errors() {
-        report.differences.push(format!("parse errors: {:?}", parsed.rendered_diagnostics().first()));
+        report.differences.push(format!(
+            "parse errors: {:?}",
+            parsed.rendered_diagnostics().first()
+        ));
         report.total = 1;
         return report;
     }
     let Some(ours) = outcome.spec else {
-        let errors: Vec<String> = outcome.diagnostics.iter().filter(|d| d.is_error()).take(5).map(|d| d.message.clone()).collect();
-        report.differences.push(format!("elaboration failed: {errors:?}"));
+        let errors: Vec<String> = outcome
+            .diagnostics
+            .iter()
+            .filter(|d| d.is_error())
+            .take(5)
+            .map(|d| d.message.clone())
+            .collect();
+        report
+            .differences
+            .push(format!("elaboration failed: {errors:?}"));
         report.total = 1;
         return report;
     };
@@ -68,7 +92,11 @@ fn every_shipped_spec_matches_the_reference_elaboration() {
     let filter = std::env::var("BK_SPEC_FILTER").ok();
     let specs: Vec<_> = specs
         .into_iter()
-        .filter(|s| filter.as_deref().is_none_or(|f| s.name.contains(f) || s.module.contains(f)))
+        .filter(|s| {
+            filter
+                .as_deref()
+                .is_none_or(|f| s.name.contains(f) || s.module.contains(f))
+        })
         .collect();
     let reports = Mutex::new(Vec::new());
     let next = Mutex::new(0_usize);
@@ -105,15 +133,28 @@ fn every_shipped_spec_matches_the_reference_elaboration() {
         }
         if r.total > 0 {
             failing += 1;
-            eprintln!("MISMATCH {} ({} differences; {})", r.name, r.total, bad.join(", "));
+            eprintln!(
+                "MISMATCH {} ({} differences; {})",
+                r.name,
+                r.total,
+                bad.join(", ")
+            );
             for d in &r.differences {
                 eprintln!("    {d}");
             }
         }
     }
-    eprintln!("specifications: {} compared, {} match, {} differ", reports.len(), reports.len() - failing, failing);
+    eprintln!(
+        "specifications: {} compared, {} match, {} differ",
+        reports.len(),
+        reports.len() - failing,
+        failing
+    );
     for (cat, (n, d)) in &per_category {
         eprintln!("  {cat}: {} of {n} specifications agree", n - d);
     }
-    assert_eq!(failing, 0, "{failing} specifications differ from the reference");
+    assert_eq!(
+        failing, 0,
+        "{failing} specifications differ from the reference"
+    );
 }

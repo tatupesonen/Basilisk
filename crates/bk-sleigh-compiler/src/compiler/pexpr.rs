@@ -19,13 +19,14 @@ impl Compiler<'_> {
     pub(crate) fn pattern_expr(&mut self, id: PatExprId, action: bool) -> Result<PExprId, BadExpr> {
         let nodes = &self.parsed.spec.nodes;
         match &nodes[id] {
-            PatExpr::Int(lit) => match lit.to_u64() {
-                Some(v) => Ok(self.pexpr(PExpr::Constant(v as i64))),
-                None => {
+            PatExpr::Int(lit) => {
+                if let Some(v) = lit.to_u64() {
+                    Ok(self.pexpr(PExpr::Constant(v as i64)))
+                } else {
                     self.syntax_error(lit.span);
                     Err(BadExpr)
                 }
-            },
+            }
             PatExpr::Ident(ident) => {
                 let ident = *ident;
                 let Some(sym) = self.lookup(ident.name) else {
@@ -36,17 +37,22 @@ impl Compiler<'_> {
                 match kind {
                     Some(k) if k.is_family() => {
                         if action && !matches!(k, SymbolKind::Context { .. }) {
-                            let message = format!("Global symbol {} is not allowed in action expression", self.text(ident.name));
+                            let message = format!(
+                                "Global symbol {} is not allowed in action expression",
+                                self.text(ident.name)
+                            );
                             self.diags.error(Some(ident.span), message);
                         }
                         let value = k.pattern_value().map_or(PExpr::Constant(0), PExpr::Field);
                         Ok(self.pexpr(value))
                     }
-                    Some(SymbolKind::Varnode(_) | SymbolKind::Epsilon) => Ok(self.pexpr(PExpr::Constant(0))),
-                    Some(SymbolKind::Operand(op)) => Ok(self.operands.get(op.slot()).map_or_else(
-                        || self.patterns.expr(PExpr::Operand(op)),
-                        |o| o.local_expr,
-                    )),
+                    Some(SymbolKind::Varnode(_) | SymbolKind::Epsilon) => {
+                        Ok(self.pexpr(PExpr::Constant(0)))
+                    }
+                    Some(SymbolKind::Operand(op)) => Ok(self
+                        .operands
+                        .get(op.slot())
+                        .map_or_else(|| self.patterns.expr(PExpr::Operand(op)), |o| o.local_expr)),
                     Some(SymbolKind::Start) => Ok(self.pexpr(PExpr::Start)),
                     Some(SymbolKind::End) => Ok(self.pexpr(PExpr::End)),
                     Some(SymbolKind::Next2) => Ok(self.pexpr(PExpr::Next2)),

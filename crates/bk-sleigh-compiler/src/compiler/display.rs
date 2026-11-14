@@ -12,15 +12,18 @@ pub(crate) fn add_syntax(ctor: &mut CtorData, text: &str) {
     if text.is_empty() {
         return;
     }
-    let text = if text.bytes().all(|b| b == b' ') { " " } else { text };
+    let text = if text.bytes().all(|b| b == b' ') {
+        " "
+    } else {
+        text
+    };
     if ctor.first == -1 && text == " " {
         ctor.first = ctor.print.len() as i32;
     }
     match ctor.print.last_mut() {
-        None => ctor.print.push(Piece::Text(text.to_owned())),
         Some(Piece::Text(last)) if last == " " && text == " " => {}
         Some(Piece::Text(last)) if last != " " && text != " " => last.push_str(text),
-        Some(_) => ctor.print.push(Piece::Text(text.to_owned())),
+        _ => ctor.print.push(Piece::Text(text.to_owned())),
     }
 }
 
@@ -48,7 +51,10 @@ impl Compiler<'_> {
                     }
                 }
                 DisplayPiece::Ident(ident) => {
-                    let index = self.ctors.get(ctor.slot()).map_or(0, |c| c.operands.len() as u32);
+                    let index = self
+                        .ctors
+                        .get(ctor.slot())
+                        .map_or(0, |c| c.operands.len() as u32);
                     let op = self.new_operand(ident.name, index, Some(ctor), ident.span);
                     if let Some(c) = self.ctors.get_mut(ctor.slot()) {
                         c.operands.push(op);
@@ -62,7 +68,8 @@ impl Compiler<'_> {
                 }
                 DisplayPiece::Concat(span) => {
                     if first && !in_root {
-                        self.diags.error(Some(*span), "Unexpected '^' at start of print pieces");
+                        self.diags
+                            .error(Some(*span), "Unexpected '^' at start of print pieces");
                         return false;
                     }
                 }

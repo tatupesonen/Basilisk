@@ -4,7 +4,10 @@
 //! `contextSet`; `calc_maskword`).
 
 use bk_sleigh_syntax::Span;
-use bk_sleigh_syntax::ast::{ConstraintOp as AstOp, ContextBlock, ContextStmt, Equation as AstEq, EquationId as AstEqId, EquationOp, PatExpr};
+use bk_sleigh_syntax::ast::{
+    ConstraintOp as AstOp, ContextBlock, ContextStmt, Equation as AstEq, EquationId as AstEqId,
+    EquationOp, PatExpr,
+};
 
 use super::{Compiler, ContextChange};
 use crate::ids::{EquationId, OperandId, PExprId, SymbolId};
@@ -15,6 +18,12 @@ use crate::symbols::SymbolKind;
 /// abandoned (Ghidra's parser recovers at the next `}`).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Abandon;
+
+impl From<super::pexpr::BadExpr> for Abandon {
+    fn from(_: super::pexpr::BadExpr) -> Self {
+        Self
+    }
+}
 
 /// What `calc_maskword` computes for a context field: the word, the shift
 /// and the mask; `None` if the field straddles two words.
@@ -57,7 +66,9 @@ impl Compiler<'_> {
                 Ok(self.patterns.equation(Equation::RightEllipsis(e)))
             }
             AstEq::Paren { inner, .. } => self.equation(*inner),
-            AstEq::Constraint { name, op, value, .. } => {
+            AstEq::Constraint {
+                name, op, value, ..
+            } => {
                 let (name, op, value) = (*name, *op, *value);
                 let Some(sym) = self.lookup(name.name) else {
                     self.syntax_error(name.span);
@@ -70,12 +81,13 @@ impl Compiler<'_> {
                             self.syntax_error(name.span);
                             return Err(Abandon);
                         }
-                        let expr = self.pattern_expr(value, false).map_err(|_| Abandon)?;
+                        let expr = self.pattern_expr(value, false)?;
                         self.constrain_operand(operand, expr, name)
                     }
                     Some(k) if k.is_family() => {
-                        let expr = self.pattern_expr(value, false).map_err(|_| Abandon)?;
-                        let field = self.pexpr(k.pattern_value().map_or(PExpr::Constant(0), PExpr::Field));
+                        let expr = self.pattern_expr(value, false)?;
+                        let field =
+                            self.pexpr(k.pattern_value().map_or(PExpr::Constant(0), PExpr::Field));
                         let op = match op {
                             AstOp::Equal => ConstraintOp::Equal,
                             AstOp::NotEqual => ConstraintOp::NotEqual,
@@ -84,7 +96,11 @@ impl Compiler<'_> {
                             AstOp::Great => ConstraintOp::Greater,
                             AstOp::GreatEqual => ConstraintOp::GreaterEqual,
                         };
-                        Ok(self.patterns.equation(Equation::Constraint { op, value: field, expr }))
+                        Ok(self.patterns.equation(Equation::Constraint {
+                            op,
+                            value: field,
+                            expr,
+                        }))
                     }
                     _ => {
                         self.syntax_error(name.span);
@@ -109,7 +125,9 @@ impl Compiler<'_> {
                         let zero = self.pexpr(PExpr::Constant(0));
                         Ok(self.patterns.equation(Equation::Unconstrained(zero)))
                     }
-                    Some(k) if k.is_family() || matches!(k, SymbolKind::Subtable(_)) => Ok(self.invisible_operand(sym, ident.span)),
+                    Some(k) if k.is_family() || matches!(k, SymbolKind::Subtable(_)) => {
+                        Ok(self.invisible_operand(sym, ident.span))
+                    }
                     _ => {
                         self.syntax_error(ident.span);
                         Err(Abandon)
@@ -121,7 +139,12 @@ impl Compiler<'_> {
     }
 
     /// `constrainOperand`.
-    fn constrain_operand(&mut self, operand: OperandId, expr: PExprId, name: bk_sleigh_syntax::ast::Ident) -> Result<EquationId, Abandon> {
+    fn constrain_operand(
+        &mut self,
+        operand: OperandId,
+        expr: PExprId,
+        name: bk_sleigh_syntax::ast::Ident,
+    ) -> Result<EquationId, Abandon> {
         let family = self
             .operands
             .get(operand.slot())
@@ -136,13 +159,22 @@ impl Compiler<'_> {
                 expr,
             }));
         }
-        let message = format!("Constraining currently undefined operand {}", self.text(name.name));
+        let message = format!(
+            "Constraining currently undefined operand {}",
+            self.text(name.name)
+        );
         self.diags.error(Some(name.span), message);
         Err(Abandon)
     }
 
     /// `OperandSymbol::defineOperand` with an expression or a symbol.
-    fn define_operand(&mut self, operand: OperandId, expr: Option<PExprId>, symbol: Option<SymbolId>, at: Span) -> bool {
+    fn define_operand(
+        &mut self,
+        operand: OperandId,
+        expr: Option<PExprId>,
+        symbol: Option<SymbolId>,
+        at: Span,
+    ) -> bool {
         let Some(data) = self.operands.get_mut(operand.slot()) else {
             return false;
         };
@@ -199,12 +231,11 @@ impl Compiler<'_> {
                 )
             )
         });
-        match glob {
-            Some(g) => self.define_by(operand, g, at),
-            None => {
-                let message = format!("No matching global symbol '{}'", self.text(name));
-                self.diags.error_at(at, message);
-            }
+        if let Some(g) = glob {
+            self.define_by(operand, g, at);
+        } else {
+            let message = format!("No matching global symbol '{}'", self.text(name));
+            self.diags.error_at(at, message);
         }
     }
 
@@ -229,19 +260,28 @@ impl Compiler<'_> {
     }
 
     /// A context block (`contextlist`). `Err` abandons the constructor.
-    pub(crate) fn context_block(&mut self, block: &ContextBlock) -> Result<Vec<ContextChange>, Abandon> {
+    pub(crate) fn context_block(
+        &mut self,
+        block: &ContextBlock,
+    ) -> Result<Vec<ContextChange>, Abandon> {
         let mut changes = Vec::new();
         for stmt in &block.stmts {
             match stmt {
-                ContextStmt::Assign { target, value, span, .. } => {
+                ContextStmt::Assign {
+                    target,
+                    value,
+                    span,
+                    ..
+                } => {
                     let Some(sym) = self.lookup(target.name) else {
-                        let message = format!("Expecting context symbol, not {}", self.text(target.name));
+                        let message =
+                            format!("Expecting context symbol, not {}", self.text(target.name));
                         self.diags.error(Some(target.span), message);
                         return Err(Abandon);
                     };
                     match self.kind(sym).cloned() {
                         Some(SymbolKind::Context { field, .. }) => {
-                            let expr = self.pattern_expr(*value, true).map_err(|_| Abandon)?;
+                            let expr = self.pattern_expr(*value, true)?;
                             let mut uses_next = false;
                             self.patterns.for_each_value(expr, |v| {
                                 uses_next |= matches!(v, PExpr::End | PExpr::Next2);
@@ -255,15 +295,24 @@ impl Compiler<'_> {
                                 return Err(Abandon);
                             }
                             let f = field.field();
-                            let Some((word, shift, mask)) = mask_word(f.start_bit, f.end_bit) else {
-                                self.diags.error(Some(*span), "Context field not contained within one machine int");
+                            let Some((word, shift, mask)) = mask_word(f.start_bit, f.end_bit)
+                            else {
+                                self.diags.error(
+                                    Some(*span),
+                                    "Context field not contained within one machine int",
+                                );
                                 self.fatal = true;
                                 return Err(Abandon);
                             };
-                            changes.push(ContextChange::Op { word, shift, mask, expr });
+                            changes.push(ContextChange::Op {
+                                word,
+                                shift,
+                                mask,
+                                expr,
+                            });
                         }
                         Some(SymbolKind::Operand(operand)) => {
-                            let expr = self.pattern_expr(*value, true).map_err(|_| Abandon)?;
+                            let expr = self.pattern_expr(*value, true)?;
                             if self.define_operand(operand, Some(expr), None, *span)
                                 && let Some(data) = self.operands.get_mut(operand.slot())
                             {
@@ -286,7 +335,12 @@ impl Compiler<'_> {
     }
 
     /// `globalset(symbol, contextfield);` (`contextSet`).
-    fn global_set(&mut self, name: bk_sleigh_syntax::ast::Ident, args: bk_sleigh_syntax::ast::PatExprList, span: Span) -> Result<ContextChange, Abandon> {
+    fn global_set(
+        &mut self,
+        name: bk_sleigh_syntax::ast::Ident,
+        args: bk_sleigh_syntax::ast::PatExprList,
+        span: Span,
+    ) -> Result<ContextChange, Abandon> {
         let nodes = &self.parsed.spec.nodes;
         let list = nodes.pat_exprs(args);
         let (Some(a), Some(b), 2) = (list.first(), list.get(1), list.len()) else {
@@ -303,26 +357,37 @@ impl Compiler<'_> {
             return Err(Abandon);
         }
         let symbol = match self.lookup(addr.name) {
-            Some(s) if self.kind(s).is_some_and(|k| k.is_family() || k.is_specific()) => s,
+            Some(s)
+                if self
+                    .kind(s)
+                    .is_some_and(|k| k.is_family() || k.is_specific()) =>
+            {
+                s
+            }
             _ => {
                 self.syntax_error(addr.span);
                 return Err(Abandon);
             }
         };
-        let (field, flow) = match self.lookup_kind(var.name) {
-            Some(SymbolKind::Context { field, flow, .. }) => (*field, *flow),
-            _ => {
-                self.syntax_error(var.span);
-                return Err(Abandon);
-            }
+        let Some(&SymbolKind::Context { field, flow, .. }) = self.lookup_kind(var.name) else {
+            self.syntax_error(var.span);
+            return Err(Abandon);
         };
         let f = field.field();
         let Some((word, _, mask)) = mask_word(f.start_bit, f.end_bit) else {
-            self.diags.error(Some(span), "Context field not contained within one machine int");
+            self.diags.error(
+                Some(span),
+                "Context field not contained within one machine int",
+            );
             self.fatal = true;
             return Err(Abandon);
         };
-        Ok(ContextChange::Commit { symbol, word, mask, flow })
+        Ok(ContextChange::Commit {
+            symbol,
+            word,
+            mask,
+            flow,
+        })
     }
 }
 

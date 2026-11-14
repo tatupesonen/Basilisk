@@ -32,7 +32,12 @@ pub fn force_size(vn: &mut Vn, size: ConstTpl, ops: &mut [Op]) -> Result<(), Siz
 }
 
 /// [`force_size`] on the varnode in `slot` (−1 = output) of `ops[op]`.
-pub(crate) fn force_size_at(ops: &mut [Op], op: usize, slot: i32, size: ConstTpl) -> Result<(), SizeMismatch> {
+pub(crate) fn force_size_at(
+    ops: &mut [Op],
+    op: usize,
+    slot: i32,
+    size: ConstTpl,
+) -> Result<(), SizeMismatch> {
     let Some(vn) = ops.get_mut(op).and_then(|o| o.slot_mut(slot)) else {
         return Ok(());
     };
@@ -93,7 +98,9 @@ fn match_size(ops: &mut [Op], op: usize, slot: i32, inputs_only: bool) -> Result
 }
 
 fn zero_at(ops: &[Op], op: usize, slot: i32) -> bool {
-    ops.get(op).and_then(|o| o.slot(slot)).is_some_and(Vn::is_zero_size)
+    ops.get(op)
+        .and_then(|o| o.slot(slot))
+        .is_some_and(Vn::is_zero_size)
 }
 
 fn size_at(ops: &[Op], op: usize, slot: i32) -> Option<ConstTpl> {

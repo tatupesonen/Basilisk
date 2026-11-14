@@ -6,6 +6,7 @@ use bk_sleigh_syntax::Span;
 use bk_sleigh_syntax::ast::{SemanticBody, Statement};
 
 use super::Compiler;
+use super::pattern_atoms::Abandon;
 use super::resolver::CtorResolver;
 use crate::pcode::{Builder, NameRef, Stop, SymbolResolver};
 use crate::template::Tpl;
@@ -41,7 +42,7 @@ fn nop_position(body: &SemanticBody) -> Span {
 impl Compiler<'_> {
     /// Compiles the sections of a constructor body. `Err` abandons the
     /// constructor.
-    pub(crate) fn sections(&mut self, body: &SemanticBody) -> Result<Sections, ()> {
+    pub(crate) fn sections(&mut self, body: &SemanticBody) -> Result<Sections, Abandon> {
         let env = self.build_env();
         let parsed = self.parsed;
         let mut resolver = CtorResolver { compiler: self };
@@ -53,17 +54,20 @@ impl Compiler<'_> {
         }
         match result {
             Ok(sections) => Ok(sections),
-            Err(Stop::Abort) => Err(()),
+            Err(Stop::Abort) => Err(Abandon),
             Err(Stop::Fatal(message)) => {
                 self.diags.error(Some(body.span), message);
                 self.fatal = true;
-                Err(())
+                Err(Abandon)
             }
         }
     }
 }
 
-fn compile_sections(builder: &mut Builder<'_, CtorResolver<'_, '_>>, body: &SemanticBody) -> Result<Sections, Stop> {
+fn compile_sections(
+    builder: &mut Builder<'_, CtorResolver<'_, '_>>,
+    body: &SemanticBody,
+) -> Result<Sections, Stop> {
     let mut parts = body.sections();
     let main_statements = parts.next().map_or(&[][..], |(_, s)| s);
     let main = builder.section(main_statements, true)?;
@@ -118,6 +122,9 @@ fn compile_sections(builder: &mut Builder<'_, CtorResolver<'_, '_>>, body: &Sema
     Ok(Sections { main, named: slots })
 }
 
-fn builder_name(builder: &mut Builder<'_, CtorResolver<'_, '_>>, ident: bk_sleigh_syntax::ast::Ident) -> String {
+fn builder_name(
+    builder: &mut Builder<'_, CtorResolver<'_, '_>>,
+    ident: bk_sleigh_syntax::ast::Ident,
+) -> String {
     builder.resolver().compiler.text(ident.name).to_owned()
 }

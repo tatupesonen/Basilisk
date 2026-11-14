@@ -66,11 +66,6 @@ impl SymbolTable {
         self.symbols.get(id.slot())
     }
 
-    /// One symbol, mutably.
-    pub(crate) fn get_mut(&mut self, id: SymbolId) -> Option<&mut SymbolData> {
-        self.symbols.get_mut(id.slot())
-    }
-
     /// The kind of a symbol.
     pub fn kind(&self, id: SymbolId) -> Option<&SymbolKind> {
         self.get(id).map(|s| &s.kind)

@@ -17,7 +17,9 @@ impl Compiler<'_> {
     /// table from looping, where Ghidra would not stop).
     fn local_values(&self, symbol: SymbolId, out: &mut Vec<u64>, visited: &mut Vec<TableId>) {
         match self.kind(symbol) {
-            Some(SymbolKind::Varnode(vn)) if vn.space == crate::template::UNIQUE_SPACE => out.push(vn.offset),
+            Some(SymbolKind::Varnode(vn)) if vn.space == crate::template::UNIQUE_SPACE => {
+                out.push(vn.offset)
+            }
             Some(SymbolKind::Subtable(table)) => {
                 if visited.contains(table) {
                     return;
@@ -33,7 +35,9 @@ impl Compiler<'_> {
 
     /// `collectLocalExports` of a constructor.
     fn local_exports(&self, ctor: CtorId, out: &mut Vec<u64>, visited: &mut Vec<TableId>) {
-        let Some(c) = self.ctors.get(ctor.slot()) else { return };
+        let Some(c) = self.ctors.get(ctor.slot()) else {
+            return;
+        };
         let Some(hand) = c.main.as_ref().and_then(|t| t.result) else {
             return;
         };
@@ -61,7 +65,9 @@ impl Compiler<'_> {
     /// `checkLocalExports`: false if two operands may export the same
     /// temporary.
     fn check_local_exports(&mut self, ctor: CtorId) -> bool {
-        let Some(c) = self.ctors.get(ctor.slot()) else { return true };
+        let Some(c) = self.ctors.get(ctor.slot()) else {
+            return true;
+        };
         let Some(main) = &c.main else { return true };
         if main.build_only() || c.operands.len() < 2 {
             return true;
@@ -109,9 +115,13 @@ impl Compiler<'_> {
             }
         }
         if count > 0 {
-            self.diags.warning(None, format!("{count} constructors with local collisions between operands"));
+            self.diags.warning(
+                None,
+                format!("{count} constructors with local collisions between operands"),
+            );
             if !self.options.warn_all_collisions {
-                self.diags.warning(None, "Use -c switch to list each individually");
+                self.diags
+                    .warning(None, "Use -c switch to list each individually");
             }
         }
     }

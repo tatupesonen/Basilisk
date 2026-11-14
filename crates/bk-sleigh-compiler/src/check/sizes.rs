@@ -104,8 +104,15 @@ pub(crate) fn op_name(opcode: OpCode) -> &'static str {
     }
 }
 
-/// A size-restriction violation: the two slots (−1 = output) and the text.
-struct Violation(i32, i32, &'static str);
+/// What `sizeRestriction` found wrong with an op.
+enum Violation {
+    /// An error about two slots (−1 = output), with its text.
+    Error(i32, i32, &'static str),
+    /// An extension to the same size.
+    UnnecessaryExt,
+    /// A truncation to the same size.
+    UnnecessaryTrunc,
+}
 
 impl Compiler<'_> {
     /// `setPostOrder`: tables reachable from the root, dependencies first.
@@ -117,13 +124,19 @@ impl Compiler<'_> {
         // (table, constructor index, operand index)
         let mut path: Vec<(TableId, usize, usize)> = vec![(root, 0, 0)];
         while let Some(&(table, ct, oper)) = path.last() {
-            let ctors = self.tables.get(table.slot()).map_or(&[][..], |t| &t.ctors[..]);
+            let ctors = self
+                .tables
+                .get(table.slot())
+                .map_or(&[][..], |t| &t.ctors[..]);
             let Some(&ctor) = ctors.get(ct) else {
                 path.pop();
                 checker.postorder.push(table);
                 continue;
             };
-            let operands = self.ctors.get(ctor.slot()).map_or(&[][..], |c| &c.operands[..]);
+            let operands = self
+                .ctors
+                .get(ctor.slot())
+                .map_or(&[][..], |c| &c.operands[..]);
             let Some(&op) = operands.get(oper) else {
                 if let Some(top) = path.last_mut() {
                     *top = (table, ct + 1, 0);
@@ -169,7 +182,10 @@ impl Compiler<'_> {
                         return Ok((vn.size, None));
                     }
                 }
-                let name = self.symbols.get(sym).map_or("", |s| self.names.resolve(s.name));
+                let name = self
+                    .symbols
+                    .get(sym)
+                    .map_or("", |s| self.names.resolve(s.name));
                 Err(CheckFatal(format!("No register attached to: {name}")))
             }
             _ => Ok((0, None)),
@@ -177,7 +193,12 @@ impl Compiler<'_> {
     }
 
     /// `recoverSize`.
-    pub(crate) fn recover_size(&self, checker: &Checker, size: &ConstTpl, ctor: CtorId) -> Result<i32, CheckFatal> {
+    pub(crate) fn recover_size(
+        &self,
+        checker: &Checker,
+        size: &ConstTpl,
+        ctor: CtorId,
+    ) -> Result<i32, CheckFatal> {
         match *size {
             ConstTpl::Real(v) => Ok(v as i32),
             ConstTpl::Handle { index, .. } => {
@@ -185,34 +206,60 @@ impl Compiler<'_> {
                 if size != -1 {
                     return Ok(size);
                 }
-                let table = table.ok_or_else(|| CheckFatal("Could not recover varnode template size".to_owned()))?;
+                let table = table.ok_or_else(|| {
+                    CheckFatal("Could not recover varnode template size".to_owned())
+                })?;
                 checker
                     .sizemap
                     .get(&table)
                     .copied()
                     .ok_or_else(|| CheckFatal("Subtable out of order".to_owned()))
             }
-            _ => Err(CheckFatal("Bad constant type as varnode template size".to_owned())),
+            _ => Err(CheckFatal(
+                "Bad constant type as varnode template size".to_owned(),
+            )),
         }
     }
 
-    fn size_of(&self, checker: &Checker, op: &Op, slot: i32, ctor: CtorId) -> Result<i32, CheckFatal> {
+    fn size_of(
+        &self,
+        checker: &Checker,
+        op: &Op,
+        slot: i32,
+        ctor: CtorId,
+    ) -> Result<i32, CheckFatal> {
         let size = op.slot(slot).map_or(ConstTpl::Real(0), |v| v.size);
         self.recover_size(checker, &size, ctor)
     }
 
     /// `printOpError`.
-    pub(crate) fn op_error(&mut self, op: &Op, ctor: CtorId, slot1: i32, slot2: i32, message: &str) {
+    pub(crate) fn op_error(
+        &mut self,
+        op: &Op,
+        ctor: CtorId,
+        slot1: i32,
+        slot2: i32,
+        message: &str,
+    ) {
         let operand_name = |c: &Self, slot: i32| -> Option<String> {
             let ConstTpl::Handle { index, .. } = op.slot(slot)?.size else {
                 return None;
             };
             let id = *c.ctors.get(ctor.slot())?.operands.get(index as usize)?;
             let symbol = c.operands.get(id.slot())?.symbol;
-            Some(c.symbols.get(symbol).map_or("", |s| c.names.resolve(s.name)).to_owned())
+            Some(
+                c.symbols
+                    .get(symbol)
+                    .map_or("", |s| c.names.resolve(s.name))
+                    .to_owned(),
+            )
         };
         let a = operand_name(self, slot1);
-        let b = if slot2 == slot1 { None } else { operand_name(self, slot2) };
+        let b = if slot2 == slot1 {
+            None
+        } else {
+            operand_name(self, slot2)
+        };
         let table = self
             .ctors
             .get(ctor.slot())
@@ -236,30 +283,41 @@ impl Compiler<'_> {
 
     /// `sizeRestriction`: checks one op, rewriting an unnecessary extension
     /// or truncation into a `COPY`. Returns whether it passed.
-    pub(crate) fn size_restriction(&mut self, checker: &mut Checker, op: &mut Op, ctor: CtorId) -> Result<bool, CheckFatal> {
+    pub(crate) fn size_restriction(
+        &mut self,
+        checker: &mut Checker,
+        op: &mut Op,
+        ctor: CtorId,
+    ) -> Result<bool, CheckFatal> {
         let violation = self.restriction(checker, op, ctor)?;
         let Some(v) = violation else { return Ok(true) };
         match v {
-            Violation(_, _, "unnecessary-ext") | Violation(_, _, "unnecessary-trunc") => {
+            Violation::UnnecessaryExt | Violation::UnnecessaryTrunc => {
                 if self.options.warn_unnecessary_pcode {
                     let at = self.ctor_at(ctor);
-                    self.diags.warning_at(at, format!("Unnecessary {}", op_name(op.opcode)));
+                    self.diags
+                        .warning_at(at, format!("Unnecessary {}", op_name(op.opcode)));
                 }
-                if v.2 == "unnecessary-trunc" && op.inputs.len() > 1 {
+                if matches!(v, Violation::UnnecessaryTrunc) && op.inputs.len() > 1 {
                     op.inputs.remove(1);
                 }
                 op.opcode = OpCode::Copy;
                 checker.unnecessary = checker.unnecessary.saturating_add(1);
                 Ok(true)
             }
-            Violation(a, b, message) => {
+            Violation::Error(a, b, message) => {
                 self.op_error(op, ctor, a, b, message);
                 Ok(false)
             }
         }
     }
 
-    fn restriction(&self, checker: &Checker, op: &Op, ctor: CtorId) -> Result<Option<Violation>, CheckFatal> {
+    fn restriction(
+        &self,
+        checker: &Checker,
+        op: &Op,
+        ctor: CtorId,
+    ) -> Result<Option<Violation>, CheckFatal> {
         const SUBTABLE: &str = "Using subtable with exports in expression";
         const BOOL_OUT: &str = "Output must be a boolean (size 1)";
         const BOOL_IN: &str = "Input must be a boolean (size 1)";
@@ -268,7 +326,7 @@ impl Compiler<'_> {
             ($slot:expr) => {{
                 let s = size($slot)?;
                 if s == -1 {
-                    return Ok(Some(Violation($slot, $slot, SUBTABLE)));
+                    return Ok(Some(Violation::Error($slot, $slot, SUBTABLE)));
                 }
                 s
             }};
@@ -285,7 +343,11 @@ impl Compiler<'_> {
             | OpCode::FloatRound => {
                 let out = sized!(-1);
                 let in0 = sized!(0);
-                (out != in0 && out != 0 && in0 != 0).then_some(Violation(-1, 0, "Input and output sizes must match"))
+                (out != in0 && out != 0 && in0 != 0).then_some(Violation::Error(
+                    -1,
+                    0,
+                    "Input and output sizes must match",
+                ))
             }
             OpCode::IntAdd
             | OpCode::IntSub
@@ -306,18 +368,18 @@ impl Compiler<'_> {
                 let in0 = sized!(0);
                 let in1 = sized!(1);
                 if out != 0 && in0 != 0 && out != in0 {
-                    Some(Violation(-1, 0, ALL))
+                    Some(Violation::Error(-1, 0, ALL))
                 } else if out != 0 && in1 != 0 && out != in1 {
-                    Some(Violation(-1, 1, ALL))
+                    Some(Violation::Error(-1, 1, ALL))
                 } else if in0 != 0 && in1 != 0 && in0 != in1 {
-                    Some(Violation(0, 1, ALL))
+                    Some(Violation::Error(0, 1, ALL))
                 } else {
                     None
                 }
             }
             OpCode::FloatNan => {
                 let out = sized!(-1);
-                (out != 1).then_some(Violation(-1, -1, BOOL_OUT))
+                (out != 1).then_some(Violation::Error(-1, -1, BOOL_OUT))
             }
             OpCode::IntEqual
             | OpCode::IntNotEqual
@@ -334,24 +396,32 @@ impl Compiler<'_> {
             | OpCode::FloatLessEqual => {
                 let out = sized!(-1);
                 if out != 1 {
-                    return Ok(Some(Violation(-1, -1, BOOL_OUT)));
+                    return Ok(Some(Violation::Error(-1, -1, BOOL_OUT)));
                 }
                 let in0 = sized!(0);
                 let in1 = sized!(1);
-                (in0 != 0 && in1 != 0 && in0 != in1).then_some(Violation(0, 1, "Inputs must be the same size"))
+                (in0 != 0 && in1 != 0 && in0 != in1).then_some(Violation::Error(
+                    0,
+                    1,
+                    "Inputs must be the same size",
+                ))
             }
             OpCode::BoolXor | OpCode::BoolAnd | OpCode::BoolOr | OpCode::BoolNegate => {
                 let out = sized!(-1);
                 if out != 1 {
-                    return Ok(Some(Violation(-1, -1, BOOL_OUT)));
+                    return Ok(Some(Violation::Error(-1, -1, BOOL_OUT)));
                 }
                 let in0 = sized!(0);
-                (in0 != 1).then_some(Violation(0, 0, BOOL_IN))
+                (in0 != 1).then_some(Violation::Error(0, 0, BOOL_IN))
             }
             OpCode::IntLeft | OpCode::IntRight | OpCode::IntSRight => {
                 let out = sized!(-1);
                 let in0 = sized!(0);
-                (out != 0 && in0 != 0 && out != in0).then_some(Violation(-1, 0, "Output and first input must be the same size"))
+                (out != 0 && in0 != 0 && out != in0).then_some(Violation::Error(
+                    -1,
+                    0,
+                    "Output and first input must be the same size",
+                ))
             }
             OpCode::IntZExt | OpCode::IntSExt => {
                 let out = sized!(-1);
@@ -359,16 +429,20 @@ impl Compiler<'_> {
                 if out == 0 || in0 == 0 {
                     None
                 } else if out == in0 {
-                    Some(Violation(0, 0, "unnecessary-ext"))
+                    Some(Violation::UnnecessaryExt)
                 } else if out < in0 {
-                    Some(Violation(-1, 0, "Output size must be strictly bigger than input size"))
+                    Some(Violation::Error(
+                        -1,
+                        0,
+                        "Output size must be strictly bigger than input size",
+                    ))
                 } else {
                     None
                 }
             }
             OpCode::CBranch => {
                 let in1 = sized!(1);
-                (in1 != 1).then_some(Violation(1, 1, BOOL_IN))
+                (in1 != 1).then_some(Violation::Error(1, 1, BOOL_IN))
             }
             OpCode::Load | OpCode::Store => {
                 let space = op.inputs.first().map(|v| v.offset);
@@ -376,8 +450,15 @@ impl Compiler<'_> {
                     return Ok(None);
                 };
                 let in1 = sized!(1);
-                let addr = self.spaces.get(space as usize).map_or(0, |s| s.addr_size as i32);
-                (in1 != 0 && in1 != addr).then_some(Violation(1, 1, "Pointer size must match size of space"))
+                let addr = self
+                    .spaces
+                    .get(space as usize)
+                    .map_or(0, |s| s.addr_size as i32);
+                (in1 != 0 && in1 != addr).then_some(Violation::Error(
+                    1,
+                    1,
+                    "Pointer size must match size of space",
+                ))
             }
             OpCode::SubPiece => {
                 let out = sized!(-1);
@@ -386,11 +467,15 @@ impl Compiler<'_> {
                 if out == 0 || in0 == 0 {
                     None
                 } else if out == in0 && in1 == 0 {
-                    Some(Violation(0, 0, "unnecessary-trunc"))
+                    Some(Violation::UnnecessaryTrunc)
                 } else if out >= in0 {
-                    Some(Violation(-1, 0, "Output must be strictly smaller than input"))
+                    Some(Violation::Error(
+                        -1,
+                        0,
+                        "Output must be strictly smaller than input",
+                    ))
                 } else if out > in0.wrapping_sub(in1) {
-                    Some(Violation(-1, 0, "Too much truncation"))
+                    Some(Violation::Error(-1, 0, "Too much truncation"))
                 } else {
                     None
                 }
@@ -408,12 +493,18 @@ impl Compiler<'_> {
             && matches!(vn.offset, ConstTpl::Real(0))
         {
             let at = self.ctor_at(ctor);
-            self.diags.warning_at(at, "Unsigned comparison with zero is always false");
+            self.diags
+                .warning_at(at, "Unsigned comparison with zero is always false");
         }
     }
 
     /// `checkConstructorSection`.
-    fn check_section(&mut self, checker: &mut Checker, tpl: &mut Tpl, ctor: CtorId) -> Result<bool, CheckFatal> {
+    fn check_section(
+        &mut self,
+        checker: &mut Checker,
+        tpl: &mut Tpl,
+        ctor: CtorId,
+    ) -> Result<bool, CheckFatal> {
         let mut ok = true;
         for op in &mut tpl.ops {
             if !self.size_restriction(checker, op, ctor)? {
@@ -425,8 +516,16 @@ impl Compiler<'_> {
     }
 
     /// `checkSubtable`.
-    pub(crate) fn check_subtable(&mut self, checker: &mut Checker, table: TableId) -> Result<bool, CheckFatal> {
-        let ctors = self.tables.get(table.slot()).map(|t| t.ctors.clone()).unwrap_or_default();
+    pub(crate) fn check_subtable(
+        &mut self,
+        checker: &mut Checker,
+        table: TableId,
+    ) -> Result<bool, CheckFatal> {
+        let ctors = self
+            .tables
+            .get(table.slot())
+            .map(|t| t.ctors.clone())
+            .unwrap_or_default();
         let name = self
             .tables
             .get(table.slot())
@@ -505,7 +604,10 @@ impl Compiler<'_> {
     }
 
     /// `testSizeRestrictions`.
-    pub(crate) fn test_size_restrictions(&mut self, checker: &mut Checker) -> Result<bool, CheckFatal> {
+    pub(crate) fn test_size_restrictions(
+        &mut self,
+        checker: &mut Checker,
+    ) -> Result<bool, CheckFatal> {
         self.post_order(checker);
         let mut ok = true;
         for table in checker.postorder.clone() {

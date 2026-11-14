@@ -6,11 +6,12 @@
 use bk_sla::Field;
 use bk_sleigh_syntax::Span;
 use bk_sleigh_syntax::ast::{
-    AttachNames, AttachValues, AttachVariables, BitrangeDef, ContextDef, Definition, Endian, FieldDef, IdentOrWild, IntLit,
-    IntOrWild, NameOrWild, PcodeOpDef, SpaceDef, SpaceMod, TokenDef, VarnodeDef,
+    AttachNames, AttachValues, AttachVariables, BitrangeDef, ContextDef, Definition, Endian,
+    FieldDef, IdentOrWild, IntLit, IntOrWild, NameOrWild, PcodeOpDef, SpaceDef, SpaceMod, TokenDef,
+    VarnodeDef,
 };
 
-use super::{Compiler, PendingField, TokenData};
+use super::{Compiler, PendingField};
 use crate::pattern::PatValue;
 use crate::spaces::{SpaceInfo, SpaceKind};
 use crate::symbols::{SymbolKind, VarnodeData};
@@ -78,10 +79,15 @@ impl Compiler<'_> {
         if self.redefined(d.name, ": redefined as a token") {
             return;
         }
-        let Some(bits) = self.literal(&d.size) else { return };
+        let Some(bits) = self.literal(&d.size) else {
+            return;
+        };
         let bits = bits as u32;
         let size = if bits & 7 != 0 {
-            let message = format!("'{}': token size must be multiple of 8", self.text(d.name.name));
+            let message = format!(
+                "'{}': token size must be multiple of 8",
+                self.text(d.name.name)
+            );
             self.diags.error_at(d.size.span, message);
             bits / 8 + 1
         } else {
@@ -91,8 +97,8 @@ impl Compiler<'_> {
             None => self.big_endian,
             Some(e) => e == Endian::Big,
         };
-        let token = self.tokens.len() as u32;
-        self.tokens.push(TokenData { size, big_endian });
+        let token = self.tokens;
+        self.tokens = self.tokens.wrapping_add(1);
         self.add_symbol(d.name.name, SymbolKind::Token(token), d.span);
         for field in &d.fields {
             if !self.token_field(field, size, big_endian) {
@@ -117,10 +123,16 @@ impl Compiler<'_> {
         };
         let name = self.text(field.name.name).to_owned();
         if high < low {
-            self.diags.error_at(field.span, format!("Field '{name}' starts at {low} and ends at {high}"));
+            self.diags.error_at(
+                field.span,
+                format!("Field '{name}' starts at {low} and ends at {high}"),
+            );
         }
         if token_size.wrapping_mul(8) <= high {
-            self.diags.error_at(field.span, format!("Field '{name}' high must be less than token size"));
+            self.diags.error_at(
+                field.span,
+                format!("Field '{name}' high must be less than token size"),
+            );
         }
         let (start, end) = (low as i32, high as i32);
         let total = (token_size as i32).wrapping_mul(8);
@@ -163,13 +175,22 @@ impl Compiler<'_> {
             };
             let name = self.text(field.name.name).to_owned();
             if high < low {
-                self.diags.error_at(field.span, format!("Context field '{name}' starts at {low} and ends at {high}"));
+                self.diags.error_at(
+                    field.span,
+                    format!("Context field '{name}' starts at {low} and ends at {high}"),
+                );
             }
             if (vn.size as u32).wrapping_mul(8) <= high {
-                self.diags.error_at(field.span, format!("Context field '{name}' high must be less than context size"));
+                self.diags.error_at(
+                    field.span,
+                    format!("Context field '{name}' high must be less than context size"),
+                );
             }
             if self.context_locked {
-                self.diags.error(Some(field.span), "All context definitions must come before constructors");
+                self.diags.error(
+                    Some(field.span),
+                    "All context definitions must come before constructors",
+                );
                 return;
             }
             self.pending_context.push(PendingField {
@@ -214,7 +235,10 @@ impl Compiler<'_> {
         }
         let name = self.text(d.name.name).to_owned();
         if size == 0 {
-            self.diags.error_at(d.span, format!("Space definition '{name}' missing size attribute"));
+            self.diags.error_at(
+                d.span,
+                format!("Space definition '{name}' missing size attribute"),
+            );
             return;
         }
         let index = self.spaces.len() as u32;
@@ -242,7 +266,11 @@ impl Compiler<'_> {
     }
 
     /// The names of a `stringlist`; `None` stops the statement.
-    fn string_list(&mut self, names: &[IdentOrWild], bracketed: bool) -> Option<Vec<(bk_sleigh_syntax::Symbol, Span)>> {
+    fn string_list(
+        &mut self,
+        names: &[IdentOrWild],
+        bracketed: bool,
+    ) -> Option<Vec<(bk_sleigh_syntax::Symbol, Span)>> {
         let underscore = self.intern("_");
         let mut list = Vec::with_capacity(names.len());
         for entry in names {
@@ -265,18 +293,18 @@ impl Compiler<'_> {
     }
 
     fn define_varnodes(&mut self, d: &VarnodeDef) {
-        let space = match self.lookup_kind(d.space.name) {
-            Some(SymbolKind::Space(index)) => *index,
-            _ => {
-                self.syntax_error(d.space.span);
-                return;
-            }
-        };
-        let Some(offset) = d.offset.to_u64() else {
-            self.diags.error(Some(d.offset.span), "Parsed integer is too big (overflow)");
+        let Some(&SymbolKind::Space(space)) = self.lookup_kind(d.space.name) else {
+            self.syntax_error(d.space.span);
             return;
         };
-        let Some(size) = self.literal(&d.size) else { return };
+        let Some(offset) = d.offset.to_u64() else {
+            self.diags
+                .error(Some(d.offset.span), "Parsed integer is too big (overflow)");
+            return;
+        };
+        let Some(size) = self.literal(&d.size) else {
+            return;
+        };
         let bracketed = d
             .names
             .first()
@@ -312,7 +340,8 @@ impl Compiler<'_> {
                     return;
                 }
             };
-            let (Some(low), Some(width)) = (self.literal(&entry.low), self.literal(&entry.width)) else {
+            let (Some(low), Some(width)) = (self.literal(&entry.low), self.literal(&entry.width))
+            else {
                 return;
             };
             let (bit_offset, bits) = (low as u32, width as u32);
@@ -322,14 +351,16 @@ impl Compiler<'_> {
             let name = self.text(entry.name.name).to_owned();
             let size = (vn.size as u32).wrapping_mul(8);
             if bits == 0 {
-                self.diags.error_at(entry.span, format!("'{name}': size of bitrange is zero"));
+                self.diags
+                    .error_at(entry.span, format!("'{name}': size of bitrange is zero"));
                 continue;
             }
             if bit_offset >= size || bit_offset.wrapping_add(bits) > size {
-                self.diags.error_at(entry.span, format!("'{name}': bad bitrange"));
+                self.diags
+                    .error_at(entry.span, format!("'{name}': bad bitrange"));
                 continue;
             }
-            let kind = if bit_offset % 8 == 0 && bits % 8 == 0 {
+            let kind = if bit_offset.is_multiple_of(8) && bits.is_multiple_of(8) {
                 let delta = if self.big_endian {
                     (size - bit_offset - bits) / 8
                 } else {
@@ -368,7 +399,12 @@ impl Compiler<'_> {
 
     /// The symbols of an attach statement's field list (`valuelist`) with
     /// duplicates dropped (`dedupSymbolList`); `None` stops the statement.
-    fn value_list(&mut self, fields: &[IdentOrWild], keyword: &str, start: u32) -> Option<Vec<crate::ids::SymbolId>> {
+    fn value_list(
+        &mut self,
+        fields: &[IdentOrWild],
+        keyword: &str,
+        start: u32,
+    ) -> Option<Vec<crate::ids::SymbolId>> {
         let bracketed = fields
             .first()
             .is_some_and(|first| self.bracket_between(start, first.span().start));
@@ -380,7 +416,14 @@ impl Compiler<'_> {
                 IdentOrWild::Wildcard(span) => (underscore, *span),
             };
             match self.lookup(name) {
-                Some(id) if matches!(self.kind(id), Some(SymbolKind::Value(_) | SymbolKind::Context { .. })) => list.push(Some(id)),
+                Some(id)
+                    if matches!(
+                        self.kind(id),
+                        Some(SymbolKind::Value(_) | SymbolKind::Context { .. })
+                    ) =>
+                {
+                    list.push(Some(id))
+                }
                 None if bracketed && i > 0 => {
                     let message = format!("{}: is not a value pattern", self.text(name));
                     self.diags.error(Some(span), message);
@@ -394,7 +437,9 @@ impl Compiler<'_> {
         }
         let mut duplicate = None;
         for i in 0..list.len() {
-            let Some(Some(sym)) = list.get(i).copied() else { continue };
+            let Some(Some(sym)) = list.get(i).copied() else {
+                continue;
+            };
             for later in list.iter_mut().skip(i + 1) {
                 if *later == Some(sym) {
                     duplicate = Some(sym);
@@ -405,19 +450,30 @@ impl Compiler<'_> {
         if let Some(sym) = duplicate {
             let name = self.symbols.get(sym).map(|s| s.name);
             let text = name.map_or("", |n| self.text(n)).to_owned();
-            self.diags.warning_at(Span::at(start), format!("'attach {keyword}' list contains duplicate entries: {text}"));
+            self.diags.warning_at(
+                Span::at(start),
+                format!("'attach {keyword}' list contains duplicate entries: {text}"),
+            );
         }
         Some(list.into_iter().flatten().collect())
     }
 
     /// The field of a symbol being attached to, and its size check.
-    fn attach_field(&mut self, sym: crate::ids::SymbolId, what: &str, entries: usize, at: Span) -> Option<PatValue> {
+    fn attach_field(
+        &mut self,
+        sym: crate::ids::SymbolId,
+        what: &str,
+        entries: usize,
+        at: Span,
+    ) -> Option<PatValue> {
         let symbol = self.symbols.get(sym)?;
         let value = symbol.kind.pattern_value()?;
         let max = value.max_value();
         if max.wrapping_add(1) != entries as i64 {
             let name = self.text(symbol.name).to_owned();
-            let message = format!("Attach {what} '{name}' (range 0..{max}) is wrong size for list (of {entries} entries)");
+            let message = format!(
+                "Attach {what} '{name}' (range 0..{max}) is wrong size for list (of {entries} entries)"
+            );
             self.diags.error_at(at, message);
         }
         Some(value)
@@ -440,7 +496,8 @@ impl Compiler<'_> {
         }
         for sym in fields {
             if let Some(field) = self.attach_field(sym, "value", values.len(), d.span) {
-                self.symbols.replace(sym, SymbolKind::ValueMap(field, values.clone()));
+                self.symbols
+                    .replace(sym, SymbolKind::ValueMap(field, values.clone()));
             }
         }
     }
@@ -461,7 +518,8 @@ impl Compiler<'_> {
             .collect();
         for sym in fields {
             if let Some(field) = self.attach_field(sym, "name", names.len(), d.span) {
-                self.symbols.replace(sym, SymbolKind::Name(field, names.clone()));
+                self.symbols
+                    .replace(sym, SymbolKind::Name(field, names.clone()));
             }
         }
     }
@@ -475,7 +533,9 @@ impl Compiler<'_> {
             match entry {
                 IdentOrWild::Wildcard(_) => list.push(None),
                 IdentOrWild::Ident(ident) => match self.lookup(ident.name) {
-                    Some(id) if matches!(self.kind(id), Some(SymbolKind::Varnode(_))) => list.push(Some(id)),
+                    Some(id) if matches!(self.kind(id), Some(SymbolKind::Varnode(_))) => {
+                        list.push(Some(id))
+                    }
                     None => {
                         let message = format!("{}: is not a varnode symbol", self.text(ident.name));
                         self.diags.error(Some(ident.span), message);
@@ -494,16 +554,22 @@ impl Compiler<'_> {
             };
             let mut size = 0;
             for vsym in list.iter().flatten() {
-                let Some(SymbolKind::Varnode(vn)) = self.kind(*vsym) else { continue };
+                let Some(SymbolKind::Varnode(vn)) = self.kind(*vsym) else {
+                    continue;
+                };
                 if size == 0 {
                     size = vn.size;
                 } else if size != vn.size {
-                    let message = format!("Attach statement contains varnodes of different sizes -- {size} != {}", vn.size);
+                    let message = format!(
+                        "Attach statement contains varnodes of different sizes -- {size} != {}",
+                        vn.size
+                    );
                     self.diags.error_at(d.span, message);
                     break;
                 }
             }
-            self.symbols.replace(sym, SymbolKind::VarnodeList(field, list.clone()));
+            self.symbols
+                .replace(sym, SymbolKind::VarnodeList(field, list.clone()));
         }
     }
 }

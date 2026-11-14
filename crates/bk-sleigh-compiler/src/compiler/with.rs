@@ -36,7 +36,11 @@ impl<'a> Compiler<'a> {
         if self.fatal {
             return Err(Fatal);
         }
-        self.with_stack.push(WithFrame { table, pattern, context });
+        self.with_stack.push(WithFrame {
+            table,
+            pattern,
+            context,
+        });
         let result = self.items(&w.items);
         self.with_stack.pop();
         result

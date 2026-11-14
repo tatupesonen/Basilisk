@@ -47,7 +47,10 @@ impl Canonical {
     }
 
     /// The entries whose path starts with `prefix`.
-    pub fn with_prefix<'a>(&'a self, prefix: &'a str) -> impl Iterator<Item = (&'a str, &'a str)> + 'a {
+    pub fn with_prefix<'a>(
+        &'a self,
+        prefix: &'a str,
+    ) -> impl Iterator<Item = (&'a str, &'a str)> + 'a {
         self.entries
             .range(prefix.to_owned()..)
             .take_while(move |(k, _)| k.starts_with(prefix))
@@ -149,12 +152,16 @@ pub fn diff(ours: &Canonical, theirs: &Canonical, cap: usize) -> (Vec<Difference
 
 /// The category of a path, for counting agreement per category.
 pub fn category(path: &str) -> &'static str {
-    if path.starts_with("header") || path.starts_with("space") || path.starts_with("sourcefile") || path.starts_with("defaultspace") {
+    if path.starts_with("header")
+        || path.starts_with("space")
+        || path.starts_with("sourcefile")
+        || path.starts_with("defaultspace")
+    {
         "header"
     } else if path.starts_with("scope") {
         "scopes"
     } else if path.starts_with("symbol") {
-        if path.ends_with(".id") {
+        if path.rsplit('.').next() == Some("id") {
             "symbol ids"
         } else {
             "symbol contents"
@@ -163,7 +170,7 @@ pub fn category(path: &str) -> &'static str {
         "templates"
     } else if path.contains(".context.") {
         "context changes"
-    } else if path.contains(".print") || path.ends_with(".first") {
+    } else if path.contains(".print") || path.rsplit('.').next() == Some("first") {
         "print pieces"
     } else {
         "constructors"
@@ -220,12 +227,21 @@ pub(crate) fn field_text(context: bool, f: &bk_sla::Field, out: &mut String) {
 
 /// Writes a template constant; `operand` maps an operand index to its
 /// symbol id and `space` a space index to its name.
-pub(crate) fn const_text(c: &ConstTpl, operand: &dyn Fn(u32) -> String, space: &dyn Fn(u32) -> String, out: &mut String) {
+pub(crate) fn const_text(
+    c: &ConstTpl,
+    operand: &dyn Fn(u32) -> String,
+    space: &dyn Fn(u32) -> String,
+    out: &mut String,
+) {
     match *c {
         ConstTpl::Real(v) => {
             let _ = write!(out, "#{v:#x}");
         }
-        ConstTpl::Handle { index, select, plus } => {
+        ConstTpl::Handle {
+            index,
+            select,
+            plus,
+        } => {
             let sel = match select {
                 HandleSelect::Space => "space",
                 HandleSelect::Offset => "offset",
@@ -256,7 +272,12 @@ pub(crate) fn const_text(c: &ConstTpl, operand: &dyn Fn(u32) -> String, space: &
 }
 
 /// Writes a varnode template: `(space,offset,size)`.
-pub(crate) fn vn_text(vn: &bk_sla::VarnodeTpl, operand: &dyn Fn(u32) -> String, space: &dyn Fn(u32) -> String, out: &mut String) {
+pub(crate) fn vn_text(
+    vn: &bk_sla::VarnodeTpl,
+    operand: &dyn Fn(u32) -> String,
+    space: &dyn Fn(u32) -> String,
+    out: &mut String,
+) {
     out.push('(');
     const_text(&vn.space, operand, space, out);
     out.push(',');
@@ -297,7 +318,11 @@ pub(crate) fn op_text(
 }
 
 /// Writes an export handle.
-pub(crate) fn handle_text(hand: &bk_sla::HandleTpl, operand: &dyn Fn(u32) -> String, space: &dyn Fn(u32) -> String) -> String {
+pub(crate) fn handle_text(
+    hand: &bk_sla::HandleTpl,
+    operand: &dyn Fn(u32) -> String,
+    space: &dyn Fn(u32) -> String,
+) -> String {
     let mut out = String::new();
     for (i, part) in hand.parts().iter().enumerate() {
         if i > 0 {

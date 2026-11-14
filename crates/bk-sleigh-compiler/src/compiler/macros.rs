@@ -20,7 +20,12 @@ pub(crate) const MAX_EXPANDED_OPS: usize = 1_000_000;
 /// `ConstTpl::transfer`: a handle part of a macro parameter becomes the
 /// matching part of the argument.
 fn transfer_const(c: &mut ConstTpl, params: &[HandleTpl]) -> Result<(), String> {
-    let ConstTpl::Handle { index, select, plus } = *c else {
+    let ConstTpl::Handle {
+        index,
+        select,
+        plus,
+    } = *c
+    else {
         return Ok(());
     };
     let Some(hand) = params.get(index as usize) else {
@@ -81,9 +86,8 @@ impl<'a> Compiler<'a> {
         self.cur_ctor = None;
         let id = MacroId::next(self.macros.len());
         let index = self.macro_templates.len() as u32;
-        let symbol = self.add_symbol(m.name.name, SymbolKind::Macro(id), m.name.span);
+        self.add_symbol(m.name.name, SymbolKind::Macro(id), m.name.span);
         self.macros.push(MacroData {
-            symbol,
             index,
             params: Vec::new(),
         });
@@ -122,14 +126,20 @@ impl<'a> Compiler<'a> {
         };
         let name = self.text(m.name.name).to_owned();
         if tpl.ops.is_empty() && tpl.result.is_none() {
-            self.nops.push(bk_sleigh_syntax::Span::at(m.body.span.end.saturating_sub(1)));
+            self.nops.push(bk_sleigh_syntax::Span::at(
+                m.body.span.end.saturating_sub(1),
+            ));
         }
         if !labels.is_empty() {
-            self.diags.error_at(m.span, format!("In definition of macro '{name}': {labels}"));
+            self.diags
+                .error_at(m.span, format!("In definition of macro '{name}': {labels}"));
             return Ok(());
         }
         if !self.expand_macros(&mut tpl) {
-            self.diags.error_at(m.span, format!("Could not expand submacro in definition of macro '{name}'"));
+            self.diags.error_at(
+                m.span,
+                format!("Could not expand submacro in definition of macro '{name}'"),
+            );
             return Ok(());
         }
         if let Err(e) = propagate_size(&mut tpl.ops) {
@@ -171,7 +181,8 @@ impl<'a> Compiler<'a> {
             }
             tpl.labels = tpl.labels.wrapping_add(body.labels);
             if out.len() > MAX_EXPANDED_OPS {
-                self.diags.error(None, "Macro expansion exceeds 1000000 ops");
+                self.diags
+                    .error(None, "Macro expansion exceeds 1000000 ops");
                 self.fatal = true;
                 tpl.ops = out;
                 return false;
@@ -186,7 +197,13 @@ impl<'a> Compiler<'a> {
     }
 
     /// `MacroBuilder::build` for one invocation.
-    fn expand_one(&mut self, body: &Tpl, params: &[HandleTpl], label_base: u64, out: &mut Vec<Op>) -> bool {
+    fn expand_one(
+        &mut self,
+        body: &Tpl,
+        params: &[HandleTpl],
+        label_base: u64,
+        out: &mut Vec<Op>,
+    ) -> bool {
         let mut ok = true;
         for op in &body.ops {
             let mut clone = op.clone();
@@ -216,35 +233,55 @@ impl<'a> Compiler<'a> {
     }
 
     /// `MacroBuilder::transferOp`.
-    fn transfer_op(&mut self, mut op: Op, params: &[HandleTpl], out: &mut Vec<Op>) -> Result<bool, String> {
+    fn transfer_op(
+        &mut self,
+        mut op: Op,
+        params: &[HandleTpl],
+        out: &mut Vec<Op>,
+    ) -> Result<bool, String> {
         if let Some(output) = op.output.as_mut()
             && let Some(plus) = transfer_vn(output, params)?
             && plus >= 0
         {
-            self.diags.error(None, "Cannot currently assign to bitrange of macro parameter that is a temporary");
+            self.diags.error(
+                None,
+                "Cannot currently assign to bitrange of macro parameter that is a temporary",
+            );
             return Ok(false);
         }
         let mut handle_index = 0_u32;
         let mut has_real_size = false;
         let mut real_size = 0_u64;
         for i in 0..op.inputs.len() {
-            let Some(vn) = op.inputs.get_mut(i) else { break };
+            let Some(vn) = op.inputs.get_mut(i) else {
+                break;
+            };
             if let ConstTpl::Handle { index, .. } = vn.offset {
                 handle_index = index;
                 has_real_size = matches!(vn.size, ConstTpl::Real(_));
                 real_size = real(&vn.size);
             }
-            let Some(plus) = transfer_vn(vn, params)? else { continue };
+            let Some(plus) = transfer_vn(vn, params)? else {
+                continue;
+            };
             if plus < 0 {
                 continue;
             }
             if !has_real_size {
-                self.diags.error(None, "Problem with bit range operator in macro");
+                self.diags
+                    .error(None, "Problem with bit range operator in macro");
                 return Ok(false);
             }
             let temp = self.unique_addr();
-            let new_vn = Vn::new(ConstTpl::Space(UNIQUE_SPACE), ConstTpl::Real(temp), ConstTpl::Real(real_size));
-            let hand = params.get(handle_index as usize).copied().unwrap_or_else(|| export_handle(&Vn::constant(0, 0)));
+            let new_vn = Vn::new(
+                ConstTpl::Space(UNIQUE_SPACE),
+                ConstTpl::Real(temp),
+                ConstTpl::Real(real_size),
+            );
+            let hand = params
+                .get(handle_index as usize)
+                .copied()
+                .unwrap_or_else(|| export_handle(&Vn::constant(0, 0)));
             out.push(Op {
                 opcode: OpCode::SubPiece,
                 output: Some(new_vn),

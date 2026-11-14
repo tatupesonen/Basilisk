@@ -67,7 +67,8 @@ fn fill_in_build(tpl: &mut Tpl, check: &mut [u8]) -> u8 {
     }
     for (i, &state) in check.iter().enumerate() {
         if state == 0 {
-            tpl.ops.insert(0, Op::new(BUILD, vec![Vn::constant(i as u64, 4)]));
+            tpl.ops
+                .insert(0, Op::new(BUILD, vec![Vn::constant(i as u64, 4)]));
         }
     }
     0
@@ -93,7 +94,13 @@ impl Compiler<'_> {
     }
 
     /// Finishes one section; problems go to `errors` prefixed by `label`.
-    fn finish_section(&mut self, ctor: CtorId, section: &mut Section, label: &str, errors: &mut Vec<String>) {
+    fn finish_section(
+        &mut self,
+        ctor: CtorId,
+        section: &mut Section,
+        label: &str,
+        errors: &mut Vec<String>,
+    ) {
         if !section.labels.is_empty() {
             errors.push(format!("{label}{}", section.labels));
             return;
@@ -119,7 +126,11 @@ impl Compiler<'_> {
 
     /// `finalizeSections`: returns the finished main and named templates,
     /// or `None` after reporting the problems.
-    pub(crate) fn finalize_sections(&mut self, ctor: CtorId, sections: Sections) -> Option<(Tpl, Vec<Option<Tpl>>)> {
+    pub(crate) fn finalize_sections(
+        &mut self,
+        ctor: CtorId,
+        sections: Sections,
+    ) -> Option<(Tpl, Vec<Option<Tpl>>)> {
         let Sections { mut main, named } = sections;
         let mut errors = Vec::new();
         let root = self
@@ -174,7 +185,10 @@ impl Compiler<'_> {
         if !root {
             let at = self.ctor_at(ctor);
             let info = self.ctor_info(ctor);
-            self.diags.warning_at(at, format!("Delay slot used in non-root constructor {info}\n"));
+            self.diags.warning_at(
+                at,
+                format!("Delay slot used in non-root constructor {info}\n"),
+            );
         }
         self.max_delay = self.max_delay.max(delay);
     }
@@ -189,7 +203,11 @@ mod tests {
         let mut tpl = Tpl::default();
         let mut check = vec![0, 2, 0];
         assert_eq!(fill_in_build(&mut tpl, &mut check), 0);
-        let order: Vec<u64> = tpl.ops.iter().map(|op| real(&op.inputs[0].offset)).collect();
+        let order: Vec<u64> = tpl
+            .ops
+            .iter()
+            .map(|op| real(&op.inputs[0].offset))
+            .collect();
         assert_eq!(order, vec![2, 0]);
         let mut check = vec![0];
         tpl.ops = vec![

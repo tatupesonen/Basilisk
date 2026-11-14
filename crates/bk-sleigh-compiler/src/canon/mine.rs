@@ -40,7 +40,11 @@ impl Writer<'_> {
                 let _ = write!(out, "#{v}");
             }
             Some(PExpr::Operand(op)) => {
-                let symbol = self.spec.operands.get(op.slot()).map_or(SymbolId::new(u32::MAX), |o| o.symbol);
+                let symbol = self
+                    .spec
+                    .operands
+                    .get(op.slot())
+                    .map_or(SymbolId::new(u32::MAX), |o| o.symbol);
                 let _ = write!(out, "op{}", symbol.index());
             }
             Some(PExpr::Start) => out.push_str("start"),
@@ -63,17 +67,28 @@ impl Writer<'_> {
     }
 
     fn symbol(&self, c: &mut Canonical, id: usize) {
-        let Some(s) = self.spec.symbols.get(id) else { return };
+        let Some(s) = self.spec.symbols.get(id) else {
+            return;
+        };
         let name = self.spec.names.resolve(s.name);
         let kind = symbol_kind_name(&s.kind);
-        c.put(format!("symbol.{id:07}.id"), format!("{name} scope={} {kind}", s.scope.index()));
+        c.put(
+            format!("symbol.{id:07}.id"),
+            format!("{name} scope={} {kind}", s.scope.index()),
+        );
         let mut body = String::new();
         match &s.kind {
             SymbolKind::UserOp(index) => {
                 let _ = write!(body, "index={index}");
             }
             SymbolKind::Varnode(vn) => {
-                let _ = write!(body, "space={} off={:#x} size={}", self.space_name(vn.space), vn.offset, vn.size);
+                let _ = write!(
+                    body,
+                    "space={} off={:#x} size={}",
+                    self.space_name(vn.space),
+                    vn.offset,
+                    vn.size
+                );
             }
             SymbolKind::Value(v) => value_text(v, &mut body),
             SymbolKind::ValueMap(v, values) => {
@@ -82,7 +97,10 @@ impl Writer<'_> {
             }
             SymbolKind::Name(v, names) => {
                 value_text(v, &mut body);
-                let names: Vec<&str> = names.iter().map(|n| n.as_deref().unwrap_or("<none>")).collect();
+                let names: Vec<&str> = names
+                    .iter()
+                    .map(|n| n.as_deref().unwrap_or("<none>"))
+                    .collect();
                 let _ = write!(body, " {names:?}");
             }
             SymbolKind::VarnodeList(v, list) => {
@@ -93,8 +111,19 @@ impl Writer<'_> {
                     .collect();
                 let _ = write!(body, " {list:?}");
             }
-            SymbolKind::Context { varnode, low, high, flow, field } => {
-                let _ = write!(body, "varnode={} low={low} high={high} flow={} ", varnode.index(), u8::from(*flow));
+            SymbolKind::Context {
+                varnode,
+                low,
+                high,
+                flow,
+                field,
+            } => {
+                let _ = write!(
+                    body,
+                    "varnode={} low={low} high={high} flow={} ",
+                    varnode.index(),
+                    u8::from(*flow)
+                );
                 value_text(field, &mut body);
             }
             SymbolKind::Operand(op) => {
@@ -111,7 +140,11 @@ impl Writer<'_> {
                 }
             }
             SymbolKind::Subtable(t) => {
-                let n = self.spec.tables.get(t.slot()).map_or(0, |t| t.constructors.len());
+                let n = self
+                    .spec
+                    .tables
+                    .get(t.slot())
+                    .map_or(0, |t| t.constructors.len());
                 let _ = write!(body, "numct={n}");
             }
             _ => {}
@@ -122,23 +155,41 @@ impl Writer<'_> {
     fn template(&self, c: &mut Canonical, ctor: CtorId, prefix: &str, tpl: &Tpl) {
         let operand = |i: u32| self.operand_symbol(ctor, i);
         let space = |i: u32| self.space_name(i);
-        c.put(format!("{prefix}.head"), format!("delay={} labels={}", tpl.delay, tpl.labels));
+        c.put(
+            format!("{prefix}.head"),
+            format!("delay={} labels={}", tpl.delay, tpl.labels),
+        );
         if let Some(hand) = &tpl.result {
-            c.put(format!("{prefix}.export"), handle_text(hand, &operand, &space));
+            c.put(
+                format!("{prefix}.export"),
+                handle_text(hand, &operand, &space),
+            );
         }
         c.put(format!("{prefix}.numops"), tpl.ops.len().to_string());
         for (k, op) in tpl.ops.iter().enumerate() {
-            let inputs: Vec<bk_sla::VarnodeTpl> = op.inputs.iter().map(crate::template::Vn::to_sla).collect();
-            let output = op.output.as_ref().map(crate::template::Vn::to_sla);
-            c.put(format!("{prefix}.op.{k:04}"), op_text(op.opcode, output.as_ref(), &inputs, &operand, &space));
+            let inputs: Vec<bk_sla::VarnodeTpl> = op.inputs.iter().map(|v| v.to_sla()).collect();
+            let output = op.output.map(crate::template::Vn::to_sla);
+            c.put(
+                format!("{prefix}.op.{k:04}"),
+                op_text(op.opcode, output.as_ref(), &inputs, &operand, &space),
+            );
         }
     }
 
     fn constructor(&self, c: &mut Canonical, table: &str, index: usize, ctor: CtorId) {
-        let Some(data) = self.spec.constructors.get(ctor.slot()) else { return };
+        let Some(data) = self.spec.constructors.get(ctor.slot()) else {
+            return;
+        };
         let prefix = format!("ctor.{table}.{index:05}");
-        let file = self.spec.source_files.get(data.source as usize).map_or("", String::as_str);
-        c.put(format!("{prefix}.loc"), format!("{file}:{} source={}", data.line, data.source));
+        let file = self
+            .spec
+            .source_files
+            .get(data.source as usize)
+            .map_or("", String::as_str);
+        c.put(
+            format!("{prefix}.loc"),
+            format!("{file}:{} source={}", data.line, data.source),
+        );
         c.put(format!("{prefix}.first"), data.first.to_string());
         let mut ids: Vec<u32> = data
             .operands
@@ -160,12 +211,27 @@ impl Writer<'_> {
         for (j, change) in data.context.iter().enumerate() {
             let mut text = String::new();
             match change {
-                ContextChange::Op { word, shift, mask, expr } => {
+                ContextChange::Op {
+                    word,
+                    shift,
+                    mask,
+                    expr,
+                } => {
                     let _ = write!(text, "op word={word} shift={shift} mask={mask:#x} ");
                     self.expr(*expr, &mut text);
                 }
-                ContextChange::Commit { symbol, word, mask, flow } => {
-                    let _ = write!(text, "commit sym={} word={word} mask={mask:#x} flow={}", symbol.index(), u8::from(*flow));
+                ContextChange::Commit {
+                    symbol,
+                    word,
+                    mask,
+                    flow,
+                } => {
+                    let _ = write!(
+                        text,
+                        "commit sym={} word={word} mask={mask:#x} flow={}",
+                        symbol.index(),
+                        u8::from(*flow)
+                    );
                 }
             }
             c.put(format!("{prefix}.context.{j:02}"), text);
@@ -212,12 +278,24 @@ fn symbol_kind_name(kind: &SymbolKind) -> &'static str {
 pub fn canonical(spec: &Elaborated) -> Canonical {
     let w = Writer { spec };
     let mut c = Canonical::default();
-    c.put("header.bigendian".to_owned(), u8::from(spec.big_endian).to_string());
+    c.put(
+        "header.bigendian".to_owned(),
+        u8::from(spec.big_endian).to_string(),
+    );
     c.put("header.align".to_owned(), spec.align.to_string());
-    c.put("header.uniqbase".to_owned(), format!("{:#x}", spec.unique_base));
+    c.put(
+        "header.uniqbase".to_owned(),
+        format!("{:#x}", spec.unique_base),
+    );
     c.put("header.maxdelay".to_owned(), spec.max_delay.to_string());
-    c.put("header.uniqmask".to_owned(), format!("{:#x}", spec.unique_mask));
-    c.put("header.numsections".to_owned(), spec.num_sections.to_string());
+    c.put(
+        "header.uniqmask".to_owned(),
+        format!("{:#x}", spec.unique_mask),
+    );
+    c.put(
+        "header.numsections".to_owned(),
+        spec.num_sections.to_string(),
+    );
     for (i, name) in spec.source_files.iter().enumerate() {
         c.put(format!("sourcefile.{i:03}"), name.clone());
     }
@@ -245,7 +323,10 @@ pub fn canonical(spec: &Elaborated) -> Canonical {
     }
     c.put("scopes".to_owned(), spec.scopes.len().to_string());
     for (i, parent) in spec.scopes.iter().enumerate() {
-        c.put(format!("scope.{i:06}"), parent.map_or_else(|| "-".to_owned(), |p| p.index().to_string()));
+        c.put(
+            format!("scope.{i:06}"),
+            parent.map_or_else(|| "-".to_owned(), |p| p.index().to_string()),
+        );
     }
     c.put("symbols".to_owned(), spec.symbols.len().to_string());
     for id in 0..spec.symbols.len() {

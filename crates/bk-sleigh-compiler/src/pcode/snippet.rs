@@ -20,13 +20,19 @@ pub struct SnippetResult {
 /// Compiles the statements of a parsed snippet into one template: the
 /// statements are compiled as one section without `export`, labels are
 /// checked, and sizes are propagated.
-pub fn compile_snippet<R: SymbolResolver>(body: &ParsedBody, env: &BuildEnv, resolver: &mut R) -> SnippetResult {
+pub fn compile_snippet<R: SymbolResolver>(
+    body: &ParsedBody,
+    env: &BuildEnv,
+    resolver: &mut R,
+) -> SnippetResult {
     let mut diagnostics: Vec<Diagnostic> = body
         .diagnostics
         .iter()
         .map(|d| match d.severity {
             bk_sleigh_syntax::Severity::Error => Diagnostic::error(Some(d.span), d.message.clone()),
-            bk_sleigh_syntax::Severity::Warning => Diagnostic::warning(Some(d.span), d.message.clone()),
+            bk_sleigh_syntax::Severity::Warning => {
+                Diagnostic::warning(Some(d.span), d.message.clone())
+            }
         })
         .collect();
     let failed_parse = diagnostics.iter().any(Diagnostic::is_error);
@@ -36,14 +42,14 @@ pub fn compile_snippet<R: SymbolResolver>(body: &ParsedBody, env: &BuildEnv, res
     diagnostics.extend(builder.take_diagnostics());
     let template = match result {
         Ok(mut tpl) => {
-            if !labels.is_empty() {
-                diagnostics.push(Diagnostic::error(Some(body.body.span), labels));
-                None
-            } else {
+            if labels.is_empty() {
                 match propagate_size(&mut tpl.ops) {
                     Ok(true) => Some(tpl),
                     Ok(false) => {
-                        diagnostics.push(Diagnostic::error(Some(body.body.span), "Could not resolve at least 1 variable size"));
+                        diagnostics.push(Diagnostic::error(
+                            Some(body.body.span),
+                            "Could not resolve at least 1 variable size",
+                        ));
                         None
                     }
                     Err(e) => {
@@ -51,6 +57,9 @@ pub fn compile_snippet<R: SymbolResolver>(body: &ParsedBody, env: &BuildEnv, res
                         None
                     }
                 }
+            } else {
+                diagnostics.push(Diagnostic::error(Some(body.body.span), labels));
+                None
             }
         }
         Err(Stop::Abort) => None,
@@ -59,6 +68,10 @@ pub fn compile_snippet<R: SymbolResolver>(body: &ParsedBody, env: &BuildEnv, res
             None
         }
     };
-    let template = template.filter(|_| !failed_parse && !diagnostics.iter().any(Diagnostic::is_error));
-    SnippetResult { template, diagnostics }
+    let template =
+        template.filter(|_| !failed_parse && !diagnostics.iter().any(Diagnostic::is_error));
+    SnippetResult {
+        template,
+        diagnostics,
+    }
 }

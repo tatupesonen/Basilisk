@@ -12,7 +12,10 @@ use super::CheckFatal;
 use super::sizes::Checker;
 use crate::compiler::{Compiler, CtorData};
 use crate::ids::CtorId;
-use crate::template::{BUILD, CROSSBUILD, DELAY_SLOT, LABEL, MACROBUILD, Op, Tpl, Vn, is_const_space, is_unique_space, real};
+use crate::template::{
+    BUILD, CROSSBUILD, DELAY_SLOT, LABEL, MACROBUILD, Op, Tpl, Vn, is_const_space, is_unique_space,
+    real,
+};
 
 /// How a temporary is used in a constructor (`OptimizeRecord`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,7 +90,7 @@ impl Record {
             if min == u64::MAX || r.offset < min {
                 min = r.offset;
             }
-            let end = r.offset.wrapping_add(r.size as i64 as u64);
+            let end = r.offset.wrapping_add(i64::from(r.size) as u64);
             if max == u64::MAX || end > max {
                 max = end;
             }
@@ -113,7 +116,7 @@ fn key(offset: u64) -> u64 {
 
 impl UniqueState {
     fn end_of(k: u64, r: &Record) -> u64 {
-        k.wrapping_add(r.size as i64 as u64)
+        k.wrapping_add(i64::from(r.size) as u64)
     }
 
     /// `getDefinitions`: the keys of the records covering the range, with
@@ -128,12 +131,19 @@ impl UniqueState {
             cursor = Self::end_of(k, r);
             result.push(k);
         }
-        let end = offset.wrapping_add(size as i64 as u64);
-        let keys: Vec<u64> = self.recs.range(offset..).map(|(&k, _)| k).take_while(|&k| k < end).collect();
+        let end = offset.wrapping_add(i64::from(size) as u64);
+        let keys: Vec<u64> = self
+            .recs
+            .range(offset..)
+            .map(|(&k, _)| k)
+            .take_while(|&k| k < end)
+            .collect();
         for k in keys {
             if k > cursor {
                 let gap = key(cursor);
-                self.recs.entry(gap).or_insert_with(|| Record::new(cursor, k.wrapping_sub(cursor) as i32));
+                self.recs
+                    .entry(gap)
+                    .or_insert_with(|| Record::new(cursor, k.wrapping_sub(cursor) as i32));
                 result.push(gap);
             }
             result.push(k);
@@ -143,7 +153,9 @@ impl UniqueState {
         }
         if end > cursor {
             let gap = key(cursor);
-            self.recs.entry(gap).or_insert_with(|| Record::new(cursor, end.wrapping_sub(cursor) as i32));
+            self.recs
+                .entry(gap)
+                .or_insert_with(|| Record::new(cursor, end.wrapping_sub(cursor) as i32));
             result.push(gap);
         }
         result
@@ -152,11 +164,14 @@ impl UniqueState {
     /// `set`: adds a record, merging what it overlaps.
     fn set(&mut self, rec: Record) {
         let keys = self.definitions(rec.offset, rec.size);
-        let mut records: Vec<Record> = keys.iter().filter_map(|k| self.recs.get(k).copied()).collect();
+        let mut records: Vec<Record> = keys
+            .iter()
+            .filter_map(|k| self.recs.get(k).copied())
+            .collect();
         records.push(rec);
         let merged = Record::merged(&records);
         let lo = merged.offset;
-        let hi = merged.offset.wrapping_add(merged.size as i64 as u64);
+        let hi = merged.offset.wrapping_add(i64::from(merged.size) as u64);
         if lo <= hi {
             let doomed: Vec<u64> = self.recs.range(lo..hi).map(|(&k, _)| k).collect();
             for k in doomed {
@@ -198,15 +213,27 @@ fn possible_intersection(a: &Vn, b: &Vn) -> bool {
 
 /// `readWriteInterference`.
 fn interferes(vn: &Vn, op: &Op, check_read: bool) -> bool {
-    if matches!(op.opcode, OpCode::Load | OpCode::Store | OpCode::Branch | OpCode::CBranch | OpCode::BranchInd | OpCode::Call | OpCode::CallInd | OpCode::CallOther | OpCode::Return)
-        || [BUILD, CROSSBUILD, DELAY_SLOT, MACROBUILD, LABEL].contains(&op.opcode)
+    if matches!(
+        op.opcode,
+        OpCode::Load
+            | OpCode::Store
+            | OpCode::Branch
+            | OpCode::CBranch
+            | OpCode::BranchInd
+            | OpCode::Call
+            | OpCode::CallInd
+            | OpCode::CallOther
+            | OpCode::Return
+    ) || [BUILD, CROSSBUILD, DELAY_SLOT, MACROBUILD, LABEL].contains(&op.opcode)
     {
         return true;
     }
     if check_read && op.inputs.iter().any(|i| possible_intersection(vn, i)) {
         return true;
     }
-    op.output.as_ref().is_some_and(|o| possible_intersection(vn, o))
+    op.output
+        .as_ref()
+        .is_some_and(|o| possible_intersection(vn, o))
 }
 
 fn section(ctor: &CtorData, k: i32) -> Option<&Tpl> {
@@ -282,20 +309,30 @@ fn find_rule(ctor: &CtorData, state: &UniqueState) -> Result<Option<(Record, u8)
         if !(rec.write_count == 1 && rec.read_count == 1 && rec.read_section == rec.write_section) {
             continue;
         }
-        let Some(tpl) = section(ctor, rec.read_section) else { continue };
+        let Some(tpl) = section(ctor, rec.read_section) else {
+            continue;
+        };
         if rec.write_op >= rec.read_op {
             return Err(CheckFatal("Read of temporary before write".to_owned()));
         }
-        let (Some(write), Some(read)) = (tpl.ops.get(rec.write_op as usize), tpl.ops.get(rec.read_op as usize)) else {
+        let (Some(write), Some(read)) = (
+            tpl.ops.get(rec.write_op as usize),
+            tpl.ops.get(rec.read_op as usize),
+        ) else {
             continue;
         };
-        let (Some(write_vn), Some(read_vn)) = (write.output.as_ref(), read.inputs.get(rec.in_slot as usize)) else {
+        let (Some(write_vn), Some(read_vn)) =
+            (write.output.as_ref(), read.inputs.get(rec.in_slot as usize))
+        else {
             continue;
         };
         if !write_vn.same(read_vn) {
             continue;
         }
-        let between = tpl.ops.get(rec.write_op as usize + 1..rec.read_op as usize).unwrap_or_default();
+        let between = tpl
+            .ops
+            .get(rec.write_op as usize + 1..rec.read_op as usize)
+            .unwrap_or_default();
         if read.opcode == OpCode::Copy
             && let Some(vn) = read.output.as_ref()
             && !between.iter().any(|op| interferes(vn, op, true))
@@ -314,7 +351,9 @@ fn find_rule(ctor: &CtorData, state: &UniqueState) -> Result<Option<(Record, u8)
 
 /// `applyOptimization`.
 fn apply(ctor: &mut CtorData, rec: &Record, form: u8) {
-    let Some(tpl) = section_mut(ctor, rec.read_section) else { return };
+    let Some(tpl) = section_mut(ctor, rec.read_section) else {
+        return;
+    };
     let (read, write) = (rec.read_op as usize, rec.write_op as usize);
     if form == 0 {
         let out = tpl.ops.get(read).and_then(|op| op.output);
@@ -342,7 +381,9 @@ impl Compiler<'_> {
     /// none is left, then checks the temporaries. Each round removes an op,
     /// so the loop ends (spec 4.5).
     fn optimize(&mut self, checker: &mut Checker, ctor: CtorId) -> Result<(), CheckFatal> {
-        let Some(c) = self.ctors.get_mut(ctor.slot()) else { return Ok(()) };
+        let Some(c) = self.ctors.get_mut(ctor.slot()) else {
+            return Ok(());
+        };
         let sections = c.named.len() as i32;
         let mut state = UniqueState::default();
         loop {
@@ -359,7 +400,8 @@ impl Compiler<'_> {
         for rec in state.recs.values() {
             if rec.read_count == 0 {
                 if self.options.warn_dead_temps {
-                    self.diags.warning_at(at, "Temporary is written but not read");
+                    self.diags
+                        .warning_at(at, "Temporary is written but not read");
                 }
                 checker.write_no_read = checker.write_no_read.saturating_add(1);
             } else if rec.write_count == 0 {
@@ -395,10 +437,10 @@ mod tests {
         b.update_write(1, -1);
         state.set(b);
         assert_eq!(state.recs.len(), 1);
-        let r = state.recs.get(&0x100).unwrap();
+        let r = &state.recs[&0x100];
         assert_eq!((r.offset, r.size, r.write_count), (0x100, 6, 2));
         let keys = state.definitions(0x200, 2);
         assert_eq!(keys, vec![0x200]);
-        assert_eq!(state.recs.get(&0x200).unwrap().write_count, 0);
+        assert_eq!(state.recs[&0x200].write_count, 0);
     }
 }

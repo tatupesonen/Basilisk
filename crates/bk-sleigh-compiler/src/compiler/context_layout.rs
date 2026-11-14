@@ -30,20 +30,25 @@ impl Compiler<'_> {
         let mut order: Vec<usize> = (0..fields.len()).collect();
         order.sort_by(|&a, &b| {
             let (na, nb) = (names.get(a), names.get(b));
-            na.map(|s| s.as_bytes())
-                .cmp(&nb.map(|s| s.as_bytes()))
+            na.map(String::as_bytes)
+                .cmp(&nb.map(String::as_bytes))
                 .then_with(|| {
                     let la = fields.get(a).map(|f| f.low as u32);
                     let lb = fields.get(b).map(|f| f.low as u32);
                     la.cmp(&lb)
                 })
         });
-        let sorted: Vec<PendingField> = order.iter().filter_map(|&i| fields.get(i).copied()).collect();
+        let sorted: Vec<PendingField> = order
+            .iter()
+            .filter_map(|&i| fields.get(i).copied())
+            .collect();
         fields.clear();
         let mut bits = 0_i32;
         let mut begin = 0;
         while begin < sorted.len() {
-            let Some(first) = sorted.get(begin) else { break };
+            let Some(first) = sorted.get(begin) else {
+                break;
+            };
             let mut size = 1;
             while sorted
                 .get(begin + size)
@@ -51,7 +56,11 @@ impl Compiler<'_> {
             {
                 size += 1;
             }
-            bits = self.layout_register(sorted.get(begin..begin + size).unwrap_or_default(), bits, at);
+            bits = self.layout_register(
+                sorted.get(begin..begin + size).unwrap_or_default(),
+                bits,
+                at,
+            );
             begin += size;
         }
     }
@@ -63,7 +72,9 @@ impl Compiler<'_> {
 
     /// `calcContextVarLayout`: places the fields of one context register.
     fn layout_register(&mut self, fields: &[PendingField], mut bits: i32, at: Span) -> i32 {
-        let Some(first) = fields.first() else { return bits };
+        let Some(first) = fields.first() else {
+            return bits;
+        };
         let varnode = first.varnode;
         let (reg_name, reg_size) = match self.symbols.get(varnode) {
             Some(s) => {
@@ -76,7 +87,12 @@ impl Compiler<'_> {
             None => (String::new(), 0),
         };
         if reg_size % 4 != 0 {
-            self.diags.error_at(at, format!("Invalid size of context register '{reg_name}': must be a multiple of 4 bytes"));
+            self.diags.error_at(
+                at,
+                format!(
+                    "Invalid size of context register '{reg_name}': must be a multiple of 4 bytes"
+                ),
+            );
         }
         let max_bits = reg_size.wrapping_mul(8).wrapping_sub(1);
         let mut i = 0;
@@ -86,10 +102,16 @@ impl Compiler<'_> {
             let mut max = field.high as i32;
             let name = self.text(field.name).to_owned();
             if max.wrapping_sub(min) > 32 {
-                self.diags.error_at(at, format!("Size of bitfield '{name}' larger than 32 bits"));
+                self.diags
+                    .error_at(at, format!("Size of bitfield '{name}' larger than 32 bits"));
             }
             if max > max_bits {
-                self.diags.error_at(at, format!("Scope of bitfield '{name}' extends beyond the size of context register"));
+                self.diags.error_at(
+                    at,
+                    format!(
+                        "Scope of bitfield '{name}' extends beyond the size of context register"
+                    ),
+                );
             }
             let mut j = i + 1;
             while let Some(next) = fields.get(j) {
@@ -113,7 +135,9 @@ impl Compiler<'_> {
             while i < j {
                 let Some(f) = fields.get(i) else { break };
                 let start = (f.low as i32).wrapping_sub(min).wrapping_add(low);
-                let end = bits.wrapping_sub(1).wrapping_sub(max.wrapping_sub(f.high as i32));
+                let end = bits
+                    .wrapping_sub(1)
+                    .wrapping_sub(max.wrapping_sub(f.high as i32));
                 let value = PatValue::Context(Field {
                     big_endian: false,
                     sign_bit: f.signed,

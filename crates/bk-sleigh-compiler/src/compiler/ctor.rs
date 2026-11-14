@@ -5,6 +5,7 @@ use bk_sleigh_syntax::Span;
 use bk_sleigh_syntax::ast::{Constructor, ConstructorBody, Ident};
 
 use super::display::remove_trailing_space;
+use super::pattern_atoms::Abandon;
 use super::{Compiler, CtorData, Fatal, TableData};
 use crate::ids::{CtorId, EquationId, ScopeId, SymbolId, TableId};
 use crate::pattern::Equation;
@@ -116,25 +117,36 @@ impl<'a> Compiler<'a> {
 
     /// Display, pattern, context block and body of a constructor, then
     /// `buildConstructor`. `Err` means the parser abandoned it.
-    fn constructor_parts(&mut self, ctor: CtorId, c: &'a Constructor, in_root: bool) -> Result<(), ()> {
+    fn constructor_parts(
+        &mut self,
+        ctor: CtorId,
+        c: &'a Constructor,
+        in_root: bool,
+    ) -> Result<(), Abandon> {
         if !self.display(ctor, &c.display, in_root) {
-            return Err(());
+            return Err(Abandon);
         }
-        let equation = self.equation(c.pattern).map_err(|_| ())?;
+        let equation = self.equation(c.pattern)?;
         let context = match &c.context {
-            Some(block) => self.context_block(block).map_err(|_| ())?,
+            Some(block) => self.context_block(block)?,
             None => Vec::new(),
         };
         let sections = match &c.body {
             ConstructorBody::Unimpl(_) => None,
-            ConstructorBody::Semantic(body) => Some(self.sections(body).map_err(|_| ())?),
+            ConstructorBody::Semantic(body) => Some(self.sections(body)?),
         };
         self.build_constructor(ctor, equation, context, sections);
         Ok(())
     }
 
     /// `buildConstructor`.
-    fn build_constructor(&mut self, ctor: CtorId, equation: EquationId, context: Vec<super::ContextChange>, sections: Option<super::sections::Sections>) {
+    fn build_constructor(
+        &mut self,
+        ctor: CtorId,
+        equation: EquationId,
+        context: Vec<super::ContextChange>,
+        sections: Option<super::sections::Sections>,
+    ) {
         let mut ok = true;
         if let Some(sections) = sections {
             match self.finalize_sections(ctor, sections) {
@@ -149,7 +161,8 @@ impl<'a> Compiler<'a> {
         }
         if ok {
             let mut equation = equation;
-            let frames: Vec<Option<EquationId>> = self.with_stack.iter().map(|w| w.pattern).collect();
+            let frames: Vec<Option<EquationId>> =
+                self.with_stack.iter().map(|w| w.pattern).collect();
             for pattern in frames.into_iter().flatten() {
                 equation = self.patterns.equation(Equation::And(pattern, equation));
             }

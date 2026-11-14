@@ -9,7 +9,10 @@ use bk_sleigh_syntax::ast::{ExportValue, ExprList, Ident, IntLit, JumpDest, LVal
 
 use super::expr::{ExprTree, is_keyword};
 use super::{Builder, LabelId, LabelState, NameRef, Stop, SymbolResolver};
-use crate::template::{BUILD, CONST_SPACE, CROSSBUILD, DELAY_SLOT, LABEL, MACROBUILD, Op, UNIQUE_SPACE, Vn, export_handle};
+use crate::template::{
+    BUILD, CONST_SPACE, CROSSBUILD, DELAY_SLOT, LABEL, MACROBUILD, Op, UNIQUE_SPACE, Vn,
+    export_handle,
+};
 
 impl<R: SymbolResolver> Builder<'_, R> {
     /// Compiles one statement into ops.
@@ -41,13 +44,17 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 Ok(Vec::new())
             }
             Statement::Apply { name, args, span } => self.apply_statement(*name, *args, *span),
-            Statement::Build { operand, .. } => match self.lookup(*operand) {
-                NameRef::Operand { index, .. } => Ok(vec![Op::new(BUILD, vec![Vn::constant(u64::from(index), 4)])]),
-                _ => {
+            Statement::Build { operand, .. } => {
+                if let NameRef::Operand { index, .. } = self.lookup(*operand) {
+                    Ok(vec![Op::new(
+                        BUILD,
+                        vec![Vn::constant(u64::from(index), 4)],
+                    )])
+                } else {
                     self.syntax_error(operand.span);
                     Err(Stop::Abort)
                 }
-            },
+            }
             Statement::CrossBuild {
                 address, section, ..
             } => {
@@ -69,7 +76,10 @@ impl<R: SymbolResolver> Builder<'_, R> {
                         return Err(Stop::Abort);
                     }
                 };
-                Ok(vec![Op::new(CROSSBUILD, vec![address, Vn::constant(u64::from(id), 4)])])
+                Ok(vec![Op::new(
+                    CROSSBUILD,
+                    vec![address, Vn::constant(u64::from(id), 4)],
+                )])
             }
             Statement::Goto { dest, .. } => self.branch(OpCode::Branch, OpCode::BranchInd, dest),
             Statement::Call { dest, .. } => self.branch(OpCode::Call, OpCode::CallInd, dest),
@@ -111,21 +121,30 @@ impl<R: SymbolResolver> Builder<'_, R> {
         }
     }
 
-    fn assign(&mut self, local: bool, target: &LValue, value: bk_sleigh_syntax::ast::ExprId, span: Span) -> Result<Vec<Op>, Stop> {
+    fn assign(
+        &mut self,
+        local: bool,
+        target: &LValue,
+        value: bk_sleigh_syntax::ast::ExprId,
+        span: Span,
+    ) -> Result<Vec<Op>, Stop> {
         match target {
             LValue::Ident(name) => match self.lookup(*name) {
                 NameRef::Unknown if !is_keyword(self.name(*name)) => {
                     let rhs = self.expr(value)?;
                     self.new_output(local, rhs, *name, 0, span)
                 }
-                NameRef::Varnode(vn) | NameRef::Special(vn) | NameRef::Jump(vn) | NameRef::Operand { varnode: vn, .. } => {
+                NameRef::Varnode(vn)
+                | NameRef::Special(vn)
+                | NameRef::Jump(vn)
+                | NameRef::Operand { varnode: vn, .. } => {
                     if local {
                         let message = format!("Redefinition of symbol: {}", self.name(*name));
                         self.error(Some(name.span), message);
                         return Err(Stop::Abort);
                     }
                     let mut rhs = self.expr(value)?;
-                    self.set_output(&mut rhs, vn)?;
+                    Self::set_output(&mut rhs, vn)?;
                     Ok(rhs.ops)
                 }
                 NameRef::Bitrange {
@@ -156,8 +175,16 @@ impl<R: SymbolResolver> Builder<'_, R> {
                         // with or without the keyword.
                         self.new_output(true, rhs, *name, size, span)
                     }
-                    NameRef::Varnode(_) | NameRef::Special(_) | NameRef::Jump(_) | NameRef::Operand { .. } if !local => {
-                        self.error(Some(span), "Illegal truncation on left-hand side of assignment");
+                    NameRef::Varnode(_)
+                    | NameRef::Special(_)
+                    | NameRef::Jump(_)
+                    | NameRef::Operand { .. }
+                        if !local =>
+                    {
+                        self.error(
+                            Some(span),
+                            "Illegal truncation on left-hand side of assignment",
+                        );
                         Err(Stop::Abort)
                     }
                     _ => {
@@ -172,14 +199,18 @@ impl<R: SymbolResolver> Builder<'_, R> {
                     return Err(Stop::Abort);
                 }
                 let vn = match self.lookup(*name) {
-                    NameRef::Varnode(vn) | NameRef::Special(vn) | NameRef::Jump(vn) | NameRef::Operand { varnode: vn, .. } => vn,
+                    NameRef::Varnode(vn)
+                    | NameRef::Special(vn)
+                    | NameRef::Jump(vn)
+                    | NameRef::Operand { varnode: vn, .. } => vn,
                     NameRef::Unknown => {
                         let message = format!("Unknown assignment varnode: {}", self.name(*name));
                         self.error(Some(name.span), message);
                         return Err(Stop::Abort);
                     }
                     NameRef::Subtable => {
-                        let message = format!("Subtable not attached to operand: {}", self.name(*name));
+                        let message =
+                            format!("Subtable not attached to operand: {}", self.name(*name));
                         self.error(Some(name.span), message);
                         return Err(Stop::Abort);
                     }
@@ -201,13 +232,13 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 let (space, size) = self.star(star)?;
                 let ptr = self.expr(*address)?;
                 let val = self.expr(value)?;
-                self.store(space, size, ptr, val)
+                Self::store(space, size, ptr, val)
             }
         }
     }
 
     /// `ExprTree::setOutput`: the expression's value goes to `out`.
-    pub(crate) fn set_output(&mut self, tree: &mut ExprTree, out: Vn) -> Result<(), Stop> {
+    pub(crate) fn set_output(tree: &mut ExprTree, out: Vn) -> Result<(), Stop> {
         let Some(current) = tree.out else {
             return Err(Stop::Fatal("Expression has no output".to_owned()));
         };
@@ -227,7 +258,14 @@ impl<R: SymbolResolver> Builder<'_, R> {
     }
 
     /// `newOutput`: a new named temporary receives the value of `rhs`.
-    fn new_output(&mut self, uses_local: bool, mut rhs: ExprTree, name: Ident, size: u32, span: Span) -> Result<Vec<Op>, Stop> {
+    fn new_output(
+        &mut self,
+        uses_local: bool,
+        mut rhs: ExprTree,
+        name: Ident,
+        size: u32,
+        span: Span,
+    ) -> Result<Vec<Op>, Stop> {
         let mut tmp = self.temp();
         if size != 0 {
             tmp.size = ConstTpl::Real(u64::from(size));
@@ -236,36 +274,53 @@ impl<R: SymbolResolver> Builder<'_, R> {
         {
             tmp.size = ConstTpl::Real(s);
         }
-        self.set_output(&mut rhs, tmp)?;
+        Self::set_output(&mut rhs, tmp)?;
         let size = match tmp.size {
             ConstTpl::Real(s) => s as i32,
             _ => 0,
         };
-        let symbol = Vn::new(tmp.space, tmp.offset, ConstTpl::Real(u64::from(size as u32)));
+        let symbol = Vn::new(
+            tmp.space,
+            tmp.offset,
+            ConstTpl::Real(u64::from(size as u32)),
+        );
         self.define_local(name, symbol, span);
         if !uses_local && self.env.enforce_local_key {
-            let message = format!("Must use 'local' keyword to define symbol '{}'", self.name(name));
+            let message = format!(
+                "Must use 'local' keyword to define symbol '{}'",
+                self.name(name)
+            );
             self.error_at(Some(span), message);
         }
         Ok(rhs.ops)
     }
 
     /// `createStore`.
-    fn store(&mut self, space: ConstTpl, size: u64, ptr: ExprTree, val: ExprTree) -> Result<Vec<Op>, Stop> {
+    fn store(space: ConstTpl, size: u64, ptr: ExprTree, val: ExprTree) -> Result<Vec<Op>, Stop> {
         let mut ops = ptr.ops;
         ops.extend(val.ops);
         let p = ptr.out.unwrap_or_else(|| Vn::constant(0, 0));
         let v = val.out.unwrap_or_else(|| Vn::constant(0, 0));
         ops.push(Op::new(
             OpCode::Store,
-            vec![Vn::new(ConstTpl::Space(CONST_SPACE), space, ConstTpl::Real(8)), p, v],
+            vec![
+                Vn::new(ConstTpl::Space(CONST_SPACE), space, ConstTpl::Real(8)),
+                p,
+                v,
+            ],
         ));
         let last = ops.len().saturating_sub(1);
-        super::sizes::force_size_at(&mut ops, last, 2, ConstTpl::Real(size)).map_err(|e| Stop::Fatal(e.to_string()))?;
+        super::sizes::force_size_at(&mut ops, last, 2, ConstTpl::Real(size))
+            .map_err(|e| Stop::Fatal(e.to_string()))?;
         Ok(ops)
     }
 
-    fn apply_statement(&mut self, name: Ident, args: ExprList, span: Span) -> Result<Vec<Op>, Stop> {
+    fn apply_statement(
+        &mut self,
+        name: Ident,
+        args: ExprList,
+        span: Span,
+    ) -> Result<Vec<Op>, Stop> {
         let text = self.name(name);
         if text == "delayslot" {
             let nodes = self.nodes;
@@ -286,12 +341,18 @@ impl<R: SymbolResolver> Builder<'_, R> {
                 Ok(ops)
             }
             NameRef::Macro { index, params } => self.macro_use(name, index, params, args, span),
-            NameRef::Varnode(_) | NameRef::Special(_) | NameRef::Jump(_) | NameRef::Operand { .. } => {
+            NameRef::Varnode(_)
+            | NameRef::Special(_)
+            | NameRef::Jump(_)
+            | NameRef::Operand { .. } => {
                 let nodes = self.nodes;
                 if let [arg] = nodes.exprs(args)
                     && matches!(nodes[*arg], bk_sleigh_syntax::ast::Expr::Int(_))
                 {
-                    self.error(Some(span), "Illegal subpiece on left-hand side of assignment");
+                    self.error(
+                        Some(span),
+                        "Illegal subpiece on left-hand side of assignment",
+                    );
                 } else {
                     self.syntax_error(span);
                 }
@@ -315,11 +376,25 @@ impl<R: SymbolResolver> Builder<'_, R> {
     }
 
     /// `createMacroUse`: a placeholder op the elaborator expands later.
-    fn macro_use(&mut self, name: Ident, index: u32, params: u32, args: ExprList, span: Span) -> Result<Vec<Op>, Stop> {
+    fn macro_use(
+        &mut self,
+        name: Ident,
+        index: u32,
+        params: u32,
+        args: ExprList,
+        span: Span,
+    ) -> Result<Vec<Op>, Stop> {
         let (ops, values) = self.args(args)?;
         if values.len() != params as usize {
-            let which = if values.len() > params as usize { "many" } else { "few" };
-            let message = format!("Invocation of macro '{}' passes too {which} parameters", self.name(name));
+            let which = if values.len() > params as usize {
+                "many"
+            } else {
+                "few"
+            };
+            let message = format!(
+                "Invocation of macro '{}' passes too {which} parameters",
+                self.name(name)
+            );
             self.error_at(Some(span), message);
             return Ok(Vec::new());
         }
@@ -338,7 +413,12 @@ impl<R: SymbolResolver> Builder<'_, R> {
         Ok(ops)
     }
 
-    fn branch(&mut self, direct: OpCode, indirect: OpCode, dest: &JumpDest) -> Result<Vec<Op>, Stop> {
+    fn branch(
+        &mut self,
+        direct: OpCode,
+        indirect: OpCode,
+        dest: &JumpDest,
+    ) -> Result<Vec<Op>, Stop> {
         if let JumpDest::Dynamic(e) = dest {
             let tree = self.expr(*e)?;
             return Ok(no_out(indirect, tree));
@@ -351,7 +431,11 @@ impl<R: SymbolResolver> Builder<'_, R> {
     fn jump_dest(&mut self, dest: &JumpDest) -> Result<Vn, Stop> {
         match dest {
             JumpDest::Symbol(ident) => match self.lookup(*ident) {
-                NameRef::Jump(vn) => Ok(Vn::new(ConstTpl::CurSpace, vn.offset, ConstTpl::CurSpaceSize)),
+                NameRef::Jump(vn) => Ok(Vn::new(
+                    ConstTpl::CurSpace,
+                    vn.offset,
+                    ConstTpl::CurSpaceSize,
+                )),
                 NameRef::Operand { index, varnode } => {
                     self.resolver.mark_code_address(index);
                     Ok(varnode)
@@ -368,7 +452,11 @@ impl<R: SymbolResolver> Builder<'_, R> {
             },
             JumpDest::Absolute(lit) => {
                 let value = self.int_or_report(lit);
-                Ok(Vn::new(ConstTpl::CurSpace, ConstTpl::Real(value), ConstTpl::CurSpaceSize))
+                Ok(Vn::new(
+                    ConstTpl::CurSpace,
+                    ConstTpl::Real(value),
+                    ConstTpl::CurSpaceSize,
+                ))
             }
             JumpDest::Relative { offset, space } => self.relative_dest(offset, *space),
             JumpDest::Label(ident) => {
@@ -403,7 +491,11 @@ impl<R: SymbolResolver> Builder<'_, R> {
             return Err(Stop::Abort);
         };
         let size = self.env.space(index).map_or(0, |s| s.addr_size);
-        Ok(Vn::new(ConstTpl::Space(index), ConstTpl::Real(value), ConstTpl::Real(u64::from(size))))
+        Ok(Vn::new(
+            ConstTpl::Space(index),
+            ConstTpl::Real(value),
+            ConstTpl::Real(u64::from(size)),
+        ))
     }
 
     /// The label `name`: an existing one, or a new one (`defineLabel`).
@@ -455,8 +547,11 @@ impl<R: SymbolResolver> Builder<'_, R> {
             ExportValue::Varnode(e) => {
                 let nodes = self.nodes;
                 let vn = match &nodes[*e] {
-                    bk_sleigh_syntax::ast::Expr::Ident(ident) => self.export_name(*ident, "Unknown export varnode: ")?,
-                    bk_sleigh_syntax::ast::Expr::AddressOf { .. } | bk_sleigh_syntax::ast::Expr::SizedInt { .. } => self.integer_varnode(*e)?,
+                    bk_sleigh_syntax::ast::Expr::Ident(ident) => {
+                        self.export_name(*ident, "Unknown export varnode: ")?
+                    }
+                    bk_sleigh_syntax::ast::Expr::AddressOf { .. }
+                    | bk_sleigh_syntax::ast::Expr::SizedInt { .. } => self.integer_varnode(*e)?,
                     other => {
                         self.syntax_error(other.span());
                         return Err(Stop::Abort);
@@ -485,7 +580,10 @@ impl<R: SymbolResolver> Builder<'_, R> {
 
     fn export_name(&mut self, ident: Ident, unknown: &str) -> Result<Vn, Stop> {
         match self.lookup(ident) {
-            NameRef::Varnode(vn) | NameRef::Special(vn) | NameRef::Jump(vn) | NameRef::Operand { varnode: vn, .. } => Ok(vn),
+            NameRef::Varnode(vn)
+            | NameRef::Special(vn)
+            | NameRef::Jump(vn)
+            | NameRef::Operand { varnode: vn, .. } => Ok(vn),
             NameRef::Unknown if !is_keyword(self.name(ident)) => {
                 let message = format!("{unknown}{}", self.name(ident));
                 self.error(Some(ident.span), message);
@@ -507,6 +605,9 @@ impl<R: SymbolResolver> Builder<'_, R> {
 /// `createOpNoOut` with one input.
 fn no_out(opcode: OpCode, tree: ExprTree) -> Vec<Op> {
     let mut ops = tree.ops;
-    ops.push(Op::new(opcode, vec![tree.out.unwrap_or_else(|| Vn::constant(0, 0))]));
+    ops.push(Op::new(
+        opcode,
+        vec![tree.out.unwrap_or_else(|| Vn::constant(0, 0))],
+    ));
     ops
 }
