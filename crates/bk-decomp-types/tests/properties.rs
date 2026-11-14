@@ -186,10 +186,12 @@ fn encode(f: &TypeFactory) -> String {
     enc.into_string()
 }
 
+/// At least 1,024 cases; `PROPTEST_CASES` raises it.
 fn config() -> ProptestConfig {
+    let d = ProptestConfig::default();
     ProptestConfig {
-        cases: 1024,
-        ..ProptestConfig::default()
+        cases: d.cases.max(1024),
+        ..d
     }
 }
 
