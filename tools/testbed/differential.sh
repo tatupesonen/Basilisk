@@ -19,10 +19,9 @@
 #                        built from binutils 2.41 (BK_GNU_OBJDUMP; built once
 #                        into the testbed cache, docs/agents/gnu-disasm.md).
 # cspec-oracle           bk-cspec's oracle table regenerated on this host
-#                        (Linux, libstdc++) into a scratch directory and
-#                        compared with the checked-in one, as a multiset of
-#                        records (docs/agents/remote-build.md explains the
-#                        expected tie-order differences).
+#                        (regen.sh, three runs that must agree) and compared
+#                        byte for byte with the checked-in table of this
+#                        host's C++ library (libstdc++ here; ADR-040).
 . "$(dirname "$0")/lib.sh"
 
 all=(sleigh-every-language require-reference gnu-objdump cspec-oracle)
@@ -105,25 +104,26 @@ run_gnu_objdump() {
   return $c
 }
 run_cspec_oracle() {
-  # regen.sh writes beside itself (../data): run a copy in a scratch tree.
-  local w a lines c=1
-  w=$(mktemp -d "$TB_OUT/cspec.XXXXXX"); mkdir -p "$w/tests/data"
-  cp -r crates/bk-cspec/tests/oracle "$w/tests/oracle"
-  # The generator aborts intermittently on Linux (uninitialised numgroup in
-  # Ghidra's ParamListMerged, docs/agents/remote-build.md): up to 5 tries.
-  for a in 1 2 3 4 5; do
-    timeout 1200 "$w/tests/oracle/regen.sh" "$BASILISK_REFERENCE_DIR" && { c=0; break; }
-    echo "attempt $a failed"
-  done
-  if [ $c -ne 0 ]; then echo "the generator failed 5 times" > "$TB_OUT/cspec-oracle.note"; rm -rf "$w"; return 1; fi
-  gzip -dc crates/bk-cspec/tests/data/cspec_oracle.txt.gz | LC_ALL=C sort > "$w/old"
-  gzip -dc "$w/tests/data/cspec_oracle.txt.gz" | LC_ALL=C sort > "$w/new"
-  lines=$(wc -l < "$w/new")
-  LC_ALL=C comm -3 "$w/old" "$w/new" > "$TB_OUT/cspec-oracle.diff" || true
-  cp "$w/tests/data/cspec_oracle.txt.gz" "$TB_OUT/cspec_oracle.linux.txt.gz"
-  echo "$lines records, attempt $a; $(LC_ALL=C comm -23 "$w/old" "$w/new" | wc -l) only in the checked-in table, $(LC_ALL=C comm -13 "$w/old" "$w/new" | wc -l) only in this host's (cspec-oracle.diff)" \
+  # regen.sh (two-table layout, ADR-040) writes cspec_oracle.<lib>.txt.gz for
+  # this host's C++ library into the directory given; REGEN_RUNS=3 also
+  # requires three byte-identical runs. The result must equal the
+  # checked-in table of the same library byte for byte.
+  local w new old lib lines
+  w=$(mktemp -d "$TB_OUT/cspec.XXXXXX")
+  REGEN_RUNS=3 timeout 1800 crates/bk-cspec/tests/oracle/regen.sh "$BASILISK_REFERENCE_DIR" "$w" \
+    || { echo "regen.sh failed (3 runs required)" > "$TB_OUT/cspec-oracle.note"; rm -rf "$w"; return 1; }
+  new=$(ls "$w"/cspec_oracle.*.txt.gz); lib=${new##*/cspec_oracle.}; lib=${lib%.txt.gz}
+  old="crates/bk-cspec/tests/data/cspec_oracle.$lib.txt.gz"
+  lines=$(gzip -dc "$new" | wc -l)
+  if [ -f "$old" ] && cmp -s <(gzip -dc "$old") <(gzip -dc "$new"); then
+    echo "$lib: $lines records, 3 runs byte-identical, identical to the checked-in table" > "$TB_OUT/cspec-oracle.note"
+    rm -rf "$w"; return 0
+  fi
+  cp "$new" "$TB_OUT/"
+  [ -f "$old" ] && LC_ALL=C comm -3 <(gzip -dc "$old" | LC_ALL=C sort) <(gzip -dc "$new" | LC_ALL=C sort) > "$TB_OUT/cspec-oracle.diff"
+  echo "$lib: $lines records; differs from the checked-in $old ($(wc -l < "$TB_OUT/cspec-oracle.diff" 2>/dev/null || echo all) records, cspec-oracle.diff)" \
     > "$TB_OUT/cspec-oracle.note"
-  rm -rf "$w"
+  rm -rf "$w"; return 1
 }
 
 start=$(date +%s)

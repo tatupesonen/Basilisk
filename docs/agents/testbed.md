@@ -141,6 +141,14 @@ Ubuntu image under emulation; see `arm64` below.
 
 ### Wine and CI's `windows-latest`
 
+**`wine --msvc`** (cargo-xwin 0.23.1, clang-cl 19, lld, Microsoft's CRT
+and Windows SDK): **2,036 passed, 0 failed, 33 ignored**, the same 31
+SKIPPED, 2 min 45 s cold. The CRT and SDK were downloaded by xwin into the
+host's testbed cache (`~/bk/testbed/xwin-cache`) on first use, and
+**Microsoft's licence for them was accepted there on the machine's behalf**
+(`XWIN_ACCEPT_LICENSE=1`), as the owner allowed for the build host on
+2026-11-14 and was told about the same download on the Mac on 2026-11-13.
+
 `wine` builds for `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14, Debian 13's
 `gcc-mingw-w64`) and runs every test binary with Wine 10.0; `wine --msvc`
 builds for `x86_64-pc-windows-msvc` with cargo-xwin (clang-cl 19, lld,
