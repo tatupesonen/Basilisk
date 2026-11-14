@@ -289,6 +289,68 @@ session.
 
 (The implementing track appends.)
 
+Appended by the `sleigh-pcode` track:
+
+* **An instruction without p-code inside a delay slot or a crossbuild** is an
+  ordinary `Unimplemented` error with the flow length, naming the innermost
+  instruction (its own address and text). Ghidra's `delaySlot` and
+  `appendCrossBuild` leave the builder on a dead walker when the nested
+  build throws, and `oneInstruction`'s handler then crashes
+  (`docs/research/pcodedump-crashes.md`). In basilisk the walker is a value
+  scoped to the nested build.
+* **The handle of a subtable operand whose constructor exports nothing**
+  reads as the constant 0 of size 0 (part 1's unset-handle rule). Ghidra
+  reads an uninitialised `FixedHandle`: stale data from an earlier parse in
+  a reused parse slot (different p-code: AARCH64 `bfdot`, MIPS `mfhc0`, …),
+  or a null space in a fresh one, which crashes `pcodedump` (the five
+  ARM v8-m crashes of the decode harness: `vpt…` with `itmode=1`). The
+  builder reports `BuildFeature::UnsetHandle` so tools can flag it.
+* **No parse cache** (ADR-024): delay-slot instructions are taken from the
+  run `prepare` decoded; a delay slot of a delay-slot instruction beyond
+  that run is `DelaySlotMissing` ("Could not obtain cached delay slot
+  instruction", an error the spec's table did not list), which is what
+  `pcodedump`'s sweep gives. Ghidra's 2-entry cache can hand the builder a
+  parse that a later lookup overwrote (Toy `harvard_rev`: a delay slot using
+  `inst_next2` evicts the branch's own parse); basilisk builds the right
+  instruction.
+* **`inst_next2` whose instruction does not decode**: the next instruction's
+  decode error is kept and raised when a template needs `inst_next2`, as
+  Ghidra's `getN2addr` throws it (instead of "inst_next2 not available").
+* **A crossbuild target decoded on demand has no `inst_next2`** (only Toy
+  uses `inst_next2`, only Hexagon crossbuild).
+* **`Decoder::lift_decoded`** lifts the instruction the last `decode`
+  produced without decoding it again — the effect Ghidra's parse cache has
+  between `printAssembly` and `oneInstruction`, without the cache.
+* **Bounds**: 65,536 ops, 512 recursion levels of `BUILD`/delay/crossbuild,
+  16 instructions per `DELAY_SLOT` (Ghidra loops forever on a zero-length
+  delay-slot instruction), 8 crossbuild targets decoded on demand alive at
+  once.
+* **`BUILD` in a free-standing template** is a no-op (no operand is a
+  subtable); Ghidra dereferences a null constructor.
+
 ## 9. Status
 
-Not started.
+Built by track `sleigh-pcode` (2026-11-14; report `docs/agents/sleigh-pcode.md`).
+
+* **`bk-sleigh`**: `emit` (`PcodeEmit`; `PcodeCollector`, `PcodeCounter`,
+  `PcodeRecords`, `write_record`, `write_varnode`), `pcode` (`Decoder::lift`,
+  `lift_observed`, `lift_decoded`, `build_template`,
+  `build_template_observed`, `InjectContext`, `BuildObserver`,
+  `BuildFeature`, `LiftError`, `LiftLimit`; modules `buffer`, `location`,
+  `build`, `nested`, `error`), `dump` (`pcodedump`'s sweep and record
+  writer, `SweepObserver`). The spec's module names `op`, `labels`,
+  `delay`, `crossbuild`, `inject` became `build` (ops, labels, `BUILD`),
+  `nested` (delay slots and crossbuild), `buffer` and `pcode/mod.rs`
+  (injection).
+* **`basilisk disasm`** (`crates/basilisk/src/cmd/disasm.rs`), plus
+  `--sla-dir` for a root without compiled files.
+* **Differential test**: every record (`I`, `E`, `P`, `U`, `T`) equal to
+  `pcodedump`'s for all 175 language pairs; template and feature coverage in
+  the snapshot table; three new tolerated kinds, each explained by the
+  harness's model of Ghidra (see Differences): unset handles, crossbuild
+  targets Ghidra's cache would not hold, parses Ghidra's cache clobbered.
+* **`Translate`** completed (`one_instruction`, registers, user ops, spaces,
+  float formats, alignment, endianness, unique layout, `set_context_default`,
+  `allow_context_set`); `UniqueLayout` and `Language::unique_start`.
+  `print_assembly` keeps part 1's two-string form instead of an emitter.
+* **Not met**: 8-thread scaling below 6× (report, Gaps).

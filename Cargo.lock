@@ -441,7 +441,14 @@ dependencies = [
 name = "basilisk"
 version = "0.0.1"
 dependencies = [
+ "bk-core",
+ "bk-lang",
+ "bk-pcode",
+ "bk-sla",
+ "bk-sleigh",
+ "bk-testkit",
  "bk-ui",
+ "tempfile",
 ]
 
 [[package]]
@@ -533,6 +540,24 @@ dependencies = [
  "proptest",
  "rstest",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "bk-cspec"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.13.2",
+ "bk-core",
+ "bk-lang",
+ "bk-marshal",
+ "bk-testkit",
+ "flate2",
+ "proptest",
+ "rstest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -644,6 +669,7 @@ dependencies = [
  "dhat",
  "insta",
  "proptest",
+ "rstest",
  "tempfile",
  "thiserror 2.0.21",
  "wait-timeout",

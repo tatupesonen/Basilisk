@@ -1,7 +1,9 @@
 // The reference figures of the bk-sleigh benchmarks (features/sleigh-decode.md
 // 6.6): Ghidra's C++ engine loading x86-64 (Sleigh::initialize plus the
 // .pspec's <context_data>), then sweeping a code file with instructionLength
-// (decode only) and with printAssembly (decode + text); best of N runs.
+// (decode only), with printAssembly (decode + text), with instructionLength
+// plus oneInstruction into a counting emitter (decode + lift) and with
+// printAssembly plus oneInstruction (decode + text + lift); best of N runs.
 // Built by build.sh in this directory. Usage:
 //   slabench <x86-64.sla> <x86-64.pspec> <code.bin> [runs]
 #include "sleigh.hh"
@@ -32,6 +34,12 @@ public:
   virtual void dump(const Address &addr,const string &mnem,const string &body) { chars += mnem.size() + body.size(); }
 };
 
+class CountPcode : public PcodeEmit {
+public:
+  long ops = 0;
+  virtual void dump(const Address &addr,OpCode opc,VarnodeData *outvar,VarnodeData *vars,int4 isize) { ops += 1; }
+};
+
 static double now(void) {
   return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
@@ -43,7 +51,8 @@ int main(int argc,char **argv) {
   std::vector<uint1> code((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
   AttributeId::initialize();
   ElementId::initialize();
-  double load = 1e9, decode = 1e9, text = 1e9;
+  double load = 1e9, decode = 1e9, text = 1e9, lift = 1e9, textlift = 1e9;
+  long ops = 0;
   long instructions = 0, errors = 0;
   for(int run=0;run<runs;++run) {
     double t0 = now();
@@ -64,8 +73,9 @@ int main(int argc,char **argv) {
     }
     double t1 = now();
     if (t1 - t0 < load) load = t1 - t0;
-    for(int mode=0;mode<2;++mode) {
+    for(int mode=0;mode<4;++mode) {
       NullAsm emit;
+      CountPcode pcode;
       long n = 0, e = 0;
       double s = now();
       size_t pos = 0;
@@ -73,17 +83,24 @@ int main(int argc,char **argv) {
         Address addr(trans.getDefaultCodeSpace(),pos);
         int4 len;
         try {
-          len = (mode == 0) ? trans.instructionLength(addr) : trans.printAssembly(emit,addr);
+          len = (mode == 0 || mode == 2) ? trans.instructionLength(addr) : trans.printAssembly(emit,addr);
         } catch(LowlevelError &err) { e += 1; pos += 1; continue; }
+        if (mode >= 2) {
+          try { trans.oneInstruction(pcode,addr); }
+          catch(LowlevelError &err) { e += 1; }
+        }
         n += 1;
         pos += len;
       }
       double d = now() - s;
-      if (mode == 0) { if (d < decode) decode = d; } else { if (d < text) text = d; }
-      instructions = n; errors = e;
+      double *slot = mode == 0 ? &decode : mode == 1 ? &text : mode == 2 ? &lift : &textlift;
+      if (d < *slot) *slot = d;
+      if (mode < 2) { instructions = n; errors = e; }
+      if (mode == 2) ops = pcode.ops;
     }
   }
-  printf("load_ms\t%.2f\ndecode_mips\t%.3f\ntext_mips\t%.3f\ninstructions\t%ld\nerrors\t%ld\n",
-         load * 1000, instructions / decode / 1e6, instructions / text / 1e6, instructions, errors);
+  printf("load_ms\t%.2f\ndecode_mips\t%.3f\ntext_mips\t%.3f\nlift_mips\t%.3f\nlift_mops\t%.3f\ntext_lift_mips\t%.3f\ninstructions\t%ld\nerrors\t%ld\nops\t%ld\n",
+         load * 1000, instructions / decode / 1e6, instructions / text / 1e6, instructions / lift / 1e6,
+         ops / lift / 1e6, instructions / textlift / 1e6, instructions, errors, ops);
   return 0;
 }

@@ -202,6 +202,20 @@ fn every_language() {
         if pairs < 0.95 && !exceptions.contains_key(&(r.id.clone(), "pairs".to_owned())) {
             below.push(format!("{} pairs {:.2}%", r.id, 100.0 * pairs));
         }
+        if r.templates.rate() < 0.90
+            && !exceptions.contains_key(&(r.id.clone(), "templates".to_owned()))
+        {
+            below.push(format!(
+                "{} templates {:.2}%",
+                r.id,
+                100.0 * r.templates.rate()
+            ));
+        }
+        for feature in r.templates.missing() {
+            if !exceptions.contains_key(&(r.id.clone(), format!("feature:{feature}"))) {
+                below.push(format!("{} feature {feature} never built", r.id));
+            }
+        }
         if r.ctor_rate() < 0.90
             && !exceptions.contains_key(&(r.id.clone(), "constructors".to_owned()))
         {

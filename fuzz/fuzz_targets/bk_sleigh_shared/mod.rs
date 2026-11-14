@@ -10,7 +10,7 @@ use std::sync::{Arc, OnceLock};
 
 use bk_core::Address;
 use bk_sla::{Limits, Sla};
-use bk_sleigh::{Decoder, Language, SliceBytes};
+use bk_sleigh::{Decoder, Language, PcodeCounter, SliceBytes};
 
 #[path = "../../../crates/bk-sleigh/tests/fixture/mod.rs"]
 mod fixture;
@@ -21,9 +21,10 @@ mod fixture;
 fn languages() -> &'static [Arc<Language>] {
     static LANGS: OnceLock<Vec<Arc<Language>>> = OnceLock::new();
     LANGS.get_or_init(|| {
-        let mut out = vec![Arc::new(
-            Language::from_sla(Arc::new(fixture::build())).expect("fixture"),
-        )];
+        let mut out = vec![
+            Arc::new(Language::from_sla(Arc::new(fixture::build())).expect("fixture")),
+            Arc::new(Language::from_sla(Arc::new(fixture::pcode::build_sla())).expect("fixture")),
+        ];
         if let Some(root) = std::env::var_os("BASILISK_REFERENCE_DIR") {
             let root = std::path::PathBuf::from(root)
                 .join("Ghidra")
@@ -64,6 +65,31 @@ fn exercise(lang: &Arc<Language>, offset: u64, words: &[u32], bytes: &[u8]) {
         let _ = decoder.mnemonic(&mut text);
         let _ = decoder.body(&mut text);
         let _ = decoder.prepare(addr, &source, &mut db);
+        let _ = decoder.lift(addr, &source, &mut db, &mut PcodeCounter::default());
+    }
+}
+
+/// Input as for [`decode`]; lifts the instruction to p-code (track
+/// `sleigh-pcode`) and checks the flow length covers the instruction.
+pub(crate) fn lift(data: &[u8]) {
+    let langs = languages();
+    let Some((&selector, rest)) = data.split_first() else {
+        return;
+    };
+    let lang = &langs[selector as usize % langs.len()];
+    let (context, bytes) = rest.split_at(rest.len().min(8));
+    let mut db = lang.empty_context();
+    for (i, c) in context.chunks(4).enumerate().take(lang.context_words()) {
+        let w = c.iter().fold(0u32, |w, &b| (w << 8) | u32::from(b));
+        db.set_default(i, u32::MAX, w);
+    }
+    let offset = u64::from(selector) * 2;
+    let mut decoder = Decoder::new(Arc::clone(lang));
+    let source = SliceBytes::new(offset, bytes);
+    let addr = Address::new(lang.default_space(), offset);
+    let mut counter = PcodeCounter::default();
+    if let Ok(flow) = decoder.lift(addr, &source, &mut db, &mut counter) {
+        assert!(flow >= decoder.parse().length());
     }
 }
 

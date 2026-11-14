@@ -1,0 +1,27 @@
+[package]
+name = "bk-cspec"
+description = "basilisk: compiler specifications and prototype models (Ghidra's fspec.cc, modelrules.cc and the .cspec decoding of architecture.cc)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+bk-core.workspace = true
+bk-marshal.workspace = true
+bk-lang.workspace = true
+bitflags.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+bk-testkit.workspace = true
+flate2.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
