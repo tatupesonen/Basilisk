@@ -95,6 +95,29 @@ Fuzz table (first run, corpora empty except the checked-in regressions):
 The corpora persist on the host (`~/bk/testbed/fuzz/corpus/<target>`), so
 each later run (the nightly one included) starts where the last ended.
 
+### Wine and CI's `windows-latest`
+
+`wine` builds for `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14, Debian 13's
+`gcc-mingw-w64`) and runs every test binary with Wine 10.0; `wine --msvc`
+builds for `x86_64-pc-windows-msvc` with cargo-xwin (clang-cl 19, lld,
+Microsoft's CRT and SDK). CI's job builds the MSVC target with Microsoft's
+toolchain and runs on real Windows Server.
+
+What it catches earlier than CI, in about 2 minutes, before a push: every
+`cfg(windows)` compile error; separator, drive and verbatim-path
+assumptions in tests (the three windows-ci failures were all reproduced
+under Wine); C-library differences of the MinGW CRT (`round`); the C crates
+built for Windows; Ghidra-dependent tests on Windows, which CI cannot run
+(it has no Ghidra tree) — here the tree is mounted as `Z:\ghidra`.
+
+What only CI shows: the MSVC linker and CRT of a real Visual Studio (the
+`--msvc` build uses clang-cl and xwin's copy of the SDK), NTFS behaviour
+(symbolic links need privileges; Wine's `symlink_dir` succeeds but the link
+cannot be followed, so that test skips here), real `\\?\UNC\` paths,
+Windows file locking and sharing modes, and anything Wine implements
+differently from Windows (it is not a test of Windows itself). A Wine
+failure that CI does not show is first suspected to be Wine's.
+
 ### Differential runs (`long differential`, 6 min 29 s for all four)
 
 Found in the status reports: the only differential test still `#[ignore]`d
