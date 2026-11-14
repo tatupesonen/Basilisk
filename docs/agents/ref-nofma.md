@@ -25,17 +25,17 @@ Reference build with `-ffp-contract=off` (ADR-032).
     old vs new: stdout, stderr and exit status identical for all 93.
 
 ## In progress
-- Swap into `/Users/tatu/slop/reference` (waiting for the pre-swap
-  workspace test run).
+- Post-swap workspace test run (pre-swap: 1,747 tests passed, 0 failed,
+  log `target/ref-nofma/test-before.log`).
 
 ## State of `/Users/tatu/slop/reference`
-SWAP IN PROGRESS (started 2026-11-14). Procedure: for each path in
-`/Users/tatu/slop/reference.aarch64-fused/SWAP-MANIFEST` (281 paths,
-relative to the reference root, `./STAMP` last), in order,
-`mv -f /Users/tatu/slop/reference.staging/<p> /Users/tatu/slop/reference/<p>`.
-Paths not in the manifest are byte-identical in both trees and are not
-touched. To find where it stopped: a manifest path still present under
-`reference.staging` was not moved yet. To finish: run the remaining
-moves in order. To undo: the old 14 `.sla` and old `STAMP` are in
-`/Users/tatu/slop/reference.aarch64-fused/` (same relative paths); the
-old tools and objects are not kept — undo by rebuilding without the flag.
+SWAP COMPLETE (2026-11-14). The live tree is the `-ffp-contract=off`
+build: 281 files replaced by `mv -f` from the staging build, in the order
+of `/Users/tatu/slop/reference.aarch64-fused/SWAP-MANIFEST` (`STAMP`
+last), no failure; the other 1,702 files were byte-identical and not
+touched. Checked afterwards: every file equals the staging build; all 150
+`.sla` equal x86-64 Linux's; a run of the script on a copy of the tree
+does nothing ("nothing to do"), so its build state is consistent. The
+staging directory is removed. Old files kept for the record:
+`/Users/tatu/slop/reference.aarch64-fused/` (the 14 fused-variant `.sla`
+at their relative paths, the old `STAMP`, and `SWAP-MANIFEST`).
