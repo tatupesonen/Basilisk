@@ -16,6 +16,7 @@ objs=$(ls "$src"/com_opt/*.o | grep -v '/consolemain\.o$')
 c++ -std=c++11 -O1 -w -fno-access-control -fsigned-char -ffp-contract=off -DLOCAL_ZLIB -I"$src" \
   "$here/cspec_oracle.cc" $objs "$ref/src/zlib/libz.a" -o "$work/cspec_oracle"
 mkdir -p "$data"
-"$work/cspec_oracle" "$ref" "$here/signatures.txt" "$ref/Ghidra/Processors" | gzip -9n > "$data/cspec_oracle.txt.gz"
+find "$ref/Ghidra/Processors" -path '*/data/languages/*.cspec' | LC_ALL=C sort > "$work/cspecs.txt"
+"$work/cspec_oracle" "$ref" "$here/signatures.txt" "$work/cspecs.txt" | gzip -9n > "$data/cspec_oracle.txt.gz"
 echo "wrote $data/cspec_oracle.txt.gz ($(gzip -dc "$data/cspec_oracle.txt.gz" | wc -l | tr -d ' ') lines)"
 echo "host $(uname -sm), $(c++ --version | head -1)"

@@ -171,7 +171,7 @@ impl TestTypes {
     pub(crate) fn array(&mut self, elem: TypeHandle, count: i32) -> TypeHandle {
         let d = self.def(elem).clone();
         let size = round_up(d.size, d.align) * count;
-        let name = format!("{}[{count}]", d.name);
+        let name = String::new();
         if let Some(h) = self
             .defs
             .iter()
@@ -296,7 +296,7 @@ impl ParamTypes for TestTypes {
         if let Some(&h) = self.pointers.get(&(to.0, size)) {
             return h;
         }
-        let name = format!("{} *", self.name(to));
+        let name = String::new();
         let align = self.prim_align(size);
         let h = TypeHandle(self.defs.len() as u32);
         self.defs.push(Def {

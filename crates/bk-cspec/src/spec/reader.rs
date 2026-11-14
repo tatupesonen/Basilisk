@@ -241,6 +241,15 @@ impl CompilerSpec {
                 .unwrap_or_default();
             st.create_alias("__thiscall", &parent)?;
         }
+        // Ghidra `PreferSplitManager::initialize` sorts the records: by
+        // space, larger sizes first, then offset.
+        st.spec.prefer_split.sort_by(|a, b| {
+            a.storage
+                .space()
+                .cmp(&b.storage.space())
+                .then(b.storage.size.cmp(&a.storage.size))
+                .then(a.storage.offset.cmp(&b.storage.offset))
+        });
         let mut spec = st.spec;
         spec.models = st.models;
         spec.names = st.names;

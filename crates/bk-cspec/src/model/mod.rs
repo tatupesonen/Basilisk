@@ -331,6 +331,20 @@ impl ProtoModel {
             m.has_this = true;
         }
         m.alias_of = Some(parent);
+        // Ghidra clones shared actions through their constructors, which
+        // do not copy what `<sharestack>` set: the alias shares the stack
+        // with the defaults (output first, no extra alignment).
+        for a in &mut m.shared {
+            if let SharedAction::ShareStack {
+                input_first,
+                extra_align,
+                ..
+            } = a
+            {
+                *input_first = false;
+                *extra_align = 0;
+            }
+        }
         m
     }
 }

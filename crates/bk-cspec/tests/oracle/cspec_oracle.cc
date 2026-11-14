@@ -5,7 +5,7 @@
 // tests/oracle_replay.rs. Not part of the Rust build. Compiled with
 // -fno-access-control to read private members, -std=c++11.
 //
-// Usage: cspec_oracle <sleighhome> <signatures.txt> <processors-dir>
+// Usage: cspec_oracle <sleighhome> <signatures.txt> <cspec-list>
 //
 // Nothing here depends on iteration over pointer-keyed or hash containers:
 // pairs come in .ldefs order, models in name order (std::map<string>),
@@ -168,11 +168,17 @@ string qualDesc(const QualifierFilter *q) {
   return "at(" + to_string(d->position) + "," + inner + ")";
 }
 
+// An alias's rules were cloned pointing into the parent's list
+// (ParamListStandard's copy constructor passes &op2); entries are looked up
+// there when not found in the alias's own list.
+const ParamListStandard *altList = (const ParamListStandard *)0;
+
 int4 entryIndex(const ParamListStandard *list, const ParamEntry *e) {
   if (e == (const ParamEntry *)0) return -1;
   int4 i = 0;
   for (std::list<ParamEntry>::const_iterator it = list->entry.begin(); it != list->entry.end(); ++it, ++i)
     if (&(*it) == e) return i;
+  if (altList != (const ParamListStandard *)0 && altList != list) return entryIndex(altList, e);
   return -2;
 }
 
@@ -315,8 +321,12 @@ void dumpModel(const string &pair, ProtoModel *m) {
   cout << "MODEL\t" << pair << '\t' << name << '\t' << m->extrapop << '\t' << b(m->isMerged()) << '\t' << alias
        << '\t' << b(m->hasThis) << '\t' << b(m->isConstruct) << '\t' << b(m->isPrinted) << '\t'
        << b(m->stackgrowsnegative) << '\t' << ie << '\t' << ir << '\n';
+  const ProtoModel *parent = m->compatModel;
+  altList = parent ? (const ParamListStandard *)parent->input : (const ParamListStandard *)0;
   dumpList(pair, name, "in", (const ParamListStandard *)m->input);
+  altList = parent ? (const ParamListStandard *)parent->output : (const ParamListStandard *)0;
   dumpList(pair, name, "out", (const ParamListStandard *)m->output);
+  altList = (const ParamListStandard *)0;
   for (size_t i = 0; i < m->sharedActions.size(); ++i) {
     const SharedAction *a = m->sharedActions[i];
     string d;
@@ -378,6 +388,32 @@ void dumpArch(const string &pair, Architecture *g, const string &cspecText) {
     "fs0","fs1","fs3","fs5","fs7","fs9","fs11","fd0","fd2","fd4","fd6","fq0","R12","R13","R14","R25R24","R23R22",
     "R21R20","ESI",0};
   for (int4 i = 0; extra[i] != 0; ++i) named.insert(extra[i]);
+  // Registers inside any entry of any model: joins of contiguous pieces
+  // are merged into such a register when one covers them exactly.
+  vector<VarnodeData> ranges;
+  for (map<string, ProtoModel *>::const_iterator it = g->protoModels.begin(); it != g->protoModels.end(); ++it) {
+    for (int4 io = 0; io < 2; ++io) {
+      const ParamListStandard *pl = (const ParamListStandard *)(io ? (*it).second->output : (*it).second->input);
+      for (std::list<ParamEntry>::const_iterator e = pl->entry.begin(); e != pl->entry.end(); ++e) {
+        if ((*e).spaceid->getType() != IPTR_PROCESSOR) continue;
+        VarnodeData v;
+        v.space = (*e).spaceid;
+        v.offset = (*e).addressbase;
+        v.size = (*e).size;
+        ranges.push_back(v);
+      }
+    }
+  }
+  for (map<VarnodeData, string>::const_iterator it = regs.begin(); it != regs.end(); ++it) {
+    const VarnodeData &r((*it).first);
+    for (size_t i = 0; i < ranges.size(); ++i) {
+      const VarnodeData &v(ranges[i]);
+      if (r.space != v.space) continue;
+      if (r.offset + r.size <= v.offset || v.offset + v.size * 2 <= r.offset) continue;
+      named.insert((*it).second);
+      break;
+    }
+  }
   for (set<string>::const_iterator it = named.begin(); it != named.end(); ++it) {
     VarnodeData v;
     try { v = g->translate->getRegister(*it); }
@@ -664,7 +700,22 @@ void effectTable(const string &pair, ProtoModel *m) {
   }
 }
 
-int run(const string &sigfile, const string &procdir) {
+// Reads the list of .cspec paths (one per line) into a map by file name.
+map<string, string> cspecPaths(const string &listfile) {
+  map<string, string> res;
+  ifstream in(listfile.c_str());
+  string line;
+  while (getline(in, line)) {
+    if (line.empty() || line.find("/old/") != string::npos) continue;
+    size_t slash = line.find_last_of('/');
+    string base = (slash == string::npos) ? line : line.substr(slash + 1);
+    res[base] = line;
+  }
+  return res;
+}
+
+int run(const string &sigfile, const string &listfile) {
+  map<string, string> paths = cspecPaths(listfile);
   vector<Sig> sigs;
   {
     ifstream in(sigfile.c_str());
@@ -702,7 +753,7 @@ int run(const string &sigfile, const string &procdir) {
       cout << "PAIR\t" << pair << '\t' << esc(spec) << '\t' << b(heavy) << '\n';
       string text;
       {
-        ifstream in((procdir + "/" + spec).c_str());
+        ifstream in(paths[spec].c_str());
         ostringstream s;
         s << in.rdbuf();
         text = s.str();
@@ -739,7 +790,7 @@ int run(const string &sigfile, const string &procdir) {
 
 int main(int argc, char **argv) {
   if (argc < 4) {
-    cerr << "usage: cspec_oracle <sleighhome> <signatures.txt> <processors-dir>\n";
+    cerr << "usage: cspec_oracle <sleighhome> <signatures.txt> <cspec-list>\n";
     return 2;
   }
   startDecompilerLibrary(argv[1]);
