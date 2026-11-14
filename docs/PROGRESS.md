@@ -114,6 +114,18 @@ tests and gates on kassini through `scripts/remote.sh`.
 | `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:05 with its work committed (`8731612`: findings and plan, the `snippetdump` oracle source, lexer, scope, parser and driver; test support half written), **resumed 20:14**. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. Told to `git merge master` once and to use the build host for everything from then on; it is the first agent to use `scripts/remote.sh` from a worktree other than its author's. Its findings (the spec is wrong in seven places: snippets have their own lexer and grammar, a leading `0` is octal, only the first error is reported, many errors do not fail the compile, no label check, no `_size` constants for `inst_dest`/`inst_ref`, `<truncate_space>` is an input) are accepted: the oracle decides. Corpus: 139 elements (132 `<pcode>` plus 7 jump-table `*_pcode`). |
 | `cspec-host` (worktree `../basilisk-wt/cspec-host`, cut from `master` `3e43909`) | Opus | `a85106d421cedbda2` | started 20:17. Queue item 1 below: make the `bk-cspec` oracle generator deterministic and crash-free, generate the libc++ (Mac) and libstdc++ (build host) tables, trace every differing row to its cause in Ghidra's source, propose per cause the result Basilisk gives (ADR text comes back in its report; the coordinator records it), implement it and make the replay strict against both tables. |
 
+**Build host CPU model changed** (20:26, by the owner): from QEMU's
+baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
+31 GB, disk and `~/bk` intact, Docker up; the reference rebuilt from
+scratch on the new CPU into a temporary directory (Ghidra's unit tests
+205/205, data tests 760/760) gives all 150 `.sla` byte-identical to the
+build made on the baseline CPU — so the SLEIGH compiler's output does
+not depend on whether glibc selects its FMA `log` (ADR-039's caution
+about a host without FMA did not materialise for these 150 files). Both
+agents were told to hold their remote jobs during the stop and to
+resume; `cspec-host` regenerates its libstdc++ table on the new CPU and
+reports whether any row changed.
+
 **Merged: `remote-build`** (`add42668f53ed4fa3`, `7b0cfa6`; worktree and
 branch removed, its checkout on the host cleaned). `scripts/remote.sh`
 (`setup`, `sync`, `gate [--no-ref]`, `run -- CMD`, `log`, `status`,
@@ -301,13 +313,11 @@ start a fresh agent briefed from the branch's files.
    not met there. Profile on the build host (`perf` is installed), find where the time goes (allocator, bounds
    checks, code layout, the x86-64 code generator against AArch64's),
    fix it without `unsafe`, and report numbers on both machines.
-   Note (coordinator, 2026-11-14): the build host's virtual CPU is
-   QEMU's baseline model — no AVX, AVX2, FMA, BMI1/2 or LZCNT — so
-   those numbers are for a baseline x86-64 CPU, and glibc there uses its
-   non-FMA `log` (the 150 `.sla` are byte-identical all the same). The
-   owner may switch the VM to the host CPU model; that needs the VM
-   stopped, so no job may be running. Measure again after it and say
-   which CPU model each number is for.
+   Note (coordinator, 2026-11-14): those numbers were measured while
+   the build host's virtual CPU was QEMU's baseline model (no AVX, AVX2,
+   FMA, BMI1/2, LZCNT). At 20:26 the owner switched the VM to the host
+   CPU model (AMD Zen 4 class; AVX2, FMA, BMI1/2 and AVX-512 visible).
+   Measure again first and say which CPU model each number is for.
 4. D01 `bk-decomp-range`, then the rest of the order below.
 
 -2. **`testbed` (Opus), after `remote-build` is merged** — the owner's
