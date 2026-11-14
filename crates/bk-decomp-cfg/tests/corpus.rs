@@ -198,9 +198,6 @@ const FINAL_TRANSFORM: u32 = 0x10_0000;
 /// `unswap` (what `ActionPreferComplement`'s `swapBlocks(1,2)` changes).
 fn canonical(dump: &str, mask: u32, unswap: bool) -> Option<String> {
     use bk_testkit::oracle::NodeKind;
-    let StructureDump::Ok(s) = StructureDump::parse(dump).ok()? else {
-        return None;
-    };
     fn front(s: &bk_testkit::oracle::Structured, mut name: bk_testkit::oracle::NodeName) -> String {
         loop {
             match name {
@@ -279,6 +276,9 @@ fn canonical(dump: &str, mask: u32, unswap: bool) -> Option<String> {
             kids.join(",")
         )
     }
+    let StructureDump::Ok(s) = StructureDump::parse(dump).ok()? else {
+        return None;
+    };
     Some(
         s.top
             .iter()

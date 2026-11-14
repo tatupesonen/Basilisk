@@ -1007,6 +1007,22 @@ Added by the implementing track (`docs/agents/decomp-cfg.md`):
   (about 12,000 graphs times four dumps of several kilobytes would not fit
   the repository); the 6.2 table stores the full outputs (1.1 MB).
 
+Added when D00's oracle became available (`docs/agents/decomp-cfg.md`,
+second part):
+
+- `orderBlocks` ties are measured, not only reasoned about: on the 11,661
+  finished `bare finish` runs of the 6.3.1 graphs, Basilisk's stable sort
+  equals libc++'s order on all but 1 row and libstdc++'s on all but 15
+  (all on top levels of 17 or more nodes); the 15 are the rows where the
+  two reference builds differ. Each such row is recognised by cause (two or
+  more top-level nodes ending in `RETURN` on a top level of four or more)
+  and counted per library in `tests/oracle_bk.rs`. The corpora have none
+  (every final top level is a single node).
+- The 6.3.1 table stores per row the dump's header line and the 64-bit
+  FNV-1a digest of `bk-testkit` (`oracle::host::digest`), one table per
+  library (`cfg_oracle.{libcxx,libstdcxx}.txt.gz`, 533 kB each), instead of
+  the 128-bit fingerprint first written.
+
 ## 9. Status
 
 Implemented by track `decomp-cfg` (report: `docs/agents/decomp-cfg.md`).
@@ -1018,6 +1034,23 @@ the corpus captures of 6.3.2 and the trace comparison of 6.4 against
 Ghidra's `R` records, and with them the confirmation that
 `Case block has become detached from switch` on graphs with input
 default-switch labels is Ghidra's result too.
+
+Update (D00 merged into the track's branch): the oracle acceptance is done.
+6.3.1: 12,000 generated graphs, 40,000 dumps (`bk cfg analyze`, `bk
+structure bare trace`, `bare finish`, `asgiven trace`), two runs per build
+byte-identical; Basilisk equals every row of both builds except the
+`orderBlocks` RETURN ties above (1 libc++, 15 libstdc++, recognised and
+counted). 6.3.2: all 767 structuring runs of the 607 corpus decompilations
+equal Ghidra's hierarchy (`bk capture structure`), flips, goto marks,
+change count and rule sequence (`bk structure … asgiven trace`); the 607
+final hierarchies equal Ghidra's after `finish` (321 byte for byte; 173
+differ only by `f_final_transform` and 113 also by `preferComplement`'s
+body swaps, both set by D15's actions between `blockstructure` and
+`finalstructure`, recognised and counted). Corpus tables are the same on
+both builds and in two runs each. 6.4: the rule sequences are part of the
+compared dumps (every generated graph in `bare trace` and every
+function-like one in `asgiven trace`; every corpus run). `Case block has
+become detached from switch` is Ghidra's result too (46 generated graphs).
 
 ## 10. Open items
 
@@ -1073,4 +1106,20 @@ Settled by the implementing track:
    `calcForwardDominator` has index 0, so Ghidra's finger arithmetic maps
    it to list position 0 and an intersection reaching it yields `list[0]`
    (reproduced); 5.3 — the default step limit (item 5).
+8. Item 1 (corpora): **no tie occurs** in the corpora (D00: every final top
+   level is a single node, so `orderBlocks` sorts nothing); on generated
+   graphs the libraries break 1 (libc++) and 15 (libstdc++) of the 120 tied
+   rows differently from the stable sort (section 8). Item 3 (corpus
+   benchmark): the largest corpus graph has 42 nodes and 61 edges and takes
+   798 steps and 7 µs; every corpus run is far below `2·(n+e)² + 10⁶`, so
+   the default stays.
+9. 6.3 item 2 should take D00's text: the corpus graphs come from `bk
+   capture structure` at each `decompile`, which writes
+   `<prefix>.<k>.blocks.bkg` (with the switch defaults installed, as
+   `ActionBlockStructure` installs them before copying) and
+   `<prefix>.<k>.structure.bks` per structuring run, and `.final.*`/`.end.*`
+   structure and state; a plain `bk dump blocks` at a `blockstructure` stop
+   lacks the `0x4` default labels. The final hierarchy is compared after
+   `finish` up to D15's `f_final_transform` flag and `preferComplement`
+   swaps.
 

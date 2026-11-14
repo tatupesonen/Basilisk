@@ -225,7 +225,7 @@ fn cause(c: bk_decomp_cfg::GotoCause) -> GotoCause {
         bk_decomp_cfg::GotoCause::Selected => GotoCause::Selected,
         bk_decomp_cfg::GotoCause::ClippedRoot => GotoCause::Clipped,
         bk_decomp_cfg::GotoCause::SwitchSkip => GotoCause::SwitchSkip,
-        _ => GotoCause::Fallthru,
+        bk_decomp_cfg::GotoCause::CaseFallthru => GotoCause::Fallthru,
     }
 }
 
