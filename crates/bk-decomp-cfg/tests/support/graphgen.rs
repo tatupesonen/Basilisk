@@ -98,8 +98,9 @@ impl GenGraph {
                 }
             }
         }
-        if self.labels.len() != n {
-            self.labels = self.outs.iter().map(|o| vec![0; o.len()]).collect();
+        self.labels.resize(n, Vec::new());
+        for (l, o) in self.labels.iter_mut().zip(&self.outs) {
+            l.resize(o.len(), 0);
         }
     }
 

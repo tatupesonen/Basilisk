@@ -298,7 +298,7 @@ fn limits() {
             limit: 5
         }
     );
-    assert_eq!(Limits::default_steps(10, 20), 64 * 900 / 1000 + 1_000_000);
+    assert_eq!(Limits::default_steps(10, 20), 2 * 900 + 1_000_000);
     assert!(run(Limits::default()).is_ok());
 }
 

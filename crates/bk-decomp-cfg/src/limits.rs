@@ -33,10 +33,15 @@ impl Default for Limits {
 
 impl Limits {
     /// The default step limit for a graph of `nodes` nodes and `edges`
-    /// edges: `64 * (nodes + edges)^2 / 1000 + 10^6`, saturating.
+    /// edges: `2 * (nodes + edges)^2 + 10^6`, saturating. Structuring costs
+    /// at most about `(nodes + edges)^2` steps on the generated graphs of up
+    /// to 1,000 nodes (each goto chosen is followed by a sweep of every rule
+    /// over the top level); `docs/PERF.md` has the measurements.
     pub fn default_steps(nodes: u64, edges: u64) -> u64 {
         let size = nodes.saturating_add(edges);
-        size.saturating_mul(size).saturating_mul(64) / 1000 + 1_000_000
+        size.saturating_mul(size)
+            .saturating_mul(2)
+            .saturating_add(1_000_000)
     }
 
     /// Checks a graph's size and returns the step budget for it.
