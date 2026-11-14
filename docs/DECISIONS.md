@@ -1210,3 +1210,74 @@ glibc that changes its `log`, or a reference build on a host without
 FMA, could order tied decision nodes differently again. The table is the
 definition; if the reference is ever rebuilt on another libc, the table
 test says so before any `.sla` differs.
+
+## ADR-040 — Where Ghidra's answer depends on the C++ library's sort, Basilisk sorts stably
+
+*2026-11-14. Proposed by track `cspec-host` (its report calls it
+ADR-038, a number already taken); evidence in `docs/agents/cspec-host.md`.*
+
+**Context.** Ghidra's decompiler sorts effect lists and parameter trials
+with `std::sort`, which leaves elements that compare equal in an order
+the C++ library chooses, and then answers lookups from that order. The
+`bk-cspec` oracle, generated from the same Ghidra commit on macOS
+(libc++) and on x86-64 Linux (libstdc++), differs in 119 of 152,046
+rows, all from four causes:
+
+* (A) effect records at one address — `ProtoModel::decode`
+  (`fspec.cc:2680`) sorts by space and offset only; 56 rows in 28 lists
+  (NDS32 and twelve RISC-V gcc pairs);
+* (B) `hasEffect` at such an address, which takes the last record of
+  the tie (`lookupEffect`, `fspec.cc:2463`); 24 rows;
+* (C) two identical trials of one entry, of which the first after the
+  sort is kept (`sortTrials`, `fspec.hh:322`, from `buildTrialMap`,
+  `fspec.cc:921`); 38 rows (tricore, Loongarch lp64f);
+* (D) trials without an entry, which the comparator calls equal
+  (`fspec.cc:1881`); 1 row (x86-64 golang).
+
+valgrind finds no uninitialised read behind any row, and the libstdc++
+table is the same before and after the build host's CPU model changed:
+the differences are sort order and nothing else. Ghidra's releases ship
+decompilers built against libstdc++ (Linux), libc++ (macOS) and
+Microsoft's library (Windows), so one Ghidra release already gives
+different answers per platform, and none of them follows from the
+source. `ParamTrial::operator<` is, besides, not a strict weak ordering,
+which is undefined behaviour in `std::sort` (and a possible panic in
+Rust's `sort_by`).
+
+**Decision.** Basilisk gives one result on every platform, defined by
+the specification file alone: every such sort is stable.
+
+* (A) Effect records at one address keep document order, with the
+  default return address that `ProtoModel::decode` appends coming last.
+* (B) A lookup that Ghidra answers with the last tied record answers
+  with the last in document order.
+* (C, D) Trials that compare equal keep the order they had before the
+  sort: registration (slot) order on input, and the order the previous
+  sorts left in the output fallback. Trials are sorted with a stable
+  insertion sort, which gives a defined order and cannot panic whatever
+  the comparator does.
+
+The rule extends to the other spots of the same kind that no table row
+exercises today: the merged-model effect intersection
+(`intersectEffects`, `fspec.cc:2767`), `lookupRecord` (`fspec.cc:2501`),
+the `FuncProto` effect sort (`fspec.cc:3673`) and prototype scoring
+(`ScoreProtoModel::doScore`, `fspec.cc:2728`).
+
+**Consequences.** Basilisk equals Ghidra built with libc++ on every row
+of A–C in today's corpus — as an outcome of that library's algorithm on
+these inputs, not a guarantee — and equals each library wherever it
+uses insertion sort (lists of at most 16 elements in libstdc++); D
+equals neither table. The oracle is kept for both libraries
+(`crates/bk-cspec/tests/data/cspec_oracle.{libcxx,libstdcxx}.txt.gz`,
+the second generated on the build host). The replay requires rows where
+the tables agree to equal Basilisk's, and recognises and counts each row
+where they disagree (A 56, B 24, C 38, D 1), so a new cause, or a
+regenerated table that moves a count, fails the test. This is the form
+of ADR-024 and ADR-038: a defined result, each tolerated row recognised
+by cause and counted.
+
+**Open.** Microsoft's library was not run. Its `std::sort` uses
+insertion sort up to 32 elements, so on paper it equals the rule for
+the 32-record RISC-V lists and the tricore and Loongarch rows; NDS32 (35
+effects), the 64-record RISC-V lists and the golang row are unknown. A
+third table would enter the harness as one more library.
