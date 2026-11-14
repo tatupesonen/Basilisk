@@ -169,6 +169,9 @@ pub struct Parse {
     pub(crate) addr: Address,
     pub(crate) naddr: Address,
     pub(crate) next2: Option<Address>,
+    /// Why `inst_next2` could not be computed (the next instruction's
+    /// decode error, which Ghidra's `getN2addr` throws).
+    pub(crate) next2_error: Option<crate::error::DecodeError>,
     pub(crate) delay_slot: u32,
     pub(crate) window: Window,
     pub(crate) context: Vec<u32>,
@@ -192,6 +195,7 @@ impl Parse {
             addr: Address::INVALID,
             naddr: Address::INVALID,
             next2: None,
+            next2_error: None,
             delay_slot: 0,
             window: Window::default(),
             context: Vec::new(),
@@ -269,6 +273,19 @@ impl Parse {
     /// C++ cannot decode more than 20).
     pub fn max_operands(&self) -> u32 {
         self.max_operands
+    }
+
+    pub(crate) fn set_next2(&mut self, found: Result<Address, crate::error::DecodeError>) {
+        match found {
+            Ok(addr) => {
+                self.next2 = Some(addr);
+                self.next2_error = None;
+            }
+            Err(e) => {
+                self.next2 = None;
+                self.next2_error = Some(e);
+            }
+        }
     }
 
     /// `inst_next2`, when it was computed.

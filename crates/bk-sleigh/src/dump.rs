@@ -108,7 +108,9 @@ pub fn sweep<O: SweepObserver>(
         let remaining = data.len() - pos;
         let start = out.len();
         let decoded = if quiet {
-            decoder.decode(addr, &bytes, &*context).map(|p| p.length())
+            decoder
+                .decode(addr, &bytes, &*context)
+                .map(crate::Parse::length)
         } else {
             mnemonic.clear();
             body.clear();

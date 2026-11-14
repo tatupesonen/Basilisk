@@ -8,6 +8,9 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+bk-core.workspace = true
+bk-lang.workspace = true
+bk-sleigh.workspace = true
 bk-ui.workspace = true
 
 [lints]

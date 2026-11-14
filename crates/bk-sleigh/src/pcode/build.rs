@@ -57,9 +57,10 @@ where
     /// The constructor at the walk's node.
     fn ctor_of(w: &Walk<'_>) -> Option<ConstructorId> {
         match w.handles {
-            Handles::Node { parse, node } => {
-                parse.nodes.get(node as usize).and_then(|n| n.constructor())
-            }
+            Handles::Node { parse, node } => parse
+                .nodes
+                .get(node as usize)
+                .and_then(crate::Node::constructor),
             Handles::Params(_) => None,
         }
     }
@@ -198,7 +199,7 @@ where
         let num = parse
             .nodes
             .get(node as usize)
-            .map_or(0, |n| n.num_children());
+            .map_or(0, crate::Node::num_children);
         for i in 0..num {
             let Some((child, ctor)) = self.subtable_child(&w, i) else {
                 continue;

@@ -182,7 +182,7 @@ impl Decoder {
         let tpl = main
             .nodes
             .first()
-            .and_then(|n| n.constructor())
+            .and_then(crate::Node::constructor)
             .and_then(|c| template_of(&lang, c, None));
         let built = builder.build(tpl, None, walk, &mut self.cross);
         let built = built.and_then(|()| self.buf.resolve_relatives(addr));
@@ -244,6 +244,7 @@ impl Decoder {
             start: addr,
             next: ctx.inst_next,
             next2: None,
+            next2_error: None,
             flow: ctx.call_addr,
             cur_space: addr.space().map_or(0, bk_core::SpaceId::index),
             unique: 0,

@@ -40,11 +40,14 @@ pub(crate) struct Walk<'p> {
     pub(crate) next: Address,
     /// `inst_next2`, when available.
     pub(crate) next2: Option<Address>,
+    /// Why `inst_next2` is not available, when the next instruction does
+    /// not decode.
+    pub(crate) next2_error: Option<&'p DecodeError>,
     /// `inst_ref`/`inst_dest` (free-standing templates only).
     pub(crate) flow: Option<Address>,
     /// The space of the instruction stream.
     pub(crate) cur_space: u32,
-    /// The bits ORed into unique-space offsets.
+    /// The bits `OR`ed into unique-space offsets.
     pub(crate) unique: u64,
 }
 
@@ -56,6 +59,7 @@ impl<'p> Walk<'p> {
             start: parse.addr,
             next: parse.naddr,
             next2: parse.next2,
+            next2_error: parse.next2_error.as_ref(),
             flow: None,
             cur_space: parse.addr.space().map_or(CONST, SpaceId::index),
             unique,
@@ -113,7 +117,11 @@ pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, De
         ConstTpl::Next => w.next.offset(),
         ConstTpl::Next2 => w
             .next2
-            .ok_or(DecodeError::Next2Unavailable { address: w.start })?
+            .ok_or_else(|| {
+                w.next2_error
+                    .cloned()
+                    .unwrap_or(DecodeError::Next2Unavailable { address: w.start })
+            })?
             .offset(),
         ConstTpl::FlowRef | ConstTpl::FlowDest => w.flow.map_or(0, Address::offset),
         ConstTpl::FlowRefSize | ConstTpl::FlowDestSize => w
@@ -176,7 +184,7 @@ pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> 
 }
 
 /// The offset of a varnode in `space` after the three space rules: masked
-/// to the size in the constant space, ORed with the unique bits in the
+/// to the size in the constant space, `OR`ed with the unique bits in the
 /// unique space, wrapped elsewhere.
 fn place(lang: &Language, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
     match lang.spaces().space_at(space) {

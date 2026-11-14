@@ -64,6 +64,7 @@ where
     parse.addr = addr;
     parse.naddr = addr;
     parse.next2 = None;
+    parse.next2_error = None;
     parse.delay_slot = 0;
     parse.commits.clear();
     parse.nodes.clear();

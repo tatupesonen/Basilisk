@@ -63,6 +63,17 @@ pub(crate) struct Record {
     pub(crate) committed: bool,
     pub(crate) uses_next2: bool,
     pub(crate) built: Built,
+    /// Delay-slot instruction addresses lifted with this one, each with its
+    /// next address when it computed `inst_next2`.
+    pub(crate) delays: Vec<(u64, Option<u64>)>,
+    /// The next address, when `inst_next2` was computed (Ghidra looks the
+    /// next instruction up in its parse cache).
+    pub(crate) next: Option<u64>,
+    /// Ghidra's parse cache reused the parse of this instruction (or of
+    /// one of its delay slots) before its p-code was built (`cache.rs`).
+    pub(crate) cache_clobbered: bool,
+    /// A crossbuild target Ghidra's parse cache would not hold.
+    pub(crate) cross_uncached: bool,
 }
 
 /// The sweep's records and its `T` record.
@@ -139,6 +150,10 @@ impl SweepObserver for Collect {
             committed: false,
             uses_next2: false,
             built,
+            delays: Vec::new(),
+            next: None,
+            cache_clobbered: false,
+            cross_uncached: false,
         };
         if let Some(decoder) = decoder {
             let parse = decoder.parse();
@@ -153,6 +168,20 @@ impl SweepObserver for Collect {
             record.committed = !parse.commits().is_empty();
             record.uses_next2 = parse.next2().is_some();
             record.delay_over_20 = decoder.delay_slots().iter().any(|d| d.max_operands() > 20);
+            record.delays = decoder
+                .delay_slots()
+                .iter()
+                .map(|d| {
+                    let at = d.address().offset();
+                    (
+                        at,
+                        d.next2().map(|_| at.wrapping_add(u64::from(d.length()))),
+                    )
+                })
+                .collect();
+            record.next = parse
+                .next2()
+                .map(|_| address.wrapping_add(u64::from(parse.length())));
         }
         self.records.push(record);
     }
@@ -181,6 +210,7 @@ pub(crate) fn sweep(
         &mut out,
         &mut collect,
     );
+    super::cache::mark(lang, &mut collect.records);
     Sweep {
         records: collect.records,
         instructions: counts.instructions,

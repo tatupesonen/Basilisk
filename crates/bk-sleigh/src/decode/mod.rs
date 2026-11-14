@@ -123,7 +123,7 @@ impl Decoder {
             self.operand_limit,
         )?;
         if self.lang.tables.uses_next2 {
-            self.main.next2 = Self::next2(
+            let found = Self::next2(
                 &self.lang,
                 &mut self.lookahead,
                 &self.main,
@@ -131,6 +131,7 @@ impl Decoder {
                 context,
                 self.operand_limit,
             );
+            self.main.set_next2(found);
         }
         Ok(&self.main)
     }
@@ -145,13 +146,13 @@ impl Decoder {
         bytes: &B,
         context: &C,
         operand_limit: u32,
-    ) -> Option<Address>
+    ) -> Result<Address, DecodeError>
     where
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
-        resolve::resolve(lang, scratch, parse.naddr, bytes, context, operand_limit).ok()?;
-        Some(resolve::add(lang, parse.naddr, u64::from(scratch.length())))
+        resolve::resolve(lang, scratch, parse.naddr, bytes, context, operand_limit)?;
+        Ok(resolve::add(lang, parse.naddr, u64::from(scratch.length())))
     }
 
     /// Resolves the handles of the last instruction decoded (Ghidra
@@ -161,8 +162,11 @@ impl Decoder {
         B: ByteSource + ?Sized,
         C: ContextSource + ?Sized,
     {
-        if self.lang.tables.next2_anywhere && self.main.next2.is_none() {
-            self.main.next2 = Self::next2(
+        if self.lang.tables.next2_anywhere
+            && self.main.next2.is_none()
+            && self.main.next2_error.is_none()
+        {
+            let found = Self::next2(
                 &self.lang,
                 &mut self.lookahead,
                 &self.main,
@@ -170,6 +174,7 @@ impl Decoder {
                 context,
                 self.operand_limit,
             );
+            self.main.set_next2(found);
         }
         handles::resolve_handles(&self.lang, &mut self.main)?;
         Ok(&self.main)
@@ -280,7 +285,7 @@ impl Decoder {
                 resolve::resolve(&self.lang, slot, at, bytes, &*context, self.operand_limit)
                     .map_err(delay)?;
                 if self.lang.tables.next2_anywhere {
-                    slot.next2 = Self::next2(
+                    let found = Self::next2(
                         &self.lang,
                         &mut self.lookahead,
                         slot,
@@ -288,6 +293,7 @@ impl Decoder {
                         &*context,
                         self.operand_limit,
                     );
+                    slot.set_next2(found);
                 }
                 handles::resolve_handles(&self.lang, slot).map_err(delay)?;
                 commit::apply_commits(&self.lang, slot, context).map_err(delay)?;

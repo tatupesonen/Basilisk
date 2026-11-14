@@ -3,11 +3,13 @@
 //! record-by-record comparison with `pcodedump`.
 #![allow(dead_code, reason = "each test file uses part of this module")]
 
+pub(crate) mod cache;
 pub(crate) mod coverage;
 pub(crate) mod directed;
 pub(crate) mod real_code;
 pub(crate) mod recording;
 pub(crate) mod sweep;
+pub(crate) mod templates;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -182,6 +184,8 @@ pub(crate) struct Tolerated {
     /// A template read the handle of a subtable operand that exports
     /// nothing: Ghidra reads stale memory, basilisk the constant 0.
     pub(crate) unset_handle: u64,
+    /// Ghidra's parse cache gave the builder another instruction's parse.
+    pub(crate) cache_clobbered: u64,
 }
 
 impl Tolerated {
@@ -191,6 +195,7 @@ impl Tolerated {
         self.next2_and_commit += other.next2_and_commit;
         self.cross_uncached += other.cross_uncached;
         self.unset_handle += other.unset_handle;
+        self.cache_clobbered += other.cache_clobbered;
     }
 }
 
@@ -249,14 +254,12 @@ pub(crate) fn compare(oracle: &OracleDump, ours: &Sweep) -> Comparison {
             out.tolerated.past_byte_16 += 1;
         } else if previous.is_some_and(|p| p.uses_next2 && p.committed) {
             out.tolerated.next2_and_commit += 1;
+        } else if record.cache_clobbered && same_first_line(line, &record.line) {
+            out.tolerated.cache_clobbered += 1;
         } else if record.built.features[7] > 0 && same_first_line(line, &record.line) {
             out.tolerated.unset_handle += 1;
-        } else if record.built.cross_targets.iter().any(|t| {
-            *t != record.address
-                && !ours.records[..bi]
-                    .iter()
-                    .any(|r| r.address == *t && !r.constructors.is_empty())
-        }) && line.contains("Could not obtain cached crossbuild instruction")
+        } else if record.cross_uncached
+            && line.contains("Could not obtain cached crossbuild instruction")
         {
             out.tolerated.cross_uncached += 1;
         } else if out.failures.len() < 20 {

@@ -441,6 +441,9 @@ dependencies = [
 name = "basilisk"
 version = "0.0.1"
 dependencies = [
+ "bk-core",
+ "bk-lang",
+ "bk-sleigh",
  "bk-ui",
 ]
 

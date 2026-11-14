@@ -50,6 +50,8 @@ pub(crate) struct LanguageResult {
     pub(crate) invocations: usize,
     /// Instructions whose processing crashes the oracle (address and bytes).
     pub(crate) oracle_crashes: Vec<String>,
+    /// Templates built and constructs met.
+    pub(crate) templates: super::templates::TemplateCoverage,
 }
 
 impl LanguageResult {
@@ -64,7 +66,7 @@ impl LanguageResult {
     /// One row of the coverage table.
     pub(crate) fn row(&self) -> String {
         format!(
-            "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}\tshadowed {}\tno-hit {}\toracle-crashes {}",
+            "{}\tconstructors {}\texercised {}\tpairs {}\tconfirmed {}\tinexpressible {}\tover-20 {} (basilisk decodes {})\ttolerated {}/{}/{}/{}/{}/{}\tshadowed {}\tno-hit {}\toracle-crashes {}\t{}",
             self.id,
             self.constructors,
             self.exercised.len(),
@@ -76,9 +78,13 @@ impl LanguageResult {
             self.tolerated.over_20_operands,
             self.tolerated.past_byte_16,
             self.tolerated.next2_and_commit,
+            self.tolerated.cross_uncached,
+            self.tolerated.unset_handle,
+            self.tolerated.cache_clobbered,
             self.shadowed,
             self.no_hit,
             self.oracle_crashes.len(),
+            self.templates.columns(),
         )
     }
 }
@@ -148,6 +154,7 @@ fn run_stream(
     for (record, ok) in ours.records.iter().zip(&cmp.confirmed) {
         if *ok {
             result.exercised.extend(record.constructors.iter().copied());
+            result.templates.add(&record.built);
         }
         seen.push((record.address, *ok, record.constructors.clone()));
     }
@@ -166,6 +173,7 @@ pub(crate) fn run_language(
     let mut result = LanguageResult {
         id: id.to_owned(),
         constructors: lang.sla().constructors().len(),
+        templates: super::templates::TemplateCoverage::of(lang),
         ..LanguageResult::default()
     };
     let highest = lang

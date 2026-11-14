@@ -65,7 +65,7 @@ where
             let tpl = delayed
                 .nodes
                 .first()
-                .and_then(|n| n.constructor())
+                .and_then(crate::Node::constructor)
                 .and_then(|c| template_of(lang, c, None));
             self.build(tpl, None, walk, slots)?;
             let len = delayed.length();
@@ -137,8 +137,8 @@ where
             target,
         };
         resolve::resolve(self.lang, slot, target, bytes, context, self.operand_limit)
-            .map_err(|_| failed.clone())?;
-        handles::resolve_handles(self.lang, slot).map_err(|_| failed)?;
+            .map_err(|_cause| failed.clone())?;
+        handles::resolve_handles(self.lang, slot).map_err(|_cause| failed)?;
         let found: &Parse = slot;
         let walk = cross_walk(found, &w, unique);
         self.build_section(found, walk, number, rest)
@@ -153,7 +153,7 @@ where
         number: u32,
         slots: &mut [Parse],
     ) -> Result<(), LiftError> {
-        let ctor = target.nodes.first().and_then(|n| n.constructor());
+        let ctor = target.nodes.first().and_then(crate::Node::constructor);
         match ctor.and_then(|c| template_of(self.lang, c, Some(number))) {
             Some(t) => self.build(Some(t), Some(number), walk, slots),
             None => self.build_empty(walk, number, slots),
@@ -170,11 +170,12 @@ where
 
 /// The walk of a crossbuild target: its handles, space and unique bits, and
 /// the addresses of the instruction being built (Ghidra's cross context).
-fn cross_walk<'p>(target: &'p Parse, outer: &Walk<'_>, unique: u64) -> Walk<'p> {
+fn cross_walk<'p>(target: &'p Parse, outer: &Walk<'p>, unique: u64) -> Walk<'p> {
     Walk {
         start: outer.start,
         next: outer.next,
         next2: outer.next2,
+        next2_error: outer.next2_error,
         flow: outer.flow,
         ..Walk::of(target, 0, unique)
     }

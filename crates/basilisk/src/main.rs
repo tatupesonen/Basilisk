@@ -10,6 +10,10 @@
 
 use std::process::ExitCode;
 
+mod cmd {
+    pub(crate) mod disasm;
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -20,6 +24,10 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        Some("disasm") => {
+            let rest: Vec<std::ffi::OsString> = std::env::args_os().skip(2).collect();
+            cmd::disasm::run(&rest)
+        }
         Some("--version" | "-V" | "version") => {
             println!("basilisk {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
