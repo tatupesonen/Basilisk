@@ -335,6 +335,92 @@ reference; all 150 on one thread in at most the reference's total.
 
 (The implementing track appends.)
 
+Appended by `sleigh-compiler-back` (2026-11-14):
+
+* **The `log` port includes GCC's contractions.** glibc is built as GNU C
+  (`-ffp-contract=fast`), so its FMA-variant `log` fuses every product whose
+  only uses are additions or subtractions, not only the explicit
+  `fma(z, invc, -1.0)`. A port with only the explicit fusion differs from
+  glibc on 1,134 of the table's 16,383 lines (as musl does). Basilisk's port
+  (`decision/log.rs`, Arm optimized-routines rev 20859d3f) writes each of
+  GCC's fusions out as `libm::fma` and is bit-equal on all 16,383 lines.
+  The score itself stays unfused, as specified.
+* **`OrPattern::doOr`'s mutation of its left operand** (negative shift) is
+  not reproduced: the mutated pattern is a child equation's result, which
+  nothing reads again except its ellipsis flags and token list.
+* **Enumeration limit.** A constraint that would enumerate more than 2^20
+  assignments (Ghidra enumerates every value of the fields involved, which
+  for wide fields never finishes) is an error, "Constraint enumerates too
+  many values (N; at most 1048576)". The shipped specifications stay far
+  below. Equations and expressions deeper than 512 and table chains deeper
+  than 256 are errors too ("Pattern equation nested too deeply", "Pattern
+  expression nested too deeply", "Tables nested too deeply"); Ghidra
+  recurses without bound.
+* **Accumulating `or`s is linear.** `resultpattern = resultpattern.doOr(P)`
+  appends in place when that is exactly what Ghidra's `doOr` produces
+  (alternatives on the left, no shift, same tokens); Ghidra copies the whole
+  list each time.
+* **Uninitialised operand offsets**: Ghidra leaves `offsetbase`/`reloffset`
+  of an operand the equation never places uninitialised; Basilisk uses
+  (−1, 0). Every operand that is not offset-irrelevant is placed by its
+  equation, so valid specifications never reach the default.
+* **An unravelling chain that loops** (it cannot in valid input) stops after
+  as many steps as there are operands instead of looping forever.
+* **`-f`** follows Java's `checkFieldUsage`: a token field no lookup by
+  name ever found is reported, located, as "token field 'NAME' defined but
+  never used", after the unique-offset check. Lookups are tracked in
+  `SymbolTable` (Java's `wasSought`); `attach` replaces the symbol and
+  resets the flag, as Java's `replaceSymbol` does.
+* **`-d MODULE`** resolves the module under `$BASILISK_GHIDRA_DIR`: the first
+  directory `Ghidra/*/MODULE` in sorted order, else `MODULE` directly under
+  the root ("Failed to resolve module reference: -dMODULE" otherwise).
+  Java asks its application layout.
+* **`-a`**: `-a DIR` (Java) and `-a` with a trailing directory or none (C++,
+  default `.`) are both accepted: the argument after `-a` is the directory
+  when it does not start with `-`. Specifications are found by a sorted
+  recursive walk that does not follow links to directories; the extension
+  test ignores case. Standard output carries the C++ lines (`Compiling N
+  slaspec files in DIR`, `Compiling (i of N) FILE`) and Java's summary
+  (`N languages successfully compiled`, `PATH failed to compile`, `N
+  languages total failed to compile`).
+* **No XML job files.** C++ treats an input without `.slaspec` and without
+  an output as an XML job file (`run_xml`); Basilisk follows Java and
+  appends `.slaspec`.
+* **Error lines** print `FILE:LINE` of the diagnostic's span; a diagnostic
+  without one gets the main file's base name and its last line (where
+  Ghidra's lexer stands during the late passes). The text after ` - ERROR `
+  is Ghidra's (checked against `REF/bin/sleigh`).
+* **A UTF-8 byte-order mark** at the start of a source file is ignored
+  (`compile` wraps the loader; `bk-sleigh-syntax` reads it as a character,
+  see Follow-ups in the track report).
+* **Lowering errors** (a compile-only symbol surviving the purge, or
+  `bk_sla` rejecting the model) are reported as "Unrecoverable error: …";
+  neither occurs for the corpus or in 60 s of fuzzing.
+* **Messages not constructed**: "Notequal constraint is impossible to
+  match" needs a field with one possible value (fields have at least two);
+  "Circular offset dependency between operands" and "Child has as many
+  Patterns as parent" were not reached by any input tried (the latter is
+  unreachable by the reasoning in inventory 10 c.7).
+
 ## 9. Status
 
-Not started.
+Done (2026-11-14), track `sleigh-compiler-back`; report in
+`docs/agents/sleigh-compiler-back.md`.
+
+* Modules: `pattern/{block, disjoint, algebra, token_pattern}`,
+  `equation/{generate, resolve, order}`, `build/{constructor, reorder,
+  trees}`, `decision/{node, order, score, log, log_data}`, `lower`,
+  `driver`; `basilisk sleigh compile` in `crates/basilisk/src/cmd/
+  sleigh_compile/`.
+* **6.2**: all 150 specifications compile to packed streams byte-identical
+  to `REF`, `-y` text identical to `REF/bin/sleigh -y`, warnings identical
+  to the reference logs; no tolerated differences. Mutation check: fused
+  score arithmetic makes exactly the 14 files of ADR-029 differ.
+* 6.1: `EqualEquationTest`, `SleighCompileOptionsTest` ported;
+  `SleighCompileRegressionTest` is 6.2. 6.3: a case per message, compared
+  with Ghidra's compiler. 6.4: block and tree unit tests, the `log` table,
+  property tests, fuzz target `bk_sleigh_compiler_compile` (60 s clean).
+  6.5: met (PERF.md).
+* The behavioural cross-check of 6.2 is redundant by construction: the
+  files are byte-identical, so the runtime reads identical models; it was
+  not run separately.
