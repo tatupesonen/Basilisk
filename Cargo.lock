@@ -688,6 +688,7 @@ dependencies = [
  "libm",
  "proptest",
  "rustc-hash 2.1.3",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
