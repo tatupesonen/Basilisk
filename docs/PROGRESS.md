@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 13:15)
+## Now — RESUME HERE (2026-11-14 15:07)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -32,53 +32,55 @@ started with `gh workflow run CI --ref integration`; it is merged to
 and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
-**Usage limit reached on 2026-11-14 at 13:15.** The three agents below
-may have been stopped mid-work; resume each by its id.
+**Resumed 2026-11-14 15:07 after the usage-limit stop of 13:30.** Cap:
+three workers (the owner's latest word; five was allowed briefly).
 
-**`sleigh-decode` is on `master`** (merged and pushed 13:15; CI run
-43587818592 green on all three systems; gate on `master` 1,781 tests).
-`PARITY.md` still has to be updated for it (SLEIGH runtime row: decoding
-and disassembly text done, p-code generation in progress).
+**The main checkout has a staged, uncommitted change by the owner**:
+`rust-toolchain.toml` 1.97.1 → 1.100.0 ("I updated Rust"). Do not commit
+it with docs (commit docs with `git commit --only -- docs`, never
+`git add -A` then a bare commit), do not revert it, and **do not run the
+gate in the main checkout** while it is there (it would use 1.100.0 while
+CI and every worktree use 1.97.1). Integration work happens in the
+worktree `../basilisk-wt/integration`. The bump lands through track
+`toolchain-1.100` (queue, first): branch from `master`, set 1.100.0, fix
+what the newer compiler and clippy report across the workspace, gate,
+Wine, CI on all three systems, merge. Check that 1.100.0 has been out for
+two weeks; if not, say so to the owner rather than deciding.
 
-**DO NOT MERGE branch `integration` AS IT IS.** It holds `x86-oracle`,
-`sleigh-compiler-front` and `site-design` (with its CI fix), its gate was
-green and CI run 43589143588 was started at 13:25 — but **the
-coordinator's conflict resolution broke `fuzz/Cargo.toml`** on it: the
-"keep both sides" merge left the `bk_sleigh_hostile_sla` `[[bin]]` entry
-with a second `name`/`path` pair (those of `bk_sleigh_compiler_elaborate`)
-instead of two entries, which is invalid TOML, and `fuzz/Cargo.lock` was
-then not regenerated (it lacks `bk-sleigh-compiler`). Neither the gate nor
-CI builds the fuzz crate, so both can be green with this broken. To fix:
-on `integration`, restore two proper `[[bin]]` entries (hostile_sla, then
-compiler_elaborate, each with `test`/`doc`/`bench = false`, alphabetical
-order as the file's header asks), run `cargo metadata --offline
---manifest-path fuzz/Cargo.toml` to regenerate the lock, check
-`git diff master -- fuzz/Cargo.lock` only adds packages, commit, push,
-rerun CI, and merge only then. Simplest alternative: delete the branch
-and rebuild it, resolving `fuzz/Cargo.toml` by hand. **Lessons**: resolve
-structured files by reading them, not by a regular expression; and add a
-gate step that parses the fuzz manifest (`cargo metadata --manifest-path
-fuzz/Cargo.toml`) — give that to the `win-local` tooling track.
-After the merge: tick `sleigh-compiler-front` in `PLAN.md`; run the
-oracle regeneration on `kassini` (see the `x86-oracle` row in the log
-below / its report `docs/agents/pcode.md`); tell the owner the Pages
-steps; start `docs-content`; correct ADR-029's last bullet (50 of the 161
-differing rows are `FLOAT_TRUNC`).
+**`sleigh-decode` is on `master`** (CI run 43587818592 green on all three
+systems; gate 1,781 tests). `PARITY.md` still has to be updated for it.
 
-### Running (state at 2026-11-14 13:15)
+**Branch `integration` was rebuilt at 15:07** in its own worktree with
+`fuzz/Cargo.toml` resolved by hand (the earlier one had invalid TOML from
+a careless "keep both sides" resolution, which neither the gate nor CI
+notices because nothing builds the fuzz crate): it holds `x86-oracle`,
+`sleigh-compiler-front` and `site-design`; both lock files gain only
+`bk-sleigh-compiler`; `cargo metadata` parses the fuzz manifest. The gate
+is running there; green → push, `gh workflow run CI --ref integration`,
+and on a green run merge to `master` (make the merge commit in the
+integration worktree on a detached `master`, then fast-forward `master`
+in the main checkout, so the owner's staged file is not disturbed).
+After the merge: tick `sleigh-compiler-front` in `PLAN.md`; update
+`PARITY.md`; run the oracle regeneration on `kassini` (`x86-oracle`'s
+report in `docs/agents/pcode.md` has the two commands); tell the owner
+the Pages steps; start `docs-content`; correct ADR-029's last bullet (50
+of the 161 differing rows are `FLOAT_TRUNC`). Tooling follow-up for
+`win-local`: a gate step that parses the fuzz manifest.
+
+### Running (state at 2026-11-14 15:07)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | started 13:20; `bk-sleigh` part 2 (p-code generation, `Translate::one_instruction`, `basilisk disasm`) from `features/sleigh-pcode.md`, on part 1's harness. |
-| `decomp-cspec` | Opus | `aaa90a7df42087601` | started 13:05; D03, `bk-cspec` from `features/decomp-cspec.md`. |
-| `ref-nofma` | Opus | `a3f0f7e47fd87711a` | started 13:10; rebuilds `../reference` with `-ffp-contract=off` through a staging directory and atomic per-file swaps, edits `features/sleigh-compiler-back.md` per ADR-032, analyses the two `pcodedump` crashes. **If it was stopped mid-swap, read `../basilisk-wt/ref-nofma/docs/agents/ref-nofma.md` for the state of `../reference` before using it.** |
+| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | resumed 15:07 (nothing was on disk); `bk-sleigh` part 2 from `features/sleigh-pcode.md`. |
+| `decomp-cspec` | Opus | `aaa90a7df42087601` | resumed 15:07 (three uncommitted files); D03, `bk-cspec`. |
+| `ref-nofma` | Opus | `a3f0f7e47fd87711a` | resumed 15:07. **The swap of `../reference` is complete and verified** (281 files replaced atomically; all 150 `.sla` equal x86-64 Linux's; Ghidra's tests, `pcodedump` on ten languages and the `decomp` console on all 93 data tests unchanged; old files in `../reference.aarch64-fused/`). Remaining: post-swap workspace test comparison, the edits to `features/sleigh-compiler-back.md`, `research/pcodedump-crashes.md`, Docker leftovers, gate, report. |
 
-Finished and waiting on the `integration` fix above: `x86-oracle`
+Finished and in the `integration` branch: `x86-oracle`
 (`a6eeb040907dff5c6`), `sleigh-compiler-front` (`a657ab279c091c7b8`: all
 150 specifications match Ghidra's files in every compared category; 92
 diagnostic cases; parse + elaborate of all 150 in 1.03 s), `site-design`
 (`ad3bb266abb408203`: CI fix sizes the container from `docker info`).
-Their worktrees are kept.
+Their worktrees are kept until the merge.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
@@ -210,8 +212,9 @@ start a fresh agent briefed from the branch's files.
 
 ### Coordinator's next steps
 
-1. As slots free, in this order: `sleigh-pcode` (when `sleigh-decode`
-   is on `master`), `docs-content` (when the site is merged), D01
+1. As slots free, in this order: `toolchain-1.100` (above),
+   `docs-content` (when the site is merged), `sleigh-compiler-back`
+   (when the front half and `ref-nofma` are merged), D01
    `decomp-range`, an Opus agent to write the D00 and D04 specs,
    `ref-nofma`, `win-local`, the monitor-type move (queue item 0a), then
    the rest of the queue.

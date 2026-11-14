@@ -79,8 +79,14 @@ and a sane architecture in mind.
   assets in the repository. Effort: **high for Fable** research agents,
   **medium for Opus** implementation agents. The coordinator (Fable) writes
   the docs and specs itself.
+* **Rust toolchain 1.100.0** (owner, 2026-11-14: "I updated Rust"): the
+  owner changed `rust-toolchain.toml` from 1.97.1 to 1.100.0 in the main
+  checkout. It lands on `master` through its own branch and CI run, with
+  whatever the newer compiler and clippy require fixed in the same branch
+  (track `toolchain-1.100` in `PROGRESS.md`).
 * **At most three running workers** (owner, 2026-11-14: "limit to 3
-  agents total"; before that four, 2026-11-13, and "about four",
+  agents total", and again "you can use 3 agents" after briefly allowing
+  five the same day; before that four, 2026-11-13, and "about four",
   2026-11-12), counting helper subagents. The coordinator fills the slots
   itself, so agents start no helpers. Start the next track when a slot
   frees; queue the rest in `PROGRESS.md`.
