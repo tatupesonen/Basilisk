@@ -19,7 +19,8 @@
 cases=${1:-1000000}
 per=${BK_PROPTEST_TIMEOUT:-1500}
 # Suites that cannot bear the full count in the time bound, measured on the
-# build host: "<crate> <target> <cases>".
+# build host: "<crate> <target> <cases>". None so far: on 2026-11-14 all
+# eight suites ran 1,000,000 cases in 4 s to 61 s each (docs/agents/testbed.md).
 caps="
 "
 cap_for() { printf '%s\n' "$caps" | awk -v c="$1" -v t="$2" '$1 == c && $2 == t {print $3}'; }

@@ -104,6 +104,26 @@ Fuzz table (first run, corpora empty except the checked-in regressions):
 The corpora persist on the host (`~/bk/testbed/fuzz/corpus/<target>`), so
 each later run (the nightly one included) starts where the last ended.
 
+### Property tests (`long proptest`, 1,000,000 cases, 6 min 43 s in all)
+
+The eight suites that leave the count to `PROPTEST_CASES` all pass at
+1,000,000 cases (optimised build with debug assertions and overflow checks;
+times include starting the binary):
+
+    bk-bin --test proptests                            1000000 cases 0h00m16s  pass
+    bk-core --lib                                      1000000 cases 0h00m04s  pass
+    bk-cspec --test properties                         1000000 cases 0h00m33s  pass
+    bk-decomp-types --test properties                  1000000 cases 0h01m01s  pass
+    bk-sleigh --test pcode_properties                  1000000 cases 0h00m11s  pass
+    bk-sleigh --test properties                        1000000 cases 0h00m05s  pass
+    bk-sleigh-compiler --lib                           1000000 cases 0h00m22s  pass
+    bk-testkit --lib                                   1000000 cases 0h00m36s  pass
+
+The release build took the rest of the time. Time grows linearly with the
+count (bk-sleigh `fixture_never_panics…`: 1.2 s at 10^6, 12.3 s at 10^7), so
+these counts are real. No suite needed a cap. The 11 files that fix their own
+count (the `PROPTEST_CASES` finding below) were not run at length.
+
 ### Wine and CI's `windows-latest`
 
 `wine` builds for `x86_64-pc-windows-gnu` (MinGW-w64 GCC 14, Debian 13's
