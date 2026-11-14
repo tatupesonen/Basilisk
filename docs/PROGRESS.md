@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 12:51; earlier stamp 11:31)
+## Now — RESUME HERE (2026-11-14 13:15)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -32,20 +32,53 @@ started with `gh workflow run CI --ref integration`; it is merged to
 and then deleted. A red job goes back to the agent whose crate it is.
 A report that says "not run" for a platform is not a reason to skip this.
 
-### Running (state at 2026-11-14 13:03)
+**Usage limit reached on 2026-11-14 at 13:15.** The three agents below
+may have been stopped mid-work; resume each by its id.
+
+**`sleigh-decode` is on `master`** (merged and pushed 13:15; CI run
+43587818592 green on all three systems; gate on `master` 1,781 tests).
+`PARITY.md` still has to be updated for it (SLEIGH runtime row: decoding
+and disassembly text done, p-code generation in progress).
+
+**DO NOT MERGE branch `integration` AS IT IS.** It holds `x86-oracle`,
+`sleigh-compiler-front` and `site-design` (with its CI fix), its gate was
+green and CI run 43589143588 was started at 13:25 — but **the
+coordinator's conflict resolution broke `fuzz/Cargo.toml`** on it: the
+"keep both sides" merge left the `bk_sleigh_hostile_sla` `[[bin]]` entry
+with a second `name`/`path` pair (those of `bk_sleigh_compiler_elaborate`)
+instead of two entries, which is invalid TOML, and `fuzz/Cargo.lock` was
+then not regenerated (it lacks `bk-sleigh-compiler`). Neither the gate nor
+CI builds the fuzz crate, so both can be green with this broken. To fix:
+on `integration`, restore two proper `[[bin]]` entries (hostile_sla, then
+compiler_elaborate, each with `test`/`doc`/`bench = false`, alphabetical
+order as the file's header asks), run `cargo metadata --offline
+--manifest-path fuzz/Cargo.toml` to regenerate the lock, check
+`git diff master -- fuzz/Cargo.lock` only adds packages, commit, push,
+rerun CI, and merge only then. Simplest alternative: delete the branch
+and rebuild it, resolving `fuzz/Cargo.toml` by hand. **Lessons**: resolve
+structured files by reading them, not by a regular expression; and add a
+gate step that parses the fuzz manifest (`cargo metadata --manifest-path
+fuzz/Cargo.toml`) — give that to the `win-local` tooling track.
+After the merge: tick `sleigh-compiler-front` in `PLAN.md`; run the
+oracle regeneration on `kassini` (see the `x86-oracle` row in the log
+below / its report `docs/agents/pcode.md`); tell the owner the Pages
+steps; start `docs-content`; correct ADR-029's last bullet (50 of the 161
+differing rows are `FLOAT_TRUNC`).
+
+### Running (state at 2026-11-14 13:15)
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `site-design` (fix round) | Opus | `ad3bb266abb408203` | resumed 13:00 with the CI failure (Docker `--cpus 3` on a 2-CPU runner); also checking everything else that assumes this Mac. |
-| `sleigh-compiler-front` | Opus | `a657ab279c091c7b8` | started 12:05; `bk-sleigh-compiler` part 1; waiting on its own final run. |
-| `decomp-cspec` | Opus | `aaa90a7df42087601` | started 13:03; D03, `bk-cspec` from `features/decomp-cspec.md`, briefed with D02's hooks (`PrototypeCodec`, `TypeEnv::default_model`). |
+| `sleigh-pcode` | Opus | `a392a8e6a16d0c340` | started 13:20; `bk-sleigh` part 2 (p-code generation, `Translate::one_instruction`, `basilisk disasm`) from `features/sleigh-pcode.md`, on part 1's harness. |
+| `decomp-cspec` | Opus | `aaa90a7df42087601` | started 13:05; D03, `bk-cspec` from `features/decomp-cspec.md`. |
+| `ref-nofma` | Opus | `a3f0f7e47fd87711a` | started 13:10; rebuilds `../reference` with `-ffp-contract=off` through a staging directory and atomic per-file swaps, edits `features/sleigh-compiler-back.md` per ADR-032, analyses the two `pcodedump` crashes. **If it was stopped mid-swap, read `../basilisk-wt/ref-nofma/docs/agents/ref-nofma.md` for the state of `../reference` before using it.** |
 
-Finished, in or waiting for the integration branch:
-
-| Branch | Agent id | Result |
-|---|---|---|
-| `sleigh-decode` (13 commits) | `a07f201f2114ec7f5` | **In CI** on branch `integration` (run 43587818592; gate on the branch green, 1,781 tests). `bk-sleigh` part 1: no `I`/`E`/`T` record differs from `pcodedump` over 175 language configurations (99.33 % of root pairs confirmed, 97.2 % of constructors); decode 3.25 M instructions/s against 3.17 M for Ghidra, decode + text 2.41 M against 1.50 M, no allocation per instruction. Missed: 8-thread scaling 4.78× against a 6× target, measured on a loaded machine — re-measure idle. Found: `pcodedump` crashes on a delay-slot instruction with an `unimpl` body (36 cases). CI replays only a fixture language built in Rust; the full run needs the local reference build. Green → merge, tick `sleigh-decode` in `PLAN.md`, start `sleigh-pcode`. |
-| `x86-oracle` (6 commits, worktree kept) | `a6eeb040907dff5c6` | **Next into the integration branch.** `bk-pcode` now follows x86-64 for two NaN inputs (ADD/MULT take `b`'s sign, SUB/DIV `a`'s), computed from the bits; `ceil`/`floor` through `libm`; the x86-64 table is the checked-in oracle with 0 unexplained rows and three explained classes (`TruncSaturates` 58 — Java's tests pin saturation, x86-64 C++ gives `i64::MIN`; two C++ faults). 188 directed rows with literal expected bits run on all three CI systems. The generator is now deterministic. Own gate green. **After the merge the coordinator runs the regeneration on `kassini`** (`regen.sh` against the box's reference, then compare the decompressed text with the checked-in table: expected identical). Correction to ADR-029's last bullet: 50 of the 161 differing rows are `FLOAT_TRUNC`, not NaN signs. |
+Finished and waiting on the `integration` fix above: `x86-oracle`
+(`a6eeb040907dff5c6`), `sleigh-compiler-front` (`a657ab279c091c7b8`: all
+150 specifications match Ghidra's files in every compared category; 92
+diagnostic cases; parse + elaborate of all 150 in 1.03 s), `site-design`
+(`ad3bb266abb408203`: CI fix sizes the container from `docker info`).
+Their worktrees are kept.
 
 Stopped by the limit on 2026-11-13, to resume by id when a slot frees:
 
