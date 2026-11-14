@@ -482,6 +482,75 @@ decode only, decode + lift and `--quiet`. Text and full listings remain
 ahead. Not investigated in this track (it changes no crate); a follow-up
 for `bk-sleigh`.
 
+### `bk-sleigh` single-thread speed against Ghidra's C++ on x86-64 Linux and the M1 Pro (track `sleigh-perf-linux`)
+
+    # build host (x86-64 Linux): inputs and slabench built there, both engines pinned to one core
+    scripts/remote.sh run -- bash -c 'crates/bk-sleigh/tests/reference_bench/build.sh "$BASILISK_REFERENCE_DIR" && crates/bk-sleigh/tests/reference_bench/compare.sh "$BASILISK_REFERENCE_DIR" 11 7'
+    # Mac (unpinned; macOS cannot pin a thread)
+    crates/bk-sleigh/tests/reference_bench/build.sh ../reference
+    crates/bk-sleigh/tests/reference_bench/compare.sh ../reference 7
+
+`compare.sh` runs, per round, `bench_pcode` with `BK_BENCH_SINGLE=1` (the
+four single-thread sweeps, best of 5 inside) and then `slabench` (the
+same four sweeps, best of 5 inside), and prints the best and the median
+of the rounds and the median of the per-round ratio (the two engines run
+back to back, so the ratio cancels the host's drift). `build.sh` now also
+runs on Linux (clang++ -O2, ELF `.text`), so each host has its own input:
+the build host 410,462 bytes, 107,047 instructions, 454,144 ops (both
+engines agree on both counts); the Mac 538,553 bytes, 147,953
+instructions, 608,674 ops. One language sample (x86-64) exists; the
+other languages are covered for correctness by the differential tests,
+not timed. M instructions/s, best / median of the rounds.
+
+**Build host: a 20-vCPU x86-64 Linux VM, host CPU model AMD Ryzen
+Threadripper 7970X (Zen 4; AVX2, BMI1/2, AVX-512 exposed)**, Rust 1.100.0,
+reference built by g++ 14.2 -O2. Before: master 12f1705, 5 rounds, load
+average 3.5–4.0 (another branch idle, the testbed idle). After:
+e7e8f04, 11 rounds, load average 4.7 falling to 2 (another agent's job
+finishing).
+
+| | basilisk before | basilisk after | Ghidra C++ | after / Ghidra (per-round median, range) |
+|---|---:|---:|---:|---|
+| decode only | 3.98 / 3.87 | **5.22 / 5.11** | 4.69 / 4.61 | **1.11** (1.07–1.19) |
+| decode + text | 2.83 / 2.69 | **3.40 / 3.35** | 2.30 / 2.23 | **1.50** (1.45–1.58) |
+| decode + lift, counting emitter | 1.74 / 1.69 | **2.29 / 2.26** | 2.32 / 2.26 | **1.00** (0.94–1.05) |
+| decode + text + lift | 1.47 / 1.42 | **1.78 / 1.74** | 1.51 / 1.48 | **1.18** (1.12–1.23) |
+| `basilisk disasm --quiet` end to end, 606,673 bytes | — | **0.106 s** | `pcodedump --quiet` 0.132 s | 1.25× faster |
+| `basilisk disasm`, full listing to a null device | — | **0.240 s** | `pcodedump` 0.347 s | 1.45× faster |
+
+Before, the ratios were 0.86 (decode), 1.24 (text), 0.76 (lift) and 0.99
+(text + lift); the earlier measurement on the same VM with a baseline
+virtual CPU (no AVX/BMI) had 0.73–0.79 for decode and 0.70–0.72 for lift.
+
+**Mac: M1 Pro, shared** (load average 2.5–9 before, 6–7.5 after; Apple
+clang reference). Before: master 12f1705, 5 rounds; after: e7e8f04, 7
+rounds.
+
+| | basilisk before | basilisk after | Ghidra C++ | after / Ghidra (per-round median) |
+|---|---:|---:|---:|---|
+| decode only | 3.33 / 3.32 | **4.31 / 4.30** | 3.28 / 3.27 | **1.32** |
+| decode + text | 2.45 / 2.44 | **3.01 / 2.99** | 1.54 / 1.53 | **1.95** |
+| decode + lift, counting emitter | 1.62 / 1.62 | **2.22 / 2.21** | 1.61 / 1.60 | **1.38** |
+| decode + text + lift | 1.39 / 1.39 | **1.79 / 1.77** | 1.02 / 1.02 | **1.74** |
+
+What the build host's profile showed and what changed it (details and a
+row per commit in `docs/agents/sleigh-perf-linux.md`): basilisk executed
+about 4,700 machine instructions per decoded instruction where Ghidra
+executes about 3,000, and several hot values were stored piecewise and
+read back with a wider load, which x86-64 cannot forward from the stores
+(the M1 can, which is why only Linux was behind). Fixed by keeping `Env`
+to references, handles apart from nodes, the instruction window loaded in
+place, handle and varnode resolution inlined, a build walk keeping only a
+node index and sharing its constants; and by less work: decision trees
+laid out for the decoder (16-byte nodes, shifts precomputed, plain
+branches), context changes, exports and leaf expressions beside the
+constructor tables, a two-byte internal error so `Result`s come back in
+registers, fixed varnodes located directly, no refill of the handle
+vector. Now about 4,050 instructions per decode (Ghidra 2,990) and 8,260
+per decode + lift (Ghidra 6,300), at a higher IPC. A fat-LTO build of the
+same code (`CARGO_PROFILE_RELEASE_LTO=fat`) measured decode + lift 1.00
+and decode 1.13: no reason to change the workspace profile.
+
 ### `bk-cspec`
 
 Command: `BASILISK_GHIDRA_DIR=../ghidra CARGO_BUILD_JOBS=2 cargo test -p

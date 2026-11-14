@@ -120,7 +120,9 @@ impl OpBuffer {
             let Some(vn) = self.vars.get_mut(r.varnode as usize) else {
                 continue;
             };
-            let at = usize::try_from(vn.offset)
+            // Ghidra `resolveRelatives`: `uint4 id = ptr->offset`.
+            let id = super::build::label_number(vn.offset);
+            let at = usize::try_from(id)
                 .ok()
                 .and_then(|id| self.labels.get(id))
                 .copied()

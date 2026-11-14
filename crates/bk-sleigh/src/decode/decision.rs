@@ -1,108 +1,151 @@
 //! Walking a subtable's decision tree and matching the patterns of a leaf
 //! (Ghidra `DecisionNode::resolve`, `DisjointPattern::isMatch`,
-//! `PatternBlock::isInstructionMatch`, `isContextMatch`).
+//! `PatternBlock::isInstructionMatch`, `isContextMatch`), over the layout of
+//! [`crate::language::decide`].
 
-use bk_sla::{BlockId, ConstructorId, DisjointPattern, SymbolId};
+use bk_sla::{ConstructorId, SymbolId};
 
+use super::bytes::WINDOW;
 use super::expr::Env;
-use crate::error::DecodeError;
+use super::fault::{Fault, What};
+use crate::language::decide::{Block, Kind, Trees};
 
 impl Env<'_> {
     /// The constructor of subtable `table` that the bytes at `node_offset`
     /// and the local context select.
-    pub(crate) fn choose(
-        &self,
-        table: SymbolId,
-        node_offset: u32,
-    ) -> Result<ConstructorId, DecodeError> {
-        let subtable = self
-            .sla
-            .subtable(table)
-            .ok_or_else(|| self.model("subtable"))?;
-        let mut id = subtable.decision;
-        // A validated tree is at most 64 levels deep; the bound only keeps a
+    pub(crate) fn choose(&self, table: SymbolId, node_offset: u32) -> Result<ConstructorId, Fault> {
+        let trees = &self.lang.tables.trees;
+        let root = trees
+            .roots
+            .get(table.index() as usize)
+            .filter(|root| root.decision != crate::decode::tree::NONE)
+            .ok_or(Fault::Model(What::Subtable))?;
+        let mut id = root.decision;
+        // Down the tree to a leaf. The node kinds are tested with plain
+        // branches (instruction bits first, the most common) rather than a
+        // jump table, as Ghidra's `bitsize`/`contextdecision` tests are. A
+        // validated tree is at most 64 levels deep; the bound only keeps a
         // malformed one from looping.
-        for _ in 0..=256 {
-            let node = self
-                .sla
-                .decision(id)
-                .ok_or_else(|| self.model("decision node"))?;
-            if node.is_leaf() {
-                for pair in self.sla.pairs(node) {
-                    if self.matches(&pair.pattern, node_offset)? {
-                        return subtable
-                            .constructor(pair.constructor)
-                            .ok_or_else(|| self.model("decision pair constructor"));
-                    }
+        let mut levels = 0u32;
+        let leaf = loop {
+            let step = trees.step(id);
+            let value = if step.kind == Kind::Bits {
+                // `getInstructionBits` with the arithmetic done.
+                let pos = node_offset.wrapping_add(step.pos as u32);
+                if pos as usize >= WINDOW {
+                    return Err(Fault::TooLong);
                 }
-                return Err(DecodeError::NoConstructor {
-                    address: self.addr,
-                    at: self.lang.raw_text(self.addr),
-                });
-            }
-            let size = u32::from(node.size);
-            let value = if node.context {
-                self.context_bits(node.start_bit, size)
+                let byte_size = u32::from(step.a);
+                if pos as usize + byte_size as usize > WINDOW {
+                    self.parse.overhang.set(true);
+                }
+                let raw = self.parse.window.read(pos, byte_size.min(4));
+                raw.wrapping_shl(u32::from(step.b))
+                    .wrapping_shr(u32::from(step.c))
+            } else if step.kind == Kind::Context {
+                // `getContextBits` with the arithmetic done.
+                let word = |i: i32| {
+                    usize::try_from(i)
+                        .ok()
+                        .and_then(|i| self.parse.context.get(i))
+                        .copied()
+                };
+                let mut value = word(step.pos)
+                    .unwrap_or(0)
+                    .wrapping_shl(u32::from(step.a))
+                    .wrapping_shr(u32::from(step.b));
+                if step.c > 0
+                    && let Some(next) = word(step.pos.wrapping_add(1))
+                {
+                    value |= next.wrapping_shr(32u32.wrapping_sub(u32::from(step.c)));
+                }
+                value
+            } else if step.kind == Kind::Leaf {
+                break step;
             } else {
-                self.instruction_bits(node.start_bit, size, node_offset)?
+                return Err(Fault::Model(What::DecisionNode));
             };
-            id = self
-                .sla
-                .decision_child(node, value)
-                .ok_or_else(|| self.model("decision child"))?;
+            if value >= step.count {
+                return Err(Fault::Model(What::DecisionChild));
+            }
+            id = step.first.wrapping_add(value);
+            levels += 1;
+            if levels > 256 {
+                return Err(Fault::Model(What::DecisionTreeTooDeep));
+            }
+        };
+        let pairs = trees
+            .pairs
+            .get(leaf.first as usize..leaf.first.wrapping_add(leaf.count) as usize)
+            .unwrap_or_default();
+        for pair in pairs {
+            if self.block_matches(trees, pair.instruction, node_offset)?
+                && self.context_block_matches(trees, pair.context)?
+            {
+                return (pair.constructor < root.num_constructors)
+                    .then(|| {
+                        ConstructorId::new(root.first_constructor.wrapping_add(pair.constructor))
+                    })
+                    .ok_or(Fault::Model(What::DecisionPairConstructor));
+            }
         }
-        Err(self.model("decision tree too deep"))
+        Err(Fault::NoConstructor)
     }
 
-    /// Ghidra's `isMatch`; a combined pattern tests the instruction block
-    /// first.
-    fn matches(&self, pattern: &DisjointPattern, node_offset: u32) -> Result<bool, DecodeError> {
-        Ok(match *pattern {
-            DisjointPattern::Instruction(block) => self.instruction_match(block, node_offset)?,
-            DisjointPattern::Context(block) => self.context_match(block)?,
-            DisjointPattern::Combine {
-                context,
-                instruction,
+    /// Ghidra `PatternBlock::isInstructionMatch`.
+    #[inline]
+    fn block_matches(&self, trees: &Trees, block: Block, node_offset: u32) -> Result<bool, Fault> {
+        match block {
+            Block::True => Ok(true),
+            Block::False => Ok(false),
+            Block::Missing => Err(Fault::Model(What::PatternBlock)),
+            Block::Words {
+                offset,
+                first,
+                count,
             } => {
-                self.instruction_match(instruction, node_offset)? && self.context_match(context)?
+                let words = trees
+                    .words
+                    .get(first as usize..first.wrapping_add(count) as usize)
+                    .unwrap_or_default();
+                let mut off = offset;
+                for word in words {
+                    let data = self.pattern_word(off, node_offset, word.mask)?;
+                    if word.mask & data != word.value {
+                        return Ok(false);
+                    }
+                    off = off.wrapping_add(4);
+                }
+                Ok(true)
             }
-        })
+        }
     }
 
-    fn instruction_match(&self, id: BlockId, node_offset: u32) -> Result<bool, DecodeError> {
-        let block = self
-            .sla
-            .block(id)
-            .ok_or_else(|| self.model("pattern block"))?;
-        if block.nonzero <= 0 {
-            return Ok(block.nonzero == 0);
-        }
-        let mut off = block.offset;
-        for word in self.sla.block_words(block) {
-            let data = self.pattern_word(off, node_offset, word.mask)?;
-            if word.mask & data != word.value {
-                return Ok(false);
+    /// Ghidra `PatternBlock::isContextMatch`.
+    #[inline]
+    fn context_block_matches(&self, trees: &Trees, block: Block) -> Result<bool, Fault> {
+        match block {
+            Block::True => Ok(true),
+            Block::False => Ok(false),
+            Block::Missing => Err(Fault::Model(What::PatternBlock)),
+            Block::Words {
+                offset,
+                first,
+                count,
+            } => {
+                let words = trees
+                    .words
+                    .get(first as usize..first.wrapping_add(count) as usize)
+                    .unwrap_or_default();
+                let mut off = offset;
+                for word in words {
+                    if word.mask & self.context_bytes(off, 4) != word.value {
+                        return Ok(false);
+                    }
+                    off = off.wrapping_add(4);
+                }
+                Ok(true)
             }
-            off = off.wrapping_add(4);
         }
-        Ok(true)
-    }
-
-    fn context_match(&self, id: BlockId) -> Result<bool, DecodeError> {
-        let block = self
-            .sla
-            .block(id)
-            .ok_or_else(|| self.model("pattern block"))?;
-        if block.nonzero <= 0 {
-            return Ok(block.nonzero == 0);
-        }
-        let mut off = block.offset;
-        for word in self.sla.block_words(block) {
-            if word.mask & self.context_bytes(off, 4) != word.value {
-                return Ok(false);
-            }
-            off = off.wrapping_add(4);
-        }
-        Ok(true)
     }
 }

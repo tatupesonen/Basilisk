@@ -12,7 +12,7 @@ use bk_sla::{ConstTpl, OpTpl, TemplateRef};
 
 use super::build::{Builder, template_of};
 use super::error::{LiftError, LiftLimit};
-use super::location::{Handles, Walk, fix, fix_space};
+use super::location::{Consts, Handles, Walk, fix, fix_space};
 use super::{BuildFeature, BuildObserver};
 use crate::context::ContextSource;
 use crate::decode::{ByteSource, Parse, ParseState, handles, resolve};
@@ -61,7 +61,8 @@ where
             let delayed = self.prepared_at(at).ok_or(LiftError::DelaySlotMissing {
                 address: self.address,
             })?;
-            let walk = Walk::of(delayed, 0, self.unique_bits(at));
+            let consts = Consts::of(delayed, self.unique_bits(at));
+            let walk = Walk::of(delayed, 0, &consts);
             let tpl = delayed
                 .nodes
                 .first()
@@ -123,7 +124,8 @@ where
         self.obs.crossbuild_target(target);
         let unique = self.unique_bits(target);
         if let Some(found) = self.prepared_at(target) {
-            let walk = cross_walk(found, &w, unique);
+            let consts = cross_consts(found, w.k, unique);
+            let walk = Walk::of(found, 0, &consts);
             return self.build_section(found, walk, number, slots);
         }
         let Some((slot, rest)) = slots.split_first_mut() else {
@@ -140,7 +142,8 @@ where
             .map_err(|_cause| failed.clone())?;
         handles::resolve_handles(self.lang, slot).map_err(|_cause| failed)?;
         let found: &Parse = slot;
-        let walk = cross_walk(found, &w, unique);
+        let consts = cross_consts(found, w.k, unique);
+        let walk = Walk::of(found, 0, &consts);
         self.build_section(found, walk, number, rest)
     }
 
@@ -168,15 +171,15 @@ where
     }
 }
 
-/// The walk of a crossbuild target: its handles, space and unique bits, and
+/// The constants of a crossbuild target: its space and unique bits, and
 /// the addresses of the instruction being built (Ghidra's cross context).
-fn cross_walk<'p>(target: &'p Parse, outer: &Walk<'p>, unique: u64) -> Walk<'p> {
-    Walk {
+fn cross_consts<'p>(target: &'p Parse, outer: &Consts<'p>, unique: u64) -> Consts<'p> {
+    Consts {
         start: outer.start,
         next: outer.next,
         next2: outer.next2,
         next2_error: outer.next2_error,
         flow: outer.flow,
-        ..Walk::of(target, 0, unique)
+        ..Consts::of(target, unique)
     }
 }

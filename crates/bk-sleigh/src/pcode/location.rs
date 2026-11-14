@@ -16,27 +16,28 @@ pub(crate) const CONST: u32 = 0;
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Handles<'p> {
     /// A node of a parse: operand `i` is the node's child `i`.
+    ///
+    /// Only the node's index is kept: a walk is rebuilt for every nested
+    /// `BUILD`, and the node's child range stored beside it as two 32-bit
+    /// fields was read back as one 64-bit load, which x86-64 cannot forward
+    /// from the two stores.
     Node {
         /// The parse.
         parse: &'p Parse,
         /// The node whose constructor's template is being built.
-        node: u32,
-        /// That node's first child and number of children (its operands).
-        first_child: u32,
-        /// The number of children.
-        num_children: u32,
+        node: usize,
     },
     /// Parameters of a free-standing template, by operand index.
     Params(&'p [(u32, VarnodeData)]),
 }
 
-/// The state a template is built in (Ghidra's `ParserWalker` with its
-/// cross context): handles, the addresses constants refer to and the
-/// unique-space bits. It is a value: a nested build makes a new one and an
-/// early return cannot leave a stale one behind.
+/// What every template of one build reads besides handles (Ghidra's
+/// `ParserWalker` cross context): the addresses constants refer to and the
+/// unique-space bits. It is made once per instruction (and per delay-slot
+/// or crossbuild target) and walks refer to it, so that a nested `BUILD`
+/// copies a handle source, not all of this.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct Walk<'p> {
-    pub(crate) handles: Handles<'p>,
+pub(crate) struct Consts<'p> {
     /// `inst_start`.
     pub(crate) start: Address,
     /// `inst_next`.
@@ -54,11 +55,10 @@ pub(crate) struct Walk<'p> {
     pub(crate) unique: u64,
 }
 
-impl<'p> Walk<'p> {
-    /// The walk of `node` of `parse`, with constants from `parse` itself.
-    pub(crate) fn of(parse: &'p Parse, node: u32, unique: u64) -> Self {
+impl<'p> Consts<'p> {
+    /// The constants of `parse` itself.
+    pub(crate) fn of(parse: &'p Parse, unique: u64) -> Self {
         Self {
-            handles: node_handles(parse, node),
             start: parse.addr,
             next: parse.naddr,
             next2: parse.next2,
@@ -68,12 +68,38 @@ impl<'p> Walk<'p> {
             unique,
         }
     }
+}
+
+/// The state a template is built in (Ghidra's `ParserWalker`): where its
+/// operand handles come from, and the build's constants. It is a value: a
+/// nested build makes a new one and an early return cannot leave a stale
+/// one behind.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Walk<'p> {
+    pub(crate) handles: Handles<'p>,
+    pub(crate) k: &'p Consts<'p>,
+}
+
+impl<'p> Walk<'p> {
+    /// The walk of `node` of `parse` with the constants `k`.
+    pub(crate) fn of(parse: &'p Parse, node: u32, k: &'p Consts<'p>) -> Self {
+        Self {
+            handles: Handles::Node {
+                parse,
+                node: node as usize,
+            },
+            k,
+        }
+    }
 
     /// The same walk moved to another node of the same parse.
     pub(crate) fn at(self, node: u32) -> Self {
         match self.handles {
             Handles::Node { parse, .. } => Self {
-                handles: node_handles(parse, node),
+                handles: Handles::Node {
+                    parse,
+                    node: node as usize,
+                },
                 ..self
             },
             Handles::Params(_) => self,
@@ -81,22 +107,14 @@ impl<'p> Walk<'p> {
     }
 
     /// The handle of operand `index`.
+    #[inline]
     pub(crate) fn handle(&self, index: u32) -> FixedHandle {
         match self.handles {
-            Handles::Node {
-                parse,
-                first_child,
-                num_children,
-                ..
-            } => {
-                if index >= num_children {
-                    return FixedHandle::UNSET;
-                }
-                parse
-                    .nodes
-                    .get(first_child.wrapping_add(index) as usize)
-                    .map_or(FixedHandle::UNSET, |n| n.handle)
-            }
+            Handles::Node { parse, node } => parse
+                .nodes
+                .get(node)
+                .and_then(|n| n.child(index))
+                .map_or(FixedHandle::UNSET, |child| parse.handle(child)),
             Handles::Params(params) => {
                 params
                     .iter()
@@ -113,20 +131,8 @@ impl<'p> Walk<'p> {
     }
 }
 
-fn node_handles(parse: &Parse, node: u32) -> Handles<'_> {
-    let (first_child, num_children) = parse
-        .nodes
-        .get(node as usize)
-        .map_or((0, 0), |n| (n.first_child, n.num_children()));
-    Handles::Node {
-        parse,
-        node,
-        first_child,
-        num_children,
-    }
-}
-
 /// The address size of space `space` (0 when there is none).
+#[inline]
 fn space_size(lang: &Language, space: u32) -> u64 {
     lang.spaces()
         .space_at(space)
@@ -134,26 +140,29 @@ fn space_size(lang: &Language, space: u32) -> u64 {
 }
 
 /// Ghidra `ConstTpl::fix`.
+#[inline]
 pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, DecodeError> {
     Ok(match *c {
         ConstTpl::Real(value) | ConstTpl::Relative(value) => value,
-        ConstTpl::Start => w.start.offset(),
-        ConstTpl::Next => w.next.offset(),
-        ConstTpl::Next2 => w
-            .next2
-            .ok_or_else(|| {
-                w.next2_error
-                    .cloned()
-                    .unwrap_or(DecodeError::Next2Unavailable { address: w.start })
-            })?
-            .offset(),
-        ConstTpl::FlowRef | ConstTpl::FlowDest => w.flow.map_or(0, Address::offset),
-        ConstTpl::FlowRefSize | ConstTpl::FlowDestSize => w
-            .flow
-            .and_then(Address::space)
-            .map_or(0, |s| space_size(lang, s.index())),
-        ConstTpl::CurSpace => u64::from(w.cur_space),
-        ConstTpl::CurSpaceSize => space_size(lang, w.cur_space),
+        ConstTpl::Start => w.k.start.offset(),
+        ConstTpl::Next => w.k.next.offset(),
+        ConstTpl::Next2 => {
+            w.k.next2
+                .ok_or_else(|| {
+                    w.k.next2_error
+                        .cloned()
+                        .unwrap_or(DecodeError::Next2Unavailable { address: w.k.start })
+                })?
+                .offset()
+        }
+        ConstTpl::FlowRef | ConstTpl::FlowDest => w.k.flow.map_or(0, Address::offset),
+        ConstTpl::FlowRefSize | ConstTpl::FlowDestSize => {
+            w.k.flow
+                .and_then(Address::space)
+                .map_or(0, |s| space_size(lang, s.index()))
+        }
+        ConstTpl::CurSpace => u64::from(w.k.cur_space),
+        ConstTpl::CurSpaceSize => space_size(lang, w.k.cur_space),
         ConstTpl::Space(space) => u64::from(space),
         ConstTpl::Handle {
             index,
@@ -187,9 +196,10 @@ pub(crate) fn fix(lang: &Language, c: &ConstTpl, w: &Walk<'_>) -> Result<u64, De
 }
 
 /// Ghidra `ConstTpl::fixSpace`.
+#[inline]
 pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> {
     match *c {
-        ConstTpl::CurSpace => Ok(w.cur_space),
+        ConstTpl::CurSpace => Ok(w.k.cur_space),
         ConstTpl::Space(space) => Ok(space),
         ConstTpl::Handle {
             index,
@@ -203,18 +213,24 @@ pub(crate) fn fix_space(c: &ConstTpl, w: &Walk<'_>) -> Result<u32, DecodeError> 
                 hand.space
             })
         }
-        _ => Err(DecodeError::NotASpace { address: w.start }),
+        _ => Err(DecodeError::NotASpace { address: w.k.start }),
     }
 }
 
 /// The offset of a varnode in `space` after the three space rules: masked
 /// to the size in the constant space, `OR`ed with the unique bits in the
 /// unique space, wrapped elsewhere.
+#[inline]
 fn place(lang: &Language, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
     lang.place_offset(space, offset, size, unique)
 }
 
 /// Ghidra `generateLocation`, with [`is_dynamic`]'s answer.
+#[expect(
+    clippy::inline_always,
+    reason = "returned through memory, the varnode is written field by field and copied with 16-byte loads that x86-64 cannot forward from those stores; inlined it stays in registers (measured, docs/agents/sleigh-perf-linux.md)"
+)]
+#[inline(always)]
 pub(crate) fn locate(
     lang: &Language,
     vn: &VarnodeTpl,
@@ -252,10 +268,28 @@ pub(crate) fn locate(
         return Ok((
             VarnodeData::new(
                 SpaceId::new(space),
-                place(lang, space, offset, hand.size, w.unique),
+                place(lang, space, offset, hand.size, w.k.unique),
                 hand.size,
             ),
             dynamic,
+        ));
+    }
+    // The next most common: a fixed varnode (a register, a unique
+    // temporary, a constant, a label), nothing to look up.
+    if let (
+        ConstTpl::Space(space),
+        ConstTpl::Real(offset) | ConstTpl::Relative(offset),
+        ConstTpl::Real(size),
+    ) = (vn.space, vn.offset, vn.size)
+    {
+        let size = size as u32;
+        return Ok((
+            VarnodeData::new(
+                SpaceId::new(space),
+                place(lang, space, offset, size, w.k.unique),
+                size,
+            ),
+            false,
         ));
     }
     let space = fix_space(&vn.space, w)?;
@@ -264,7 +298,7 @@ pub(crate) fn locate(
     Ok((
         VarnodeData::new(
             SpaceId::new(space),
-            place(lang, space, offset, size, w.unique),
+            place(lang, space, offset, size, w.k.unique),
             size,
         ),
         is_dynamic(vn, w),
@@ -273,6 +307,7 @@ pub(crate) fn locate(
 
 /// Ghidra `generatePointer`: the pointer of a dynamic handle and the space
 /// it points into.
+#[inline]
 pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (VarnodeData, u32) {
     let index = match vn.offset {
         ConstTpl::Handle { index, .. } => index,
@@ -284,7 +319,7 @@ pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (Varnod
         hand.offset_space,
         hand.offset_offset,
         hand.offset_size,
-        w.unique,
+        w.k.unique,
     );
     (
         VarnodeData::new(SpaceId::new(hand.offset_space), offset, hand.offset_size),
@@ -293,6 +328,7 @@ pub(crate) fn pointer(lang: &Language, vn: &VarnodeTpl, w: &Walk<'_>) -> (Varnod
 }
 
 /// Ghidra `VarnodeTpl::isDynamic`.
+#[inline]
 pub(crate) fn is_dynamic(vn: &VarnodeTpl, w: &Walk<'_>) -> bool {
     match vn.offset {
         ConstTpl::Handle { index, .. } => w.handle(index).is_dynamic(),

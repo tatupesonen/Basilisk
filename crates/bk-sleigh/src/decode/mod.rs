@@ -6,6 +6,7 @@ pub(crate) mod bytes;
 mod commit;
 mod decision;
 pub(crate) mod expr;
+pub(crate) mod fault;
 pub(crate) mod handles;
 pub(crate) mod resolve;
 pub(crate) mod tree;

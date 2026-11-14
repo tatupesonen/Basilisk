@@ -2,6 +2,7 @@
 //! once, shared by every decoder (Ghidra `Sleigh`/`SleighBase` after
 //! `initialize`, plus the language set-up `SleighArchitecture` applies).
 
+pub(crate) mod decide;
 mod load;
 mod registers;
 mod setup;
@@ -209,6 +210,7 @@ impl Language {
     /// The offset of a varnode in space `space` as p-code generation
     /// places it: masked to `size` bytes in the constant space, `OR`ed with
     /// `unique` in the unique space, wrapped to the space elsewhere.
+    #[inline]
     pub(crate) fn place_offset(&self, space: u32, offset: u64, size: u32, unique: u64) -> u64 {
         let Some(text) = self.space_text.get(space as usize) else {
             return offset;
