@@ -7,6 +7,8 @@ mod log_data;
 mod log_table_test;
 mod node;
 mod order;
+#[cfg(test)]
+mod proptests;
 mod score;
 
 pub(crate) use node::{Entry, build_tree};
