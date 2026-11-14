@@ -21,73 +21,75 @@ impl Env<'_> {
             .filter(|root| root.decision != crate::decode::tree::NONE)
             .ok_or(Fault::Model(What::Subtable))?;
         let mut id = root.decision;
-        // A validated tree is at most 64 levels deep; the bound only keeps a
+        // Down the tree to a leaf. The node kinds are tested with plain
+        // branches (instruction bits first, the most common) rather than a
+        // jump table, as Ghidra's `bitsize`/`contextdecision` tests are. A
+        // validated tree is at most 64 levels deep; the bound only keeps a
         // malformed one from looping.
-        for _ in 0..=256 {
+        let mut levels = 0u32;
+        let leaf = loop {
             let step = trees.step(id);
-            let value = match step.kind {
-                Kind::Leaf => {
-                    let pairs = trees
-                        .pairs
-                        .get(step.first as usize..step.first.wrapping_add(step.count) as usize)
-                        .unwrap_or_default();
-                    for pair in pairs {
-                        if self.block_matches(trees, pair.instruction, node_offset)?
-                            && self.context_block_matches(trees, pair.context)?
-                        {
-                            return (pair.constructor < root.num_constructors)
-                                .then(|| {
-                                    ConstructorId::new(
-                                        root.first_constructor.wrapping_add(pair.constructor),
-                                    )
-                                })
-                                .ok_or(Fault::Model(What::DecisionPairConstructor));
-                        }
-                    }
-                    return Err(Fault::NoConstructor);
+            let value = if step.kind == Kind::Bits {
+                // `getInstructionBits` with the arithmetic done.
+                let pos = node_offset.wrapping_add(step.pos as u32);
+                if pos as usize >= WINDOW {
+                    return Err(Fault::TooLong);
                 }
-                Kind::Bits => {
-                    // `getInstructionBits` with the arithmetic done.
-                    let pos = node_offset.wrapping_add(step.pos as u32);
-                    if pos as usize >= WINDOW {
-                        return Err(Fault::TooLong);
-                    }
-                    let byte_size = u32::from(step.a);
-                    if pos as usize + byte_size as usize > WINDOW {
-                        self.parse.overhang.set(true);
-                    }
-                    let raw = self.parse.window.read(pos, byte_size.min(4));
-                    raw.wrapping_shl(u32::from(step.b))
-                        .wrapping_shr(u32::from(step.c))
+                let byte_size = u32::from(step.a);
+                if pos as usize + byte_size as usize > WINDOW {
+                    self.parse.overhang.set(true);
                 }
-                Kind::Context => {
-                    // `getContextBits` with the arithmetic done.
-                    let word = |i: i32| {
-                        usize::try_from(i)
-                            .ok()
-                            .and_then(|i| self.parse.context.get(i))
-                            .copied()
-                    };
-                    let mut value = word(step.pos)
-                        .unwrap_or(0)
-                        .wrapping_shl(u32::from(step.a))
-                        .wrapping_shr(u32::from(step.b));
-                    if step.c > 0
-                        && let Some(next) = word(step.pos.wrapping_add(1))
-                    {
-                        value |= next.wrapping_shr(32u32.wrapping_sub(u32::from(step.c)));
-                    }
-                    value
+                let raw = self.parse.window.read(pos, byte_size.min(4));
+                raw.wrapping_shl(u32::from(step.b))
+                    .wrapping_shr(u32::from(step.c))
+            } else if step.kind == Kind::Context {
+                // `getContextBits` with the arithmetic done.
+                let word = |i: i32| {
+                    usize::try_from(i)
+                        .ok()
+                        .and_then(|i| self.parse.context.get(i))
+                        .copied()
+                };
+                let mut value = word(step.pos)
+                    .unwrap_or(0)
+                    .wrapping_shl(u32::from(step.a))
+                    .wrapping_shr(u32::from(step.b));
+                if step.c > 0
+                    && let Some(next) = word(step.pos.wrapping_add(1))
+                {
+                    value |= next.wrapping_shr(32u32.wrapping_sub(u32::from(step.c)));
                 }
-                Kind::Missing => return Err(Fault::Model(What::DecisionNode)),
+                value
+            } else if step.kind == Kind::Leaf {
+                break step;
+            } else {
+                return Err(Fault::Model(What::DecisionNode));
             };
-            let (children, first) = (step.count, step.first);
-            if value >= children {
+            if value >= step.count {
                 return Err(Fault::Model(What::DecisionChild));
             }
-            id = first.wrapping_add(value);
+            id = step.first.wrapping_add(value);
+            levels += 1;
+            if levels > 256 {
+                return Err(Fault::Model(What::DecisionTreeTooDeep));
+            }
+        };
+        let pairs = trees
+            .pairs
+            .get(leaf.first as usize..leaf.first.wrapping_add(leaf.count) as usize)
+            .unwrap_or_default();
+        for pair in pairs {
+            if self.block_matches(trees, pair.instruction, node_offset)?
+                && self.context_block_matches(trees, pair.context)?
+            {
+                return (pair.constructor < root.num_constructors)
+                    .then(|| {
+                        ConstructorId::new(root.first_constructor.wrapping_add(pair.constructor))
+                    })
+                    .ok_or(Fault::Model(What::DecisionPairConstructor));
+            }
         }
-        Err(Fault::Model(What::DecisionTreeTooDeep))
+        Err(Fault::NoConstructor)
     }
 
     /// Ghidra `PatternBlock::isInstructionMatch`.
