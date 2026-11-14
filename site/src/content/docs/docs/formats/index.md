@@ -1,6 +1,6 @@
 ---
 title: Formats and processors
-description: The binary formats and processor languages basilisk reads — today and planned.
+description: The binary formats and processor languages Basilisk reads — today and planned.
 sidebar:
   order: 1
   label: Overview
@@ -8,7 +8,7 @@ sidebar:
 
 ## Processors
 
-basilisk does not rewrite Ghidra's processor descriptions. It reads Ghidra's language files **unchanged**:
+Basilisk does not rewrite Ghidra's processor descriptions. It reads Ghidra's language files **unchanged**:
 the SLEIGH specifications (`.slaspec`, `.sinc`) that describe each instruction set, and the language
 definitions (`.ldefs`), processor specifications (`.pspec`) and loader opinions (`.opinion`) around them.
 

@@ -31,9 +31,9 @@ export default defineConfig({
   },
   integrations: [
     starlight({
-      title: 'basilisk',
+      title: 'Basilisk',
       description:
-        'User documentation for basilisk, a reimplementation of Ghidra in Rust: what works today, what is planned, and how each part works.',
+        'User documentation for Basilisk, a reimplementation of Ghidra in Rust: what works today, what is planned, and how each part works.',
       favicon: '/favicon.svg',
       head: [
         { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: base + 'favicon-32.png' } },

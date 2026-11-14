@@ -1,5 +1,5 @@
 /*
- * Starlight restyled as basilisk (ADR-031: the documentation, the site and
+ * Starlight restyled as Basilisk (ADR-031: the documentation, the site and
  * the program look like one product). Starlight's variables are mapped onto
  * the tokens in tokens.css; component styles below override Starlight's
  * cascade layers simply by being unlayered.

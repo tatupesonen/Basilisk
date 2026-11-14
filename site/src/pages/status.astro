@@ -12,12 +12,12 @@ const parity = loadParity();
 <SiteLayout
   title="Status"
   current="status"
-  description="Every Ghidra module and where basilisk stands on it, generated from the project's parity matrix."
+  description="Every Ghidra module and where Basilisk stands on it, generated from the project's parity matrix."
 >
   <header class="bk-page-head">
     <div class="bk-wrap">
       <p class="bk-eyebrow"><span class="bk-addr">0x30</span> Status</p>
-      <h1>Every Ghidra module, and where basilisk stands.</h1>
+      <h1>Every Ghidra module, and where Basilisk stands.</h1>
       <p class="bk-lede">
         Generated when the site is built from <a class="bk-link" href={`${repo}/blob/master/docs/PARITY.md`}><code>docs/PARITY.md</code></a>,
         last updated {parity.updated}. A module is <em>Done</em> only when it is implemented, its Ghidra tests are
@@ -32,7 +32,7 @@ const parity = loadParity();
     <StatusTable />
     <p class="bk-muted bk-status-foot">
       <Icon name="info" size="16" /> Milestones are those of the <a class="bk-link" href={`${import.meta.env.BASE_URL}roadmap/`}>roadmap</a>.
-      Crate names are basilisk’s planned crates; a name does not mean the crate exists yet.
+      Crate names are Basilisk’s planned crates; a name does not mean the crate exists yet.
     </p>
   </div>
 </SiteLayout>

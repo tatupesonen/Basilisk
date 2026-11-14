@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: What basilisk is, what it can do today, and what it is for.
+description: What Basilisk is, what it can do today, and what it is for.
 sidebar:
   order: 1
 ---
 
-basilisk is a reverse-engineering suite: it takes a compiled program, recovers its instructions, functions,
+Basilisk is a reverse-engineering suite: it takes a compiled program, recovers its instructions, functions,
 data and control flow, and turns machine code back into readable C. It does this by reimplementing
 [Ghidra](https://github.com/NationalSecurityAgency/ghidra) in Rust, and it reads Ghidra's processor
 specifications — the SLEIGH files that describe each instruction set — unchanged.
@@ -38,4 +38,4 @@ Opening a real binary, disassembly with SLEIGH, analysis, the decompiler and Pyt
 
 ## Next
 
-[Build and run basilisk](/docs/getting-started/build/) from source.
+[Build and run Basilisk](/docs/getting-started/build/) from source.
