@@ -314,7 +314,9 @@ fn profile_lift_x86_64() {
         _ => Mode::Lift,
     };
     let start = Instant::now();
+    let mut instructions = 0u64;
     while start.elapsed().as_secs_f64() < seconds {
-        sweep(&mut decoder, &db, &code, mode);
+        instructions += sweep(&mut decoder, &db, &code, mode).0;
     }
+    eprintln!("profiled {instructions} instructions");
 }
