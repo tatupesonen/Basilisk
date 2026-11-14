@@ -1,0 +1,778 @@
+# bk-oracle capture (docs/features/decomp-oracle.md 4.15)
+# S <script> decompiles recording-records context-dependent status
+# F <script> <k> <function> ops varnodes pointer-valued trace-records structuring-runs status
+S	datatests/bitfields	8	156	0	ok
+F	datatests/bitfields	0	dosomething	20	46	7	245	1	ok
+F	datatests/bitfields	1	doload	34	61	6	290	1	ok
+F	datatests/bitfields	2	dostackinsert	16	44	3	352	1	ok
+F	datatests/bitfields	3	dostackextract	18	38	3	252	1	ok
+F	datatests/bitfields	4	docompare	35	67	6	245	1	ok
+F	datatests/bitfields	5	doublecompare	21	42	3	186	1	ok
+F	datatests/bitfields	6	addsigned	7	13	2	83	1	ok
+F	datatests/bitfields	7	increment	8	17	2	118	1	ok
+S	datatests/bitfields2	8	157	0	ok
+F	datatests/bitfields2	0	dosomething	17	40	7	40	1	ok
+F	datatests/bitfields2	1	doload	29	56	6	57	1	ok
+F	datatests/bitfields2	2	dostackinsert	14	40	3	93	1	ok
+F	datatests/bitfields2	3	dostackextract	19	38	3	67	1	ok
+F	datatests/bitfields2	4	docompare	38	70	6	50	1	ok
+F	datatests/bitfields2	5	doublecompare	23	44	3	41	1	ok
+F	datatests/bitfields2	6	addsigned	6	12	2	14	1	ok
+F	datatests/bitfields2	7	increment	10	21	3	25	1	ok
+S	datatests/boolless	1	5	0	ok
+F	datatests/boolless	0	boolless	7	10	0	30	2	ok
+S	datatests/ccmp	1	8	0	ok
+F	datatests/ccmp	0	ccmp	8	15	2	119	3	ok
+S	datatests/concat	6	42	0	ok
+F	datatests/concat	0	concatregparam	5	7	1	55	1	ok
+F	datatests/concat	1	concatreturn	4	6	0	22	1	ok
+F	datatests/concat	2	concatreturnshort	8	12	0	67	1	ok
+F	datatests/concat	3	replaceshort	19	28	5	54	1	ok
+F	datatests/concat	4	zerofield	5	7	0	12	1	ok
+F	datatests/concat	5	zerofield2	5	7	0	59	1	ok
+S	datatests/concatsplit	1	18	0	ok
+F	datatests/concatsplit	0	test_split	15	29	6	199	1	ok
+S	datatests/condconst	3	76	0	ok
+F	datatests/condconst	0	condconst1	18	36	5	297	1	ok
+F	datatests/condconst	1	condconst_copy	16	25	0	136	1	ok
+F	datatests/condconst	2	condconst_conn	10	15	0	137	2	ok
+S	datatests/condconst2	3	15	0	ok
+F	datatests/condconst2	0	zeroprop	10	17	1	16	1	ok
+F	datatests/condconst2	1	throughadd	6	10	1	10	1	ok
+F	datatests/condconst2	2	condmove	5	11	1	39	3	ok
+S	datatests/condconstsub	1	3	0	ok
+F	datatests/condconstsub	0	foo	6	10	1	18	1	ok
+S	datatests/condexesub	2	20	0	ok
+F	datatests/condexesub	0	func	19	35	10	91	2	ok
+F	datatests/condexesub	1	iblockadd	10	21	4	73	2	ok
+S	datatests/condmulti	1	21	0	ok
+F	datatests/condmulti	0	condconst_multi	19	30	0	167	1	ok
+S	datatests/convert	1	39	0	ok
+F	datatests/convert	0	convert_list	18	35	17	401	1	ok
+S	datatests/copytrim	2	47	0	ok
+F	datatests/copytrim	0	myloop	25	42	3	204	2	ok
+F	datatests/copytrim	1	myglob	14	21	0	153	1	ok
+S	datatests/deadvolatile	1	10	0	ok
+F	datatests/deadvolatile	0	deadvolatile	5	9	2	49	1	ok
+S	datatests/deindirect	1	66	0	ok
+F	datatests/deindirect	0	deindirect	10	18	4	484	2	ok
+S	datatests/deindirect2	1	13	0	ok
+F	datatests/deindirect2	0	deind26	6	13	3	69	1	ok
+S	datatests/displayformat	1	9	0	ok
+F	datatests/displayformat	0	setglobals	9	13	0	14	1	ok
+S	datatests/divopt	4	746	0	ok
+F	datatests/divopt	0	divoptu	84	183	34	501	1	ok
+F	datatests/divopt	1	divopti	84	183	34	600	1	ok
+F	datatests/divopt	2	modoptu	84	183	34	862	1	ok
+F	datatests/divopt	3	modopti	84	183	34	978	1	ok
+S	datatests/doublemove	2	17	0	ok
+F	datatests/doublemove	0	loaddouble	3	4	0	64	1	ok
+F	datatests/doublemove	1	storedouble	5	7	0	69	1	ok
+S	datatests/dupptr	7	196	0	ok
+F	datatests/dupptr	0	argv_test	9	17	2	88	1	ok
+F	datatests/dupptr	1	loadstore_fieldarray	11	20	3	186	1	ok
+F	datatests/dupptr	2	loadstore_ptrfieldarray	9	16	3	185	1	ok
+F	datatests/dupptr	3	doublearray_stack	16	32	3	216	1	ok
+F	datatests/dupptr	4	sameindex	9	17	2	120	1	ok
+F	datatests/dupptr	5	sameindex_samefield	11	21	2	137	1	ok
+F	datatests/dupptr	6	twodim_array	15	30	2	184	1	ok
+S	datatests/elseif	1	165	0	ok
+F	datatests/elseif	0	testElseIf	105	156	21	1347	2	ok
+S	datatests/enum	5	44	0	ok
+F	datatests/enum	0	stackenumlow	9	16	3	58	1	ok
+F	datatests/enum	1	stackenumhigh	9	16	3	58	1	ok
+F	datatests/enum	2	ptrenumlow	8	14	2	35	1	ok
+F	datatests/enum	3	ptrenumhigh	8	14	2	35	1	ok
+F	datatests/enum	4	ptrenumequal	7	12	2	40	1	ok
+S	datatests/floatcast	2	31	0	ok
+F	datatests/floatcast	0	prec_conditions	14	22	0	131	1	ok
+F	datatests/floatcast	1	prec_comparison	16	24	0	88	1	ok
+S	datatests/floatconv	3	43	0	ok
+F	datatests/floatconv	0	rand_calc	6	9	0	41	1	ok
+F	datatests/floatconv	1	rand_ulong	6	9	0	83	3	ok
+F	datatests/floatconv	2	ulconv_win	5	8	0	29	3	ok
+S	datatests/floatprint	1	41	0	ok
+F	datatests/floatprint	0	establish	29	43	0	464	1	ok
+S	datatests/forloop1	1	17	0	ok
+F	datatests/forloop1	0	forloop1	8	12	1	92	1	ok
+S	datatests/forloop_loaditer	1	20	0	ok
+F	datatests/forloop_loaditer	0	forloop_loaditer	15	23	2	116	1	ok
+S	datatests/forloop_thruspecial	1	21	0	ok
+F	datatests/forloop_thruspecial	0	forloop_thruspecial	12	20	2	116	1	ok
+S	datatests/forloop_varused	1	27	0	ok
+F	datatests/forloop_varused	0	forloop_loopvarused	15	22	2	160	1	ok
+S	datatests/forloop_withskip	1	17	0	ok
+F	datatests/forloop_withskip	0	forloop_withskip	12	18	0	104	1	ok
+S	datatests/gp	1	40	0	ok
+F	datatests/gp	0	test_gp	7	14	4	204	2	ok
+S	datatests/heapstring	5	42	0	ok
+F	datatests/heapstring	0	fillin	5	11	1	18	1	ok
+F	datatests/heapstring	1	fillin_edit	23	47	3	87	1	ok
+F	datatests/heapstring	2	overlap	5	11	1	19	1	ok
+F	datatests/heapstring	3	fillin_wide	5	11	1	21	1	ok
+F	datatests/heapstring	4	negative_ptr	4	10	0	11	1	ok
+S	datatests/ifnoexit	1	20	0	ok
+F	datatests/ifnoexit	0	ifnoexit	20	34	1	61	1	ok
+S	datatests/ifswitch	1	26	0	ok
+F	datatests/ifswitch	0	testval	19	26	0	163	3	ok
+S	datatests/impliedfield	1	13	0	ok
+F	datatests/impliedfield	0	getvalue	12	18	0	100	1	ok
+S	datatests/indproto	1	58	0	ok
+F	datatests/indproto	0	indproto	12	20	4	357	2	ok
+S	datatests/injectoverride	2	18	0	ok
+F	datatests/injectoverride	0	callind_inject	2	4	0	77	2	ok
+F	datatests/injectoverride	1	inject_collapse	2	3	1	45	2	ok
+S	datatests/inline	3	49	0	ok
+F	datatests/inline	0	add100	3	5	0	65	1	ok
+F	datatests/inline	1	twohard	6	11	2	131	2	ok
+F	datatests/inline	2	collatz	15	24	1	203	1	ok
+S	datatests/inlinetarget	1	21	0	ok
+F	datatests/inlinetarget	0	main	13	18	1	77	1	ok
+S	datatests/laneleft	1	10	0	ok
+F	datatests/laneleft	0	scaleandslide	27	55	12	401	2	ok
+S	datatests/longdouble	6	111	0	ok
+F	datatests/longdouble	0	pass	9	12	0	46	1	ok
+F	datatests/longdouble	1	passmany	9	21	1	220	1	ok
+F	datatests/longdouble	2	printstruct	25	42	8	196	1	ok
+F	datatests/longdouble	3	printldfirst	8	27	4	215	1	ok
+F	datatests/longdouble	4	arrayindex	25	46	5	150	1	ok
+F	datatests/longdouble	5	writeLongDouble	6	11	2	26	1	ok
+S	datatests/loopcomment	1	84	0	ok
+F	datatests/loopcomment	0	loopcomment	125	214	71	780	2	ok
+S	datatests/lzcount	1	4	0	ok
+F	datatests/lzcount	0	cntlzwtest	3	5	0	31	1	ok
+S	datatests/mixfloatint	5	92	0	ok
+F	datatests/mixfloatint	0	dldlll	11	17	0	28	1	ok
+F	datatests/mixfloatint	1	fi	4	6	0	91	1	ok
+F	datatests/mixfloatint	2	id	5	7	0	49	1	ok
+F	datatests/mixfloatint	3	ldld	8	12	0	91	1	ok
+F	datatests/mixfloatint	4	main	23	39	5	727	1	ok
+S	datatests/modulo	1	335	0	ok
+F	datatests/modulo	0	remtest	189	409	80	3255	1	ok
+S	datatests/modulo2	4	32	0	ok
+F	datatests/modulo2	0	mod2	3	5	0	87	1	ok
+F	datatests/modulo2	1	mod3	3	5	0	107	1	ok
+F	datatests/modulo2	2	mod4	3	5	0	103	3	ok
+F	datatests/modulo2	3	mod6	3	5	0	132	1	ok
+S	datatests/multiret	1	29	0	ok
+F	datatests/multiret	0	getval	46	76	17	211	1	ok
+S	datatests/namespace	1	17	0	ok
+F	datatests/namespace	0	assign_vals	10	14	0	190	1	ok
+S	datatests/nan	1	16	0	ok
+F	datatests/nan	0	nanops	5	8	2	166	4	ok
+S	datatests/nestedoffset	1	7	0	ok
+F	datatests/nestedoffset	0	readstruct	6	12	1	45	1	ok
+S	datatests/noforloop_alias	1	26	0	ok
+F	datatests/noforloop_alias	0	noforloop_alias	26	43	10	198	1	ok
+S	datatests/noforloop_globcall	1	18	0	ok
+F	datatests/noforloop_globcall	0	noforloop_globcall	10	15	2	116	1	ok
+S	datatests/noforloop_iterused	1	21	0	ok
+F	datatests/noforloop_iterused	0	noforloop_iterused	14	21	2	130	1	ok
+S	datatests/offcut	1	42	0	ok
+F	datatests/offcut	0	offcut	34	57	5	292	1	ok
+S	datatests/offsetarray	1	9	0	ok
+F	datatests/offsetarray	0	access_array1	9	17	2	62	1	ok
+S	datatests/orcompare	2	39	0	ok
+F	datatests/orcompare	0	comp2	12	20	0	199	1	ok
+F	datatests/orcompare	1	comp3	17	28	0	215	1	ok
+S	datatests/overridedest	1	5	0	ok
+F	datatests/overridedest	0	overridedest	4	4	3	56	1	ok
+S	datatests/packstructaccess	1	8	0	ok
+F	datatests/packstructaccess	0	access	10	15	1	60	1	ok
+S	datatests/partialmerge	5	36	0	ok
+F	datatests/partialmerge	0	readpartial	7	11	0	46	1	ok
+F	datatests/partialmerge	1	read_expr_interfere	7	12	0	43	1	ok
+F	datatests/partialmerge	2	readpartial_callinterfere	9	13	3	50	1	ok
+F	datatests/partialmerge	3	readpartialstack_inbetween	14	23	6	86	1	ok
+F	datatests/partialmerge	4	partial_restore	16	24	4	93	1	ok
+S	datatests/partialsplit	6	89	0	ok
+F	datatests/partialsplit	0	loadalone	31	54	11	139	1	ok
+F	datatests/partialsplit	1	storeconst	9	18	4	12	1	ok
+F	datatests/partialsplit	2	copyloadstore	13	24	6	10	1	ok
+F	datatests/partialsplit	3	storealone	26	44	12	123	1	ok
+F	datatests/partialsplit	4	copy	31	50	13	138	1	ok
+F	datatests/partialsplit	5	copyconst	21	34	9	109	1	ok
+S	datatests/partialunion	2	32	0	ok
+F	datatests/partialunion	0	partialunion	5	7	0	40	1	ok
+F	datatests/partialunion	1	partial1	17	26	0	156	1	ok
+S	datatests/piecestruct	1	54	0	ok
+F	datatests/piecestruct	0	assign	29	49	11	566	1	ok
+S	datatests/pointercmp	1	17	0	ok
+F	datatests/pointercmp	0	myinit	9	15	1	63	1	ok
+S	datatests/pointerrel	2	74	0	ok
+F	datatests/pointerrel	0	process_array	28	46	3	235	1	ok
+F	datatests/pointerrel	1	process_array	28	45	3	236	1	ok
+S	datatests/pointersub	1	14	0	ok
+F	datatests/pointersub	0	getOuter	7	13	2	64	1	ok
+S	datatests/promotecompare	1	20	0	ok
+F	datatests/promotecompare	0	promote_compare	18	31	2	70	2	ok
+S	datatests/ptrtoarray	2	52	0	ok
+F	datatests/ptrtoarray	0	ptrToArray	15	26	4	162	1	ok
+F	datatests/ptrtoarray	1	passPtrToArray	31	50	13	135	1	ok
+S	datatests/readvolatile	1	8	0	ok
+F	datatests/readvolatile	0	iofunc	7	19	0	70	1	ok
+S	datatests/retspecial	2	19	0	ok
+F	datatests/retspecial	0	returnbig	8	15	3	36	1	ok
+F	datatests/retspecial	1	read_returnbig	5	10	2	29	1	ok
+S	datatests/retstruct	1	30	0	ok
+F	datatests/retstruct	0	retstruct	12	19	0	81	1	ok
+S	datatests/revisit	1	11	0	ok
+F	datatests/revisit	0	revisit	12	20	3	89	1	ok
+S	datatests/sbyte	1	15	0	ok
+F	datatests/sbyte	0	printStruct	13	23	3	104	1	ok
+S	datatests/skipnext2	1	6	0	ok
+F	datatests/skipnext2	0	skipinst	7	12	0	13	1	ok
+S	datatests/stackcorner	4	41	0	ok
+F	datatests/stackcorner	0	arraybottom	15	28	7	96	1	ok
+F	datatests/stackcorner	1	paramnodirect	9	17	1	119	1	ok
+F	datatests/stackcorner	2	positivestack	3	5	1	32	1	ok
+F	datatests/stackcorner	3	arrayslack	9	17	3	64	1	ok
+S	datatests/stackmatrix	1	27	0	ok
+F	datatests/stackmatrix	0	rotate	62	117	43	318	2	ok
+S	datatests/stackreturn	1	21	0	ok
+F	datatests/stackreturn	0	stackreturn	24	47	12	116	1	ok
+S	datatests/stackspill	2	14	0	ok
+F	datatests/stackspill	0	spill	3	8	0	12	1	ok
+F	datatests/stackspill	1	callspill	5	11	1	36	1	ok
+S	datatests/stackstring	7	114	0	ok
+F	datatests/stackstring	0	nullbetween	36	79	21	90	1	ok
+F	datatests/stackstring	1	twomessages	22	49	13	106	1	ok
+F	datatests/stackstring	2	utf32message	18	42	13	68	1	ok
+F	datatests/stackstring	3	stringInStruct	19	42	11	75	1	ok
+F	datatests/stackstring	4	alterString	22	44	11	125	1	ok
+F	datatests/stackstring	5	conditionalString	37	84	20	121	1	ok
+F	datatests/stackstring	6	globalString	23	48	5	38	1	ok
+S	datatests/statuscmp	1	8	0	ok
+F	datatests/statuscmp	0	statuscmp	14	21	4	99	1	ok
+S	datatests/switchhide	1	76	0	ok
+F	datatests/switchhide	0	switchhide	58	87	19	596	3	ok
+S	datatests/switchind	1	29	0	ok
+F	datatests/switchind	0	switchind	23	32	14	159	3	ok
+S	datatests/switchloop	1	83	0	ok
+F	datatests/switchloop	0	switchloop	52	77	0	623	6	ok
+S	datatests/switchmask	2	110	0	ok
+F	datatests/switchmask	0	switchrem	29	37	0	247	2	ok
+F	datatests/switchmask	1	switchmask	80	109	6	701	1	ok
+S	datatests/switchmulti	1	85	0	ok
+F	datatests/switchmulti	0	switchmulti	41	62	5	348	6	ok
+S	datatests/switchreturn	1	5	0	ok
+F	datatests/switchreturn	0	switchreturn	2	2	1	19	1	ok
+S	datatests/threedim	1	42	0	ok
+F	datatests/threedim	0	array_access	32	55	3	287	1	ok
+S	datatests/twodim	1	28	0	ok
+F	datatests/twodim	0	array_access	19	35	3	202	1	ok
+S	datatests/union_datatype	13	355	0	ok
+F	datatests/union_datatype	0	fillin	20	31	2	195	1	ok
+F	datatests/union_datatype	1	access	12	21	2	114	1	ok
+F	datatests/union_datatype	2	printglob	17	26	4	360	1	ok
+F	datatests/union_datatype	3	getvalue	11	17	4	154	1	ok
+F	datatests/union_datatype	4	getvalue6	4	6	2	74	1	ok
+F	datatests/union_datatype	5	getvalue2	15	24	4	204	1	ok
+F	datatests/union_datatype	6	testvalue	15	24	1	169	1	ok
+F	datatests/union_datatype	7	stackarray	50	83	16	395	1	ok
+F	datatests/union_datatype	8	setvalue3	14	26	3	123	1	ok
+F	datatests/union_datatype	9	getvalue3	17	29	3	157	1	ok
+F	datatests/union_datatype	10	process	38	65	9	284	1	ok
+F	datatests/union_datatype	11	getvalue4	25	43	9	272	1	ok
+F	datatests/union_datatype	12	setval5	11	19	2	107	1	ok
+S	datatests/varcross	3	37	0	ok
+F	datatests/varcross	0	store_cross	17	29	3	106	1	ok
+F	datatests/varcross	1	global_cross	10	16	2	65	1	ok
+F	datatests/varcross	2	local_cross	9	16	3	118	1	ok
+S	datatests/wayoffarray	1	9	0	ok
+F	datatests/wayoffarray	0	access_array1	9	17	2	66	1	ok
+S	datatests/wraprange	1	4	0	ok
+F	datatests/wraprange	0	wraprange	3	5	0	14	1	ok
+S	datatests/zeroload	1	10	0	ok
+F	datatests/zeroload	0	zeroload	14	31	8	484	1	ok
+S	datatests/zerotop	1	11	0	ok
+F	datatests/zerotop	0	zerotop	16	33	7	698	1	ok
+S	research/a01_ptr_param.a64-gcc-O2	6	46	0	ok
+F	research/a01_ptr_param.a64-gcc-O2	0	get	6	10	1	12	1	ok
+F	research/a01_ptr_param.a64-gcc-O2	1	get	6	10	1	13	1	ok
+F	research/a01_ptr_param.a64-gcc-O2	2	sum_array	20	29	1	64	1	ok
+F	research/a01_ptr_param.a64-gcc-O2	3	sum_array	20	29	1	65	1	ok
+F	research/a01_ptr_param.a64-gcc-O2	4	list_sum	12	19	2	35	2	ok
+F	research/a01_ptr_param.a64-gcc-O2	5	list_sum	12	19	2	36	2	ok
+S	research/a01_ptr_param.x64-clang-O2	6	114	0	ok
+F	research/a01_ptr_param.x64-clang-O2	0	get	6	10	1	17	1	ok
+F	research/a01_ptr_param.x64-clang-O2	1	get	6	10	1	18	1	ok
+F	research/a01_ptr_param.x64-clang-O2	2	sum_array	96	137	9	175	1	ok
+F	research/a01_ptr_param.x64-clang-O2	3	sum_array	96	137	9	176	1	ok
+F	research/a01_ptr_param.x64-clang-O2	4	list_sum	12	19	2	53	3	ok
+F	research/a01_ptr_param.x64-clang-O2	5	list_sum	12	19	2	54	3	ok
+S	research/a02_signedness.a64-gcc-O2	8	48	0	ok
+F	research/a02_signedness.a64-gcc-O2	0	half	3	5	0	23	1	ok
+F	research/a02_signedness.a64-gcc-O2	1	half	3	5	0	24	1	ok
+F	research/a02_signedness.a64-gcc-O2	2	avg	4	7	0	32	1	ok
+F	research/a02_signedness.a64-gcc-O2	3	avg	4	7	0	33	1	ok
+F	research/a02_signedness.a64-gcc-O2	4	is_upper	5	8	0	61	1	ok
+F	research/a02_signedness.a64-gcc-O2	5	is_upper	5	8	0	62	1	ok
+F	research/a02_signedness.a64-gcc-O2	6	count_neg	20	30	1	50	1	ok
+F	research/a02_signedness.a64-gcc-O2	7	count_neg	20	30	1	51	1	ok
+S	research/a02_signedness.x64-clang-O2	8	118	0	ok
+F	research/a02_signedness.x64-clang-O2	0	half	3	5	0	63	1	ok
+F	research/a02_signedness.x64-clang-O2	1	half	3	5	0	64	1	ok
+F	research/a02_signedness.x64-clang-O2	2	avg	4	7	0	89	1	ok
+F	research/a02_signedness.x64-clang-O2	3	avg	4	7	0	90	1	ok
+F	research/a02_signedness.x64-clang-O2	4	is_upper	5	8	0	29	1	ok
+F	research/a02_signedness.x64-clang-O2	5	is_upper	5	8	0	30	1	ok
+F	research/a02_signedness.x64-clang-O2	6	count_neg	66	94	5	383	1	ok
+F	research/a02_signedness.x64-clang-O2	7	count_neg	66	94	5	384	1	ok
+S	research/a03_params.a64-gcc-O2	8	30	0	ok
+F	research/a03_params.a64-gcc-O2	0	third	3	5	0	15	1	ok
+F	research/a03_params.a64-gcc-O2	1	third	3	5	0	16	1	ok
+F	research/a03_params.a64-gcc-O2	2	mixed	8	13	0	9	1	ok
+F	research/a03_params.a64-gcc-O2	3	mixed	8	13	0	10	1	ok
+F	research/a03_params.a64-gcc-O2	4	area	6	11	0	9	1	ok
+F	research/a03_params.a64-gcc-O2	5	area	6	11	0	10	1	ok
+F	research/a03_params.a64-gcc-O2	6	mkpair	5	7	0	14	1	ok
+F	research/a03_params.a64-gcc-O2	7	mkpair	5	7	0	15	1	ok
+S	research/a03_params.x64-clang-O2	8	34	0	ok
+F	research/a03_params.x64-clang-O2	0	third	3	5	0	32	1	ok
+F	research/a03_params.x64-clang-O2	1	third	3	5	0	33	1	ok
+F	research/a03_params.x64-clang-O2	2	mixed	6	10	0	5	1	ok
+F	research/a03_params.x64-clang-O2	3	mixed	6	10	0	6	1	ok
+F	research/a03_params.x64-clang-O2	4	area	5	9	0	5	1	ok
+F	research/a03_params.x64-clang-O2	5	area	5	9	0	6	1	ok
+F	research/a03_params.x64-clang-O2	6	mkpair	6	8	0	16	1	ok
+F	research/a03_params.x64-clang-O2	7	mkpair	6	8	0	17	1	ok
+S	research/a04_retreg.x64-clang-O2	4	26	0	ok
+F	research/a04_retreg.x64-clang-O2	0	use_pair	5	8	1	30	1	ok
+F	research/a04_retreg.x64-clang-O2	1	use_pair	5	8	1	31	1	ok
+F	research/a04_retreg.x64-clang-O2	2	is_ready	7	11	1	64	1	ok
+F	research/a04_retreg.x64-clang-O2	3	is_ready	7	11	1	65	1	ok
+S	research/a05_noreturn.a64-gcc-O2	6	42	0	ok
+F	research/a05_noreturn.a64-gcc-O2	0	checked_get	10	17	2	64	1	ok
+F	research/a05_noreturn.a64-gcc-O2	1	checked_get	10	17	2	65	1	ok
+F	research/a05_noreturn.a64-gcc-O2	2	die	3	5	2	25	1	ok
+F	research/a05_noreturn.a64-gcc-O2	3	die	3	5	2	26	1	ok
+F	research/a05_noreturn.a64-gcc-O2	4	after	4	7	0	33	1	ok
+F	research/a05_noreturn.a64-gcc-O2	5	after	4	7	0	34	1	ok
+S	research/a05_noreturn.x64-clang-O2	6	40	0	ok
+F	research/a05_noreturn.x64-clang-O2	0	checked_get	12	20	3	99	1	ok
+F	research/a05_noreturn.x64-clang-O2	1	checked_get	12	20	3	100	1	ok
+F	research/a05_noreturn.x64-clang-O2	2	die	3	5	2	49	1	ok
+F	research/a05_noreturn.x64-clang-O2	3	die	3	5	2	50	1	ok
+F	research/a05_noreturn.x64-clang-O2	4	after	4	7	0	56	1	ok
+F	research/a05_noreturn.x64-clang-O2	5	after	4	7	0	57	1	ok
+S	research/a05_noreturn.x64-gcc-O2	6	42	0	ok
+F	research/a05_noreturn.x64-gcc-O2	0	checked_get	12	20	3	99	1	ok
+F	research/a05_noreturn.x64-gcc-O2	1	checked_get	12	20	3	100	1	ok
+F	research/a05_noreturn.x64-gcc-O2	2	die	3	5	2	48	1	ok
+F	research/a05_noreturn.x64-gcc-O2	3	die	3	5	2	49	1	ok
+F	research/a05_noreturn.x64-gcc-O2	4	after	4	7	0	56	1	ok
+F	research/a05_noreturn.x64-gcc-O2	5	after	4	7	0	57	1	ok
+S	research/a06_tailcall.a64-gcc-O2	6	31	0	ok
+F	research/a06_tailcall.a64-gcc-O2	0	direct_tail	3	5	0	12	1	ok
+F	research/a06_tailcall.a64-gcc-O2	1	direct_tail	3	5	1	19	1	ok
+F	research/a06_tailcall.a64-gcc-O2	2	indirect_tail	3	5	0	21	1	ok
+F	research/a06_tailcall.a64-gcc-O2	3	indirect_tail	3	5	0	22	1	ok
+F	research/a06_tailcall.a64-gcc-O2	4	dispatch	11	17	2	36	1	ok
+F	research/a06_tailcall.a64-gcc-O2	5	dispatch	11	17	2	37	1	ok
+S	research/a06_tailcall.x64-clang-O2	6	24	0	ok
+F	research/a06_tailcall.x64-clang-O2	0	direct_tail	3	5	0	33	1	ok
+F	research/a06_tailcall.x64-clang-O2	1	direct_tail	3	5	1	25	1	ok
+F	research/a06_tailcall.x64-clang-O2	2	indirect_tail	3	5	0	30	1	ok
+F	research/a06_tailcall.x64-clang-O2	3	indirect_tail	3	5	0	31	1	ok
+F	research/a06_tailcall.x64-clang-O2	4	dispatch	8	13	1	51	1	ok
+F	research/a06_tailcall.x64-clang-O2	5	dispatch	8	13	1	52	1	ok
+S	research/a06_tailcall.x64-gcc-O2	6	24	0	ok
+F	research/a06_tailcall.x64-gcc-O2	0	direct_tail	3	5	0	33	1	ok
+F	research/a06_tailcall.x64-gcc-O2	1	direct_tail	3	5	1	25	1	ok
+F	research/a06_tailcall.x64-gcc-O2	2	indirect_tail	3	5	0	30	1	ok
+F	research/a06_tailcall.x64-gcc-O2	3	indirect_tail	3	5	0	31	1	ok
+F	research/a06_tailcall.x64-gcc-O2	4	dispatch	11	17	2	37	1	ok
+F	research/a06_tailcall.x64-gcc-O2	5	dispatch	11	17	2	38	1	ok
+S	research/a07_switch.a64-gcc-O2	0	0	0	skipped: fails in decomp too: Parse ERROR: Syntax error at line 0 in stream
+S	research/a07_switch.x64-clang-O2	8	98	0	ok
+F	research/a07_switch.x64-clang-O2	0	dense	11	17	1	64	1	ok
+F	research/a07_switch.x64-clang-O2	1	dense	11	18	2	57	1	ok
+F	research/a07_switch.x64-clang-O2	2	sparse	27	41	0	133	2	ok
+F	research/a07_switch.x64-clang-O2	3	sparse	25	42	4	125	1	ok
+F	research/a07_switch.x64-clang-O2	4	bittest	12	20	0	48	1	ok
+F	research/a07_switch.x64-clang-O2	5	bittest	12	20	0	49	1	ok
+F	research/a07_switch.x64-clang-O2	6	lookup	10	16	1	34	1	ok
+F	research/a07_switch.x64-clang-O2	7	lookup	10	16	1	35	1	ok
+S	research/a07_switch.x64-gcc-O2	0	0	0	skipped: fails in decomp too: Parse ERROR: Syntax error at line 0 in stream
+S	research/a08_stack_array.a64-gcc-O2	4	54	0	ok
+F	research/a08_stack_array.a64-gcc-O2	0	local_array	7	13	3	49	1	ok
+F	research/a08_stack_array.a64-gcc-O2	1	local_array	7	13	3	50	1	ok
+F	research/a08_stack_array.a64-gcc-O2	2	local_struct	14	24	5	87	1	ok
+F	research/a08_stack_array.a64-gcc-O2	3	local_struct	14	24	5	88	1	ok
+S	research/a08_stack_array.x64-clang-O2	4	38	0	ok
+F	research/a08_stack_array.x64-clang-O2	0	local_array	7	13	3	70	1	ok
+F	research/a08_stack_array.x64-clang-O2	1	local_array	7	13	3	71	1	ok
+F	research/a08_stack_array.x64-clang-O2	2	local_struct	13	23	5	73	1	ok
+F	research/a08_stack_array.x64-clang-O2	3	local_struct	13	23	5	74	1	ok
+S	research/a09_overflow.x64-clang-O2	8	36	0	ok
+F	research/a09_overflow.x64-clang-O2	0	add_overflows	3	5	0	37	1	ok
+F	research/a09_overflow.x64-clang-O2	1	add_overflows	3	5	0	38	1	ok
+F	research/a09_overflow.x64-clang-O2	2	uadd_overflows	3	5	0	29	1	ok
+F	research/a09_overflow.x64-clang-O2	3	uadd_overflows	3	5	0	30	1	ok
+F	research/a09_overflow.x64-clang-O2	4	mul_checked	9	13	1	46	1	ok
+F	research/a09_overflow.x64-clang-O2	5	mul_checked	9	13	1	47	1	ok
+F	research/a09_overflow.x64-clang-O2	6	next_id	8	12	0	54	1	ok
+F	research/a09_overflow.x64-clang-O2	7	next_id	8	12	0	55	1	ok
+S	research/a10_struct_copy.a64-gcc-O2	6	38	0	ok
+F	research/a10_struct_copy.a64-gcc-O2	0	copy_struct	23	51	12	23	1	ok
+F	research/a10_struct_copy.a64-gcc-O2	1	copy_struct	23	51	12	24	1	ok
+F	research/a10_struct_copy.a64-gcc-O2	2	zero_init	15	29	7	65	1	ok
+F	research/a10_struct_copy.a64-gcc-O2	3	zero_init	15	29	7	66	1	ok
+F	research/a10_struct_copy.a64-gcc-O2	4	copy16	7	15	4	18	1	ok
+F	research/a10_struct_copy.a64-gcc-O2	5	copy16	7	15	4	19	1	ok
+S	research/a10_struct_copy.x64-clang-O2	6	40	0	ok
+F	research/a10_struct_copy.x64-clang-O2	0	copy_struct	23	51	12	89	1	ok
+F	research/a10_struct_copy.x64-clang-O2	1	copy_struct	23	51	12	90	1	ok
+F	research/a10_struct_copy.x64-clang-O2	2	zero_init	15	29	7	99	1	ok
+F	research/a10_struct_copy.x64-clang-O2	3	zero_init	15	29	7	100	1	ok
+F	research/a10_struct_copy.x64-clang-O2	4	copy16	7	15	4	31	1	ok
+F	research/a10_struct_copy.x64-clang-O2	5	copy16	7	15	4	32	1	ok
+S	research/a11_callconv.x86-clang-O2	4	50	0	ok
+F	research/a11_callconv.x86-clang-O2	0	helper	4	8	1	53	1	ok
+F	research/a11_callconv.x86-clang-O2	1	helper	4	8	1	54	1	ok
+F	research/a11_callconv.x86-clang-O2	2	caller	4	8	2	79	1	ok
+F	research/a11_callconv.x86-clang-O2	3	caller	4	8	2	80	1	ok
+S	research/a12_int64_on_32.x86-clang-O2	8	72	0	ok
+F	research/a12_int64_on_32.x86-clang-O2	0	add64	7	11	0	30	1	ok
+F	research/a12_int64_on_32.x86-clang-O2	1	add64	7	11	0	31	1	ok
+F	research/a12_int64_on_32.x86-clang-O2	2	mul64	12	19	0	59	1	ok
+F	research/a12_int64_on_32.x86-clang-O2	3	mul64	12	19	0	60	1	ok
+F	research/a12_int64_on_32.x86-clang-O2	4	shl64	18	27	0	73	2	ok
+F	research/a12_int64_on_32.x86-clang-O2	5	shl64	18	27	0	74	2	ok
+F	research/a12_int64_on_32.x86-clang-O2	6	cmp64	12	17	0	51	1	ok
+F	research/a12_int64_on_32.x86-clang-O2	7	cmp64	12	17	0	52	1	ok
+S	research/a13_float.a64-gcc-O2	10	42	0	ok
+F	research/a13_float.a64-gcc-O2	0	fmin2	9	12	0	35	3	ok
+F	research/a13_float.a64-gcc-O2	1	fmin2	9	12	0	36	3	ok
+F	research/a13_float.a64-gcc-O2	2	fabs2	9	13	0	34	3	ok
+F	research/a13_float.a64-gcc-O2	3	fabs2	9	13	0	35	3	ok
+F	research/a13_float.a64-gcc-O2	4	to_int	5	8	0	27	1	ok
+F	research/a13_float.a64-gcc-O2	5	to_int	5	8	0	28	1	ok
+F	research/a13_float.a64-gcc-O2	6	lerp	5	8	0	14	1	ok
+F	research/a13_float.a64-gcc-O2	7	lerp	5	8	0	15	1	ok
+F	research/a13_float.a64-gcc-O2	8	below	3	5	0	46	3	ok
+F	research/a13_float.a64-gcc-O2	9	below	3	5	0	47	3	ok
+S	research/a13_float.x64-clang-O2	10	38	0	ok
+F	research/a13_float.x64-clang-O2	0	fmin2	6	8	0	9	1	ok
+F	research/a13_float.x64-clang-O2	1	fmin2	6	8	0	10	1	ok
+F	research/a13_float.x64-clang-O2	2	fabs2	8	9	0	20	1	ok
+F	research/a13_float.x64-clang-O2	3	fabs2	8	9	0	21	1	ok
+F	research/a13_float.x64-clang-O2	4	to_int	5	8	0	15	1	ok
+F	research/a13_float.x64-clang-O2	5	to_int	5	8	0	16	1	ok
+F	research/a13_float.x64-clang-O2	6	lerp	4	7	0	5	1	ok
+F	research/a13_float.x64-clang-O2	7	lerp	4	7	0	6	1	ok
+F	research/a13_float.x64-clang-O2	8	below	3	5	0	33	1	ok
+F	research/a13_float.x64-clang-O2	9	below	3	5	0	34	1	ok
+S	research/a14_bitfield.x64-clang-O2	4	26	0	ok
+F	research/a14_bitfield.x64-clang-O2	0	get_kind	6	10	1	75	1	ok
+F	research/a14_bitfield.x64-clang-O2	1	get_kind	6	10	1	76	1	ok
+F	research/a14_bitfield.x64-clang-O2	2	set_kind	7	13	2	77	1	ok
+F	research/a14_bitfield.x64-clang-O2	3	set_kind	7	13	2	78	1	ok
+S	research/a15_struct_known.a64-gcc-O2	4	62	0	ok
+F	research/a15_struct_known.a64-gcc-O2	0	total	20	31	1	68	1	ok
+F	research/a15_struct_known.a64-gcc-O2	1	total	20	31	1	69	1	ok
+F	research/a15_struct_known.a64-gcc-O2	2	find	18	28	1	88	1	ok
+F	research/a15_struct_known.a64-gcc-O2	3	find	18	28	1	89	1	ok
+S	research/a15_struct_known.x64-clang-O2	4	100	0	ok
+F	research/a15_struct_known.x64-clang-O2	0	total	56	92	5	202	1	ok
+F	research/a15_struct_known.x64-clang-O2	1	total	56	92	5	203	1	ok
+F	research/a15_struct_known.x64-clang-O2	2	find	18	29	1	61	2	ok
+F	research/a15_struct_known.x64-clang-O2	3	find	18	29	1	62	2	ok
+S	research/a16_retval.a64-gcc-O2	6	64	0	ok
+F	research/a16_retval.a64-gcc-O2	0	inc	4	7	2	24	1	ok
+F	research/a16_retval.a64-gcc-O2	1	inc	4	7	2	25	1	ok
+F	research/a16_retval.a64-gcc-O2	2	find_idx	23	35	1	80	1	ok
+F	research/a16_retval.a64-gcc-O2	3	find_idx	23	35	1	81	1	ok
+F	research/a16_retval.a64-gcc-O2	4	after_call	6	11	2	45	1	ok
+F	research/a16_retval.a64-gcc-O2	5	after_call	6	11	2	46	1	ok
+S	research/a16_retval.x64-clang-O2	6	58	0	ok
+F	research/a16_retval.x64-clang-O2	0	inc	4	7	2	35	1	ok
+F	research/a16_retval.x64-clang-O2	1	inc	4	7	2	36	1	ok
+F	research/a16_retval.x64-clang-O2	2	find_idx	21	30	1	81	2	ok
+F	research/a16_retval.x64-clang-O2	3	find_idx	21	30	1	82	2	ok
+F	research/a16_retval.x64-clang-O2	4	after_call	5	9	2	60	1	ok
+F	research/a16_retval.x64-clang-O2	5	after_call	5	9	2	61	1	ok
+S	research/a16_retval.x64-gcc-O2	6	48	0	ok
+F	research/a16_retval.x64-gcc-O2	0	inc	4	7	2	35	1	ok
+F	research/a16_retval.x64-gcc-O2	1	inc	4	7	2	36	1	ok
+F	research/a16_retval.x64-gcc-O2	2	find_idx	15	24	1	70	1	ok
+F	research/a16_retval.x64-gcc-O2	3	find_idx	15	24	1	71	1	ok
+F	research/a16_retval.x64-gcc-O2	4	after_call	5	9	2	49	1	ok
+F	research/a16_retval.x64-gcc-O2	5	after_call	5	9	2	50	1	ok
+S	research/a17_retval_typed.a64-gcc-O2	6	64	0	ok
+F	research/a17_retval_typed.a64-gcc-O2	0	inc	5	8	2	23	1	ok
+F	research/a17_retval_typed.a64-gcc-O2	1	inc	5	8	2	24	1	ok
+F	research/a17_retval_typed.a64-gcc-O2	2	find_idx	21	32	1	103	1	ok
+F	research/a17_retval_typed.a64-gcc-O2	3	find_idx	21	32	1	104	1	ok
+F	research/a17_retval_typed.a64-gcc-O2	4	after_call	6	11	2	46	1	ok
+F	research/a17_retval_typed.a64-gcc-O2	5	after_call	6	11	2	47	1	ok
+S	research/a17_retval_typed.x64-clang-O2	6	58	0	ok
+F	research/a17_retval_typed.x64-clang-O2	0	inc	5	8	2	34	1	ok
+F	research/a17_retval_typed.x64-clang-O2	1	inc	5	8	2	35	1	ok
+F	research/a17_retval_typed.x64-clang-O2	2	find_idx	20	30	1	85	1	ok
+F	research/a17_retval_typed.x64-clang-O2	3	find_idx	20	30	1	86	1	ok
+F	research/a17_retval_typed.x64-clang-O2	4	after_call	6	11	2	64	1	ok
+F	research/a17_retval_typed.x64-clang-O2	5	after_call	6	11	2	65	1	ok
+S	research/r01_goto.a64-gcc-O2	6	243	0	ok
+F	research/r01_goto.a64-gcc-O2	0	classify	22	29	2	205	3	ok
+F	research/r01_goto.a64-gcc-O2	1	classify	23	33	5	253	3	ok
+F	research/r01_goto.a64-gcc-O2	2	parse_kv	54	92	8	370	2	ok
+F	research/r01_goto.a64-gcc-O2	3	parse_kv	54	92	8	371	2	ok
+F	research/r01_goto.a64-gcc-O2	4	cleanup	29	42	6	132	1	ok
+F	research/r01_goto.a64-gcc-O2	5	cleanup	29	42	6	133	1	ok
+S	research/r01_goto.x64-clang-O2	6	220	0	ok
+F	research/r01_goto.x64-clang-O2	0	classify	21	28	1	192	2	ok
+F	research/r01_goto.x64-clang-O2	1	classify	22	29	2	190	1	ok
+F	research/r01_goto.x64-clang-O2	2	parse_kv	59	95	6	381	1	ok
+F	research/r01_goto.x64-clang-O2	3	parse_kv	59	95	6	382	1	ok
+F	research/r01_goto.x64-clang-O2	4	cleanup	28	41	6	297	1	ok
+F	research/r01_goto.x64-clang-O2	5	cleanup	28	41	6	298	1	ok
+S	research/r01_goto.x64-gcc-O2	6	260	0	ok
+F	research/r01_goto.x64-gcc-O2	0	classify	23	30	2	190	1	ok
+F	research/r01_goto.x64-gcc-O2	1	classify	20	27	5	217	1	ok
+F	research/r01_goto.x64-gcc-O2	2	parse_kv	58	97	8	546	4	ok
+F	research/r01_goto.x64-gcc-O2	3	parse_kv	58	97	8	547	4	ok
+F	research/r01_goto.x64-gcc-O2	4	cleanup	29	42	6	279	1	ok
+F	research/r01_goto.x64-gcc-O2	5	cleanup	29	42	6	280	1	ok
+S	research/r02_loops.a64-gcc-O2	8	112	0	ok
+F	research/r02_loops.a64-gcc-O2	0	fill	15	23	1	64	1	ok
+F	research/r02_loops.a64-gcc-O2	1	fill	15	23	1	65	1	ok
+F	research/r02_loops.a64-gcc-O2	2	find_first	22	32	1	109	3	ok
+F	research/r02_loops.a64-gcc-O2	3	find_first	22	32	1	110	3	ok
+F	research/r02_loops.a64-gcc-O2	4	count_pairs	35	52	2	168	1	ok
+F	research/r02_loops.a64-gcc-O2	5	count_pairs	35	52	2	169	1	ok
+F	research/r02_loops.a64-gcc-O2	6	my_strlen	15	23	2	24	1	ok
+F	research/r02_loops.a64-gcc-O2	7	my_strlen	15	23	2	25	1	ok
+S	research/r02_loops.x64-clang-O0	8	214	0	ok
+F	research/r02_loops.x64-clang-O0	0	fill	13	19	1	162	1	ok
+F	research/r02_loops.x64-clang-O0	1	fill	13	19	1	163	1	ok
+F	research/r02_loops.x64-clang-O0	2	find_first	26	37	2	236	3	ok
+F	research/r02_loops.x64-clang-O0	3	find_first	26	37	2	237	3	ok
+F	research/r02_loops.x64-clang-O0	4	count_pairs	32	44	2	348	2	ok
+F	research/r02_loops.x64-clang-O0	5	count_pairs	32	44	2	349	2	ok
+F	research/r02_loops.x64-clang-O0	6	my_strlen	11	16	1	79	1	ok
+F	research/r02_loops.x64-clang-O0	7	my_strlen	11	16	1	80	1	ok
+S	research/r02_loops.x64-clang-O2	8	300	0	ok
+F	research/r02_loops.x64-clang-O2	0	fill	62	90	5	304	1	ok
+F	research/r02_loops.x64-clang-O2	1	fill	62	90	5	305	1	ok
+F	research/r02_loops.x64-clang-O2	2	find_first	22	32	1	114	3	ok
+F	research/r02_loops.x64-clang-O2	3	find_first	22	32	1	115	3	ok
+F	research/r02_loops.x64-clang-O2	4	count_pairs	111	151	6	636	2	ok
+F	research/r02_loops.x64-clang-O2	5	count_pairs	111	151	6	637	2	ok
+F	research/r02_loops.x64-clang-O2	6	my_strlen	10	16	1	23	1	ok
+F	research/r02_loops.x64-clang-O2	7	my_strlen	10	16	1	24	1	ok
+S	research/r02_loops.x64-gcc-O2	8	140	0	ok
+F	research/r02_loops.x64-gcc-O2	0	fill	11	18	1	67	1	ok
+F	research/r02_loops.x64-gcc-O2	1	fill	11	18	1	68	1	ok
+F	research/r02_loops.x64-gcc-O2	2	find_first	23	33	1	115	2	ok
+F	research/r02_loops.x64-gcc-O2	3	find_first	23	33	1	116	2	ok
+F	research/r02_loops.x64-gcc-O2	4	count_pairs	39	55	2	205	2	ok
+F	research/r02_loops.x64-gcc-O2	5	count_pairs	39	55	2	206	2	ok
+F	research/r02_loops.x64-gcc-O2	6	my_strlen	15	23	2	45	1	ok
+F	research/r02_loops.x64-gcc-O2	7	my_strlen	15	23	2	46	1	ok
+S	research/r03_jumptable.a64-gcc-O2	2	214	0	ok
+F	research/r03_jumptable.a64-gcc-O2	0	interp	136	220	14	408	4	ok
+F	research/r03_jumptable.a64-gcc-O2	1	interp	136	220	14	409	4	ok
+S	research/r03_jumptable.x64-clang-O2	2	84	0	ok
+F	research/r03_jumptable.x64-clang-O2	0	interp	52	86	7	156	1	ok
+F	research/r03_jumptable.x64-clang-O2	1	interp	52	86	7	157	1	ok
+S	research/r03_jumptable.x64-gcc-O2	2	84	0	ok
+F	research/r03_jumptable.x64-gcc-O2	0	interp	52	86	7	153	3	ok
+F	research/r03_jumptable.x64-gcc-O2	1	interp	52	86	7	154	3	ok
+S	research/r04_casts.a64-gcc-O2	8	36	0	ok
+F	research/r04_casts.a64-gcc-O2	0	widen	9	13	0	47	1	ok
+F	research/r04_casts.a64-gcc-O2	1	widen	9	13	0	48	1	ok
+F	research/r04_casts.a64-gcc-O2	2	index8	18	30	2	92	1	ok
+F	research/r04_casts.a64-gcc-O2	3	index8	18	30	2	93	1	ok
+F	research/r04_casts.a64-gcc-O2	4	mulhi	9	14	0	8	1	ok
+F	research/r04_casts.a64-gcc-O2	5	mulhi	9	14	0	9	1	ok
+F	research/r04_casts.a64-gcc-O2	6	pack	8	15	0	56	1	ok
+F	research/r04_casts.a64-gcc-O2	7	pack	8	15	0	57	1	ok
+S	research/r04_casts.x64-clang-O2	8	44	0	ok
+F	research/r04_casts.x64-clang-O2	0	widen	8	12	0	22	1	ok
+F	research/r04_casts.x64-clang-O2	1	widen	8	12	0	23	1	ok
+F	research/r04_casts.x64-clang-O2	2	index8	13	20	2	38	1	ok
+F	research/r04_casts.x64-clang-O2	3	index8	13	20	2	39	1	ok
+F	research/r04_casts.x64-clang-O2	4	mulhi	10	15	0	11	1	ok
+F	research/r04_casts.x64-clang-O2	5	mulhi	10	15	0	12	1	ok
+F	research/r04_casts.x64-clang-O2	6	pack	6	11	0	69	1	ok
+F	research/r04_casts.x64-clang-O2	7	pack	6	11	0	70	1	ok
+S	research/r05_divmod.a64-gcc-O2	14	134	0	ok
+F	research/r05_divmod.a64-gcc-O2	0	udiv7	4	6	0	62	1	ok
+F	research/r05_divmod.a64-gcc-O2	1	udiv7	4	6	0	63	1	ok
+F	research/r05_divmod.a64-gcc-O2	2	sdiv7	3	5	0	68	1	ok
+F	research/r05_divmod.a64-gcc-O2	3	sdiv7	3	5	0	69	1	ok
+F	research/r05_divmod.a64-gcc-O2	4	umod10	3	5	0	60	1	ok
+F	research/r05_divmod.a64-gcc-O2	5	umod10	3	5	0	61	1	ok
+F	research/r05_divmod.a64-gcc-O2	6	sdiv64	3	5	0	38	1	ok
+F	research/r05_divmod.a64-gcc-O2	7	sdiv64	3	5	0	39	1	ok
+F	research/r05_divmod.a64-gcc-O2	8	divisible3	5	8	0	64	1	ok
+F	research/r05_divmod.a64-gcc-O2	9	divisible3	5	8	0	65	1	ok
+F	research/r05_divmod.a64-gcc-O2	10	digits	11	16	0	73	1	ok
+F	research/r05_divmod.a64-gcc-O2	11	digits	11	16	0	74	1	ok
+F	research/r05_divmod.a64-gcc-O2	12	to_hms	8	16	3	107	1	ok
+F	research/r05_divmod.a64-gcc-O2	13	to_hms	8	16	3	108	1	ok
+S	research/r05_divmod.x64-clang-O2	14	136	0	ok
+F	research/r05_divmod.x64-clang-O2	0	udiv7	3	5	0	93	1	ok
+F	research/r05_divmod.x64-clang-O2	1	udiv7	3	5	0	94	1	ok
+F	research/r05_divmod.x64-clang-O2	2	sdiv7	3	5	0	110	1	ok
+F	research/r05_divmod.x64-clang-O2	3	sdiv7	3	5	0	111	1	ok
+F	research/r05_divmod.x64-clang-O2	4	umod10	3	5	0	102	1	ok
+F	research/r05_divmod.x64-clang-O2	5	umod10	3	5	0	103	1	ok
+F	research/r05_divmod.x64-clang-O2	6	sdiv64	3	5	0	32	1	ok
+F	research/r05_divmod.x64-clang-O2	7	sdiv64	3	5	0	33	1	ok
+F	research/r05_divmod.x64-clang-O2	8	divisible3	5	8	0	53	1	ok
+F	research/r05_divmod.x64-clang-O2	9	divisible3	5	8	0	54	1	ok
+F	research/r05_divmod.x64-clang-O2	10	digits	11	16	0	85	1	ok
+F	research/r05_divmod.x64-clang-O2	11	digits	11	16	0	86	1	ok
+F	research/r05_divmod.x64-clang-O2	12	to_hms	8	16	3	191	1	ok
+F	research/r05_divmod.x64-clang-O2	13	to_hms	8	16	3	192	1	ok
+S	research/r06_canary.a64-gcc-O2	2	56	0	ok
+F	research/r06_canary.a64-gcc-O2	0	greet	27	50	13	122	1	ok
+F	research/r06_canary.a64-gcc-O2	1	greet	27	50	13	123	1	ok
+S	research/r06_canary.x64-clang-O2	2	32	0	ok
+F	research/r06_canary.x64-clang-O2	0	greet	28	53	14	103	1	ok
+F	research/r06_canary.x64-clang-O2	1	greet	28	53	14	104	1	ok
+S	research/r07_strings.a64-gcc-O2	6	67	0	ok
+F	research/r07_strings.a64-gcc-O2	0	log_it	4	9	1	50	1	ok
+F	research/r07_strings.a64-gcc-O2	1	log_it	4	9	2	60	1	ok
+F	research/r07_strings.a64-gcc-O2	2	stack_string	9	17	4	72	1	ok
+F	research/r07_strings.a64-gcc-O2	3	stack_string	9	17	4	73	1	ok
+F	research/r07_strings.a64-gcc-O2	4	is_yes	4	8	1	53	1	ok
+F	research/r07_strings.a64-gcc-O2	5	is_yes	4	8	1	54	1	ok
+S	research/r07_strings.x64-clang-O2	6	53	0	ok
+F	research/r07_strings.x64-clang-O2	0	log_it	4	9	1	53	1	ok
+F	research/r07_strings.x64-clang-O2	1	log_it	4	9	2	60	1	ok
+F	research/r07_strings.x64-clang-O2	2	stack_string	13	25	6	73	1	ok
+F	research/r07_strings.x64-clang-O2	3	stack_string	13	25	6	74	1	ok
+F	research/r07_strings.x64-clang-O2	4	is_yes	4	8	1	78	1	ok
+F	research/r07_strings.x64-clang-O2	5	is_yes	4	8	1	79	1	ok
+S	research/r08_cmov.a64-gcc-O2	10	70	0	ok
+F	research/r08_cmov.a64-gcc-O2	0	max3	12	15	0	53	1	ok
+F	research/r08_cmov.a64-gcc-O2	1	max3	12	15	0	54	1	ok
+F	research/r08_cmov.a64-gcc-O2	2	iabs	8	10	0	38	1	ok
+F	research/r08_cmov.a64-gcc-O2	3	iabs	8	10	0	39	1	ok
+F	research/r08_cmov.a64-gcc-O2	4	clamp	11	14	0	49	1	ok
+F	research/r08_cmov.a64-gcc-O2	5	clamp	11	14	0	50	1	ok
+F	research/r08_cmov.a64-gcc-O2	6	sign	6	9	0	45	1	ok
+F	research/r08_cmov.a64-gcc-O2	7	sign	6	9	0	46	1	ok
+F	research/r08_cmov.a64-gcc-O2	8	count_if	22	33	1	94	1	ok
+F	research/r08_cmov.a64-gcc-O2	9	count_if	22	33	1	95	1	ok
+S	research/r08_cmov.x64-clang-O2	10	142	0	ok
+F	research/r08_cmov.x64-clang-O2	0	max3	12	15	0	94	1	ok
+F	research/r08_cmov.x64-clang-O2	1	max3	12	15	0	95	1	ok
+F	research/r08_cmov.x64-clang-O2	2	iabs	8	10	0	55	1	ok
+F	research/r08_cmov.x64-clang-O2	3	iabs	8	10	0	56	1	ok
+F	research/r08_cmov.x64-clang-O2	4	clamp	12	15	0	71	1	ok
+F	research/r08_cmov.x64-clang-O2	5	clamp	12	15	0	72	1	ok
+F	research/r08_cmov.x64-clang-O2	6	sign	6	9	0	72	1	ok
+F	research/r08_cmov.x64-clang-O2	7	sign	6	9	0	73	1	ok
+F	research/r08_cmov.x64-clang-O2	8	count_if	73	103	5	393	1	ok
+F	research/r08_cmov.x64-clang-O2	9	count_if	73	103	5	394	1	ok
+S	research/r09_bits.a64-gcc-O2	12	44	0	ok
+F	research/r09_bits.a64-gcc-O2	0	bswap	10	17	0	11	1	ok
+F	research/r09_bits.a64-gcc-O2	1	bswap	10	17	0	12	1	ok
+F	research/r09_bits.a64-gcc-O2	2	rotl	8	12	0	25	1	ok
+F	research/r09_bits.a64-gcc-O2	3	rotl	8	12	0	26	1	ok
+F	research/r09_bits.a64-gcc-O2	4	popcnt	39	55	0	239	1	ok
+F	research/r09_bits.a64-gcc-O2	5	popcnt	39	55	0	240	1	ok
+F	research/r09_bits.a64-gcc-O2	6	clz	2	3	0	7	1	ok
+F	research/r09_bits.a64-gcc-O2	7	clz	2	3	0	8	1	ok
+F	research/r09_bits.a64-gcc-O2	8	align_up	3	6	0	8	1	ok
+F	research/r09_bits.a64-gcc-O2	9	align_up	3	6	0	9	1	ok
+F	research/r09_bits.a64-gcc-O2	10	is_pow2	9	14	0	28	1	ok
+F	research/r09_bits.a64-gcc-O2	11	is_pow2	9	14	0	29	1	ok
+S	research/r09_bits.x64-clang-O2	12	64	0	ok
+F	research/r09_bits.x64-clang-O2	0	bswap	11	18	0	39	1	ok
+F	research/r09_bits.x64-clang-O2	1	bswap	11	18	0	40	1	ok
+F	research/r09_bits.x64-clang-O2	2	rotl	7	11	0	51	1	ok
+F	research/r09_bits.x64-clang-O2	3	rotl	7	11	0	52	1	ok
+F	research/r09_bits.x64-clang-O2	4	popcnt	10	15	0	49	3	ok
+F	research/r09_bits.x64-clang-O2	5	popcnt	10	15	0	50	3	ok
+F	research/r09_bits.x64-clang-O2	6	clz	13	19	0	39	1	ok
+F	research/r09_bits.x64-clang-O2	7	clz	13	19	0	40	1	ok
+F	research/r09_bits.x64-clang-O2	8	align_up	3	6	0	7	1	ok
+F	research/r09_bits.x64-clang-O2	9	align_up	3	6	0	8	1	ok
+F	research/r09_bits.x64-clang-O2	10	is_pow2	9	14	0	65	1	ok
+F	research/r09_bits.x64-clang-O2	11	is_pow2	9	14	0	66	1	ok
+S	research/r10_consts.x64-clang-O2	6	38	0	ok
+F	research/r10_consts.x64-clang-O2	0	create	3	5	0	35	1	ok
+F	research/r10_consts.x64-clang-O2	1	create	2	5	1	19	1	ok
+F	research/r10_consts.x64-clang-O2	2	is_space	8	13	0	55	1	ok
+F	research/r10_consts.x64-clang-O2	3	is_space	8	13	0	56	1	ok
+F	research/r10_consts.x64-clang-O2	4	neg	8	12	0	62	1	ok
+F	research/r10_consts.x64-clang-O2	5	neg	8	12	0	63	1	ok
+S	research/r11_varargs.a64-gcc-O2	2	100	0	ok
+F	research/r11_varargs.a64-gcc-O2	0	sum_ints	58	81	2	381	4	ok
+F	research/r11_varargs.a64-gcc-O2	1	sum_ints	58	81	2	382	4	ok
+S	research/r11_varargs.x64-clang-O2	2	152	0	ok
+F	research/r11_varargs.x64-clang-O2	0	sum_ints	75	104	3	488	3	ok
+F	research/r11_varargs.x64-clang-O2	1	sum_ints	75	104	3	489	3	ok
+S	research/r12_vla.a64-gcc-O2	2	52	0	ok
+F	research/r12_vla.a64-gcc-O2	0	reverse_print	35	60	4	161	1	ok
+F	research/r12_vla.a64-gcc-O2	1	reverse_print	35	60	4	162	1	ok
+S	research/r12_vla.x64-clang-O2	2	126	0	ok
+F	research/r12_vla.x64-clang-O2	0	reverse_print	95	134	13	349	1	ok
+F	research/r12_vla.x64-clang-O2	1	reverse_print	95	134	13	350	1	ok
+S	research/r13_bool.a64-gcc-O2	6	36	0	ok
+F	research/r13_bool.a64-gcc-O2	0	in_range	5	8	0	83	3	ok
+F	research/r13_bool.a64-gcc-O2	1	in_range	5	8	0	84	3	ok
+F	research/r13_bool.a64-gcc-O2	2	valid	10	16	1	128	3	ok
+F	research/r13_bool.a64-gcc-O2	3	valid	10	16	1	129	3	ok
+F	research/r13_bool.a64-gcc-O2	4	either	7	13	0	97	3	ok
+F	research/r13_bool.a64-gcc-O2	5	either	7	13	0	98	3	ok
+S	research/r13_bool.x64-clang-O2	6	56	0	ok
+F	research/r13_bool.x64-clang-O2	0	in_range	5	8	0	48	1	ok
+F	research/r13_bool.x64-clang-O2	1	in_range	5	8	0	49	1	ok
+F	research/r13_bool.x64-clang-O2	2	valid	9	15	1	98	1	ok
+F	research/r13_bool.x64-clang-O2	3	valid	9	15	1	99	1	ok
+F	research/r13_bool.x64-clang-O2	4	either	7	13	0	63	1	ok
+F	research/r13_bool.x64-clang-O2	5	either	7	13	0	64	1	ok
+S	research/r14_fnptr.x64-clang-O2	2	98	0	ok
+F	research/r14_fnptr.x64-clang-O2	0	stream_copy	40	63	9	231	2	ok
+F	research/r14_fnptr.x64-clang-O2	1	stream_copy	40	63	9	232	2	ok
+S	research/r15_globals.a64-gcc-O2	4	56	0	ok
+F	research/r15_globals.a64-gcc-O2	0	bump	12	20	2	79	1	ok
+F	research/r15_globals.a64-gcc-O2	1	bump	12	20	2	80	1	ok
+F	research/r15_globals.a64-gcc-O2	2	lookup_name	24	41	2	83	1	ok
+F	research/r15_globals.a64-gcc-O2	3	lookup_name	24	41	2	84	1	ok
+S	research/r15_globals.x64-clang-O2	4	70	0	ok
+F	research/r15_globals.x64-clang-O2	0	bump	11	19	2	65	1	ok
+F	research/r15_globals.x64-clang-O2	1	bump	11	19	2	66	1	ok
+F	research/r15_globals.x64-clang-O2	2	lookup_name	55	98	1	88	1	ok
+F	research/r15_globals.x64-clang-O2	3	lookup_name	55	98	1	89	1	ok
+S	research/r16_simd.a64-gcc-O3	2	86	0	ok
+F	research/r16_simd.a64-gcc-O3	0	add_arrays	99	145	17	226	2	ok
+F	research/r16_simd.a64-gcc-O3	1	add_arrays	99	145	17	227	2	ok
+S	research/r16_simd.x64-clang-O2	2	70	0	ok
+F	research/r16_simd.x64-clang-O2	0	add_arrays	105	179	27	312	3	ok
+F	research/r16_simd.x64-clang-O2	1	add_arrays	105	179	27	313	3	ok
+S	research/r17_temps.a64-gcc-O2	4	86	0	ok
+F	research/r17_temps.a64-gcc-O2	0	checksum	26	39	1	137	1	ok
+F	research/r17_temps.a64-gcc-O2	1	checksum	26	39	1	138	1	ok
+F	research/r17_temps.a64-gcc-O2	2	update	39	60	7	118	1	ok
+F	research/r17_temps.a64-gcc-O2	3	update	39	60	7	119	1	ok
+S	research/r17_temps.x64-clang-O2	4	168	0	ok
+F	research/r17_temps.x64-clang-O2	0	checksum	58	84	3	607	1	ok
+F	research/r17_temps.x64-clang-O2	1	checksum	58	84	3	608	1	ok
+F	research/r17_temps.x64-clang-O2	2	update	42	66	10	126	1	ok
+F	research/r17_temps.x64-clang-O2	3	update	42	66	10	127	1	ok
+S	research/r18_struct_unknown.x64-clang-O2	4	32	0	ok
+F	research/r18_struct_unknown.x64-clang-O2	0	init_acct	12	29	6	55	1	ok
+F	research/r18_struct_unknown.x64-clang-O2	1	init_acct	12	29	6	56	1	ok
+F	research/r18_struct_unknown.x64-clang-O2	2	total	21	32	3	29	1	ok
+F	research/r18_struct_unknown.x64-clang-O2	3	total	21	32	3	30	1	ok
+S	research/t_smoke.a64-clang-O2	2	54	0	ok
+F	research/t_smoke.a64-clang-O2	0	sum	29	45	3	107	2	ok
+F	research/t_smoke.a64-clang-O2	1	sum	29	45	3	108	2	ok
+S	research/t_smoke.a64-gcc-O2	2	68	0	ok
+F	research/t_smoke.a64-gcc-O2	0	sum	32	51	4	154	1	ok
+F	research/t_smoke.a64-gcc-O2	1	sum	32	51	4	155	1	ok
+S	research/t_smoke.x64-clang-O2	2	116	0	ok
+F	research/t_smoke.x64-clang-O2	0	sum	106	170	11	582	4	ok
+F	research/t_smoke.x64-clang-O2	1	sum	106	170	11	583	4	ok
+S	research/t_smoke.x86-clang-O2	2	136	0	ok
+F	research/t_smoke.x86-clang-O2	0	sum	96	158	11	245	3	ok
+F	research/t_smoke.x86-clang-O2	1	sum	96	158	11	246	3	ok
+T	scripts=167	decompiles=607	ops=11005	varnodes=18134	trace-records=74836	structuring-runs=767	errors=0

@@ -201,14 +201,27 @@ pub fn diff_tables(a: &BTreeMap<String, u64>, b: &BTreeMap<String, u64>) -> Tabl
     d
 }
 
+/// A pair of differing lines and the whole outputs they come from.
+#[derive(Debug, Clone, Copy)]
+pub struct LinePair<'a> {
+    /// The first build's line.
+    pub first: &'a str,
+    /// The second build's line.
+    pub second: &'a str,
+    /// The first build's whole output.
+    pub first_text: &'a str,
+    /// The second build's whole output.
+    pub second_text: &'a str,
+}
+
 /// A named cause of a difference between two builds' outputs: recognises a
 /// pair of differing lines.
 #[derive(Debug, Clone, Copy)]
 pub struct HostCause {
     /// The cause's name, as counts are keyed.
     pub name: &'static str,
-    /// Whether the pair of lines (first build, second build) differ by this cause.
-    pub recognise: fn(&str, &str) -> bool,
+    /// Whether the pair of lines differ by this cause.
+    pub recognise: fn(&LinePair<'_>) -> bool,
 }
 
 /// Why two outputs could not be reconciled.
@@ -255,30 +268,97 @@ pub fn classify(
         if x == y {
             continue;
         }
-        let cause = causes.iter().find(|c| (c.recognise)(x, y)).ok_or_else(|| {
-            HostDiffError::Unrecognised {
+        let pair = LinePair {
+            first: x,
+            second: y,
+            first_text: first,
+            second_text: second,
+        };
+        let cause = causes
+            .iter()
+            .find(|c| (c.recognise)(&pair))
+            .ok_or_else(|| HostDiffError::Unrecognised {
                 line: i + 1,
                 first: (*x).to_owned(),
                 second: (*y).to_owned(),
-            }
-        })?;
+            })?;
         *counts.entry(cause.name).or_insert(0) += 1;
     }
     Ok(counts)
 }
 
-/// ADR-021's known case: `NAN` printed with and without a sign (the sign
-/// of a NaN produced by the host's arithmetic).
-pub fn nan_sign(a: &str, b: &str) -> bool {
-    a.contains("NAN") && a.replace("-NAN", "NAN") == b.replace("-NAN", "NAN")
+/// ADR-021's known case: the sign of a NaN that the host's floating point
+/// produced while Ghidra folded constants — the default quiet NaN is
+/// positive on AArch64 (`0x7fc00000`, `0x7ff8000000000000`) and negative on
+/// x86-64 (`0xffc00000`, `0xfff8000000000000`) — and how `print C` shows
+/// it (`NAN` against `-NAN`).
+pub fn nan_sign(pair: &LinePair<'_>) -> bool {
+    nan_sign_lines(pair.first, pair.second)
+}
+
+fn nan_sign_lines(a: &str, b: &str) -> bool {
+    fn positive(line: &str) -> String {
+        line.replace("-NAN", "NAN")
+            .replace("0xfff8000000000000", "0x7ff8000000000000")
+            .replace("0xffc00000", "0x7fc00000")
+    }
+    a != b && positive(a) == positive(b)
+}
+
+/// The varnodes of a state dump whose `V` records differ between the two
+/// outputs by a NaN sign.
+fn nan_varnodes(first: &str, second: &str) -> std::collections::BTreeSet<String> {
+    let v = |text: &str| -> BTreeMap<String, String> {
+        text.lines()
+            .filter_map(|l| l.strip_prefix("V\t"))
+            .filter_map(|l| Some((l.split('\t').next()?.to_owned(), l.to_owned())))
+            .collect()
+    };
+    let (a, b) = (v(first), v(second));
+    a.iter()
+        .filter(|(id, la)| b.get(*id).is_some_and(|lb| nan_sign_lines(la, lb)))
+        .map(|(id, _)| id.clone())
+        .collect()
+}
+
+/// A consequence of [`nan_sign`] in a state dump: a bank order (`O` record of
+/// `@locorder`/`@deforder`) that differs only in where the NaN constants
+/// whose value differs stand (constants are ordered by value).
+pub fn nan_order(pair: &LinePair<'_>) -> bool {
+    let (Some(a), Some(b)) = (
+        pair.first.strip_prefix("O\t"),
+        pair.second.strip_prefix("O\t"),
+    ) else {
+        return false;
+    };
+    let moved = nan_varnodes(pair.first_text, pair.second_text);
+    if moved.is_empty() {
+        return false;
+    }
+    let keep = |list: &str| -> Vec<String> {
+        list.split(',')
+            .filter(|v| !moved.contains(*v))
+            .map(str::to_owned)
+            .collect()
+    };
+    let (mut sa, mut sb): (Vec<&str>, Vec<&str>) = (a.split(',').collect(), b.split(',').collect());
+    sa.sort_unstable();
+    sb.sort_unstable();
+    sa == sb && keep(a) == keep(b)
 }
 
 /// The causes this oracle knows of between the macOS (libc++) and x86-64
 /// Linux (libstdc++) reference builds.
-pub const KNOWN_CAUSES: [HostCause; 1] = [HostCause {
-    name: "nan-sign",
-    recognise: nan_sign,
-}];
+pub const KNOWN_CAUSES: [HostCause; 2] = [
+    HostCause {
+        name: "nan-sign",
+        recognise: nan_sign,
+    },
+    HostCause {
+        name: "nan-order",
+        recognise: nan_order,
+    },
+];
 
 #[cfg(test)]
 mod tests {
@@ -352,7 +432,17 @@ mod tests {
 
     #[test]
     fn differences_are_counted_by_cause() {
-        let counts = classify("x\n  y = NAN;\nz\n", "x\n  y = -NAN;\nz\n", &KNOWN_CAUSES).unwrap();
+        let counts = classify(
+            "x\n  y = NAN;\nXMM0 = #0x7fc00000:4\n",
+            "x\n  y = -NAN;\nXMM0 = #0xffc00000:4\n",
+            &KNOWN_CAUSES,
+        )
+        .unwrap();
+        assert_eq!(counts.get("nan-sign"), Some(&2));
+        let a = "V\tv1\tconst\t0x7fc00000\nV\tv2\tconst\t0x3\nO\tv2,v1\n";
+        let b = "V\tv1\tconst\t0xffc00000\nV\tv2\tconst\t0x3\nO\tv1,v2\n";
+        let counts = classify(a, b, &KNOWN_CAUSES).unwrap();
+        assert_eq!(counts.get("nan-order"), Some(&1));
         assert_eq!(counts.get("nan-sign"), Some(&1));
         assert!(matches!(
             classify("a\n", "b\n", &KNOWN_CAUSES),
