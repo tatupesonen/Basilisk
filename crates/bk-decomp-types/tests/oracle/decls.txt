@@ -1,0 +1,286 @@
+T void
+T bool
+T uint1
+T uint2
+T uint4
+T uint8
+T int1
+T int2
+T int4
+T int8
+T float4
+T float8
+T float10
+T float16
+T xunknown1
+T xunknown2
+T xunknown4
+T xunknown8
+T code
+T char
+T wchar2
+T wchar4
+T void *
+T void **
+T void ***
+T bool *
+T bool **
+T bool ***
+T uint1 *
+T uint1 **
+T uint1 ***
+T uint2 *
+T uint2 **
+T uint2 ***
+T uint4 *
+T uint4 **
+T uint4 ***
+T uint8 *
+T uint8 **
+T uint8 ***
+T int1 *
+T int1 **
+T int1 ***
+T int2 *
+T int2 **
+T int2 ***
+T int4 *
+T int4 **
+T int4 ***
+T int8 *
+T int8 **
+T int8 ***
+T float4 *
+T float4 **
+T float4 ***
+T float8 *
+T float8 **
+T float8 ***
+T float10 *
+T float10 **
+T float10 ***
+T float16 *
+T float16 **
+T float16 ***
+T xunknown1 *
+T xunknown1 **
+T xunknown1 ***
+T xunknown2 *
+T xunknown2 **
+T xunknown2 ***
+T xunknown4 *
+T xunknown4 **
+T xunknown4 ***
+T xunknown8 *
+T xunknown8 **
+T xunknown8 ***
+T code *
+T code **
+T code ***
+T char *
+T char **
+T char ***
+T wchar2 *
+T wchar2 **
+T wchar2 ***
+T wchar4 *
+T wchar4 **
+T wchar4 ***
+T int1 a[4]
+T int1 a[1]
+T int1 a[2][3]
+T int4 a[4]
+T int4 a[1]
+T int4 a[2][3]
+T int8 a[4]
+T int8 a[1]
+T int8 a[2][3]
+T char a[4]
+T char a[1]
+T char a[2][3]
+T float8 a[4]
+T float8 a[1]
+T float8 a[2][3]
+T xunknown1 a[4]
+T xunknown1 a[1]
+T xunknown1 a[2][3]
+T bool a[4]
+T bool a[1]
+T bool a[2][3]
+T wchar2 a[4]
+T wchar2 a[1]
+T wchar2 a[2][3]
+T uint2 a[4]
+T uint2 a[1]
+T uint2 a[2][3]
+T int4 *a[5]
+T int4 (*a)[5]
+T int4 (*a[2])[3]
+T char **a[2][2]
+T float10 a[3]
+T float16 a[2]
+T uint8 a[100]
+T struct s1 { int4 a; int4 b; }
+T struct s2 { char c; int8 d; }
+T struct s3 { char c; int2 s; char d; int4 i; }
+T struct s4 { int8 a; char b; }
+T struct s5 { char c[3]; int2 x; }
+T struct s6 { s1 inner; char tail; }
+T struct s7 { s2 inner; s1 arr[2]; }
+T struct s8 { int4 a:3; int4 b:5; int4 c:24; }
+T struct s9 { char x; int4 a:3; int4 b:30; char y; }
+T struct s10 { uint1 f1:1; uint1 f2:1; uint2 g:9; int8 h; }
+T struct s11 { int4 n; char data[1]; }
+T struct s12 { int4 n; int8 data[4]; }
+T struct s13 { float10 f; char c; }
+T struct s14 { float16 q; int1 b; }
+T struct s15 { bool b; wchar4 w; wchar2 v; }
+T struct s16 { s8 bits; int2 s; }
+T struct s17 { s1 *p; s17x *q; }
+T struct s18 { int4 x; }
+T struct s19 { int8 x; }
+T struct s20 { char a; char b; char c; }
+T struct s21 { int4 *p; char c; int4 **pp; }
+T struct s22 { int2 a:4; int2 :4; int2 b:8; }
+T struct s23 { uint4 a:1; uint4 b:31; uint4 c:1; }
+T struct s24 { int8 big:40; int8 small:24; }
+T struct s25 { s5 x; s5 y; s3 z; }
+T struct { int4 anon1; char anon2; }
+T struct s26 { void v; }
+T struct s27 { int4 a; int4 a; }
+T struct s28 { }
+T s1 *
+T s1 a[3]
+T s1 **
+T s2 *
+T s2 a[3]
+T s2 **
+T s3 *
+T s3 a[3]
+T s3 **
+T s6 *
+T s6 a[3]
+T s6 **
+T s8 *
+T s8 a[3]
+T s8 **
+T s11 *
+T s11 a[3]
+T s11 **
+T s18 *
+T s18 a[3]
+T s18 **
+T s19 *
+T s19 a[3]
+T s19 **
+T union u1 { int4 a; float4 b; }
+T union u2 { int8 a; char b[3]; }
+T union u3 { s1 st; int8 l; char c; }
+T union u4 { int2 x; }
+T union u5 { u1 inner; s2 other; }
+T union { int4 ua; int2 ub; }
+T union u6 { void v; }
+T u1 *
+T u1 a[2]
+T u2 *
+T u2 a[2]
+T u3 *
+T u3 a[2]
+T u4 *
+T u4 a[2]
+T enum e1 { ZERO=0, ONE=1, TWO=2, FOUR=4, EIGHT=8 }
+T enum e2 { A, B, C, D }
+T enum e3 { X=5, Y, Z=2, W }
+T enum e4 { NEG=-1, POS=1 }
+T enum e5 { F0=1, F1=2, F2=4, F3=8, F4=16, F5=32, F6=64, F7=128, ALL=255 }
+T enum e6 { BIG=0x7fffffff, SMALL=1, MID=0x10000 }
+T enum e7 { DUP=1, DUP2=1 }
+T enum e8 { TRAIL=3, }
+T enum { ANON1, ANON2 }
+T enum e9 { H=0x8000000000000000, L=7 }
+T e1 *
+T e1 a[2]
+T e2 *
+T e2 a[2]
+T e4 *
+T e4 a[2]
+T e5 *
+T e5 a[2]
+C typedef int4 myint;
+T myint
+T myint *
+T myint a[3]
+C typedef s1 s1alias;
+T s1alias
+T s1alias *
+C typedef struct { int4 tx; int4 ty; } tstruct;
+T tstruct
+T tstruct *
+C typedef e2 e2alias;
+T e2alias
+C typedef char *string;
+T string
+T string *
+C typedef uint4 flags32;
+T flags32 a[2]
+C struct cs1 { int4 a; char b; };
+T cs1 *
+C enum ce1 { CA=1, CB=2 };
+T ce1
+C union cu1 { int4 a; char b; };
+T cu1
+C extern int4 foo(int4 a, char *b);
+C int4 x;
+C typedef int4;
+T int4 (*f)(int4, char)
+T void (*f)(void)
+T int4 *(*f)(int4 *)
+T void (*)(int4)
+T char (*)(void)
+T int4 (*f[2])(int4)
+T int4 (**fp)(void)
+T s1 (*f)(s2)
+T void (*f)(int4, ...)
+T int4 (*)()
+T int4 int4
+T x y
+T int4 a[0]
+T int4 a[-1]
+T int4 *[3]
+T struct
+T int4 a[ 'a' ]
+T char a['b']
+T int4 a[010]
+T int4 a[0x10]
+T int4 a[08]
+T int4 ns::a
+T int4 a::b::c
+T const int4
+T const volatile int4
+T typedef extern int4
+T static int4 *a
+T unknowntype
+T struct nosuch
+T union nosuch
+T enum nosuch
+T int4 "str"
+T int4 a $
+T int4 /* c */ b
+T int4 a // tail
+T int4 a[3
+T int4 (a
+T int4 *
+T int4 * const p
+T int4 ...
+T int4 a, int4 b
+T struct s1 { int4 q; }
+T enum e1 { Q }
+T int4 a:3
+T 1x
+T ...
+T int4 (*)[2]
+T int4 [2]
+T void
+T void *(void)
+T int4 (int4)
+T s1alias inner2

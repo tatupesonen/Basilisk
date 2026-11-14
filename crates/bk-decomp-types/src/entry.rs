@@ -483,8 +483,13 @@ impl TypeEntry {
 /// Bytes are added sign-extended, as on x86-64 where `char` is signed
 /// (ADR-021); the result differs from AArch64 Linux for bytes 0x80 and up.
 pub fn hash_name(name: &str) -> u64 {
+    hash_name_bytes(name.as_bytes())
+}
+
+/// [`hash_name`] over raw bytes (names read from a file need not be UTF-8).
+pub fn hash_name_bytes(name: &[u8]) -> u64 {
     let mut res: u64 = 123;
-    for &byte in name.as_bytes() {
+    for &byte in name {
         res = res.rotate_left(8);
         res = res.wrapping_add(i64::from(byte as i8) as u64);
         if res & 1 == 0 {
