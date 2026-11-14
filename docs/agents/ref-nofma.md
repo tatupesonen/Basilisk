@@ -31,11 +31,15 @@ Reference build with `-ffp-contract=off` (ADR-032).
 - `docs/features/reference-tools.md` (step 4), `sleigh-compiler-back.md`
   and `inventory/01-sleigh.md` 10(e)1 (step 5).
 
-## In progress
-- Step 6: `pcodedump` crashes (`docs/research/pcodedump-crashes.md`).
+- Step 6: `docs/research/pcodedump-crashes.md`.
+- Step 7: Docker: removed tag `bk-sla-host-diff/gcc14:arm64`, image
+  `alpine:3.22` (`062964a69725`) and the untagged alpine `812e99317af7`;
+  no container used them. The image behind the removed tag
+  (`e750467579a2`, the arm64 `gcc:14`, 1.49 GB) is still listed as
+  `gcc:<none>`; it was not on the list, so it was left alone.
 
-## Next
-- Step 7 Docker leftovers; gate; final report.
+## In progress
+- Gate, final report.
 
 ## State of `/Users/tatu/slop/reference`
 SWAP COMPLETE (2026-11-14). The live tree is the `-ffp-contract=off`
