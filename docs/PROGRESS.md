@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-14 18:04)
+## Now — RESUME HERE (2026-11-14 19:03)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -16,10 +16,10 @@ Linux, macOS and Windows. M0: `bk-core`, `bk-marshal`, `bk-pcode`,
 shared `fuzz/` crate, the reference tools in `../reference/`. Per-track
 history is in the log below.
 
-**Working rules in force** (all in `DIRECTION.md`): two running workers
-until track `remote-build` is merged, **then one** (owner, 2026-11-14),
-counting helpers (agents start none); from then on every agent builds,
-tests and gates on kassini through `scripts/remote.sh`; new agents are Opus 5.5 at
+**Working rules in force** (all in `DIRECTION.md`): **one running
+worker** (owner, 2026-11-14; `remote-build` is merged), counting helpers
+(agents start none); every agent builds, tests and gates on kassini
+through `scripts/remote.sh`; new agents are Opus 5.5 at
 medium effort; the coordinator does no hands-on work; existing work is
 never thrown away — agents are paused at a safe point and resumed by id,
 worktrees and branches are removed only when their content is on
@@ -103,12 +103,73 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-14 18:04)
+### Running (state at 2026-11-14 19:03) — USAGE LIMIT REACHED
+
+The usage limit was reached at 19:03. **The cap is now one agent**
+(`remote-build` is merged). The only agent, `sleigh-snippet`, was told
+to commit, write its status file and stop at a safe point; resume it by
+id when usage is back.
 
 | Branch | Model | Agent id | State |
 |---|---|---|---|
-| `sleigh-compiler-back` (worktree `../basilisk-wt/sleigh-compiler-back`) | Opus | `a41574e3f4a6e75b9` | resumed 17:25 after the full disk. `bk-sleigh-compiler` part 2 from `features/sleigh-compiler-back.md`: patterns, decision trees, the `.sla` byte for byte, `basilisk sleigh compile`. Its findings: `PatValue::Token` needs the token's identity and size; the new passes go into `check::post_parse`; glibc's `log` is ported from Arm's optimized-routines (allowed as ported source, origin and licence recorded, `NOTICE` appended) and checked against `research/sla-host-dependence/logtable-glibc.txt.gz`. Cut from the integration branch that is now `master` `a961ff3`. |
-| `kassini-setup` (track `remote-build`, worktree `../basilisk-wt/kassini-setup`) | Opus | `add42668f53ed4fa3` | started 18:02. Makes kassini the build host: `scripts/remote.sh` (`setup`, `sync`, `gate`, `run`, `status`, `clean`; the remote is read from the environment or an untracked file, never from the repository), Rust and the gate's tools installed in the user's home there; then the full gate on Linux x86-64, `bk-cspec`'s oracle table regenerated there and compared, and `bk-sleigh`'s thread scaling measured on an idle machine. It has no root; what needs root comes back as exact commands. |
+| `sleigh-snippet` (worktree `../basilisk-wt/sleigh-snippet`, cut from what is now `master` `8762851`) | Opus | `af1bd08864645b02b` | started 18:37, paused by the usage limit at 19:03. New crate `bk-sleigh-snippet` from `features/sleigh-snippet.md`. It has the remote-script instructions (merge `master` once, then `scripts/remote.sh gate` / `gate --no-ref` / `run -- …`; final gates on kassini). Check its status file and `git log` before resuming. |
+
+**Merged: `remote-build`** (`add42668f53ed4fa3`; worktree
+`../basilisk-wt/kassini-setup` and branch `kassini-setup` still exist —
+remove them, the content is on `master`). `scripts/remote.sh` (`setup`,
+`sync`, `gate [--no-ref]`, `run -- CMD`, `log`, `status`, `clean
+BRANCH|--merged|--all`) reads the host from `~/.config/basilisk/remote`
+(written on the Mac) or the environment; exit 2 = no host, 75 = branch
+busy, 124 = time bound, 255 = connection dropped. On kassini: Rust
+1.100.0 and nightly, cargo-deny 0.20.2, cargo-fuzz, everything under
+`~/bk` (one `target/` per branch, 13–15 GB each; jobs survive a dropped
+connection; a job refuses to start under 40 GB free); the reference
+tools rebuilt into `~/bk/reference` (all 150 `.sla` byte-identical to
+the Mac's). The gate on Linux x86-64: exit 0, 1,966 tests, 174 s cold,
+about 64 s warm, peak memory 8.5 GB.
+
+**Still to do from its report (not done because of the limit):**
+1. Put its proposed text into `docs/LOOP.md` ("The build host") and
+   `docs/agents/RULES.md` (it is in the "Proposed text" section of
+   `docs/agents/remote-build.md`), and into every later brief.
+2. **`bk-cspec`'s oracle is host-dependent** — queue a track: on Linux
+   x86-64 the regenerated table differs from the checked-in (macOS,
+   libc++) one in 20 `EFF` rows (Ghidra's `hasEffect` gives 1 or 2
+   where the Mac gives 3), 39 `TRES` rows (tricore 24, Loongarch lp64f
+   14, x86 golang 1), 48 reordered `EFFECT` rows, the pair order, and
+   which pair carries the full tables for 3 `.cspec` files. By ADR-034
+   the x86-64 Linux build is the oracle, so the table is regenerated
+   there and `bk-cspec` made to match or the difference defined
+   (ADR-024). The generator also crashes in 25–75 % of runs on Linux:
+   Ghidra's `ParamListMerged` never sets `numgroup`; skip merged models
+   in `assignTable`.
+3. **`bk-sleigh` is slower than the g++-built reference on x86-64 Linux
+   single-threaded** (decode 3.0–3.3 against 4.0–4.2 M instructions/s;
+   decode + lift 1.5 against 2.1 M/s) — the reverse of the Mac. Queue a
+   performance track. Thread scaling there meets the target: 6.7–7.9×
+   at 8 threads, 12.6–15.2× at 16.
+4. `cargo deny --offline` needs `cargo fetch --locked` first on a fresh
+   machine (the script does it; the gate could).
+5. `remote.sh clean` has no "build output only" option; `miri.sh` and
+   the fuzz smoke were not run on kassini; optional `apt-get install
+   gdb` there.
+
+**Merged:** `sleigh-compiler-back` (`8762851`, CI run 43616696840 green
+on every job, integration gate 2,030 tests, 0 new packages, advisories
+ok). The SLEIGH compiler is complete: all 150 specifications compile to
+`.sla` byte-identical to the reference, the `-y` XML and the warning
+sequences are identical too, no tolerated difference; `basilisk sleigh
+compile`; 2.9× faster than the reference compiler over all 150. ADR-039
+records the `log` finding (every multiply-add GCC fuses in glibc is
+written out as an FMA). Worktree and branch removed (its Wine scripts are kept in
+`../basilisk-wt/windows-ci/target/windows-from-sleigh-compiler-back`).
+Follow-ups: `bk-sleigh-syntax` should strip a leading byte-order
+mark (done in the compiler for now); `module_options` is copied in four
+test files (`bk-testkit` should own it); Wine runs need
+`INSTA_WORKSPACE_ROOT`; no cancellation or progress in a compile (plugin
+constraint 7; needs the monitor type in a low crate); three diagnostics
+have no test because no input reaching them was found; a cache of
+pattern bits would speed decision-tree construction further.
 
 **Merged:** `ui-flake` (`afdc9312b2424f522`; CI run 43613387498 green
 on every job, local gate 1,970 tests; worktree and branch removed). The
