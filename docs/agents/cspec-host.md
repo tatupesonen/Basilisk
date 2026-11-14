@@ -12,8 +12,16 @@ find why row by row, define Basilisk's result, test against both tables.
 - [x] 4. ADR text (below, for the coordinator to record as ADR-038).
 - [x] 5. Two-table strict replay; stable, non-panicking trial sort.
 - [x] 6. `cargo test -p bk-cspec` on the Mac (both env vars set): all pass.
-- [ ] 6b. Same on the build host; valgrind of the old generator pending.
-- [ ] 7. Gates.
+- [x] 6b. Same on the build host; valgrind (below).
+- [x] 7. Gates, both on the build host (a 20-vCPU x86-64 Linux VM):
+      `scripts/remote.sh gate` (reference set) on 5881376: last line
+      `tests: 2033 passed, 0 failed`, exit 0; `scripts/remote.sh gate
+      --no-ref` on 3c1bedd: `tests: 2033 passed, 0 failed`, exit 0.
+      Commits after 5881376 change only this file. Run from detached HEADs
+      of those commits (own `remote.sh` slugs) because the valgrind job
+      held the branch's lock.
+
+Done.
 
 ## 1. Generator fixes (`tests/oracle/cspec_oracle.cc`, `regen.sh`)
 
@@ -202,7 +210,21 @@ panic on it, which was a latent ADR-009 violation in `bk-cspec`.
 
 ## valgrind
 
-(pending)
+Build host, `valgrind --tool=memcheck --track-origins=yes`, both
+generators built with `-g` against the x86-64 reference objects
+(`vg.sh`-style job, logs under the branch's `~/bk/tmp`):
+
+- **Fixed generator:** completes, 152,046 lines, `ERROR SUMMARY: 0 errors
+  from 0 contexts` (only leaks at exit). So no uninitialised read is
+  behind any row of either table: all 119 differences are sort order.
+- **Generator before the fix:** `Conditional jump or move depends on
+  uninitialised value(s)` at `ghidra::ProtoModel::assignParameterStorage`
+  and in `std::vector<int>::_M_fill_insert` called from it (from
+  `assignTable`), the value "created by a heap allocation" in
+  `ghidra::ProtoModelMerged::foldIn` ← `ProtoModelMerged::decode` ←
+  `Architecture::decodeProto` — the `numgroup` defect exactly. Under
+  valgrind it had produced 30,991 lines after 40 minutes (huge
+  `resize`s); it is bounded by the job limit (90 min).
 
 ## Test runs
 
@@ -256,9 +278,8 @@ panic on it, which was a latent ADR-009 violation in `bk-cspec`.
 - Cause D's exact order is not computed independently by the test (it is
   what a chain of stable sorts leaves); the test checks the head and the
   set, and the unit tests check that the sort is stable.
-- The valgrind run of the generator from before the fix (to show the
-  uninitialised read in valgrind's words) did not finish in 40 minutes —
-  see "valgrind".
+- The valgrind run of the generator from before the fix did not finish
+  (it had already reported the uninitialised read; see "valgrind").
 
 ## Follow-ups
 
