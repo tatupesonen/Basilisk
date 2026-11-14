@@ -63,7 +63,7 @@ tb_failed() {
 tb_image() {
   local dir="$TB_DIR/$1" chan hash tag
   chan=$(toolchain)
-  hash=$( (cat "$dir"/*; echo "$chan") | sha256sum | cut -c1-12)
+  hash=$( (cat "$dir/Dockerfile"; echo "$chan") | sha256sum | cut -c1-12)
   tag="bk-testbed-$1:$hash"
   if ! docker image inspect "$tag" >/dev/null 2>&1; then
     say "building image $tag (Rust $chan)" >&2
