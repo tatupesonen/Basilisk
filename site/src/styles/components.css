@@ -386,3 +386,17 @@ a.bk-shot-frame:hover {
 .bk-logo {
   flex: none;
 }
+
+@media (max-width: 40rem) {
+  /* Phones: drop the bytes column, as a narrow Listing would, and tighten. */
+  .bk-code .t-bytes {
+    display: none;
+  }
+  .bk-code pre {
+    font-size: 0.75rem;
+    line-height: 1.4rem;
+  }
+  .bk-code .ln {
+    padding-inline: var(--bk-space-4);
+  }
+}

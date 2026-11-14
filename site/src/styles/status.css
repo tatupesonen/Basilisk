@@ -324,3 +324,10 @@
     gap: var(--bk-space-4);
   }
 }
+.bk-rm-items a code,
+.bk-rm-intro a code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bk-text-2);
+}

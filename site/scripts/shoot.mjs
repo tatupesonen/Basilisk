@@ -56,7 +56,7 @@ await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 for (const theme of ['dark', 'light']) {
   for (const [path, vp, full] of shots) {
-    const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: vp === phone ? 2 : 1 });
+    const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: vp === phone && !full ? 2 : 1 });
     await ctx.addInitScript((t) => localStorage.setItem('starlight-theme', t), theme);
     const page = await ctx.newPage();
     const external = [];
@@ -77,7 +77,7 @@ for (const theme of ['dark', 'light']) {
       await page.waitForLoadState('networkidle');
     }
     const name = `${path.replace(/^\/|\/$/g, '').replace(/[/.]/g, '-') || 'home'}-${vp === phone ? 'phone' : 'desktop'}-${theme}.jpg`;
-    await page.screenshot({ path: join(out, name), fullPage: full, type: 'jpeg', quality: review ? 70 : 72 });
+    await page.screenshot({ path: join(out, name), fullPage: full, type: 'jpeg', quality: review ? 70 : 66 });
     if (external.length) console.error(`EXTERNAL REQUESTS from ${path}: ${external.join(', ')}`);
     console.log(name);
     await ctx.close();
