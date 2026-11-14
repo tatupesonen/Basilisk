@@ -166,9 +166,8 @@ impl<'s> Validator<'s> {
         {
             return fail(path, "the default space is not declared");
         }
-        if self.sla.header.max_delay > self.limits.byte_quantity {
-            return fail("sleigh", "maxdelay exceeds the byte-quantity limit");
-        }
+        let max_delay = i32::try_from(self.sla.header.max_delay).unwrap_or(i32::MAX);
+        self.byte_quantity("sleigh", "maxdelay", max_delay)?;
         if self.context_words > self.limits.context_words {
             return Err(SlaError::Limit {
                 location: crate::error::Location::default(),

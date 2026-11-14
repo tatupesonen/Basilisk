@@ -6,13 +6,17 @@ Spec: `docs/features/sla.md`.
 ## Done
 - Model (`src/model/`), id table (`src/ids.rs`), packed cursor + bk-marshal
   adapter (`src/read/source.rs`), model decoder (`src/read/`), validation
-  (`src/validate/`), packed/XML writer (`src/write/`), `build_spaces`.
-- Test 1 (packed round trip, byte exact) passes on all 150 reference files,
-  through both packed decoders.
+  (`src/validate/`), packed/XML writer (`src/write/`), `build_spaces`
+  (`src/spaces.rs`), `SlaBuilder` (`src/builder.rs`), structural diff
+  (`src/diff/`), lone `Template` codec + `SpaceTable` (`src/template_codec.rs`).
+- Tests 1–3 pass on all 150 reference files (`tests/reference.rs`).
+- Fixture with every element kind (`tests/common`, `tests/fixtures.rs`);
+  one violating fixture per validation rule and per limit, container
+  errors (`tests/validation.rs`).
 
 ## In progress
-- XML writer check against `sleigh -y` (test 2), XML reader (test 3).
+- Property tests, fuzz targets.
 
 ## Next
-- Validation fixtures, limits, builder, structural diff, Template codec,
-  property tests, fuzz targets, benchmarks, mutation check, report.
+- Benchmarks + PERF.md, mutation check (test 4), Windows clippy, gate,
+  spec Status/Differences, final report.
