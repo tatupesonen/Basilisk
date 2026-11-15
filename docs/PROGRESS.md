@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 02:27)
+## Now — RESUME HERE (2026-11-15 03:10) — STOPPED, see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -106,14 +106,47 @@ rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
 
-**Wind-down (owner, 2026-11-15 02:33): "Stop work for now until current
-tracks are done as we are low on usage and we want to stop at a good
-point."** No new agent is started. The three running tracks
-(`decomp-symbols`, `decomp-ir`, `decomp-out-spike`) finish; each is
-reviewed and merged as it reports; then work stops until the owner says
-to go on. The timed loop is stopped (the agents' reports wake the
-coordinator); freed slots stay empty. The queue below is unchanged and
-is where work resumes.
+**STOPPED (2026-11-15, about 03:10). No agent is running.** The owner:
+"Stop work for now until current tracks are done as we are low on usage
+and we want to stop at a good point" (02:33), then "the agents really
+should finish their work about now as we are very low on usage". All
+three agents were told to commit, write "Status and how to continue" in
+their track report, push, and hand back. **None of the three branches
+is merged; none is mergeable as it stands.** All three are on the
+remote. To continue a track: start an agent in the same worktree and
+branch and point it at that section of its report.
+
+| Branch (worktree `../basilisk-wt/<branch>`) | Head | State | Missing |
+|---|---|---|---|
+| `decomp-symbols` (D06) | `dab07a3` (wip) | Compiles; 26 crate tests and 10 `bk-context` tests pass; oracle replays all equal (scope 205,104 rows, context 85,713, image 8,435). One gate so far, at step 0 (`de37c32`, 2,359 tests, exit 0). One of two merges from `master` used | **Clippy: 67 errors** (mechanical; itemised in the report). The `@scope` dump test (restore API written, untested), pspec volatility test, per-table unit tests, codec property tests, seven fuzz targets, benchmarks and `PERF.md`, spec appends, testbed runs, Windows clippy, `check-dep-age`, both gates, final report |
+| `decomp-ir` (D05) | `f35e932` | Compiles; unit tests pass; the five `switchind` dumps load and write back byte for byte. Corpus (one run on the build host, before its last fix): 3,642 dumps loaded, 3,510 written back equal, `print raw` equal in 607 of 607. Its one merge from `master` is used | **Corpus test fails**: 76 dumps print `{unlinked:…}` because the dump has no join records (extend `bkstate` or pin the count); 56 differed in built-in user-op names (fixed in the last commit, not re-run). **Clippy: about 30 warnings.** Unit tests per mutation method, property tests, opcode table against the console, covers against `print cover varnode`, block facts, unit-table test, fuzz target, benchmarks, the Mac corpus run, the 20-function subset, spec sections 8–10, testbed checks, both gates |
+| `decomp-out-spike` (D16a) | `c46d0e6` | **Provisional answer to ADR-025 3c: yes.** A tree built from the printer's logged decisions, without the `Emit` log, prints back the identical `Emit` sequence: 3,176 functions (`print C`, `xml`, `flat`, Java, non-default options), 614,357 calls, 0 mismatches. Instrumented console byte-identical to the reference in 990 runs (build host only). Hook patch, logger, `build-instr.sh`, prototype and `rerun.sh` are committed | `report.md`, the README section on the printer log, a gzip log sample, the gate and `check-dep-age`, the Mac run, host cleanup. Unproven (not reached by the corpus): tokens `unary_plus`, `boolean_xor`, `new_op`, `instanceof`, `remequal`, `leftequal`, `orequal`; nodes `constructor`, `opBranch`, globals/types entry points |
+
+Ghidra defects the three reported, **not yet added to
+`GHIDRA-BUGS.md`** (next entry 40; take the details from the reports):
+`rangemap.hh` — `insert` adds a duplicate last fragment, `erase` can
+stretch a neighbouring record over addresses it does not cover, and a
+later erase leaves dangling fragments (use after free) (D06, confirmed
+with a C++ program); `PieceNode::findRoot` (`op.cc:883`) uses
+`compareOrder`'s -1/0/1 as a boolean, `VarnodeBank::searchvn`
+(`varnode.cc:1220`) leaves `create_index` uninitialised (D05, read);
+`print C flat` is broken (labels print as a bare `:`, goto targets as
+`Ram…` names, unconditional branches dropped), `hideextensions` is
+declared but never registered as an option (D16a). Spec items D06 found
+wrong are in its report. ADR-025 3c is to be confirmed when the spike's
+report exists. `decomp-symbols` could not push from inside its agent
+(the permission system refused); the coordinator pushes that branch.
+
+**Docs site** (owner, about 02:50: "Spend remaining usage and the time
+improving the docs page"): branch `docs-content`, written by the
+coordinator — the pages were stale (they listed `disasm` and the SLEIGH
+compiler as planned). New: first disassembly, coming from Ghidra,
+`disasm` and `sleigh compile` reference pages, processors, SLEIGH,
+p-code, how results are checked; updated: overview, introduction,
+build, CLI, formats, architecture, decompiler, analysis. Every command
+and output on the pages was run with a build of `master`. Still shells:
+the interface's per-view pages, analysis, scripting (queue item 11
+remains for those and for the generated key-binding and CLI tables).
 
 **The cap is three agents** (owner, 2026-11-15 about 02:00: "Use 3
 agents for now"; it was two from 2026-11-14 20:17), and every agent builds,
