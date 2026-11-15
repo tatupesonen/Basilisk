@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 03:10) — STOPPED, see "Running"
+## Now — RESUME HERE (2026-11-15 02:44) — STOPPED, see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -106,7 +106,7 @@ rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
 
-**STOPPED (2026-11-15, about 03:10). No agent is running.** The owner:
+**STOPPED (2026-11-15, 02:44). No agent is running.** The owner:
 "Stop work for now until current tracks are done as we are low on usage
 and we want to stop at a good point" (02:33), then "the agents really
 should finish their work about now as we are very low on usage". All
@@ -137,7 +137,7 @@ wrong are in its report. ADR-025 3c is to be confirmed when the spike's
 report exists. `decomp-symbols` could not push from inside its agent
 (the permission system refused); the coordinator pushes that branch.
 
-**Docs site** (owner, about 02:50: "Spend remaining usage and the time
+**Docs site** (owner, about 02:36: "Spend remaining usage and the time
 improving the docs page"): branch `docs-content`, written by the
 coordinator — the pages were stale (they listed `disasm` and the SLEIGH
 compiler as planned). New: first disassembly, coming from Ghidra,
