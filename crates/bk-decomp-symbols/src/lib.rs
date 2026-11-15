@@ -9,3 +9,18 @@
 //! classes `*_ghidra.*`. Specification: `docs/features/decomp-symbols.md`.
 
 pub mod entrymap;
+pub mod database;
+pub mod error;
+pub mod flags;
+pub mod ids;
+pub mod model;
+pub mod scope;
+
+pub use database::{ArchEnv, Database, RegisterNames};
+pub use error::{DataUnavail, HostError, Result, SymbolError};
+pub use flags::VarnodeFlags;
+pub use ids::{EntryId, ScopeId, SymbolId};
+pub use model::{EntryData, EntryKind, ScopeData, ScopeKind, SymbolData, SymbolKind};
+pub use scope::add::{ConflictFacts, ID_BASE};
+pub use scope::names::VarnodeFacts;
+pub use scope::query::Found;
