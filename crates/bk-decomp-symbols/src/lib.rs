@@ -21,6 +21,7 @@ pub mod host;
 pub mod ids;
 pub mod image;
 pub mod model;
+pub mod overlay;
 pub mod overrides;
 pub mod print;
 pub mod scope;

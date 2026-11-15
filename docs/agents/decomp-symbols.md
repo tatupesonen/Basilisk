@@ -17,6 +17,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 4.16, 6.2 context | `src/context.rs` (`ContextNames` over `bk_context::ContextDb`; `bk-context` gained `grow`, `set_tracked_at`, `tracked_points`, `tracked_default`, `has_split_points`); generator `tests/oracle/context.cc`, table `tests/data/context.txt.gz`, replay `tests/context_oracle.rs`: **all 85,713 case rows equal** | `d2ded67` |
 | 4.12–4.15, 4.17 | `src/comment.rs`, `src/strings.rs`, `src/cpool.rs`, `src/image/{mod,hex,xml,raw}.rs`, `src/overrides.rs` | `bb47a11` |
 | 4.18, 6.2 image, 6.3 G | `src/arch.rs` (decode_volatile, decode_incidental_copy, decode_register_data, decode_readonly, decode_global, add_to_global_scope, add_other_space, build_default_symbols, fill_readonly_from_image, read_loader_symbols, globalify); replay `tests/image_oracle.rs` (needs reference + Ghidra; skips otherwise): **all 8,435 rows equal, 93 data tests** (B/M rows are `print map`) | `96ad501` |
+| 5.7 | `src/overlay.rs`: `Overlay` (clone on first write, logged ops, `commit` replays and translates new ids by creation order); `tests/overlay.rs` (sequential commits equal direct changes; two overlays from one base; Send + Sync) | overlay commit |
 | 5.5 | `TypeFactory::type_spacebase` in `bk-decomp-types` with a test | `ab73fdc` |
 | 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
@@ -32,12 +33,6 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 
 ### (c) Not started, in order
 
-1. Overlay and commit (5.7, ADR-044): planned `src/overlay.rs` —
-   `Overlay { base: Arc<Database>, work: Option<Database>, log: Vec<Op> }`,
-   clone-on-first-write, ops logged with ids; `commit(into)` replays the log
-   and maps new arena ids (ids below the base's arena lengths are kept).
-   Test: committing after each "function" equals doing the operations
-   directly on the database (sequential behaviour).
 2. `SpacebaseScopes` (5.5): `src/spacebase.rs` — a view over
    `Arc<Database>` + `Arc<TypeFactory>` + the `undefined1` id;
    `frame_of_scope`, `scope_of_frame`, `sub_type` (type.cc
@@ -96,6 +91,7 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 - Last gate: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
   `tests: 2359 passed, 0 failed`. Not run since (planned at the end and
   after the next big step).
+- Pushing: `7dfd5c0` was pushed; later pushes were refused by the session's permission system (a coordinator message is not the user's consent), so later commits are local only.
 - `git merge master`: 1 of 2 used (`dd1746a`, bkstate version 2).
 
 ### (f) Open questions, proposed ADRs, Ghidra defects
