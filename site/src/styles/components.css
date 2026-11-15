@@ -400,3 +400,35 @@ a.bk-shot-frame:hover {
     padding-inline: var(--bk-space-4);
   }
 }
+
+/* The mark's eye is alive: the slit pupil narrows for a moment every few
+   seconds, and while the logo is hovered. Off under reduced motion. */
+.bk-mark-pupil {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms ease-out;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes bk-pupil-narrow {
+    0%,
+    84%,
+    100% {
+      transform: scaleX(1);
+    }
+    89% {
+      transform: scaleX(0.28);
+    }
+    95% {
+      transform: scaleX(1.1);
+    }
+  }
+  .bk-mark-pupil {
+    animation: bk-pupil-narrow 6.5s ease-in-out 1.2s infinite;
+  }
+  a:hover .bk-mark-pupil,
+  .bk-mark:hover .bk-mark-pupil,
+  .bk-logo:hover .bk-mark-pupil {
+    animation: none;
+    transform: scaleX(0.28);
+  }
+}
