@@ -17,6 +17,7 @@ pub mod database;
 pub mod entrymap;
 pub mod error;
 pub mod flags;
+pub mod host;
 pub mod ids;
 pub mod image;
 pub mod model;
