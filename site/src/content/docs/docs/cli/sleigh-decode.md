@@ -1,25 +1,26 @@
 ---
-title: basilisk disasm
-description: Disassemble raw bytes with any of Ghidra's SLEIGH languages and print every instruction with its p-code.
+title: basilisk sleigh decode
+description: Decode raw bytes with any of Ghidra's SLEIGH languages and print every instruction with its p-code.
 sidebar:
   order: 2
-  label: disasm
+  label: sleigh decode
 ---
 
-`basilisk disasm` decodes raw bytes with a SLEIGH language and prints each instruction with the p-code it
+`basilisk sleigh decode` decodes raw bytes with a SLEIGH language and prints each instruction with the p-code it
 lifts to. It works for every language Ghidra ships. Its output equals the output of Ghidra's own SLEIGH
 engine on the same bytes, record for record; that equality is tested for all 150 languages.
 
 ```text
-basilisk disasm --language <id> [options] [--hex HEXBYTES | <file> | -]
+basilisk sleigh decode --language <id> [options] [--hex HEXBYTES | <file> | -]
 ```
 
 New here? [Your first disassembly](/docs/getting-started/first-disassembly/) walks through it.
 
 :::note[What it is and is not]
-`disasm` is a **linear sweep** over raw code: it decodes at the base address, moves on by the instruction's
-length, and repeats. It does not read ELF, PE or Mach-O files, and it does not follow branches. Loaders are
-milestone M4; the flow-following disassembler that analysis uses is M5.
+`sleigh decode` drives the instruction decoder over raw code as a **linear sweep**: it decodes at the base
+address, moves on by the instruction's length, and repeats. It is not Basilisk's disassembler. Ghidra's
+disassembler follows the flow of control from entry points; Basilisk's port of it arrives with milestone M5,
+after the loaders (M4), and the name `basilisk disasm` is kept for it.
 :::
 
 ## Options
@@ -49,7 +50,7 @@ variables*. The processor specification sets their defaults; `--context` overrid
 The best-known one is ARM's Thumb mode:
 
 ```sh
-basilisk disasm --language ARM:LE:32:v8 --hex 01207047 --context TMode=1 --format text --no-pcode
+basilisk sleigh decode --language ARM:LE:32:v8 --hex 01207047 --context TMode=1 --format text --no-pcode
 ```
 
 ```text
@@ -135,7 +136,7 @@ Because the sweep moves on by length, the `li` then also appears as an instructi
 `--quiet --timing` measures without the cost of printing:
 
 ```sh
-basilisk disasm --language x86:LE:64:default --quiet --timing code.bin
+basilisk sleigh decode --language x86:LE:64:default --quiet --timing code.bin
 ```
 
 ```text

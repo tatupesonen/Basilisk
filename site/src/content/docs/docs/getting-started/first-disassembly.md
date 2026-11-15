@@ -40,7 +40,7 @@ Here is a tiny function as bytes: `55 48 89 e5 8b 45 fc 83 c0 01 5d c3`. Decode 
 address `0x401000`:
 
 ```sh
-basilisk disasm --language x86:LE:64:default --base 0x401000 \
+basilisk sleigh decode --language x86:LE:64:default --base 0x401000 \
   --hex 554889e58b45fc83c0015dc3 --format text --no-pcode
 ```
 
@@ -65,7 +65,7 @@ Leave out `--no-pcode` and every instruction is followed by its p-code: what the
 in a small set of operations that is the same for every processor.
 
 ```sh
-basilisk disasm --language x86:LE:64:default --base 0x401000 --hex 83c001 --format text
+basilisk sleigh decode --language x86:LE:64:default --base 0x401000 --hex 83c001 --format text
 ```
 
 ```text
@@ -98,10 +98,10 @@ p-code, which is why one decompiler serves every processor. More in [P-code](/do
 
 ## 4. Decode a file
 
-Without `--hex`, `disasm` reads a file, or standard input:
+Without `--hex`, `sleigh decode` reads a file, or standard input:
 
 ```sh
-basilisk disasm --language x86:LE:64:default --base 0x1000 --format text code.bin
+basilisk sleigh decode --language x86:LE:64:default --base 0x1000 --format text code.bin
 ```
 
 It decodes the bytes one instruction after another from the first byte (a *linear sweep*). It does not
@@ -110,5 +110,5 @@ flow of control arrive with the [loaders](/docs/formats/) (M4) and [analysis](/d
 
 ## Next
 
-- [`basilisk disasm`](/docs/cli/disasm/): every option, the machine-readable output, context variables.
+- [`basilisk sleigh decode`](/docs/cli/sleigh-decode/): every option, the machine-readable output, context variables.
 - [How SLEIGH decodes an instruction](/docs/internals/sleigh/).

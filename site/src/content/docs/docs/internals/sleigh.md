@@ -90,4 +90,4 @@ p-code on one core.
 The `.sla` reader checks every file before use. A file that would make Ghidra's engine read out of bounds
 is rejected with an error instead; none of the files Ghidra ships or compiles is affected.
 
-Try it: [`basilisk sleigh compile`](/docs/cli/sleigh-compile/), [`basilisk disasm`](/docs/cli/disasm/).
+Try it: [`basilisk sleigh compile`](/docs/cli/sleigh-compile/), [`basilisk sleigh decode`](/docs/cli/sleigh-decode/).

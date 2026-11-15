@@ -122,7 +122,7 @@ it is reached; later milestones are intentionally coarse.
 Tracks and order: ADR-023. Undefined behaviour in Ghidra's engine: ADR-024.
 - [x] `sla` — `bk-sla`: the compiled-language model, validating reader, byte-exact writers; all 150 reference files round-trip (`features/sla.md`)
 - [x] `sleigh-decode` — `bk-sleigh`: loading, context database, instruction decoding, operand printing; `I`/`E`/`T` records equal to `pcodedump` for every language (`features/sleigh-decode.md`)
-- [x] `sleigh-pcode` — `bk-sleigh`: p-code generation (templates, handles, delay slots, crossbuild, user ops), `Translate`, `basilisk disasm`; every record equal to `pcodedump`, the 20-operand exception aside (`features/sleigh-pcode.md`)
+- [x] `sleigh-pcode` — `bk-sleigh`: p-code generation (templates, handles, delay slots, crossbuild, user ops), `Translate`, `basilisk sleigh decode`; every record equal to `pcodedump`, the 20-operand exception aside (`features/sleigh-pcode.md`)
 - [x] Benchmarks: language load time, decode and lift throughput at or above the reference (`PERF.md`): load 20 ms against 32; single-threaded decode 1.11× and decode + p-code 1.00× the g++ reference on x86-64 Linux, 1.32× and 1.38× on the M1; 6.7–7.9× at 8 threads. A clear margin for decode + p-code on x86-64 is a queued follow-up (compiled templates)
 - [ ] `sleigh-language` — `bk-sleigh`, `bk-language`: registers as a model, flow and operand types, overrides, compile on demand (`features/sleigh-language.md`, a draft; later wave)
 
@@ -156,7 +156,7 @@ this list follows its waves.
 - [ ] `basilisk import`
 
 ### M5 — Disassembly and auto-analysis
-- [ ] Flow-following disassembler, instruction prototypes, context propagation
+- [ ] Flow-following disassembler, instruction prototypes, context propagation; the command `basilisk disasm` on a loaded program (ADR-047)
 - [ ] Auto-analysis manager and scheduling
 - [ ] Analyzers in Ghidra's priority order: entry points, function starts (pattern files), references, switch tables, stack, data and strings, no-return, call-fixups, demanglers, format-specific analyzers
 - [ ] Decompiler wired to the program (parameter ID, switch analysis, decompiler-dependent analyzers)

@@ -13,7 +13,7 @@ For all 150 SLEIGH specifications in Ghidra's 39 processor modules:
 - the specification **compiles** to the same content as with Ghidra's compiler
   ([`basilisk sleigh compile`](/docs/cli/sleigh-compile/));
 - instructions **decode** and **lift to p-code** with the same result as Ghidra's engine
-  ([`basilisk disasm`](/docs/cli/disasm/)).
+  ([`basilisk sleigh decode`](/docs/cli/sleigh-decode/)).
 
 The compiler specifications (`.cspec`: calling conventions, stack layout, data sizes) are read for all of
 them too; the decompiler will use them.
@@ -88,7 +88,7 @@ The ids of a module are in its `.ldefs` file, under
 Because the files are read as they are, a SLEIGH specification written for Ghidra works in Basilisk: put the
 module's directory beside the others under `Ghidra/Processors/`, compile it with
 [`basilisk sleigh compile`](/docs/cli/sleigh-compile/), and its ids are available to
-[`basilisk disasm`](/docs/cli/disasm/).
+[`basilisk sleigh decode`](/docs/cli/sleigh-decode/).
 
 ## What each file is for
 
