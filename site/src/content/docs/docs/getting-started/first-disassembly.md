@@ -56,7 +56,7 @@ basilisk disasm --language x86:LE:64:default --base 0x401000 \
 The text is Ghidra's: the same mnemonics, operand order and number formatting you see in Ghidra's Listing.
 
 `--language` takes a Ghidra language id: processor, endianness, size and variant. Other examples are
-`AARCH64:LE:64:v8A`, `ARM:LE:32:v8`, `MIPS:BE:32:default` and `RISCV:LE:64:RV64GC`. Each needs its `.sla`
+`AARCH64:LE:64:v8A`, `ARM:LE:32:v8`, `MIPS:BE:32:default` and `RISCV:LE:64:default`. Each needs its `.sla`
 compiled as in step 1. See [Processors](/docs/formats/processors/).
 
 ## 3. Read the p-code
