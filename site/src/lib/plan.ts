@@ -12,7 +12,11 @@ export interface Milestone {
   remark?: string;
   intro: string;
   items: MilestoneItem[];
-  state: 'done' | 'current' | 'planned';
+  // done: every item checked. partial: work has moved on, a few items are
+  // still open. current: the latest milestone with work done in it.
+  state: 'done' | 'partial' | 'current' | 'planned';
+  checked: number;
+  total: number;
 }
 
 let cached: Milestone[] | undefined;
@@ -32,7 +36,7 @@ export function loadMilestones(): Milestone[] {
     const h = line.match(/^###\s+(M\d+)\s+[—-]\s+(.+?)\s*$/);
     if (h) {
       const m = h[2].match(/^(.*?)\s*\((.*)\)$/);
-      cur = { id: h[1], title: m ? m[1] : h[2], remark: m ? m[2] : undefined, intro: '', items: [], state: 'planned' };
+      cur = { id: h[1], title: m ? m[1] : h[2], remark: m ? m[2] : undefined, intro: '', items: [], state: 'planned', checked: 0, total: 0 };
       out.push(cur);
       lastItem = undefined;
       continue;
@@ -50,15 +54,22 @@ export function loadMilestones(): Milestone[] {
     }
   }
   if (out.length === 0) throw new Error('docs/PLAN.md: no milestones parsed');
-  let currentSet = false;
   for (const m of out) {
-    const complete = m.items.length > 0 && m.items.every((i) => i.done);
-    if (complete) m.state = 'done';
-    else if (!currentSet) {
-      m.state = 'current';
-      currentSet = true;
-    }
+    m.total = m.items.length;
+    m.checked = m.items.filter((i) => i.done).length;
   }
+  // The current milestone is the latest one that is started and unfinished;
+  // earlier unfinished ones with work done are "partial" (open items remain).
+  let now = -1;
+  out.forEach((m, i) => {
+    if (m.checked > 0 && m.checked < m.total) now = i;
+  });
+  if (now < 0) now = out.findIndex((m) => m.total === 0 || m.checked < m.total);
+  out.forEach((m, i) => {
+    if (m.total > 0 && m.checked === m.total) m.state = 'done';
+    else if (i === now) m.state = 'current';
+    else if (m.checked > 0) m.state = 'partial';
+  });
   cached = out;
   return out;
 }

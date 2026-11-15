@@ -650,8 +650,22 @@ pre {
   background: var(--bk-syn-number);
   color: var(--bk-chrome);
 }
+.bk-milestones .ms-partial .bk-ms-node {
+  border-color: var(--bk-syn-number);
+  color: var(--bk-syn-number);
+}
 .bk-milestones .ms-current .bk-ms-node {
   border: 2px solid var(--bk-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bk-accent) 18%, transparent);
+}
+.bk-milestones .bk-ms-count {
+  font-family: var(--bk-font-mono);
+  font-size: 0.6875rem;
+  color: var(--bk-text-muted);
+  margin-top: calc(var(--bk-space-2) * -1);
+}
+.bk-milestones .ms-current .bk-ms-count {
+  color: var(--bk-accent);
 }
 .bk-milestones .bk-ms-id {
   font-family: var(--bk-font-mono);

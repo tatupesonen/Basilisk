@@ -188,15 +188,15 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: Ghidra’s language and compiler specifications read unchanged, ELF parsing, the p-code model and float formats.</span></li>
             </ul>
           </div>
-          <div class="bk-panel">
+        </div>
+        <div>
+          <StatusSummary />
+          <div class="bk-panel" style="margin-top: var(--bk-space-6)">
             <h3>Not yet</h3>
             <ul class="bk-checklist">
               <li class="no"><Icon name="circle-dashed" size="16" /><span>Opening a real binary, analysis, decompiling a function and Python scripting. Each has its milestone on the <a class="bk-link" href={`${base}roadmap/`}>roadmap</a>.</span></li>
             </ul>
           </div>
-        </div>
-        <div>
-          <StatusSummary />
         </div>
       </div>
       <Milestones />
