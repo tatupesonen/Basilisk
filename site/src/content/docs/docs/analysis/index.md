@@ -7,7 +7,7 @@ sidebar:
 ---
 
 :::caution[Planned]
-Analysis arrives with milestone M5, after the SLEIGH runtime (M1), the program model and loaders (M4).
+Analysis arrives with milestone M5, after the program model and loaders (M4). The SLEIGH runtime it builds on (M1) exists.
 Nothing on this page exists yet.
 :::
 
