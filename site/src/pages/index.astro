@@ -43,16 +43,23 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <a class="bk-btn bk-btn-secondary" href={`${base}status/`}>What works today</a>
           </div>
         </div>
-        <div class="bk-hero-mark" aria-hidden="true">
-          <svg class="bk-iris" viewBox="0 0 400 400" fill="none" stroke="currentColor">
-            <circle cx="200" cy="200" r="60" stroke-width="1" />
-            <circle cx="200" cy="200" r="84" stroke-width="1" />
-            <circle cx="200" cy="200" r="110" stroke-width="1" />
-            <circle cx="200" cy="200" r="140" stroke-width="1" />
-            <circle cx="200" cy="200" r="174" stroke-width="1" />
-            <circle cx="200" cy="200" r="199" stroke-width="1" />
-          </svg>
-          <Mark size="100%" />
+        <div class="bk-hero-term">
+          <div class="bk-terminal">
+            <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />basilisk disasm</div>
+            <pre><code><span class="p">$ </span><span class="f">basilisk</span> disasm --language x86:LE:64:default \
+    --base 0x401000 --hex 554889e58b45fc83c0015dc3 \
+    --format text --no-pcode
+<span class="ln" style="--i:0"><span class="d">0x401000  55        </span> <span class="m">PUSH</span> <span class="r">RBP</span></span>
+<span class="ln" style="--i:1"><span class="d">0x401001  48 89 e5  </span> <span class="m">MOV</span>  <span class="r">RBP</span>,<span class="r">RSP</span></span>
+<span class="ln" style="--i:2"><span class="d">0x401004  8b 45 fc  </span> <span class="m">MOV</span>  <span class="r">EAX</span>,dword ptr [<span class="r">RBP</span> + <span class="n">-0x4</span>]</span>
+<span class="ln" style="--i:3"><span class="d">0x401007  83 c0 01  </span> <span class="m">ADD</span>  <span class="r">EAX</span>,<span class="n">0x1</span></span>
+<span class="ln" style="--i:4"><span class="d">0x40100a  5d        </span> <span class="m">POP</span>  <span class="r">RBP</span></span>
+<span class="ln" style="--i:5"><span class="d">0x40100b  c3        </span> <span class="m">RET</span></span></code></pre>
+          </div>
+          <p class="bk-hero-term-note">
+            Works today, for all 150 of Ghidra’s processor languages. Column spacing is trimmed here; the text is the
+            command’s. <a class="bk-link" href={`${base}docs/getting-started/first-disassembly/`}>Try it</a>
+          </p>
         </div>
       </div>
       <div class="bk-hero-shot">
@@ -211,42 +218,36 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <h2 class="bk-h2" id="why-title">Everything Ghidra does. Then better.</h2>
         </div>
       </div>
+      <dl class="bk-stats">
+        <div><dt>150 / 150</dt><dd>SLEIGH specifications compile to the same content as with Ghidra’s compiler</dd></div>
+        <div><dt>39</dt><dd>processor families disassemble and lift to p-code like Ghidra’s engine</dd></div>
+        <div><dt>2,400+</dt><dd>tests, most of them comparing against Ghidra on the same input</dd></div>
+        <div><dt>3</dt><dd>systems built and tested on every change: Linux, macOS, Windows</dd></div>
+      </dl>
       <div class="bk-why">
         <div>
-          <span class="bk-why-icon"><Icon name="equals" size="20" /></span>
           <h3>Parity first</h3>
           <p>Module by module, headless core first. Ghidra’s processor specifications work unchanged, and each feature lands with Ghidra’s own tests for it ported.</p>
-          <span class="bk-tag">PLAN · goal 1</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="arrow-up-right" size="20" /></span>
           <h3>Better where it can be</h3>
           <p>Behaviour comes from Ghidra and structure from Rust. Each deliberate difference is recorded with its reason.</p>
-          <span class="bk-tag">ADR-001</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="lightning" size="20" /></span>
           <h3>Fast, and never waiting</h3>
           <p>Language load, disassembly and decompilation at least as fast as Ghidra’s, analysis in parallel where safe, and an interface that never blocks.</p>
-          <span class="bk-tag">ADR-012</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="shield-check" size="20" /></span>
           <h3>Trustworthy</h3>
           <p>Parsers are fuzzed and must return an error, not crash, on a malformed file. Output is compared with Ghidra’s on the same input.</p>
-          <span class="bk-tag">ADR-007 · ADR-009</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="code" size="20" /></span>
           <h3>Python plugins</h3>
           <p>Scripts, analyzers, loaders and exporters in Python through an embedded interpreter, and Basilisk importable from Python. Planned for milestone M9.</p>
-          <span class="bk-tag">ADR-014 · planned</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="desktop" size="20" /></span>
           <h3>One binary, three systems</h3>
           <p>Windows, macOS and Linux are built and tested on every change. Basilisk is a single binary.</p>
-          <span class="bk-tag">ADR-022</span>
         </div>
       </div>
     </div>
