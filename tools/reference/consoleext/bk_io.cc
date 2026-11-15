@@ -7,7 +7,7 @@
 namespace bk {
 
 const char *const FORMAT_VERSIONS =
-    "bkstate 1, bkgraph 1, bkcfg 1, bkstruct 1, pcoderec 1, bkactions 1";
+    "bkstate 2, bkgraph 1, bkcfg 1, bkstruct 1, pcoderec 1, bkactions 1";
 
 std::string escape(const std::string &s)
 {
