@@ -263,6 +263,16 @@ impl TypeFactory {
         self.find_add(TypeEntry::new(1, 1, Metatype::Code, TypeKind::Code(None)))
     }
 
+    /// Ghidra `getTypeSpacebase`: the anonymous type viewing `space` as a
+    /// structure through the scope with Ghidra id `scope` (its symbols are
+    /// found through the [`SpacebaseScopes`](crate::xml::SpacebaseScopes)
+    /// hook).
+    pub fn type_spacebase(&mut self, space: bk_marshal::SpaceId, scope: u64) -> Result<TypeId> {
+        let mut tsb = TypeEntry::new(0, 1, Metatype::Spacebase, TypeKind::Base);
+        tsb.kind = TypeKind::Spacebase { space, scope };
+        self.find_add(tsb)
+    }
+
     /// Ghidra `getTypeCode(const string&)`: a named function type without a
     /// prototype.
     pub fn type_code_named(&mut self, name: &str) -> Result<TypeId> {
@@ -282,5 +292,32 @@ pub(crate) fn unicode_flags(e: &mut TypeEntry) {
         4 => e.flags |= TypeFlags::UTF32,
         1 => e.flags |= TypeFlags::CHARTYPE,
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod spacebase_tests {
+    use crate::{DataOrganization, Metatype, TypeEnv, TypeFactory, TypeKind};
+
+    #[test]
+    fn spacebase_types_are_interned_by_space_and_scope() {
+        let mut f =
+            TypeFactory::with_core_types(TypeEnv::simple(8, false), DataOrganization::default())
+                .unwrap();
+        let space = bk_marshal::SpaceId::new(3);
+        let a = f.type_spacebase(space, 0x1234).unwrap();
+        let b = f.type_spacebase(space, 0x1234).unwrap();
+        let c = f.type_spacebase(space, 0x99).unwrap();
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+        let e = f.get(a).unwrap();
+        assert_eq!((e.size(), e.metatype()), (0, Metatype::Spacebase));
+        assert_eq!(
+            e.kind(),
+            &TypeKind::Spacebase {
+                space,
+                scope: 0x1234
+            }
+        );
     }
 }
