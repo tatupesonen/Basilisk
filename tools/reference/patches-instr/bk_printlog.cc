@@ -121,10 +121,20 @@ string vnKey(const Varnode *vn)
   return s.str();
 }
 
+/// Block type names: FlowBlock::typeToName writes "ifelse" for t_ifnoexit (block.cc:697), so not that
+const char *const BLOCK_NAMES[] = { "plain", "basic", "graph", "copy", "goto", "multigoto", "list",
+  "condition", "if", "ifelse", "ifnoexit", "ifgoto", "whiledo", "dowhile", "switch", "infloop" };
+
+string blName(FlowBlock::block_type t)
+{
+  if ((int4)t < 0 || (int4)t > FlowBlock::t_infloop) return "?";
+  return BLOCK_NAMES[t];
+}
+
 string blKey(const FlowBlock *bl)
 {
   if (bl == (const FlowBlock *)0) return "-";
-  return FlowBlock::typeToName(bl->getType()) + ":" + decs(bl->getIndex());
+  return blName(bl->getType()) + ":" + decs(bl->getIndex());
 }
 
 string symKey(const Symbol *sym)
@@ -152,14 +162,12 @@ class PrintLog : public BkPrintHook {
   int4 docDepth;		///< Nesting of docFunction
   const PrintLanguage *cur;	///< The printer of the current function
   map<const OpToken *,string> tokenNames;
-  map<const void *,int4> pendIds;	///< PendPrint objects, numbered in order of first use
   int4 pendEmit;		///< A logged Emit call waiting for its result (0 if none)
   string pendLine;
   long directEmits, interleaved, outside;
 
   void nameTokens(void);
   string tokName(const OpToken *tok);
-  string pendKey(const void *p);
   string facts(const PrintLanguage *lng,int4 ev,const void *a,const void *b,intb c);
   string labelText(const FlowBlock *bl);
   void diagLine(const string &msg) { diag << "D\t" << fnum << '\t' << msg << '\n'; }
@@ -259,16 +267,6 @@ string PrintLog::tokName(const OpToken *tok)
   return nm + "\t" + esc(tok->print1) + "\t" + esc(tok->print2);
 }
 
-string PrintLog::pendKey(const void *p)
-{
-  if (p == (const void *)0) return "-";
-  map<const void *,int4>::const_iterator it = pendIds.find(p);
-  if (it != pendIds.end()) return "p" + decs((*it).second);
-  int4 id = pendIds.size();
-  pendIds[p] = id;
-  return "p" + decs(id);
-}
-
 /// The label PrintC::emitLabel prints for a block (printc.cc:3319)
 string PrintLog::labelText(const FlowBlock *bl)
 {
@@ -318,8 +316,19 @@ string PrintLog::facts(const PrintLanguage *lng,int4 ev,const void *a,const void
     break;
   }
   case bk_ev_symbolScope: {
+    // The scope names emitSymbolScope prints (printc.cc:233)
     const Symbol *sym = (const Symbol *)a;
-    s << symKey(sym);
+    s << symKey(sym) << '\t' << esc(PrintC::scope.print1) << '\t';
+    int4 depth = 0;
+    if (pc->namespc_strategy == PrintLanguage::MINIMAL_NAMESPACES)
+      depth = sym->getResolutionDepth(pc->curscope);
+    else if (pc->namespc_strategy == PrintLanguage::ALL_NAMESPACES)
+      depth = (sym->getScope() == pc->curscope) ? 0 : sym->getResolutionDepth((const Scope *)0);
+    vector<string> names;
+    const Scope *point = sym->getScope();
+    for(int4 i=0;i<depth;++i) { names.push_back(point->getDisplayName()); point = point->getParent(); }
+    for(int4 i=depth-1;i>=0;--i) s << esc(names[i]) << (i ? "," : "");
+    if (depth == 0) s << '-';
     break;
   }
   case bk_ev_prototypeOutput: {
@@ -410,7 +419,7 @@ string PrintLog::facts(const PrintLanguage *lng,int4 ev,const void *a,const void
       break;
     case bk_ev_blockIf: {
       FlowBlock::block_type t = fb->getType();
-      s << '\t' << FlowBlock::typeToName(t);
+      s << '\t' << blName(t);
       if (t == FlowBlock::t_ifgoto) {
 	const BlockIfGoto *ig = (const BlockIfGoto *)fb;
 	s << '\t' << blKey(ig->getGotoTarget()) << '\t' << hexs(ig->getGotoType());
@@ -503,7 +512,6 @@ void PrintLog::enter(const PrintLanguage *lng,int4 ev,const void *a,const void *
       cur = lng;
       count += 1;
       fnum = count;
-      pendIds.clear();
       const PrintC *pc = (const PrintC *)lng;
       const Funcdata *fd = (const Funcdata *)a;
       tree << "F\t" << fnum << '\t' << esc(fd->getName()) << '\n';
@@ -627,7 +635,7 @@ void PrintLog::emitCall(const Emit *e,int4 call,const string *s,intb i1,intb i2,
   case bk_em_openBrace: l << '\t' << esc(*s) << '\t' << i1; break;
   case bk_em_closeBraceIndent: l << '\t' << esc(*s) << '\t' << i1; break;
   case bk_em_setPendingPrint:
-  case bk_em_hasPendingPrint: l << '\t' << pendKey(p1); break;
+  case bk_em_hasPendingPrint: break;	// PendPrint objects are stack locals: only the result is logged
   case bk_em_endDocument: case bk_em_endFunction: case bk_em_endBlock: case bk_em_tagLineIndent:
   case bk_em_endReturnType: case bk_em_endVarDecl: case bk_em_endStatement: case bk_em_endFuncProto:
   case bk_em_closeGroup: case bk_em_stopIndent: case bk_em_stopComment: case bk_em_setIndentIncrement:
