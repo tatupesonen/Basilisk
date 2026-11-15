@@ -49,7 +49,12 @@ impl Database {
 
     /// Ghidra `findAddr`: the entry starting exactly at `addr` that is in
     /// use at `usepoint`, walking the piece backwards.
-    pub fn find_addr(&self, scope: ScopeId, addr: Address, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn find_addr(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };
@@ -57,17 +62,29 @@ impl Database {
             .find_sub(addr.offset(), EntrySubsort::EARLIEST, use_subsort(usepoint))
             .rev()
             .filter_map(|f| self.frag_entry(&f))
-            .find(|(_, e)| e.addr().map(Address::offset) == Some(addr.offset()) && self.entry_in_use(e, usepoint));
+            .find(|(_, e)| {
+                e.addr().map(Address::offset) == Some(addr.offset())
+                    && self.entry_in_use(e, usepoint)
+            });
         Ok(hit.map(|(id, _)| id))
     }
 
     /// Ghidra `findContainer`: the smallest entry in use that contains the
     /// `size` bytes at `addr` (the first of equal size, walking backwards).
-    pub fn find_container(&self, scope: ScopeId, addr: Address, size: i32, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn find_container(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };
-        let end = addr.offset().wrapping_add(i64::from(size) as u64).wrapping_sub(1);
+        let end = addr
+            .offset()
+            .wrapping_add(i64::from(size) as u64)
+            .wrapping_sub(1);
         let mut best = None;
         let mut oldsize: i32 = -1;
         for frag in map
@@ -92,7 +109,13 @@ impl Database {
     }
 
     /// Ghidra `findClosestFit`.
-    pub fn find_closest_fit(&self, scope: ScopeId, addr: Address, size: i32, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn find_closest_fit(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };
@@ -105,9 +128,13 @@ impl Database {
             let Some((id, entry)) = self.frag_entry(&frag) else {
                 continue;
             };
-            if entry.last_offset().is_some_and(|last| last >= addr.offset()) {
+            if entry
+                .last_offset()
+                .is_some_and(|last| last >= addr.offset())
+            {
                 let newdiff = entry.size.wrapping_sub(size);
-                let better = (olddiff < 0 && newdiff > olddiff) || (olddiff >= 0 && newdiff >= 0 && newdiff < olddiff);
+                let better = (olddiff < 0 && newdiff > olddiff)
+                    || (olddiff >= 0 && newdiff >= 0 && newdiff < olddiff);
                 if better && self.entry_in_use(entry, usepoint) {
                     best = Some(id);
                     if newdiff == 0 {
@@ -130,7 +157,9 @@ impl Database {
             let Some((_, entry)) = self.frag_entry(&frag) else {
                 continue;
             };
-            if entry.addr().map(Address::offset) == Some(addr.offset()) && self.symbol(entry.symbol)?.is_function() {
+            if entry.addr().map(Address::offset) == Some(addr.offset())
+                && self.symbol(entry.symbol)?.is_function()
+            {
                 return Ok(Some(entry.symbol));
             }
         }
@@ -148,7 +177,10 @@ impl Database {
                 continue;
             };
             if entry.addr().map(Address::offset) == Some(addr.offset()) {
-                let is_ref = matches!(self.symbol(entry.symbol)?.kind, SymbolKind::ExternRef { .. });
+                let is_ref = matches!(
+                    self.symbol(entry.symbol)?.kind,
+                    SymbolKind::ExternRef { .. }
+                );
                 return Ok(is_ref.then_some(entry.symbol));
             }
         }
@@ -167,7 +199,9 @@ impl Database {
             let Some((_, entry)) = self.frag_entry(&frag) else {
                 continue;
             };
-            if entry.addr().map(Address::offset) == Some(addr.offset()) && self.entry_in_use(entry, addr) {
+            if entry.addr().map(Address::offset) == Some(addr.offset())
+                && self.entry_in_use(entry, addr)
+            {
                 let is_label = matches!(self.symbol(entry.symbol)?.kind, SymbolKind::Label);
                 return Ok(is_label.then_some(entry.symbol));
             }
@@ -176,11 +210,19 @@ impl Database {
     }
 
     /// Ghidra `findOverlap`.
-    pub fn find_overlap(&self, scope: ScopeId, addr: Address, size: i32) -> Result<Option<EntryId>> {
+    pub fn find_overlap(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };
-        let end = addr.offset().wrapping_add(i64::from(size) as u64).wrapping_sub(1);
+        let end = addr
+            .offset()
+            .wrapping_add(i64::from(size) as u64)
+            .wrapping_sub(1);
         Ok(map
             .find_overlap(addr.offset(), end)
             .and_then(|pos| map.fragment(pos))
@@ -188,7 +230,12 @@ impl Database {
     }
 
     /// Ghidra `findSymbolBefore`.
-    pub fn find_symbol_before(&self, scope: ScopeId, addr: Address, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn find_symbol_before(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };
@@ -203,7 +250,12 @@ impl Database {
     }
 
     /// Ghidra `findSymbolAfter`.
-    pub fn find_symbol_after(&self, scope: ScopeId, addr: Address, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn find_symbol_after(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let Some(map) = self.space_map_of(scope, addr)? else {
             return Ok(None);
         };

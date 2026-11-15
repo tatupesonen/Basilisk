@@ -67,21 +67,42 @@ impl Database {
     }
 
     /// Ghidra `queryByAddr`.
-    pub fn query_by_addr(&self, scope: ScopeId, addr: Address, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn query_by_addr(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         let base = self.map_scope(scope, addr);
         Ok(self
-            .stack_walk(base, None, addr, Some(1), |db, s| db.find_addr(s, addr, usepoint))?
+            .stack_walk(base, None, addr, Some(1), |db, s| {
+                db.find_addr(s, addr, usepoint)
+            })?
             .hit())
     }
 
     /// The walk behind `queryContainer` and `queryProperties`.
-    pub(crate) fn stack_container(&self, scope: ScopeId, addr: Address, size: i32, usepoint: Address) -> Result<Found<EntryId>> {
+    pub(crate) fn stack_container(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+        usepoint: Address,
+    ) -> Result<Found<EntryId>> {
         let base = self.map_scope(scope, addr);
-        self.stack_walk(base, None, addr, Some(size), |db, s| db.find_container(s, addr, size, usepoint))
+        self.stack_walk(base, None, addr, Some(size), |db, s| {
+            db.find_container(s, addr, size, usepoint)
+        })
     }
 
     /// Ghidra `queryContainer`.
-    pub fn query_container(&self, scope: ScopeId, addr: Address, size: i32, usepoint: Address) -> Result<Option<EntryId>> {
+    pub fn query_container(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+        usepoint: Address,
+    ) -> Result<Option<EntryId>> {
         Ok(self.stack_container(scope, addr, size, usepoint)?.hit())
     }
 
@@ -99,7 +120,11 @@ impl Database {
     }
 
     /// The flags `queryProperties` reports for a walk's result.
-    pub(crate) fn properties_of(&self, found: Found<EntryId>, addr: Address) -> Result<(Option<EntryId>, VarnodeFlags)> {
+    pub(crate) fn properties_of(
+        &self,
+        found: Found<EntryId>,
+        addr: Address,
+    ) -> Result<(Option<EntryId>, VarnodeFlags)> {
         Ok(match found {
             Found::Hit(_, entry) => {
                 let e = self.entry(entry)?;
@@ -117,7 +142,13 @@ impl Database {
     }
 
     /// Ghidra `isReadOnly`.
-    pub fn is_read_only(&self, scope: ScopeId, addr: Address, size: i32, usepoint: Address) -> Result<bool> {
+    pub fn is_read_only(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+        usepoint: Address,
+    ) -> Result<bool> {
         let (_, flags) = self.query_properties(scope, addr, size, usepoint)?;
         Ok(flags.contains(VarnodeFlags::READONLY))
     }
@@ -138,15 +169,23 @@ impl Database {
     pub fn query_code_label(&self, scope: ScopeId, addr: Address) -> Result<Option<SymbolId>> {
         let base = self.map_scope(scope, addr);
         Ok(self
-            .stack_walk(base, None, addr, Some(1), |db, s| db.find_code_label(s, addr))?
+            .stack_walk(base, None, addr, Some(1), |db, s| {
+                db.find_code_label(s, addr)
+            })?
             .hit())
     }
 
     /// Ghidra `queryExternalRefFunction`: the external reference at `addr`
     /// (no discovery) resolved from the scope where it was found.
-    pub fn query_external_ref_function(&self, scope: ScopeId, addr: Address) -> Result<Option<SymbolId>> {
+    pub fn query_external_ref_function(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+    ) -> Result<Option<SymbolId>> {
         let base = self.map_scope(scope, addr);
-        let found = self.stack_walk(base, None, addr, None, |db, s| db.find_external_ref(s, addr))?;
+        let found = self.stack_walk(base, None, addr, None, |db, s| {
+            db.find_external_ref(s, addr)
+        })?;
         let Found::Hit(at, sym) = found else {
             return Ok(None);
         };
@@ -158,7 +197,12 @@ impl Database {
 
     /// Ghidra `discoverScope`: the first scope from `mapScope` upwards that
     /// owns the range.
-    pub fn discover_scope(&self, scope: ScopeId, addr: Address, size: i32) -> Result<Option<ScopeId>> {
+    pub fn discover_scope(
+        &self,
+        scope: ScopeId,
+        addr: Address,
+        size: i32,
+    ) -> Result<Option<ScopeId>> {
         if addr.is_constant() {
             return Ok(None);
         }

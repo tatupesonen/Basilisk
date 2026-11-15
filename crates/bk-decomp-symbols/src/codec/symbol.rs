@@ -17,8 +17,8 @@ use crate::error::{Result, SymbolError};
 use crate::flags::{VarnodeFlags, category, disp, entry_props};
 use crate::ids::{
     ATTRIB_ADDRTIED, ATTRIB_CAT, ATTRIB_FIELD, ATTRIB_LABEL, ATTRIB_MERGE, ATTRIB_VOLATILE,
-    ELEM_EQUATESYMBOL, ELEM_EXTERNREFSYMBOL, ELEM_FACETSYMBOL, ELEM_FUNCTION,
-    ELEM_FUNCTIONSHELL, ELEM_HASH, ELEM_LABELSYM, ELEM_MAPSYM, EntryId, ScopeId, SymbolId,
+    ELEM_EQUATESYMBOL, ELEM_EXTERNREFSYMBOL, ELEM_FACETSYMBOL, ELEM_FUNCTION, ELEM_FUNCTIONSHELL,
+    ELEM_HASH, ELEM_LABELSYM, ELEM_MAPSYM, EntryId, ScopeId, SymbolId,
 };
 use crate::model::{EntryData, EntryKind, Handle, SymbolData, SymbolKind};
 use crate::scope::add::ID_BASE;
@@ -127,8 +127,13 @@ impl Database {
         let spaces = &self.env.spaces;
         match e.kind {
             EntryKind::Map { .. } | EntryKind::Dynamic { .. } if e.is_piece() => return Ok(()),
-            EntryKind::Map { addr, conflict: None } => addr.encode(enc, spaces)?,
-            EntryKind::Map { conflict: Some(_), .. } => {
+            EntryKind::Map {
+                addr,
+                conflict: None,
+            } => addr.encode(enc, spaces)?,
+            EntryKind::Map {
+                conflict: Some(_), ..
+            } => {
                 enc.open_element(ELEM_HASH);
                 enc.write_unsigned(ATTRIB_VAL, 0);
                 enc.close_element(ELEM_HASH);
@@ -232,7 +237,12 @@ impl Database {
         Ok(())
     }
 
-    fn set_decoded_type(&self, sym: &mut SymbolData, ty: bk_decomp_types::TypeId, types: &TypeFactory) -> Result<()> {
+    fn set_decoded_type(
+        &self,
+        sym: &mut SymbolData,
+        ty: bk_decomp_types::TypeId,
+        types: &TypeFactory,
+    ) -> Result<()> {
         let facts = crate::scope::add::type_facts(types, ty)?;
         sym.ty = ty;
         sym.type_size = facts.size;
@@ -278,7 +288,9 @@ impl Database {
             if consume < decoded.size && decoded.size > 1 && decoded.size <= 8 {
                 consume = decoded.size;
             }
-            sym.kind = SymbolKind::Function { consume_size: consume };
+            sym.kind = SymbolKind::Function {
+                consume_size: consume,
+            };
             sym.flags |= VarnodeFlags::NAMELOCK | VarnodeFlags::TYPELOCK;
             sym.name = decoded.name.into();
             sym.display_name = decoded.display_name.into();
@@ -302,7 +314,11 @@ impl Database {
                     display = check_name(dec.read_string()?)?.to_owned();
                 }
             }
-            sym.display_name = if display.is_empty() { sym.name.clone() } else { display.into() };
+            sym.display_name = if display.is_empty() {
+                sym.name.clone()
+            } else {
+                display.into()
+            };
             dec.close_element(el)?;
         } else if kind == Some(ELEM_LABELSYM.code()) {
             let el = dec.open_element_expecting(ELEM_LABELSYM)?;
@@ -381,7 +397,12 @@ impl Database {
         Ok(result)
     }
 
-    fn decode_entries(&mut self, scope: ScopeId, sym: SymbolId, dec: &mut dyn Decoder<'_>) -> Result<()> {
+    fn decode_entries(
+        &mut self,
+        scope: ScopeId,
+        sym: SymbolId,
+        dec: &mut dyn Decoder<'_>,
+    ) -> Result<()> {
         while let Some(child) = dec.peek_element() {
             if child == ELEM_HASH.code() {
                 let el = dec.open_element_expecting(ELEM_HASH)?;

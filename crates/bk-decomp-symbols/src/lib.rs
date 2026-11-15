@@ -8,9 +8,9 @@
 //! variables and XML of `globalcontext.*`, `override.*`, and the host
 //! classes `*_ghidra.*`. Specification: `docs/features/decomp-symbols.md`.
 
-pub mod entrymap;
 pub mod codec;
 pub mod database;
+pub mod entrymap;
 pub mod error;
 pub mod flags;
 pub mod ids;

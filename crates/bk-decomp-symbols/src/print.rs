@@ -67,12 +67,20 @@ impl Database {
     /// Ghidra `Scope::printBounds`: the owned ranges, one per line, or
     /// `all`.
     pub fn print_bounds(&self, scope: ScopeId) -> Result<String> {
-        Ok(self.scope(scope)?.ranges.bounds(&self.env.spaces).to_string())
+        Ok(self
+            .scope(scope)?
+            .ranges
+            .bounds(&self.env.spaces)
+            .to_string())
     }
 
     /// The map entries of one space of a scope in record order (what
     /// `MapState::gatherSymbols` walks).
-    pub fn entries_in_record_order(&self, scope: ScopeId, space_index: u32) -> Result<Vec<EntryId>> {
+    pub fn entries_in_record_order(
+        &self,
+        scope: ScopeId,
+        space_index: u32,
+    ) -> Result<Vec<EntryId>> {
         Ok(self
             .scope(scope)?
             .space_map(space_index)
@@ -101,7 +109,8 @@ impl Database {
             let EntryKind::Map { addr: start, .. } = e.kind else {
                 continue;
             };
-            if !e.is_map_entry() || addr.space() != start.space() || addr.offset() < start.offset() {
+            if !e.is_map_entry() || addr.space() != start.space() || addr.offset() < start.offset()
+            {
                 continue;
             }
             let diff = addr.offset().wrapping_sub(start.offset()) as i32;
@@ -116,9 +125,12 @@ impl Database {
     /// Ghidra `getFirstWholeMap`: entry 0 (not checked to be whole).
     pub fn first_whole_map(&self, sym: SymbolId) -> Result<EntryId> {
         let data = self.symbol(sym)?;
-        data.entries.first().copied().ok_or_else(|| SymbolError::NoMapping {
-            name: data.name.to_string(),
-        })
+        data.entries
+            .first()
+            .copied()
+            .ok_or_else(|| SymbolError::NoMapping {
+                name: data.name.to_string(),
+            })
     }
 
     /// Ghidra `getMapEntryPosition`, with its quirk: it counts preceding
@@ -141,7 +153,13 @@ impl Database {
 
     /// Ghidra `getSizedType`: the piece of the symbol's type that matches
     /// `size` bytes at `addr`.
-    pub fn sized_type(&self, entry: EntryId, addr: Address, size: i32, types: &mut TypeFactory) -> Result<Option<TypeId>> {
+    pub fn sized_type(
+        &self,
+        entry: EntryId,
+        addr: Address,
+        size: i32,
+        types: &mut TypeFactory,
+    ) -> Result<Option<TypeId>> {
         let e = self.entry(entry)?;
         let sym = self.symbol(e.symbol)?;
         let off = match e.kind {

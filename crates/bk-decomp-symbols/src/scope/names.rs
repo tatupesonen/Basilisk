@@ -98,7 +98,13 @@ impl Database {
             .map(str::to_owned)
     }
 
-    fn space_word_name(&self, out: &mut String, addr: Address, types: &TypeFactory, ty: Option<TypeId>) {
+    fn space_word_name(
+        &self,
+        out: &mut String,
+        addr: Address,
+        types: &TypeFactory,
+        ty: Option<TypeId>,
+    ) {
         if let Some(ty) = ty {
             out.push_str(&name_base(types, ty));
         }
@@ -153,7 +159,11 @@ impl Database {
                     let _ = write!(s, "in_{reg}");
                 }
                 None => {
-                    let space = self.env.spaces.space_of(addr).map_or("", bk_core::Space::name);
+                    let space = self
+                        .env
+                        .spaces
+                        .space_of(addr)
+                        .map_or("", bk_core::Space::name);
                     let _ = write!(s, "in_{space}_{:08x}", addr.offset());
                 }
             }
@@ -290,8 +300,20 @@ impl Database {
                 Address::INVALID
             };
             if is_param || f.high_is_input {
-                let mut index = if is_param { catindex.wrapping_add(1) } else { -1 };
-                return self.build_variable_name(scope, f.addr, usepoint, ty, &mut index, f.flags | VarnodeFlags::INPUT, types);
+                let mut index = if is_param {
+                    catindex.wrapping_add(1)
+                } else {
+                    -1
+                };
+                return self.build_variable_name(
+                    scope,
+                    f.addr,
+                    usepoint,
+                    ty,
+                    &mut index,
+                    f.flags | VarnodeFlags::INPUT,
+                    types,
+                );
             }
             return self.build_variable_name(scope, f.addr, usepoint, ty, base, f.flags, types);
         }
@@ -311,16 +333,30 @@ impl Database {
             if is_param {
                 flags |= VarnodeFlags::INPUT;
                 let mut index = catindex.wrapping_add(1);
-                return self.build_variable_name(scope, addr, usepoint, ty, &mut index, flags, types);
+                return self
+                    .build_variable_name(scope, addr, usepoint, ty, &mut index, flags, types);
             }
             return self.build_variable_name(scope, addr, usepoint, ty, base, flags, types);
         }
-        self.build_variable_name(scope, Address::INVALID, Address::INVALID, ty, base, VarnodeFlags::empty(), types)
+        self.build_variable_name(
+            scope,
+            Address::INVALID,
+            Address::INVALID,
+            ty,
+            base,
+            VarnodeFlags::empty(),
+            types,
+        )
     }
 
     /// Ghidra `assignDefaultNames`: renames every symbol with an undefined
     /// name to its default name, in name order.
-    pub fn assign_default_names(&mut self, scope: ScopeId, base: &mut i32, types: &TypeFactory) -> Result<()> {
+    pub fn assign_default_names(
+        &mut self,
+        scope: ScopeId,
+        base: &mut i32,
+        types: &TypeFactory,
+    ) -> Result<()> {
         let start: (Box<str>, u32) = ("$$undef".into(), 0);
         let todo: Vec<SymbolId> = {
             use std::ops::Bound;

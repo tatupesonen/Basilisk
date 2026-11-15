@@ -81,7 +81,12 @@ impl Database {
 
     /// Ghidra `renameSymbol`, with the new name's provenance. The resolution
     /// depth cache is not reset (spec 4.5).
-    pub fn rename_symbol_as(&mut self, sym: SymbolId, name: &str, provenance: Provenance) -> Result<()> {
+    pub fn rename_symbol_as(
+        &mut self,
+        sym: SymbolId,
+        name: &str,
+        provenance: Provenance,
+    ) -> Result<()> {
         let scope = self.symbol(sym)?.scope;
         let old = self.name_key(sym)?;
         let whole = self.symbol(sym)?.whole_count;
@@ -127,7 +132,13 @@ impl Database {
     }
 
     /// Ghidra `retypeSymbol` with the type's provenance (spec 4.9).
-    pub fn retype_symbol_as(&mut self, sym: SymbolId, ty: TypeId, provenance: Provenance, types: &TypeFactory) -> Result<()> {
+    pub fn retype_symbol_as(
+        &mut self,
+        sym: SymbolId,
+        ty: TypeId,
+        provenance: Provenance,
+        types: &TypeFactory,
+    ) -> Result<()> {
         let ty = stripped(types, ty);
         let new_size = type_facts(types, ty)?.size;
         let data = self.symbol(sym)?;
@@ -141,10 +152,16 @@ impl Database {
         if let [only] = data.entries[..] {
             let entry = self.entry(only)?;
             let addrtied = data.flags.contains(VarnodeFlags::ADDRTIED);
-            if let (EntryKind::Map { addr, .. }, true) = (entry.kind, entry.is_map_entry() && addrtied) {
+            if let (EntryKind::Map { addr, .. }, true) =
+                (entry.kind, entry.is_map_entry() && addrtied)
+            {
                 // Basilisk checks the re-added entry first (Ghidra would
                 // leave the symbol unmapped and throw).
-                let consumed = if data.is_function() { data.bytes_consumed() } else { new_size };
+                let consumed = if data.is_function() {
+                    data.bytes_consumed()
+                } else {
+                    new_size
+                };
                 let last = addr.add(&self.env.spaces, i64::from(consumed) - 1);
                 if last.offset() < addr.offset() {
                     return Err(SymbolError::BeyondSpace {
@@ -326,7 +343,11 @@ impl Database {
     }
 
     /// Ghidra `ScopeInternal::clearUnlocked`.
-    pub(crate) fn clear_unlocked_scope(&mut self, scope: ScopeId, types: &mut TypeFactory) -> Result<()> {
+    pub(crate) fn clear_unlocked_scope(
+        &mut self,
+        scope: ScopeId,
+        types: &mut TypeFactory,
+    ) -> Result<()> {
         for sym in self.symbols_in_name_order(scope)? {
             let data = self.symbol(sym)?;
             if data.is_type_locked() {
@@ -348,9 +369,19 @@ impl Database {
     }
 
     /// Ghidra `clearUnlockedCategory`.
-    pub fn clear_unlocked_category(&mut self, scope: ScopeId, cat: i16, types: &mut TypeFactory) -> Result<()> {
+    pub fn clear_unlocked_category(
+        &mut self,
+        scope: ScopeId,
+        cat: i16,
+        types: &mut TypeFactory,
+    ) -> Result<()> {
         let list: Vec<SymbolId> = if cat >= 0 {
-            self.scope(scope)?.category(cat).iter().flatten().copied().collect()
+            self.scope(scope)?
+                .category(cat)
+                .iter()
+                .flatten()
+                .copied()
+                .collect()
         } else {
             let all = self.symbols_in_name_order(scope)?;
             all.into_iter()
@@ -375,7 +406,12 @@ impl Database {
     }
 
     /// Ghidra `overrideSizeLockType`.
-    pub fn override_size_lock_type(&mut self, sym: SymbolId, ty: TypeId, types: &TypeFactory) -> Result<()> {
+    pub fn override_size_lock_type(
+        &mut self,
+        sym: SymbolId,
+        ty: TypeId,
+        types: &TypeFactory,
+    ) -> Result<()> {
         let new_size = type_facts(types, ty)?.size;
         let data = self.symbol(sym)?;
         if data.type_size != new_size {

@@ -30,5 +30,10 @@ pub trait FunctionCodec: Send + Sync {
     /// written instead.
     fn encode(&self, db: &Database, sym: SymbolId, enc: &mut dyn Encoder) -> Result<bool>;
     /// Reads a `<function>` element for a symbol of `scope`.
-    fn decode(&self, db: &mut Database, scope: ScopeId, dec: &mut dyn Decoder<'_>) -> Result<DecodedFunction>;
+    fn decode(
+        &self,
+        db: &mut Database,
+        scope: ScopeId,
+        dec: &mut dyn Decoder<'_>,
+    ) -> Result<DecodedFunction>;
 }

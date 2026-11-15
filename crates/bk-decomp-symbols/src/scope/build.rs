@@ -13,7 +13,13 @@ use crate::model::{EntryData, EntryKind, Handle, SymbolKind};
 
 impl Database {
     /// Adds a plain symbol without mapping it (Ghidra `addSymbol(nm, ct)`).
-    pub fn add_symbol(&mut self, scope: ScopeId, name: &str, ty: TypeId, types: &TypeFactory) -> Result<SymbolId> {
+    pub fn add_symbol(
+        &mut self,
+        scope: ScopeId,
+        name: &str,
+        ty: TypeId,
+        types: &TypeFactory,
+    ) -> Result<SymbolId> {
         let sym = self.new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
         self.add_symbol_internal(scope, sym)
     }
@@ -37,14 +43,26 @@ impl Database {
 
     /// Adds a function symbol at `addr` with no use limit (Ghidra
     /// `addFunction`), warning when the address is inside another symbol.
-    pub fn add_function(&mut self, scope: ScopeId, addr: Address, name: &str, types: &mut TypeFactory) -> Result<SymbolId> {
+    pub fn add_function(
+        &mut self,
+        scope: ScopeId,
+        addr: Address,
+        name: &str,
+        types: &mut TypeFactory,
+    ) -> Result<SymbolId> {
         if let Some(overlap) = self.query_container(scope, addr, 1, Address::INVALID)? {
             let other = self.symbol(self.entry(overlap)?.symbol)?.name.to_string();
             self.warn(format!("Function {name} overlaps object: {other}"));
         }
         let code = types.type_code()?;
         let consume_size = self.env.min_funcsymbol_size;
-        let mut sym = self.new_symbol(scope, SymbolKind::Function { consume_size }, name, code, types)?;
+        let mut sym = self.new_symbol(
+            scope,
+            SymbolKind::Function { consume_size },
+            name,
+            code,
+            types,
+        )?;
         sym.flags |= VarnodeFlags::NAMELOCK | VarnodeFlags::TYPELOCK;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.add_map_point(sym, addr, Address::INVALID)?;
@@ -81,23 +99,39 @@ impl Database {
     ) -> Result<crate::model::SymbolData> {
         let spaces = &self.env.spaces;
         let code = types.type_code()?;
-        let word = spaces.space_of(ref_addr).map_or(1, bk_core::Space::word_size);
+        let word = spaces
+            .space_of(ref_addr)
+            .map_or(1, bk_core::Space::word_size);
         let size = ref_addr.addr_size(spaces) as i32;
         let ty = types.pointer(size, code, word)?;
         let mut name = name.to_owned();
         if name.is_empty() {
-            let shortcut = ref_addr.shortcut(spaces).map(String::from).unwrap_or_default();
+            let shortcut = ref_addr
+                .shortcut(spaces)
+                .map(String::from)
+                .unwrap_or_default();
             name = format!("{shortcut}{}_exref", ref_addr.raw(spaces));
         }
-        let mut sym = self.new_symbol(scope, SymbolKind::ExternRef { ref_addr }, &name, ty, types)?;
-        sym.display_name = if display.is_empty() { name.into() } else { display.into() };
+        let mut sym =
+            self.new_symbol(scope, SymbolKind::ExternRef { ref_addr }, &name, ty, types)?;
+        sym.display_name = if display.is_empty() {
+            name.into()
+        } else {
+            display.into()
+        };
         sym.flags |= VarnodeFlags::EXTERNREF | VarnodeFlags::TYPELOCK;
         Ok(sym)
     }
 
     /// Adds a code label at `addr` (Ghidra `addCodeLabel`), warning when
     /// the address is inside a symbol that is not a function.
-    pub fn add_code_label(&mut self, scope: ScopeId, addr: Address, name: &str, types: &mut TypeFactory) -> Result<SymbolId> {
+    pub fn add_code_label(
+        &mut self,
+        scope: ScopeId,
+        addr: Address,
+        name: &str,
+        types: &mut TypeFactory,
+    ) -> Result<SymbolId> {
         if let Some(overlap) = self.query_container(scope, addr, 1, addr)? {
             let other = self.symbol(self.entry(overlap)?.symbol)?;
             if !other.is_function() {

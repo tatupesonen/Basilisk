@@ -3,7 +3,9 @@
 
 use bk_core::{Range, RangeList, VarnodeData};
 use bk_decomp_types::{Metatype, TypeFactory};
-use bk_marshal::ids::{ATTRIB_CONTENT, ATTRIB_ID, ATTRIB_NAME, ATTRIB_READONLY, ATTRIB_VAL, ELEM_VAL};
+use bk_marshal::ids::{
+    ATTRIB_CONTENT, ATTRIB_ID, ATTRIB_NAME, ATTRIB_READONLY, ATTRIB_VAL, ELEM_VAL,
+};
 use bk_marshal::{Decoder, Encoder};
 
 use super::FunctionCodec;
@@ -77,7 +79,12 @@ impl Database {
 
     /// Ghidra `Database::encode`: `<db>`, the property change points, then
     /// the global scopes.
-    pub fn encode(&self, enc: &mut dyn Encoder, types: &TypeFactory, codec: Option<&dyn FunctionCodec>) -> Result<()> {
+    pub fn encode(
+        &self,
+        enc: &mut dyn Encoder,
+        types: &TypeFactory,
+        codec: Option<&dyn FunctionCodec>,
+    ) -> Result<()> {
         enc.open_element(ELEM_DB);
         if self.id_by_name_hash {
             enc.write_bool(ATTRIB_SCOPEIDBYNAME, true);
@@ -87,7 +94,9 @@ impl Database {
             // which it would dereference) has no space to write.
             let Some(space) = addr.space() else { continue };
             enc.open_element(ELEM_PROPERTY_CHANGEPOINT);
-            self.env.spaces.encode_attributes(enc, space, addr.offset())?;
+            self.env
+                .spaces
+                .encode_attributes(enc, space, addr.offset())?;
             enc.write_unsigned(ATTRIB_VAL, u64::from(value));
             enc.close_element(ELEM_PROPERTY_CHANGEPOINT);
         }
@@ -134,12 +143,21 @@ impl Database {
                     let map_range = first
                         .and_then(|e| self.entry(e).ok())
                         .filter(|e| e.is_map_entry())
-                        .and_then(|e| Some(Range::new(e.addr()?.space()?, e.addr()?.offset(), e.last_offset()?)));
+                        .and_then(|e| {
+                            Some(Range::new(
+                                e.addr()?.space()?,
+                                e.addr()?.offset(),
+                                e.last_offset()?,
+                            ))
+                        });
                     if range_equals_symbols && let Some(r) = map_range {
                         self.add_range(scope, r.space(), r.first(), r.last())?;
                     }
-                    let props = self.symbol(sym)?.flags & (VarnodeFlags::READONLY | VarnodeFlags::VOLATILE);
-                    if !props.is_empty() && let Some(r) = map_range {
+                    let props =
+                        self.symbol(sym)?.flags & (VarnodeFlags::READONLY | VarnodeFlags::VOLATILE);
+                    if !props.is_empty()
+                        && let Some(r) = map_range
+                    {
                         self.set_property_range(props, &r);
                     }
                 } else if child == ELEM_HOLE.code() {
@@ -177,7 +195,12 @@ impl Database {
 
     /// Ghidra `decodeCollision`: an unmapped one-byte `int` of that name,
     /// unless one exists.
-    fn decode_collision(&mut self, scope: ScopeId, dec: &mut dyn Decoder<'_>, types: &mut TypeFactory) -> Result<()> {
+    fn decode_collision(
+        &mut self,
+        scope: ScopeId,
+        dec: &mut dyn Decoder<'_>,
+        types: &mut TypeFactory,
+    ) -> Result<()> {
         let el = dec.open_element_expecting(ELEM_COLLISION)?;
         let name = dec.read_string_attr(ATTRIB_NAME)?.to_owned();
         dec.close_element(el)?;
@@ -191,13 +214,20 @@ impl Database {
     fn parse_parent_tag(&self, dec: &mut dyn Decoder<'_>) -> Result<ScopeId> {
         let el = dec.open_element_expecting(ELEM_PARENT)?;
         let id = dec.read_unsigned_attr(ATTRIB_ID)?;
-        let scope = self.resolve_scope_id(id).ok_or(SymbolError::NoScopeMatchingId)?;
+        let scope = self
+            .resolve_scope_id(id)
+            .ok_or(SymbolError::NoScopeMatchingId)?;
         dec.close_element(el)?;
         Ok(scope)
     }
 
     /// Ghidra `Database::decode`: a `<db>` element.
-    pub fn decode(&mut self, dec: &mut dyn Decoder<'_>, types: &mut TypeFactory, codec: Option<&dyn FunctionCodec>) -> Result<()> {
+    pub fn decode(
+        &mut self,
+        dec: &mut dyn Decoder<'_>,
+        types: &mut TypeFactory,
+        codec: Option<&dyn FunctionCodec>,
+    ) -> Result<()> {
         let el = dec.open_element_expecting(ELEM_DB)?;
         self.id_by_name_hash = false;
         while let Some(attr) = dec.next_attribute()? {
@@ -255,9 +285,11 @@ impl Database {
         codec: Option<&dyn FunctionCodec>,
         wrapping: &mut dyn FnMut(&mut dyn Decoder<'_>) -> Result<()>,
     ) -> Result<ScopeId> {
-        let el = dec.open_element()?.ok_or(SymbolError::Decode(bk_marshal::DecodeError::NoElement {
-            expected: "scope",
-        }))?;
+        let el =
+            dec.open_element()?
+                .ok_or(SymbolError::Decode(bk_marshal::DecodeError::NoElement {
+                    expected: "scope",
+                }))?;
         let scope;
         if el == ELEM_SCOPE.code() {
             let parent = self.parse_parent_tag(dec)?;

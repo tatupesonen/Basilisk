@@ -101,7 +101,11 @@ impl Database {
     /// Ghidra `ScopeInternal::addSymbolInternal`: assigns an id (consumed
     /// even when the symbol is then refused), names an unnamed symbol,
     /// checks its type, enters it in the name tree and its category.
-    pub(crate) fn add_symbol_internal(&mut self, scope: ScopeId, mut sym: SymbolData) -> Result<SymbolId> {
+    pub(crate) fn add_symbol_internal(
+        &mut self,
+        scope: ScopeId,
+        mut sym: SymbolData,
+    ) -> Result<SymbolId> {
         let data = self.scope_mut(scope)?;
         if sym.ghidra_id == 0 {
             if data.next_unique_id >= limits::MAX_SYMBOLS {
@@ -224,7 +228,13 @@ impl Database {
     }
 
     /// Appends an entry to its symbol and updates the whole-entry count.
-    fn note_entry(&mut self, scope: ScopeId, sym_id: SymbolId, id: EntryId, size: i32) -> Result<()> {
+    fn note_entry(
+        &mut self,
+        scope: ScopeId,
+        sym_id: SymbolId,
+        id: EntryId,
+        size: i32,
+    ) -> Result<()> {
         let sym = self.symbol_mut(sym_id)?;
         sym.entries.push(id);
         if size == sym.type_size {
@@ -239,10 +249,17 @@ impl Database {
 
     /// The subsort of an entry (Ghidra `SymbolRange::getSubsort`).
     fn subsort(&self, entry: &EntryData) -> Result<EntrySubsort> {
-        if self.symbol(entry.symbol)?.flags.contains(VarnodeFlags::ADDRTIED) {
+        if self
+            .symbol(entry.symbol)?
+            .flags
+            .contains(VarnodeFlags::ADDRTIED)
+        {
             return Ok(EntrySubsort::default());
         }
-        let range = entry.use_limit.first_range().ok_or(SymbolError::EmptyUseLimit)?;
+        let range = entry
+            .use_limit
+            .first_range()
+            .ok_or(SymbolError::EmptyUseLimit)?;
         Ok(EntrySubsort {
             use_index: range.space().index(),
             use_offset: range.first(),
@@ -428,14 +445,26 @@ impl Database {
 
     /// Maps a symbol to an address, valid at `usepoint` only when that is
     /// valid (Ghidra `addMapPoint`), in the symbol's scope.
-    pub fn add_map_point(&mut self, sym: SymbolId, addr: Address, usepoint: Address) -> Result<EntryId> {
+    pub fn add_map_point(
+        &mut self,
+        sym: SymbolId,
+        addr: Address,
+        usepoint: Address,
+    ) -> Result<EntryId> {
         let scope = self.symbol(sym)?.scope;
         self.add_map(scope, Self::map_entry(sym, addr, usepoint))
     }
 
     /// A dynamic entry with a one-point use limit (or none), added directly
     /// (Ghidra's `addDynamicSymbol` family bypasses `addDynamic`).
-    pub(crate) fn direct_dynamic_entry(&mut self, scope: ScopeId, sym: SymbolId, hash: u64, size: i32, caddr: Address) -> Result<EntryId> {
+    pub(crate) fn direct_dynamic_entry(
+        &mut self,
+        scope: ScopeId,
+        sym: SymbolId,
+        hash: u64,
+        size: i32,
+        caddr: Address,
+    ) -> Result<EntryId> {
         let mut use_limit = RangeList::default();
         if let Some(space) = caddr.space() {
             use_limit.insert_range(space, caddr.offset(), caddr.offset());

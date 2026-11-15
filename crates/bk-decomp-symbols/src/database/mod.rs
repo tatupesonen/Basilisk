@@ -429,7 +429,11 @@ impl Database {
 
     /// Clears the unlocked symbols of a scope and its sub-scopes (Ghidra
     /// `Database::clearUnlocked`).
-    pub fn clear_unlocked(&mut self, scope: ScopeId, types: &mut bk_decomp_types::TypeFactory) -> Result<()> {
+    pub fn clear_unlocked(
+        &mut self,
+        scope: ScopeId,
+        types: &mut bk_decomp_types::TypeFactory,
+    ) -> Result<()> {
         for id in self.post_order(scope) {
             self.clear_unlocked_scope(id, types)?;
         }
@@ -455,16 +459,32 @@ impl Database {
     }
 
     /// Adds a range to a scope's ownership (Ghidra `addRange`).
-    pub fn add_range(&mut self, scope: ScopeId, space: SpaceId, first: u64, last: u64) -> Result<()> {
+    pub fn add_range(
+        &mut self,
+        scope: ScopeId,
+        space: SpaceId,
+        first: u64,
+        last: u64,
+    ) -> Result<()> {
         self.clear_resolve(scope)?;
-        self.scope_mut(scope)?.ranges.insert_range(space, first, last);
+        self.scope_mut(scope)?
+            .ranges
+            .insert_range(space, first, last);
         self.fill_resolve(scope)
     }
 
     /// Removes a range from a scope's ownership (Ghidra `removeRange`).
-    pub fn remove_range(&mut self, scope: ScopeId, space: SpaceId, first: u64, last: u64) -> Result<()> {
+    pub fn remove_range(
+        &mut self,
+        scope: ScopeId,
+        space: SpaceId,
+        first: u64,
+        last: u64,
+    ) -> Result<()> {
         self.clear_resolve(scope)?;
-        self.scope_mut(scope)?.ranges.remove_range(space, first, last);
+        self.scope_mut(scope)?
+            .ranges
+            .remove_range(space, first, last);
         self.fill_resolve(scope)
     }
 
