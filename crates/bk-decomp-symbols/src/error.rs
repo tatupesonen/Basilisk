@@ -5,7 +5,7 @@
 
 use bk_core::{Address, SpaceError};
 use bk_decomp_types::TypeError;
-use bk_marshal::DecodeError;
+use bk_marshal::{DecodeError, EncodeError};
 use thiserror::Error;
 
 /// A failed load-image read (Ghidra `DataUnavailError`).
@@ -266,6 +266,9 @@ pub enum SymbolError {
     /// A decoding error.
     #[error(transparent)]
     Decode(#[from] DecodeError),
+    /// An encoding error.
+    #[error(transparent)]
+    Encode(#[from] EncodeError),
     /// An address-space error.
     #[error(transparent)]
     Space(#[from] SpaceError),
