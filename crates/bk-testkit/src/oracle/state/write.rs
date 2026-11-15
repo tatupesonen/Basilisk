@@ -3,6 +3,7 @@
 use crate::oracle::structure;
 use crate::oracle::text::{escape, push_display};
 
+use super::scope::ScopeOrders;
 use super::sections::{ActionLineRecord, ProtoGroup, StateDump};
 
 fn write_proto_group(out: &mut String, g: &ProtoGroup) {
@@ -36,7 +37,9 @@ impl StateDump {
     pub fn write(&self) -> String {
         let mut out = String::new();
         let mut total = 1_usize;
-        out.push_str("BKSTATE\t1\t");
+        out.push_str("BKSTATE\t");
+        push_display(&mut out, &self.version);
+        out.push('\t');
         out.push_str(&escape(&self.ghidra_commit));
         out.push('\t');
         out.push_str(&escape(&self.arch_id));
@@ -156,7 +159,8 @@ impl StateDump {
                 .iter()
                 .map(|s| 1 + s.entries.len())
                 .sum::<usize>()
-            + sc.foreign.len();
+            + sc.foreign.len()
+            + sc.orders.as_ref().map_or(0, ScopeOrders::len);
         section(&mut out, "scope", n, &|o| {
             if let Some(r) = &sc.scope {
                 r.write(o);
@@ -178,6 +182,9 @@ impl StateDump {
             }
             for r in &sc.foreign {
                 r.write(o);
+            }
+            if let Some(orders) = &sc.orders {
+                orders.write(o);
             }
         });
         let h = &self.heritage;

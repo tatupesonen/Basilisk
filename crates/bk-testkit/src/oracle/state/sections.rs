@@ -12,6 +12,10 @@ use super::records::{
     ProtoRecord, RuleRecord, ScopeRecord, SpaceRecord, SymbolRecord, TrashRecord, TrialRecord,
     TypeRecommendRecord, TypeRecord, UnionRecord, VarnodeRecord,
 };
+use super::scope::{
+    CategoryRecord, DynamicListRecord, EntryMapRecord, FragmentRecord, MultiEntryRecord,
+    ScopeIdRecord, ScopeOrders,
+};
 
 /// The sections, in the order a dump has them.
 const SECTIONS: [&str; 18] = [
@@ -41,6 +45,10 @@ const MAX_SECTION_RECORDS: usize = 10_000_000;
 /// A whole state dump.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StateDump {
+    /// The format version: 1 (D00's first format) or 2 (adds `@scope`'s
+    /// identity, category, multi-entry and entry-map order records). The
+    /// writer writes the version it was given.
+    pub version: u32,
     /// The Ghidra commit the extension was built from.
     pub ghidra_commit: String,
     /// The architecture id (`x86:LE:64:default:gcc`).
@@ -175,6 +183,10 @@ pub struct ScopeSection {
     pub symbols: Vec<SymbolEntryGroup>,
     /// `G`.
     pub foreign: Vec<ForeignSymbolRecord>,
+    /// Version 2: the scope's ids, category slots, multi-entry set and map
+    /// orders (`I`, `C`, `E`, `R`, `F`, `Q`); `None` in version 1 or without
+    /// a local scope.
+    pub orders: Option<ScopeOrders>,
 }
 
 /// A symbol and its map entries.
@@ -285,11 +297,15 @@ impl StateDump {
         let mut lines = Lines::new("bkstate", text)?;
         let h = lines.next_line("the BKSTATE header")?;
         h.expect("BKSTATE", 4, "the BKSTATE header")?;
-        if h.field(1) != "1" {
-            return Err(h.error(ParseErrorKind::UnsupportedVersion {
-                version: shown(h.field(1)),
-            }));
-        }
+        let version = match h.field(1) {
+            "1" => 1,
+            "2" => 2,
+            other => {
+                return Err(h.error(ParseErrorKind::UnsupportedVersion {
+                    version: shown(other),
+                }));
+            }
+        };
         let ghidra_commit =
             unescape(h.field(2)).ok_or_else(|| h.bad("ghidra commit", h.field(2)))?;
         let arch_id = unescape(h.field(3)).ok_or_else(|| h.bad("architecture id", h.field(3)))?;
@@ -445,6 +461,16 @@ impl StateDump {
             scope.symbols.push(SymbolEntryGroup { symbol, entries });
         }
         scope.foreign = s.many(ForeignSymbolRecord::TAG, ForeignSymbolRecord::parse)?;
+        if version >= 2 && scope.scope.is_some() {
+            scope.orders = Some(ScopeOrders {
+                identity: s.one("the I record", ScopeIdRecord::parse)?,
+                categories: s.many(CategoryRecord::TAG, CategoryRecord::parse)?,
+                multi_entry: s.one("the E record", MultiEntryRecord::parse)?,
+                records: s.many(EntryMapRecord::TAG, EntryMapRecord::parse)?,
+                fragments: s.many(FragmentRecord::TAG, FragmentRecord::parse)?,
+                dynamic: s.one("the Q record", DynamicListRecord::parse)?,
+            });
+        }
         s.finish()?;
 
         let mut s = next()?;
@@ -468,6 +494,7 @@ impl StateDump {
         s.finish()?;
 
         Ok(Self {
+            version,
             ghidra_commit,
             arch_id,
             function,
