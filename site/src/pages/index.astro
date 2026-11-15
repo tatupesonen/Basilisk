@@ -36,7 +36,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-lede">
             Basilisk is a reimplementation of <a class="bk-link" href={ghidra}>Ghidra</a> — loaders, SLEIGH, p-code,
             analysis, the decompiler and a desktop interface. It reads Ghidra’s processor specifications unchanged.
-            Today it disassembles every processor Ghidra ships; the decompiler is being ported.
+            Today it decodes instructions and lifts them to p-code for every processor Ghidra ships; the decompiler is being ported.
           </p>
           <div class="bk-actions">
             <a class="bk-btn bk-btn-primary" href={`${base}docs/`}>Read the documentation <Icon name="arrow-right" size="16" /></a>
@@ -45,8 +45,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         </div>
         <div class="bk-hero-term">
           <div class="bk-terminal">
-            <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />basilisk disasm</div>
-            <pre><code><span class="p">$ </span><span class="f">basilisk</span> disasm --language x86:LE:64:default \
+            <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />basilisk sleigh decode</div>
+            <pre><code><span class="p">$ </span><span class="f">basilisk</span> sleigh decode --language x86:LE:64:default \
     --base 0x401000 --hex 554889e58b45fc83c0015dc3 \
     --format text --no-pcode
 <span class="ln" style="--i:0"><span class="d">0x401000  55        </span> <span class="m">PUSH</span> <span class="r">RBP</span></span>
@@ -188,7 +188,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <h3>Works today</h3>
             <ul class="bk-checklist">
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The desktop interface</strong> on a built-in demo program: Listing, Decompiler view, trees, tables, search, Go To, the palette, rename and comment dialogs, docking and pop-out windows.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Disassembly and p-code for every processor Ghidra ships</strong>: <code>basilisk disasm</code> decodes bytes with any of the 150 SLEIGH languages, with the same result as Ghidra’s engine.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Instruction decoding and p-code for every processor Ghidra ships</strong>: <code>basilisk sleigh decode</code> decodes bytes with any of the 150 SLEIGH languages, with the same result as Ghidra’s engine.</span></li>
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The SLEIGH compiler</strong>: <code>basilisk sleigh compile</code> produces the same <code>.sla</code> content as Ghidra’s compiler for all 150 specifications, in under five seconds for the lot.</span></li>
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The first parts of the decompiler</strong>: types, value ranges, calling conventions and control-flow structuring, each checked against Ghidra’s decompiler.</span></li>
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: Ghidra’s language and compiler specifications read unchanged, ELF parsing, the p-code model and float formats.</span></li>
@@ -219,7 +219,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       </div>
       <dl class="bk-stats">
         <div><dt>150 / 150</dt><dd>SLEIGH specifications compile to the same content as with Ghidra’s compiler</dd></div>
-        <div><dt>39</dt><dd>processor families disassemble and lift to p-code like Ghidra’s engine</dd></div>
+        <div><dt>39</dt><dd>processor families decode and lift to p-code like Ghidra’s engine</dd></div>
         <div><dt>2,400+</dt><dd>tests, most of them comparing against Ghidra on the same input</dd></div>
         <div><dt>3</dt><dd>systems built and tested on every change: Linux, macOS, Windows</dd></div>
       </dl>
@@ -274,8 +274,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
 <span class="p">$ </span><span class="f">cargo</span> run --release -p basilisk
 <span class="c"># the interface opens on its built-in demo program</span>
 
-<span class="c"># or disassemble bytes with one of Ghidra's languages</span>
-<span class="p">$ </span><span class="f">basilisk</span> disasm --language x86:LE:64:default \
+<span class="c"># or decode bytes with one of Ghidra's languages</span>
+<span class="p">$ </span><span class="f">basilisk</span> sleigh decode --language x86:LE:64:default \
     --hex 554889e5c3 --format text --no-pcode
 0x0  55                       PUSH RBP
 0x1  48 89 e5                 MOV RBP,RSP

@@ -22,7 +22,7 @@ specifications — the SLEIGH files that describe each instruction set — uncha
 ## What exists today
 
 :::note[Today]
-- **Disassembly and p-code for every processor Ghidra ships.** `basilisk disasm` decodes bytes with any of
+- **Instruction decoding and p-code for every processor Ghidra ships.** `basilisk sleigh decode` decodes bytes with any of
   Ghidra's 150 SLEIGH languages and prints each instruction with its p-code. The output equals that of
   Ghidra's own engine, record for record.
 - **The SLEIGH compiler.** `basilisk sleigh compile` turns a `.slaspec` into a `.sla` file with the same
@@ -39,7 +39,7 @@ specifications — the SLEIGH files that describe each instruction set — uncha
 :::
 
 :::caution[Not yet]
-Opening a real binary, analysis, decompiling a function and Python scripting. The
+Opening a real binary, flow-following disassembly, analysis, decompiling a function and Python scripting. The
 [roadmap](/roadmap/) lists the milestone for each; the [status matrix](/status/) tracks every Ghidra module.
 :::
 

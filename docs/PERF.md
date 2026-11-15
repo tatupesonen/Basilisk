@@ -415,8 +415,8 @@ master merge; the code measured is the final one).
 |---|---:|---:|---|
 | decode + lift, counting emitter (`decode` … `lift` / `instructionLength` + `oneInstruction`) | **1.61 M instructions/s, 6.60 M ops/s** (623 ns) | 1.60 M/s, 6.57 M ops/s | ≥ reference — met; both sides emit 608,674 ops |
 | decode + text + lift (`decode`, `mnemonic`, `body`, `lift_decoded`) | **1.38 M/s** | 1.01 M/s | ≥ reference — met |
-| `basilisk disasm --quiet` end to end, 778 kB (process start, load, sweep) | **0.190 s** | `pcodedump --quiet` 0.201 s | no slower — met |
-| `basilisk disasm`, full listing to a null device | **0.396 s** | `pcodedump` 0.714 s | no slower — met |
+| `basilisk sleigh decode --quiet` end to end, 778 kB (process start, load, sweep) | **0.190 s** | `pcodedump --quiet` 0.201 s | no slower — met |
+| `basilisk sleigh decode`, full listing to a null device | **0.396 s** | `pcodedump` 0.714 s | no slower — met |
 | allocations per instruction lifting, steady state (`dhat`, 100,000 instructions) | **0** (`bkpc` fixture incl. delay slots and crossbuild; x86-64) | — | 0 — met |
 | 8 threads sharing one `Language` | decode 4.0–4.7×, decode + lift 4.7–5.7× (load average 6–20 at the time) | — | ≥ 6× on an idle machine — not shown; the machine was never idle |
 
@@ -515,8 +515,8 @@ finishing).
 | decode + text | 2.83 / 2.69 | **3.40 / 3.35** | 2.30 / 2.23 | **1.50** (1.45–1.58) |
 | decode + lift, counting emitter | 1.74 / 1.69 | **2.29 / 2.26** | 2.32 / 2.26 | **1.00** (0.94–1.05) |
 | decode + text + lift | 1.47 / 1.42 | **1.78 / 1.74** | 1.51 / 1.48 | **1.18** (1.12–1.23) |
-| `basilisk disasm --quiet` end to end, 606,673 bytes | — | **0.106 s** | `pcodedump --quiet` 0.132 s | 1.25× faster |
-| `basilisk disasm`, full listing to a null device | — | **0.240 s** | `pcodedump` 0.347 s | 1.45× faster |
+| `basilisk sleigh decode --quiet` end to end, 606,673 bytes | — | **0.106 s** | `pcodedump --quiet` 0.132 s | 1.25× faster |
+| `basilisk sleigh decode`, full listing to a null device | — | **0.240 s** | `pcodedump` 0.347 s | 1.45× faster |
 
 Before, the ratios were 0.86 (decode), 1.24 (text), 0.76 (lift) and 0.99
 (text + lift); the earlier measurement on the same VM with a baseline

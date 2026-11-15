@@ -1,4 +1,4 @@
-//! `basilisk disasm` (`features/sleigh-pcode.md` 4.7): help text, exit
+//! `basilisk sleigh decode` (`features/sleigh-pcode.md` 4.7): help text, exit
 //! statuses, and output equal to `pcodedump`'s — against the recorded
 //! oracle output of the `bkpc` fixture language everywhere, and against the
 //! live oracle when the reference tools are present.
@@ -22,7 +22,7 @@ use std::process::{Command, Output, Stdio};
 
 fn basilisk(args: &[&std::ffi::OsStr]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_basilisk"))
-        .arg("disasm")
+        .args(["sleigh", "decode"])
         .args(args)
         .env_remove("BASILISK_GHIDRA_DIR")
         .stdin(Stdio::null())
@@ -61,7 +61,7 @@ fn help_and_exit_statuses() {
     assert_eq!(help.status.code(), Some(0));
     let text = String::from_utf8(help.stdout).unwrap();
     assert!(
-        text.starts_with("USAGE: basilisk disasm --language <id>"),
+        text.starts_with("USAGE: basilisk sleigh decode --language <id>"),
         "{text}"
     );
     for option in [
@@ -229,7 +229,7 @@ fn reads_files_and_standard_input_in_binary() {
     with_file.push(file.as_os_str());
     let a = basilisk(&with_file);
     let mut child = Command::new(env!("CARGO_BIN_EXE_basilisk"))
-        .arg("disasm")
+        .args(["sleigh", "decode"])
         .args(args)
         .arg("-")
         .stdin(Stdio::piped())
