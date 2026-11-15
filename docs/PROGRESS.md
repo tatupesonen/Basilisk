@@ -106,6 +106,15 @@ rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
 
+**Wind-down (owner, 2026-11-15 02:33): "Stop work for now until current
+tracks are done as we are low on usage and we want to stop at a good
+point."** No new agent is started. The three running tracks
+(`decomp-symbols`, `decomp-ir`, `decomp-out-spike`) finish; each is
+reviewed and merged as it reports; then work stops until the owner says
+to go on. The timed loop is stopped (the agents' reports wake the
+coordinator); freed slots stay empty. The queue below is unchanged and
+is where work resumes.
+
 **The cap is three agents** (owner, 2026-11-15 about 02:00: "Use 3
 agents for now"; it was two from 2026-11-14 20:17), and every agent builds,
 tests and gates on kassini through `scripts/remote.sh`. **Both slots
