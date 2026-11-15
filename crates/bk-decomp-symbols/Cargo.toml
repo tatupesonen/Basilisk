@@ -18,6 +18,9 @@ thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+bk-lang.workspace = true
+bk-sleigh.workspace = true
+bk-testkit.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 flate2.workspace = true

@@ -35,12 +35,47 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 ## Done / in progress / next
 
 - [x] Step 0.
-- [ ] `bk-decomp-symbols`: crate skeleton, `EntryMap` + property test.
-- [ ] Scopes, symbols, entries, queries, names, printing, codecs.
-- [ ] Scope and context oracles (generators, tables on both hosts, replay).
-- [ ] Image table replay (G), `print map` (L).
-- [ ] Comments, strings, constant pool, load images, context names,
-      overrides, arch filling.
+- [x] `EntryMap` (`src/entrymap/`) + property test against a literal
+      transliteration of `rangemap.hh` (`tests/entrymap_props.rs`).
+- [x] Database, scopes, symbols, entries, queries, names, mutations,
+      printing, symbol/scope/db codecs (`src/database/`, `src/scope/`,
+      `src/print.rs`, `src/codec/`).
+- [x] Scope oracle: generator `tests/oracle/scope.cc`, table
+      `tests/data/scope.txt.gz` (205,124 rows incl. 20 header rows),
+      replay `tests/scope_oracle.rs` — every row equal.
+- [x] Context names + `<context_points>` (`src/context.rs`); oracle
+      `tests/oracle/context.cc`, table `tests/data/context.txt.gz`
+      (85,723 rows), replay `tests/context_oracle.rs` — every row equal.
+- [x] Comments, strings, constant pool, load images (xml, raw, hex),
+      overrides, arch filling (`src/arch.rs`).
+- [x] Image oracle: table `tests/data/image.txt.gz` (8,435 rows),
+      replay `tests/image_oracle.rs` (needs reference + Ghidra) — every row
+      equal for all 93 data tests.
+- [x] Tables regenerated twice on each host (`tests/oracle/regen.sh`):
+      byte-identical between libc++ (Mac) and libstdc++ (build host).
+- [x] `git merge master` (1 of 2) for bkstate version 2.
 - [ ] Host trait, cache layer, scripted host; overlays and commit.
-- [ ] `Spacebase` constructor in `bk-decomp-types`; `SpacebaseScopes`.
+- [ ] `Spacebase` constructor in `bk-decomp-types`; `SpacebaseScopes`,
+      `TypeSource`.
+- [ ] `@scope` dump test (version 2), pspec volatility test, unit tests per
+      behaviour table, codec property tests.
 - [ ] Fuzz targets, benchmarks, testbed checks, both gates, report.
+
+## Findings so far (for the report)
+
+- Ghidra `rangemap::insert` inserts a record's last fragment twice when
+  the record ends at an existing piece end (reproduced).
+- Ghidra `rangemap::erase` re-sews `b|b+1` from the first following
+  fragment only and can stretch a neighbour left of its start; queries
+  then return it (reproduced). A later erase of that record leaves
+  dangling fragments (use after free; Basilisk removes them). Confirmed
+  with `tests/oracle/rangemap_defects.cc` against Ghidra's header.
+- `Duplicate scope id: <full name>` always has an empty name (the new scope
+  has no parent yet when Ghidra asks).
+- `getLastAddrOpen` is never invalid (spec 4.3 wrong in detail).
+- `decodeFlowOverride` does not close twice in this commit (spec 4.21
+  row 16 wrong).
+- `Funcdata::getName` is the name at creation; a rename of the function
+  symbol does not change what `queryFunction` callers print (D07).
+- Spec's "`Model` provenance for pspec default symbols": `Provenance::Model`
+  is the AI provenance; Basilisk uses `Imported`.

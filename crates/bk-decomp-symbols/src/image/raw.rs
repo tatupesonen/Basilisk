@@ -42,7 +42,11 @@ impl LoadImage for RawImage {
             let shortcut = addr.shortcut(&self.spaces).unwrap_or(' ');
             return Err(DataUnavail {
                 addr,
-                message: format!("Unable to load {} bytes at {shortcut}{}", buf.len(), addr.raw(&self.spaces)),
+                message: format!(
+                    "Unable to load {} bytes at {shortcut}{}",
+                    buf.len(),
+                    addr.raw(&self.spaces)
+                ),
             });
         }
         // A read that starts inside the file and runs past its end is
@@ -64,7 +68,10 @@ impl LoadImage for RawImage {
     }
 
     fn adjust_vma(&mut self, adjust: i64) {
-        let word = self.spaces.space(self.space).map_or(1, bk_core::Space::word_size);
+        let word = self
+            .spaces
+            .space(self.space)
+            .map_or(1, bk_core::Space::word_size);
         let bytes = (adjust as u64).wrapping_mul(u64::from(word));
         self.vma = self.vma.wrapping_add(bytes);
     }

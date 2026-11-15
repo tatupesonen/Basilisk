@@ -68,7 +68,12 @@ pub fn codepoint(buf: &[u8], charsize: usize, big_endian: bool) -> Option<(u32, 
                 if !(0xDC00..=0xDFFF).contains(&trail) {
                     return None;
                 }
-                ((cp << 10).wrapping_add(trail).wrapping_add(0x10000u32.wrapping_sub(0xD800 << 10).wrapping_sub(0xDC00)), 4)
+                (
+                    (cp << 10)
+                        .wrapping_add(trail)
+                        .wrapping_add(0x10000u32.wrapping_sub(0xD800 << 10).wrapping_sub(0xDC00)),
+                    4,
+                )
             } else if (0xDC00..=0xDFFF).contains(&cp) {
                 return None;
             } else {
@@ -77,7 +82,11 @@ pub fn codepoint(buf: &[u8], charsize: usize, big_endian: bool) -> Option<(u32, 
         }
         1 => {
             let v = u32::from(*buf.first()?);
-            let cont = |i: usize| buf.get(i).map(|b| u32::from(*b)).filter(|b| b & 0xc0 == 0x80);
+            let cont = |i: usize| {
+                buf.get(i)
+                    .map(|b| u32::from(*b))
+                    .filter(|b| b & 0xc0 == 0x80)
+            };
             if v & 0x80 == 0 {
                 (v, 1)
             } else if v & 0xe0 == 0xc0 {
@@ -96,14 +105,24 @@ pub fn codepoint(buf: &[u8], charsize: usize, big_endian: bool) -> Option<(u32, 
                     return None;
                 }
                 let (b2, b3, b4) = (cont(1)?, cont(2)?, cont(3)?);
-                (((v & 7) << 18) | ((b2 & 0x3f) << 12) | ((b3 & 0x3f) << 6) | (b4 & 0x3f), 4)
+                (
+                    ((v & 7) << 18) | ((b2 & 0x3f) << 12) | ((b3 & 0x3f) << 6) | (b4 & 0x3f),
+                    4,
+                )
             } else {
                 return None;
             }
         }
         4 => {
             let b: [u8; 4] = buf.get(..4)?.try_into().ok()?;
-            (if big_endian { u32::from_be_bytes(b) } else { u32::from_le_bytes(b) }, 4)
+            (
+                if big_endian {
+                    u32::from_be_bytes(b)
+                } else {
+                    u32::from_le_bytes(b)
+                },
+                4,
+            )
         }
         _ => return None,
     };
@@ -164,12 +183,17 @@ pub fn check_characters(buf: &[u8], charsize: usize, big_endian: bool) -> Option
 /// Ghidra `hasCharTerminator`: `charsize` zero bytes at a multiple of
 /// `charsize` (a partial last character is never a terminator here).
 fn has_terminator(buf: &[u8], charsize: usize) -> bool {
-    charsize > 0 && buf.chunks_exact(charsize).any(|c| c.iter().all(|b| *b == 0))
+    charsize > 0
+        && buf
+            .chunks_exact(charsize)
+            .any(|c| c.iter().all(|b| *b == 0))
 }
 
 /// Ghidra `calcInternalHash`.
 pub fn internal_hash(addr: Address, buf: &[u8]) -> u64 {
-    let reg = buf.iter().fold(0x7b7c_66a9u32, |r, b| crc_update(r, u32::from(*b)));
+    let reg = buf
+        .iter()
+        .fold(0x7b7c_66a9u32, |r, b| crc_update(r, u32::from(*b)));
     addr.offset() ^ (u64::from(reg) << 32)
 }
 
@@ -203,7 +227,13 @@ impl StringCache {
     }
 
     /// Ghidra `writeUnicode` + `assignStringData`.
-    fn assign(&self, buf: &[u8], charsize: usize, num_chars: usize, big_endian: bool) -> Result<StringData> {
+    fn assign(
+        &self,
+        buf: &[u8],
+        charsize: usize,
+        num_chars: usize,
+        big_endian: bool,
+    ) -> Result<StringData> {
         let mut data = StringData::default();
         if charsize == 1 && num_chars < self.max_chars {
             data.bytes = buf.to_vec();
@@ -213,7 +243,10 @@ impl StringCache {
             let mut count = 0;
             let mut ok = true;
             while i < buf.len() {
-                let Some((cp, skip)) = buf.get(i..).and_then(|b| codepoint(b, charsize, big_endian)) else {
+                let Some((cp, skip)) = buf
+                    .get(i..)
+                    .and_then(|b| codepoint(b, charsize, big_endian))
+                else {
                     ok = false;
                     break;
                 };
@@ -239,15 +272,29 @@ impl StringCache {
 
     /// Ghidra `StringManagerUnicode::getStringData`: the cached answer, or
     /// the string read from the image (cached even when empty).
-    pub fn string_data(&mut self, addr: Address, ch: CharType, image: &dyn LoadImage, spaces: &SpaceManager) -> Result<&StringData> {
+    pub fn string_data(
+        &mut self,
+        addr: Address,
+        ch: CharType,
+        image: &dyn LoadImage,
+        spaces: &SpaceManager,
+    ) -> Result<&StringData> {
         if !self.map.contains_key(&addr) {
             let data = self.read(addr, ch, image, spaces)?;
             self.map.insert(addr, data);
         }
-        self.map.get(&addr).ok_or(SymbolError::Limit("string cache"))
+        self.map
+            .get(&addr)
+            .ok_or(SymbolError::Limit("string cache"))
     }
 
-    fn read(&self, addr: Address, ch: CharType, image: &dyn LoadImage, spaces: &SpaceManager) -> Result<StringData> {
+    fn read(
+        &self,
+        addr: Address,
+        ch: CharType,
+        image: &dyn LoadImage,
+        spaces: &SpaceManager,
+    ) -> Result<StringData> {
         if ch.opaque {
             return Ok(StringData::default());
         }
@@ -286,13 +333,25 @@ impl StringCache {
     }
 
     /// Ghidra `isString`.
-    pub fn is_string(&mut self, addr: Address, ch: CharType, image: &dyn LoadImage, spaces: &SpaceManager) -> Result<bool> {
+    pub fn is_string(
+        &mut self,
+        addr: Address,
+        ch: CharType,
+        image: &dyn LoadImage,
+        spaces: &SpaceManager,
+    ) -> Result<bool> {
         Ok(!self.string_data(addr, ch, image, spaces)?.bytes.is_empty())
     }
 
     /// Ghidra `registerInternalStringData`: stores `buf` under the constant
     /// address of its hash and returns the hash (0 for an invalid encoding).
-    pub fn register_internal(&mut self, addr: Address, buf: &[u8], charsize: usize, spaces: &SpaceManager) -> Result<u64> {
+    pub fn register_internal(
+        &mut self,
+        addr: Address,
+        buf: &[u8],
+        charsize: usize,
+        spaces: &SpaceManager,
+    ) -> Result<u64> {
         let big = addr.is_big_endian(spaces);
         let Some(num) = check_characters(buf, charsize, big) else {
             return Ok(0);

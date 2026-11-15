@@ -26,9 +26,15 @@ pub struct XmlImage {
 impl XmlImage {
     /// Ghidra's constructor and `open`: reads a `<binaryimage>` element
     /// (`file` names it in the error for another root) and pads the chunks.
-    pub fn decode(dec: &mut dyn Decoder<'_>, spaces: Arc<SpaceManager>, file: &str) -> Result<Self> {
+    pub fn decode(
+        dec: &mut dyn Decoder<'_>,
+        spaces: Arc<SpaceManager>,
+        file: &str,
+    ) -> Result<Self> {
         if dec.peek_element() != Some(ELEM_BINARYIMAGE.code()) {
-            return Err(SymbolError::MissingBinaryImage { file: file.to_owned() });
+            return Err(SymbolError::MissingBinaryImage {
+                file: file.to_owned(),
+            });
         }
         let el = dec.open_element_expecting(ELEM_BINARYIMAGE)?;
         let arch = dec.read_string_attr(ATTRIB_ARCH)?.to_owned();
@@ -111,7 +117,10 @@ impl XmlImage {
             if end < *addr {
                 continue;
             }
-            let highest = self.spaces.space_of(end).map_or(u64::MAX, bk_core::Space::highest);
+            let highest = self
+                .spaces
+                .space_of(end)
+                .map_or(u64::MAX, bk_core::Space::highest);
             let mut maxsize: u64 = 512;
             let room = highest.wrapping_sub(end.offset()).wrapping_add(1);
             if maxsize > room {
@@ -228,7 +237,10 @@ impl LoadImage for XmlImage {
             if let Some(space) = addr.space()
                 && self.readonly.contains(addr)
             {
-                let last = addr.offset().wrapping_add(chunk.len() as u64).wrapping_sub(1);
+                let last = addr
+                    .offset()
+                    .wrapping_add(chunk.len() as u64)
+                    .wrapping_sub(1);
                 list.insert_range(space, addr.offset(), last);
             }
         }
@@ -243,7 +255,13 @@ impl LoadImage for XmlImage {
             let word = spaces.space_of(a).map_or(1, bk_core::Space::word_size);
             a.add(&spaces, adjust.wrapping_mul(i64::from(word)))
         };
-        self.chunks = std::mem::take(&mut self.chunks).into_iter().map(|(a, v)| (shift(a), v)).collect();
-        self.symbols = std::mem::take(&mut self.symbols).into_iter().map(|(a, n)| (shift(a), n)).collect();
+        self.chunks = std::mem::take(&mut self.chunks)
+            .into_iter()
+            .map(|(a, v)| (shift(a), v))
+            .collect();
+        self.symbols = std::mem::take(&mut self.symbols)
+            .into_iter()
+            .map(|(a, n)| (shift(a), n))
+            .collect();
     }
 }

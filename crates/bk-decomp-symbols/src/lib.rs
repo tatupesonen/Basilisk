@@ -8,6 +8,7 @@
 //! variables and XML of `globalcontext.*`, `override.*`, and the host
 //! classes `*_ghidra.*`. Specification: `docs/features/decomp-symbols.md`.
 
+pub mod arch;
 pub mod codec;
 pub mod comment;
 pub mod context;

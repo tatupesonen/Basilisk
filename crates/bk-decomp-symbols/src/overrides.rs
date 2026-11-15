@@ -43,7 +43,11 @@ impl OverrideRecord {
             "call" => Self::Call,
             "callreturn" => Self::CallReturn,
             "return" => Self::Return,
-            _ => return Err(SymbolError::UnknownFlowOverride { name: name.to_owned() }),
+            _ => {
+                return Err(SymbolError::UnknownFlowOverride {
+                    name: name.to_owned(),
+                });
+            }
         })
     }
 
@@ -53,7 +57,11 @@ impl OverrideRecord {
             "callother_call" => Self::CallotherCall(dest),
             "callother_branch" => Self::CallotherBranch(dest),
             "call_call" => Self::CallCall(dest),
-            _ => return Err(SymbolError::UnknownCallDestOverride { name: name.to_owned() }),
+            _ => {
+                return Err(SymbolError::UnknownCallDestOverride {
+                    name: name.to_owned(),
+                });
+            }
         })
     }
 
@@ -75,11 +83,26 @@ impl OverrideRecord {
         let _ = match self {
             Self::Branch => writeln!(s, "override CALL, CALLIND, or RETURN at {a} to a BRANCH"),
             Self::Call => writeln!(s, "override BRANCH, BRANCHIND, or RETURN at {a} to a CALL"),
-            Self::CallReturn => writeln!(s, "override BRANCH, BRANCHIND, or RETURN at {a} to a CALL followed by a RETURN"),
+            Self::CallReturn => writeln!(
+                s,
+                "override BRANCH, BRANCHIND, or RETURN at {a} to a CALL followed by a RETURN"
+            ),
             Self::Return => writeln!(s, "override BRANCHIND or CALLIND at {a} to a RETURN"),
-            Self::CallotherCall(d) => writeln!(s, "override CALLOTHER at {a} to CALL directly to {}", d.raw(spaces)),
-            Self::CallotherBranch(d) => writeln!(s, "override CALLOTHER at {a} to BRANCH directly to {}", d.raw(spaces)),
-            Self::CallCall(d) => writeln!(s, "override CALL at {a} to call to a new address {}", d.raw(spaces)),
+            Self::CallotherCall(d) => writeln!(
+                s,
+                "override CALLOTHER at {a} to CALL directly to {}",
+                d.raw(spaces)
+            ),
+            Self::CallotherBranch(d) => writeln!(
+                s,
+                "override CALLOTHER at {a} to BRANCH directly to {}",
+                d.raw(spaces)
+            ),
+            Self::CallCall(d) => writeln!(
+                s,
+                "override CALL at {a} to call to a new address {}",
+                d.raw(spaces)
+            ),
         };
     }
 
@@ -88,7 +111,11 @@ impl OverrideRecord {
             Self::CallotherCall(d) | Self::CallotherBranch(d) | Self::CallCall(d) => Some(d),
             _ => None,
         };
-        let el = if dest.is_some() { ELEM_CALLDEST } else { ELEM_FLOW };
+        let el = if dest.is_some() {
+            ELEM_CALLDEST
+        } else {
+            ELEM_FLOW
+        };
         enc.open_element(el);
         enc.write_string(ATTRIB_TYPE, self.name())?;
         addr.encode(enc, spaces)?;
@@ -197,8 +224,14 @@ impl Overrides {
     }
 
     /// Ghidra `insertDestinationOverride`.
-    pub fn insert_destination_override(&mut self, addr: Address, dest: Address, kind: &str) -> Result<()> {
-        self.pcode.insert(addr, OverrideRecord::call_dest(kind, dest)?);
+    pub fn insert_destination_override(
+        &mut self,
+        addr: Address,
+        dest: Address,
+        kind: &str,
+    ) -> Result<()> {
+        self.pcode
+            .insert(addr, OverrideRecord::call_dest(kind, dest)?);
         Ok(())
     }
 
@@ -211,7 +244,12 @@ impl Overrides {
     pub fn print_raw(&self, spaces: &SpaceManager, protos: &dyn ProtoCodec) -> String {
         let mut s = String::new();
         for (a, b) in &self.force_goto {
-            let _ = writeln!(s, "force goto at {} jumping to {}", a.raw(spaces), b.raw(spaces));
+            let _ = writeln!(
+                s,
+                "force goto at {} jumping to {}",
+                a.raw(spaces),
+                b.raw(spaces)
+            );
         }
         for (i, &d) in self.deadcode_delay.iter().enumerate() {
             if d < 0 {
@@ -221,13 +259,23 @@ impl Overrides {
             let _ = writeln!(s, "dead code delay on {name} set to {d}");
         }
         for (a, b) in &self.deindirect {
-            let _ = writeln!(s, "override indirect at {} to call directly to {}", a.raw(spaces), b.raw(spaces));
+            let _ = writeln!(
+                s,
+                "override indirect at {} to call directly to {}",
+                a.raw(spaces),
+                b.raw(spaces)
+            );
         }
         for (a, r) in &self.pcode {
             r.print_raw(&mut s, *a, spaces);
         }
         for (a, p) in &self.proto {
-            let _ = writeln!(s, "override prototype at {} to {}", a.raw(spaces), protos.print_raw(p));
+            let _ = writeln!(
+                s,
+                "override prototype at {} to {}",
+                a.raw(spaces),
+                protos.print_raw(p)
+            );
         }
         s
     }
@@ -246,7 +294,12 @@ impl Overrides {
     }
 
     /// Ghidra `encode`: nothing when empty, else `<override>`.
-    pub fn encode(&self, enc: &mut dyn Encoder, spaces: &SpaceManager, protos: &dyn ProtoCodec) -> Result<()> {
+    pub fn encode(
+        &self,
+        enc: &mut dyn Encoder,
+        spaces: &SpaceManager,
+        protos: &dyn ProtoCodec,
+    ) -> Result<()> {
         if self.is_empty() {
             return Ok(());
         }
@@ -261,7 +314,9 @@ impl Overrides {
             if d < 0 {
                 continue;
             }
-            let Some(space) = spaces.space_at(i as u32) else { continue };
+            let Some(space) = spaces.space_at(i as u32) else {
+                continue;
+            };
             enc.open_element(ELEM_DEADCODEDELAY);
             enc.write_space(ATTRIB_SPACE, &space.marshal_ref());
             enc.write_signed(bk_core::ids::ATTRIB_DELAY, i64::from(d));
@@ -286,7 +341,12 @@ impl Overrides {
     }
 
     /// Ghidra `decode`; unknown children are skipped, as in Ghidra.
-    pub fn decode(&mut self, dec: &mut dyn Decoder<'_>, spaces: &SpaceManager, protos: &dyn ProtoCodec) -> Result<()> {
+    pub fn decode(
+        &mut self,
+        dec: &mut dyn Decoder<'_>,
+        spaces: &SpaceManager,
+        protos: &dyn ProtoCodec,
+    ) -> Result<()> {
         let el = dec.open_element_expecting(ELEM_OVERRIDE)?;
         while let Some(sub) = dec.open_element()? {
             if sub == ELEM_PROTOOVERRIDE.code() {
@@ -336,10 +396,15 @@ impl Overrides {
 /// Ghidra `Architecture::decodeFlowOverride`: the `(function address,
 /// override address, record)` triples of a `<flowoverridelist>`, for the
 /// caller to deliver to the functions found at those addresses.
-pub fn decode_flow_override_list(dec: &mut dyn Decoder<'_>, spaces: &SpaceManager) -> Result<Vec<(Address, Address, OverrideRecord)>> {
+pub fn decode_flow_override_list(
+    dec: &mut dyn Decoder<'_>,
+    spaces: &SpaceManager,
+) -> Result<Vec<(Address, Address, OverrideRecord)>> {
     let el = dec.open_element_expecting(ELEM_FLOWOVERRIDELIST)?;
     let mut out = Vec::new();
-    while dec.peek_element() == Some(ELEM_FLOW.code()) || dec.peek_element() == Some(ELEM_CALLDEST.code()) {
+    while dec.peek_element() == Some(ELEM_FLOW.code())
+        || dec.peek_element() == Some(ELEM_CALLDEST.code())
+    {
         let sub = dec.open_element()?.ok_or(SymbolError::FlowAddress)?;
         let kind = dec.read_string_attr(ATTRIB_TYPE)?.to_owned();
         let func = Address::decode(dec, spaces)?;

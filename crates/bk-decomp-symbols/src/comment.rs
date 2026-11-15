@@ -37,7 +37,9 @@ pub fn comment_type_by_name(name: &str) -> Result<u32> {
         "warning" => kind::WARNING,
         "warningheader" => kind::WARNINGHEADER,
         _ => {
-            return Err(SymbolError::UnknownCommentType { name: name.to_owned() });
+            return Err(SymbolError::UnknownCommentType {
+                name: name.to_owned(),
+            });
         }
     })
 }
@@ -117,7 +119,13 @@ impl CommentDb {
 
     /// Ghidra `addComment`: `uniq` is one past the last comment at the same
     /// place below the bound, else 0.
-    pub fn add_comment(&mut self, kind: u32, func_addr: Address, addr: Address, text: &str) -> Result<()> {
+    pub fn add_comment(
+        &mut self,
+        kind: u32,
+        func_addr: Address,
+        addr: Address,
+        text: &str,
+    ) -> Result<()> {
         let bound: Key = (func_addr, addr, UNIQ_BOUND);
         // lower_bound then one back: the last element below the bound, or the
         // first element when the bound is first.
@@ -141,7 +149,13 @@ impl CommentDb {
 
     /// Ghidra `addCommentNoDuplicate`: `false` when a comment at the same
     /// place has the same text.
-    pub fn add_comment_no_duplicate(&mut self, kind: u32, func_addr: Address, addr: Address, text: &str) -> Result<bool> {
+    pub fn add_comment_no_duplicate(
+        &mut self,
+        kind: u32,
+        func_addr: Address,
+        addr: Address,
+        text: &str,
+    ) -> Result<bool> {
         let bound: Key = (func_addr, addr, UNIQ_BOUND);
         let mut uniq = 0;
         for ((f, a, u), c) in self.comments.range(..bound).rev() {
@@ -180,7 +194,12 @@ impl CommentDb {
     }
 
     /// Ghidra `deleteComment`.
-    pub fn delete_comment(&mut self, func_addr: Address, addr: Address, uniq: u32) -> Option<Comment> {
+    pub fn delete_comment(
+        &mut self,
+        func_addr: Address,
+        addr: Address,
+        uniq: u32,
+    ) -> Option<Comment> {
         self.comments.remove(&(func_addr, addr, uniq))
     }
 

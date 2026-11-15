@@ -5,11 +5,16 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use bk_decomp_types::{TypeFactory, TypeId};
-use bk_marshal::ids::{ATTRIB_CONSTRUCTOR, ATTRIB_CONTENT, ATTRIB_DESTRUCTOR, ELEM_DATA, ELEM_VALUE};
+use bk_marshal::ids::{
+    ATTRIB_CONSTRUCTOR, ATTRIB_CONTENT, ATTRIB_DESTRUCTOR, ELEM_DATA, ELEM_VALUE,
+};
 use bk_marshal::{Decoder, Encoder};
 
 use crate::error::{Result, SymbolError, limits};
-use crate::ids::{ATTRIB_A, ATTRIB_B, ATTRIB_LENGTH, ATTRIB_TAG, ELEM_CONSTANTPOOL, ELEM_CPOOLREC, ELEM_REF, ELEM_TOKEN};
+use crate::ids::{
+    ATTRIB_A, ATTRIB_B, ATTRIB_LENGTH, ATTRIB_TAG, ELEM_CONSTANTPOOL, ELEM_CPOOLREC, ELEM_REF,
+    ELEM_TOKEN,
+};
 
 /// Record kinds (Ghidra `CPoolRecord` tags).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -156,14 +161,21 @@ impl CPoolRecord {
             if !(0..limits::MAX_CPOOL_DATA).contains(&len) {
                 return Err(SymbolError::CpoolDataSize);
             }
-            data = Some(parse_hex_tokens(dec.read_string_attr(ATTRIB_CONTENT)?, len as usize)?);
+            data = Some(parse_hex_tokens(
+                dec.read_string_attr(ATTRIB_CONTENT)?,
+                len as usize,
+            )?);
         }
         dec.close_element(sub)?;
         if tag == CPoolTag::StringLiteral && data.is_none() {
             return Err(SymbolError::CpoolMissingData);
         }
         let ty = if flags != 0 {
-            types.decode_type_with_code_flags(dec, flags & IS_CONSTRUCTOR != 0, flags & IS_DESTRUCTOR != 0)?
+            types.decode_type_with_code_flags(
+                dec,
+                flags & IS_CONSTRUCTOR != 0,
+                flags & IS_DESTRUCTOR != 0,
+            )?
         } else {
             types.decode_type(dec)?
         };
@@ -237,7 +249,9 @@ impl ConstantPool {
     pub fn insert(&mut self, refs: &[u64], record: CPoolRecord) -> Result<()> {
         let k = key(refs)?;
         if let Some(old) = self.records.get(&k) {
-            return Err(SymbolError::DuplicateCpool { token: old.token.clone() });
+            return Err(SymbolError::DuplicateCpool {
+                token: old.token.clone(),
+            });
         }
         self.records.insert(k, record);
         Ok(())
@@ -245,7 +259,13 @@ impl ConstantPool {
 
     /// Ghidra `putRecord`: tag, token and type; flags and value 0 (Ghidra
     /// leaves them uninitialised; spec 4.21 #9).
-    pub fn put_record(&mut self, refs: &[u64], tag: CPoolTag, token: &str, ty: TypeId) -> Result<()> {
+    pub fn put_record(
+        &mut self,
+        refs: &[u64],
+        tag: CPoolTag,
+        token: &str,
+        ty: TypeId,
+    ) -> Result<()> {
         self.insert(
             refs,
             CPoolRecord {
@@ -260,10 +280,17 @@ impl ConstantPool {
     }
 
     /// Ghidra `decodeRecord`.
-    pub fn decode_record(&mut self, refs: &[u64], dec: &mut dyn Decoder<'_>, types: &mut TypeFactory) -> Result<()> {
+    pub fn decode_record(
+        &mut self,
+        refs: &[u64],
+        dec: &mut dyn Decoder<'_>,
+        types: &mut TypeFactory,
+    ) -> Result<()> {
         let k = key(refs)?;
         if let Some(old) = self.records.get(&k) {
-            return Err(SymbolError::DuplicateCpool { token: old.token.clone() });
+            return Err(SymbolError::DuplicateCpool {
+                token: old.token.clone(),
+            });
         }
         let record = CPoolRecord::decode(dec, types)?;
         self.records.insert(k, record);
