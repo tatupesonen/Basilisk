@@ -1,12 +1,12 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 02:02)
+## Now — RESUME HERE (2026-11-15 02:27)
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`9fbadf3` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
+(`3149b56`) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
@@ -104,7 +104,7 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 02:02)
+### Running (state at 2026-11-15 02:27)
 
 **The cap is three agents** (owner, 2026-11-15 about 02:00: "Use 3
 agents for now"; it was two from 2026-11-14 20:17), and every agent builds,
@@ -437,11 +437,37 @@ testbed's Wine set-up); `docs/agents/decomp-cspec.md` and
 `remote-build.md` still describe the single table (historical reports,
 left as they are).
 
+**Merged: `decomp-oracle-v2`** (`a5bfa968bedb8543f`; `3149b56`, CI run
+43657261978 green on all 8 jobs, integration gate on the build host
+2,423 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's `master` published). `bkstate` **version 2**: after
+the `G` records of `@scope`, for the function's local scope only, the
+records `I` (scope id, `nextUniqueId`, display name, parent, children),
+`C` (category vectors with their empty slots), `E` (`multiEntrySet`),
+`R` (one per record of each space's entry map in record-list order,
+with the subsort stored at insertion), `F` (fragments in multiset
+order), `Q` (the dynamic entry list); an entry is named
+`s<symbol id>:<real index>`. `bk-testkit` reads and writes versions 1
+and 2 (`StateDump::version`, `ScopeSection::orders`). Both shared
+reference directories were rebuilt once; 2,207 files hashed before and
+after on each machine: only `STAMP`, `bin/decomp_bk`,
+`bin/decomp_bk_dbg`, `.state/consoleext.fp` and the extension's objects
+changed; `bin/decomp` is byte-identical. Corpus (167 scripts, 607
+decompilations, 3,642 state dumps, identical on both builds apart from
+the five known `floatprint` files): 2,983 `C` records and no empty
+slot, `multiEntrySet` never non-empty, 42 dumps with dynamic entries,
+7,750 `R` records, 8,242 fragments; every record list happens to be in
+`(last, subsort)` order. **A spec error it found**: `decomp-symbols.md`
+4.5 and 4.21 row 4 said the dump writes `getMapEntryPosition`; it
+writes the real index (spec amended, `decomp-symbols` told at 02:14).
+`decomp-symbols` and `decomp-ir` were told at 02:25 that version 2 is
+on `master`. Report: `docs/agents/decomp-oracle-v2.md`.
+
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `decomp-ir` (worktree `../basilisk-wt/decomp-ir`, cut from `master` `4fb460d`) | Opus | `a1e2b060313375b6f` | started 02:02 on 2026-11-15, in the third slot. D05 from `features/decomp-ir.md` (ADR-046): crate `bk-decomp-ir` — varnodes, ops and their banks with Ghidra's orders, basic blocks over `bk-decomp-cfg`, covers, the mutation interface with the `FunctionEnv` trait, the opcode property table, text dumps, loading and writing `bkstate`. Builds on `bkstate` version 1; **tell it when `decomp-oracle-v2` is on `master`** (it may then `git merge master` once). |
 | `decomp-symbols` (worktree `../basilisk-wt/decomp-symbols`, cut from `master` `4d12e6e`) | Opus | `ada7bcd688de4b0b7` | started 01:35 on 2026-11-15. D06 from `features/decomp-symbols.md` (ADR-043, 044, 045): step 0 moves `bk-sleigh`'s context store into a new crate `bk-context` (re-exported; no behaviour change; speed checked); then `bk-decomp-symbols` (interval map with Ghidra's orders, symbols and scopes, queries, comments, strings, constant pool, `<binaryimage>`, context names and XML, overrides, the `ProgramHost` trait, overlays). It may add the `Spacebase` constructor to `bk-decomp-types` and `git merge master` at most twice (for D00). Its test that loads `@scope` from a dump waits for the dump's format version 2. |
-| `decomp-oracle-v2` (worktree `../basilisk-wt/decomp-oracle-v2`, cut from `master` `1d922c1`) | Opus | `a5bfa968bedb8543f` (the D00 agent, resumed) | resumed 01:48 on 2026-11-15. The state dump's format version 2: a `@scope` section from which D06 can rebuild a function scope exactly (scope and symbol ids, the entry map's record and fragment orders per space, the dynamic-entry order, and whatever else the D06 spec's queries need); extension, `bk-testkit` `oracle::state`, samples and fixtures on both builds. It rebuilds both shared reference directories once at the end (only the extension's own outputs may change; before/after hashes in its report). D05 starts after it. |
+| `decomp-out-spike` (worktree `../basilisk-wt/decomp-out-spike`, cut from the integration commit `9fe8123`, now part of `master`) | Opus | `ae99812eea4ab106a` | started 02:16 on 2026-11-15 in the slot `decomp-oracle-v2` freed. D16a (plan 8.1): answers ADR-025 3c — can `PrintC`'s output be reproduced token for token from a tree built first and printed afterwards? D00 did not deliver the printer log, so the spike builds it: a hook patch for a copy of Ghidra's source under `tools/reference/patches-instr/` with a build script (kept: D16c is tested against trees logged with it), an instrumented console built in a scratch directory (it must not write into the shared references), a throw-away prototype under `docs/research/decomp-out-spike/prototype/`, the report `docs/research/decomp-out-spike/report.md` and `docs/agents/decomp-out-spike.md`. No crate. The coordinator confirms or revises 3c from the report. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -754,15 +780,20 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
    `decomp-oracle` is merged (above). `decomp-cfg-oracle` is merged
-   (above). `decomp-oracle-v2` reports → check
-   its before/after hashes, merge through `integration`, tell
-   `decomp-symbols` and `decomp-ir` that version 2 is on `master`; in
-   its slot start the **D16a printer spike** (plan 8.1: a report and a
-   throw-away prototype from D00's final-state dumps; it decides how
-   D16b is built) — then the monitor type (queue item 7) with the
-   `bk-ui` flaky test. `decomp-symbols` and `decomp-ir` report → merge;
-   D07 `decomp-core` needs both and a spec. After each merge:
-   `scripts/remote.sh publish`.
+   (above). `decomp-oracle-v2` is merged (above). Running:
+   `decomp-symbols` (D06), `decomp-ir` (D05), `decomp-out-spike`
+   (D16a). When one reports → review, record its ADRs (next number
+   ADR-047) and Ghidra defects (next entry 40), merge through
+   `integration`, `scripts/remote.sh publish`. The spike's report →
+   confirm or revise ADR-025 3c. Next into a free slot: the monitor
+   type (queue item 7) with the `bk-ui` flaky test; then a spec agent
+   for D07 `decomp-core` (it needs D05 and D06 merged to be built, but
+   its spec can be written once both crates' interfaces are fixed).
+   **Run `scripts/remote.sh clean --merged` before creating a new
+   worktree, not after**: a fresh branch with no commit of its own
+   counts as merged and its checkout on the host is removed (it
+   happened to `decomp-out-spike` at 02:25, five minutes after its
+   start; the agent was told).
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 
