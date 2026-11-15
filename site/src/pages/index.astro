@@ -182,15 +182,16 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <h3>Works today</h3>
             <ul class="bk-checklist">
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The desktop interface</strong> on a built-in demo program: Listing, Decompiler view, trees, tables, search, Go To, the palette, rename and comment dialogs, docking and pop-out windows.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Ghidra’s language files</strong>: <code>.ldefs</code>, <code>.pspec</code> and <code>.opinion</code> read; all 150 SLEIGH specifications parse.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Compiled SLEIGH</strong>: all 150 reference <code>.sla</code> files read and written back byte for byte.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: ELF parsing, the p-code model and float formats, the GNU disassembler behind a safe API.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Disassembly and p-code for every processor Ghidra ships</strong>: <code>basilisk disasm</code> decodes bytes with any of the 150 SLEIGH languages, with the same result as Ghidra’s engine.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The SLEIGH compiler</strong>: <code>basilisk sleigh compile</code> produces the same <code>.sla</code> content as Ghidra’s compiler for all 150 specifications, in under five seconds for the lot.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The first parts of the decompiler</strong>: types, value ranges, calling conventions and control-flow structuring, each checked against Ghidra’s decompiler.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: Ghidra’s language and compiler specifications read unchanged, ELF parsing, the p-code model and float formats.</span></li>
             </ul>
           </div>
           <div class="bk-panel">
             <h3>Not yet</h3>
             <ul class="bk-checklist">
-              <li class="no"><Icon name="circle-dashed" size="16" /><span>Opening a real binary, disassembly, analysis, the decompiler and Python scripting. Each has its milestone on the <a class="bk-link" href={`${base}roadmap/`}>roadmap</a>.</span></li>
+              <li class="no"><Icon name="circle-dashed" size="16" /><span>Opening a real binary, analysis, decompiling a function and Python scripting. Each has its milestone on the <a class="bk-link" href={`${base}roadmap/`}>roadmap</a>.</span></li>
             </ul>
           </div>
         </div>
@@ -262,15 +263,23 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <li><span><strong>Install Rust</strong> with rustup; it picks up the pinned toolchain from <code>rust-toolchain.toml</code>.</span></li>
             <li><span><strong>Clone and run.</strong> The interface opens on its demo program.</span></li>
             <li><span><strong>Find your way</strong> with the keys you know from Ghidra.</span></li>
+            <li><span><strong>Disassemble something.</strong> <a class="bk-link" href={`${base}docs/getting-started/first-disassembly/`}>Your first disassembly</a> takes five minutes.</span></li>
           </ol>
         </div>
         <div>
           <div class="bk-terminal">
             <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />shell</div>
             <pre><code><span class="p">$ </span>git clone {repo}
-<span class="p">$ </span>cd basilisk
+<span class="p">$ </span>cd Basilisk
 <span class="p">$ </span><span class="f">cargo</span> run --release -p basilisk
-<span class="c"># the interface opens on its built-in demo program</span></code></pre>
+<span class="c"># the interface opens on its built-in demo program</span>
+
+<span class="c"># or disassemble bytes with one of Ghidra's languages</span>
+<span class="p">$ </span><span class="f">basilisk</span> disasm --language x86:LE:64:default \
+    --hex 554889e5c3 --format text --no-pcode
+0x0  55                       PUSH RBP
+0x1  48 89 e5                 MOV RBP,RSP
+0x4  c3                       RET</code></pre>
           </div>
           <div class="bk-keys-row">
             <div><span>Command palette</span><Kbd keys="Ctrl+Shift+P" /></div>
@@ -281,7 +290,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <div><span>References to</span><Kbd keys="Ctrl+Shift+F" /></div>
           </div>
           <p class="bk-muted" style="margin-top: var(--bk-space-5); font-size: var(--bk-text-sm)">
-            Ctrl is Cmd on macOS, as in Ghidra. <a class="bk-link" href={`${base}docs/getting-started/build/`}>Build instructions</a>
+            Ctrl is Cmd on macOS, as in Ghidra. <a class="bk-link" href={`${base}docs/getting-started/build/`}>Build instructions</a> · <a class="bk-link" href={`${base}docs/`}>Documentation</a>
           </p>
         </div>
       </div>
