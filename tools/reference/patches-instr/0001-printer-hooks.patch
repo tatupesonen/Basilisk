@@ -565,24 +565,28 @@
    if (scopestack.empty())
      curscope = (Scope *)0;
    else
-@@ -129,6 +130,8 @@
+@@ -129,8 +130,10 @@
  void PrintLanguage::pushOp(const OpToken *tok,const PcodeOp *op)
  
  {
 +  BkRpnGuard bk_rpn;
-+  if (bk_print_hook) bk_print_hook->pushOp(this,tok,op);
    if (pending < nodepend.size()) // Pending varnode pushes before op
      recurse();			// So we must recurse
++  if (bk_print_hook) bk_print_hook->pushOp(this,tok,op);
  
-@@ -162,6 +165,8 @@
+   bool paren;
+   int4 id;
+@@ -162,8 +165,10 @@
  void PrintLanguage::pushAtom(const Atom &atom)
  
  {
 +  BkRpnGuard bk_rpn;
-+  if (bk_print_hook) bk_print_hook->pushAtom(this,&atom);
    if (pending < nodepend.size()) // pending varnodes before atom
      recurse();			// So we must recurse
++  if (bk_print_hook) bk_print_hook->pushAtom(this,&atom);
  
+   if (revpol.empty())
+     emitAtom(atom);
 @@ -207,6 +212,7 @@
  //   }
  
