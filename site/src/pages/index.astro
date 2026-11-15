@@ -32,7 +32,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <span class="bk-pupil" aria-hidden="true"></span>
             Early development{current && ` · now: ${current.id} ${current.title}`}
           </a>
-          <h1 id="hero-title">Ghidra, reimplemented in Rust.</h1>
+          <h1 id="hero-title">Reverse engineering, rebuilt in Rust.</h1>
           <p class="bk-lede">
             Basilisk is a reimplementation of <a class="bk-link" href={ghidra}>Ghidra</a> — loaders, SLEIGH, p-code,
             analysis, the decompiler and a desktop interface. It reads Ghidra’s processor specifications unchanged.
@@ -74,7 +74,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-section-head">
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x10</span> The interface</p>
-          <h2 class="bk-h2" id="interface-title">The interface follows Ghidra’s CodeBrowser.</h2>
+          <h2 class="bk-h2" id="interface-title">If you know Ghidra, you already know Basilisk.</h2>
           <p class="bk-lede">
             The windows are where Ghidra puts them, with Ghidra’s names, menus and default keys. It runs on a built-in
             demo program until Basilisk can load real binaries.
@@ -89,16 +89,16 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p><Kbd keys="G" /> <Kbd keys="L" /> <Kbd keys=";" /> <Kbd keys="Ctrl+Shift+F" /></p>
         </div>
         <div class="bk-feature">
-          <h3><Icon name="magnifying-glass" size="18" />Command palette</h3>
+          <h3><Icon name="magnifying-glass" size="18" />A palette for everything</h3>
           <p>One field searches every action, function, label, string and address.</p>
           <p><Kbd keys="Ctrl+Shift+P" /></p>
         </div>
         <div class="bk-feature">
-          <h3><Icon name="squares-four" size="18" />Docking</h3>
+          <h3><Icon name="squares-four" size="18" />Panes that move</h3>
           <p>Dock, stack and split any pane, or pop it out into its own window; the layout is remembered.</p>
         </div>
         <div class="bk-feature">
-          <h3><Icon name="circle-half" size="18" />Dark and light themes</h3>
+          <h3><Icon name="circle-half" size="18" />Calm, in two themes</h3>
           <p>Both themes use the same twelve syntax colours, one per kind of token.</p>
         </div>
       </div>
@@ -134,7 +134,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-section-head">
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x20</span> Listing and Decompiler</p>
-          <h2 class="bk-h2" id="code-title">Listing and Decompiler side by side.</h2>
+          <h2 class="bk-h2" id="code-title">Colour that means something.</h2>
           <p class="bk-lede">
             Put the cursor on a statement in the Decompiler and the Listing marks the instructions it came from. Each
             of the twelve kinds of token has its own colour, checked for contrast in both themes.
@@ -167,7 +167,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-section-head">
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x30</span> Where it stands</p>
-          <h2 class="bk-h2" id="status-title">What works and what does not.</h2>
+          <h2 class="bk-h2" id="status-title">Early, and honest about it.</h2>
           <p class="bk-lede">
             Basilisk is built from the bottom up: language files, then SLEIGH, then the decompiler, then programs and
             analysis. The summary on the right is generated from the project’s parity matrix (updated {parity.updated}).
@@ -208,7 +208,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
       <div class="bk-section-head">
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x40</span> Why Basilisk</p>
-          <h2 class="bk-h2" id="why-title">What the project aims for.</h2>
+          <h2 class="bk-h2" id="why-title">Everything Ghidra does. Then better.</h2>
         </div>
       </div>
       <div class="bk-why">
@@ -226,13 +226,13 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         </div>
         <div>
           <span class="bk-why-icon"><Icon name="lightning" size="20" /></span>
-          <h3>Speed</h3>
+          <h3>Fast, and never waiting</h3>
           <p>Language load, disassembly and decompilation at least as fast as Ghidra’s, analysis in parallel where safe, and an interface that never blocks.</p>
           <span class="bk-tag">ADR-012</span>
         </div>
         <div>
           <span class="bk-why-icon"><Icon name="shield-check" size="20" /></span>
-          <h3>Hostile input</h3>
+          <h3>Trustworthy</h3>
           <p>Parsers are fuzzed and must return an error, not crash, on a malformed file. Output is compared with Ghidra’s on the same input.</p>
           <span class="bk-tag">ADR-007 · ADR-009</span>
         </div>
@@ -303,7 +303,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         <Mark size={72} />
         <div>
           <p class="bk-eyebrow"><span class="bk-addr">0x60</span> Credit</p>
-          <h2 class="bk-h2" id="credit-title" style="font-size: var(--bk-text-2xl)">Built on Ghidra’s work.</h2>
+          <h2 class="bk-h2" id="credit-title" style="font-size: var(--bk-text-2xl)">Standing on Ghidra’s work.</h2>
           <p style="margin-top: var(--bk-space-5)">
             Basilisk reimplements <a class="bk-link" href={ghidra}>Ghidra</a>, the software reverse-engineering
             framework developed at the National Security Agency and published under the Apache License 2.0. Basilisk
