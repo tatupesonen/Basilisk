@@ -87,3 +87,61 @@ proptest! {
         }
     }
 }
+
+#[test]
+fn version_1_dumps_are_still_read() {
+    let text = read_text(&sample_dir().join("switchind.end.v1.state.gz")).unwrap();
+    let dump = StateDump::parse(&text).unwrap();
+    assert_eq!(dump.version, 1);
+    assert_eq!(dump.scope.orders, None);
+    assert_eq!(dump.write(), text);
+    // A version-1 dump cannot carry version-2 records.
+    let v2 = sample("end");
+    let as_v1 = v2.replacen("BKSTATE\t2\t", "BKSTATE\t1\t", 1);
+    assert!(StateDump::parse(&as_v1).is_err());
+}
+
+#[test]
+fn the_scope_orders_are_consistent() {
+    let dump = StateDump::parse(&sample("end")).unwrap();
+    assert_eq!(dump.version, 2);
+    let orders = dump.scope.orders.as_ref().unwrap();
+    // The symbol ids continue from the scope's counter: every id is below it.
+    let id_base = 0x4000_0000_0000_0000_u64 + ((orders.identity.ghidra_id & 0xffff) << 40);
+    for s in &dump.scope.symbols {
+        assert!(
+            s.symbol.id.0 >= id_base && s.symbol.id.0 < id_base + orders.identity.next_unique_id
+        );
+    }
+    // Every map record names an entry of a local symbol with that storage;
+    // every fragment lies inside its record.
+    let entry = |r: &EntryRef| {
+        let g = dump
+            .scope
+            .symbols
+            .iter()
+            .find(|g| g.symbol.id == r.symbol)
+            .unwrap();
+        &g.entries[usize::try_from(r.position).unwrap()]
+    };
+    for r in &orders.records {
+        match &entry(&r.entry).storage {
+            EntryStorage::Address(a) => {
+                assert_eq!((a.space.as_str(), a.offset), (r.space.as_str(), r.first));
+            }
+            other => panic!("map record for {other:?}"),
+        }
+    }
+    for f in &orders.fragments {
+        let rec = orders.records.iter().find(|r| r.entry == f.entry).unwrap();
+        assert!(rec.first <= f.first && f.last <= rec.last && f.first <= f.last);
+    }
+    for q in &orders.dynamic.entries {
+        assert!(matches!(entry(q).storage, EntryStorage::Hash(_)));
+    }
+    // Version 2 needs the I record when there is a local scope.
+    let text = sample("end");
+    let i_line = text.lines().find(|l| l.starts_with("I\t0x")).unwrap();
+    let without = text.replacen(&format!("{i_line}\n"), "", 1);
+    assert!(StateDump::parse(&without).is_err());
+}

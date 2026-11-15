@@ -449,8 +449,12 @@ builders bypass it: `addDynamicSymbol(nm, ct, caddr, hash)` makes a
 * **`getMapEntryPosition(entry)`** (database.cc:387–399): Ghidra counts
   `pos += 1` for every preceding entry when *the argument* is whole-sized
   (it tests `entry`, not the loop's `tmp`): the result is the entry's
-  index for a whole entry and 0 for any piece. Reproduce (4.21); D00's
-  dump writes this number.
+  index for a whole entry and 0 for any piece. Reproduce (4.21) for the
+  callers in Ghidra that use it (printing). D00's dump does **not** write
+  this number: in both versions of `bkstate` an entry is named by its
+  real index in the symbol's entry list (`bk_state.cc`, `bk_state_misc.cc`),
+  so a test that compares with a dump uses the real index.
+  (Amended 2026-11-15 after the `bkstate` 2 work read the extension.)
 * **`getResolutionDepth(useScope)`** (database.cc:409–446): 0 in its own
   scope; with no use scope, the number of ancestors excluding the global
   scope; otherwise via `findDistinguishingScope` (database.cc:1601–1624)
@@ -1064,7 +1068,7 @@ sites of `docs/research/decomp-wave1/sorts.md` is in D06's files.
 | 1 | `Scope::addMapSym` + `ScopeInternal::addMapInternal`, database.cc:2000, 2010–2015, 1727–1730 | An entry that runs past the end of its space is appended to the symbol before the check throws; the handler's `removeSymbol` erases the never-inserted entry through an indeterminate iterator | confirmed: SIGSEGV in `rangemap::erase` (W3) | checks first, changes nothing, returns the error |
 | 2 | `ScopeInternal::encode` → `FunctionSymbol::encode` → `FuncProto::encode`, fspec.cc:4569 | An instantiated function without a prototype model encodes `model->getName()` of a null model | confirmed: SIGSEGV (W3) | D07's concern (`<function>`); noted for D07 |
 | 3 | `Scope::addUnassigned`, database.cc:1294–1297 | Reads `entry->symbol` after `delete entry` | read | sets `persist` on the symbol |
-| 4 | `Symbol::getMapEntryPosition`, database.cc:395 | Tests the argument's size instead of each entry's | read | reproduced (D00's dump and printing use it) |
+| 4 | `Symbol::getMapEntryPosition`, database.cc:395 | Tests the argument's size instead of each entry's | read | reproduced (printing uses it; D00's dump writes the entry's real index instead, see 4.5) |
 | 5 | `ScopeInternal::clearCategory`/`clearUnlockedCategory`, database.cc:2175, 2226 | Dereference empty category slots | read | skips empty slots |
 | 6 | `Symbol::getResolutionDepth`, database.cc:422–424 | Per-use-scope cache never invalidated by renames | read | reproduced |
 | 7 | `LoadImageXml::open`, loadimage_xml.cc:115–135; `StringManager::decode`, stringmanage.cc:246–266 | Hex loop ends on a non-positive `char`; with unsigned `char` the end of text is 255 and the loop never ends; no validation of digits | read (the reference build adds `-fsigned-char` because of it, PROGRESS 2026-11-12) | signed-`char` result, always terminates |

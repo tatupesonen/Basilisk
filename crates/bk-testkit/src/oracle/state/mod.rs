@@ -11,6 +11,7 @@ mod codec;
 pub mod ids;
 mod program;
 pub mod records;
+pub mod scope;
 mod sections;
 mod write;
 
@@ -19,6 +20,10 @@ pub use ids::{
     SymbolRef, TypeRef, VarnodeId, VarnodeOffset,
 };
 pub use records::*;
+pub use scope::{
+    CategoryRecord, DynamicListRecord, EntryMapRecord, FragmentRecord, MultiEntryRecord,
+    ScopeIdRecord, ScopeOrders,
+};
 pub use sections::{
     ActionLineRecord, ActiveGroup, BlockEntry, CallSpecEntry, FunctionSection, HeritageSection,
     JumpTableEntry, ProtoGroup, ScopeSection, StateDump, SymbolEntryGroup,
