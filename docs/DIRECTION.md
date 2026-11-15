@@ -182,6 +182,11 @@ and a sane architecture in mind.
   - *Two agents again* (owner, 2026-11-14, evening: "You can start two
     agents"). The cap is two running workers, counting helpers; the rule
     that every agent builds on kassini stands.
+  - *Docs-only commits are not pushed* (owner, 2026-11-15: "You do not
+    need to git push if you only update the docs"). The coordinator
+    commits documentation changes locally; they reach the remote with
+    the next push that carries code (a merge to `master`, or an
+    `integration` branch pushed for CI).
   - *Three agents* (owner, 2026-11-15, about 02:00: "Use 3 agents for
     now"). The cap is three running workers, counting helpers; the
     coordinator keeps all three slots filled. This replaces the cap of
