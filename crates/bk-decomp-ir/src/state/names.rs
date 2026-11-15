@@ -59,7 +59,21 @@ impl RawNames for DumpNames {
     }
 
     fn userop_name(&self, ssa: &Ssa, op: OpId, index: u64) -> Option<String> {
-        let base = self.userops.get(usize::try_from(index).ok()?)?.clone()?;
+        // Ghidra's built-in user ops (userop.cc:30-35) come after the
+        // language's.
+        let builtin = match index {
+            0x1000_0000 => Some("stringdata"),
+            0x1000_0001 => Some("read_volatile"),
+            0x1000_0002 => Some("write_volatile"),
+            0x1000_0003 => Some("builtin_memcpy"),
+            0x1000_0004 => Some("builtin_strncpy"),
+            0x1000_0005 => Some("builtin_wcsncpy"),
+            _ => None,
+        };
+        let base = match builtin {
+            Some(b) => b.to_owned(),
+            None => self.userops.get(usize::try_from(index).ok()?)?.clone()?,
+        };
         // VolatileReadOp / VolatileWriteOp append the size (userop.cc:108).
         let sized = |size: i32| {
             if size == 8 {
