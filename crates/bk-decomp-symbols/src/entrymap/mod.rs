@@ -732,6 +732,42 @@ impl<R: Copy, L: Line, S: Subsort> EntryMap<R, L, S> {
         self.unlink(rec.0);
     }
 
+    /// Rebuilds a map from a recorded state: the records in list order
+    /// (`(value, a, b, subsort)`) and the fragments in multiset order
+    /// (`(first, last, index of the record)`). `None` when a fragment names
+    /// no record or the fragments are not in key order.
+    pub fn from_parts(records: &[(R, L, L, S)], fragments: &[(L, L, usize)]) -> Option<Self> {
+        let mut map = Self::new();
+        let mut ids = Vec::with_capacity(records.len());
+        for &(value, a, b, sub) in records {
+            let id = map.alloc_record(value, a, b, sub);
+            map.link_before(id, NIL);
+            ids.push(id);
+        }
+        let mut last_key: Option<(L, S)> = None;
+        for &(first, last, rec) in fragments {
+            let (_, a, b, sub) = *records.get(rec)?;
+            let id = *ids.get(rec)?;
+            let key = (last, sub);
+            if last_key.is_some_and(|k| k > key) {
+                return None;
+            }
+            last_key = Some(key);
+            map.place(
+                Frag {
+                    first,
+                    last,
+                    a,
+                    b,
+                    sub,
+                    rec: id,
+                },
+                Place::Back,
+            );
+        }
+        Some(map)
+    }
+
     fn remove_frag_id(&mut self, id: u32) {
         let Some(frag) = self.frag(id).copied() else {
             return;

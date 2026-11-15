@@ -28,9 +28,29 @@ libstdc++ (build host): scope sha256 `aeba1648…cb7cd0`, context `327094a1…`
 (after header rows; earlier version `b9c75574…`), image `fc4be5c8…`. One
 copy of each is checked in; the replays pin an FNV-1a of the text.
 
-### (b) In progress
+### (b) In progress (stopped here on the coordinator's instruction)
 
-- Nothing half-done; next is (c) 1.
+- `src/restore.rs` (`ScopeImage`, `Database::restore_scope`,
+  `Database::scope_image`, `kind_from_name`/`kind_name`) and
+  `EntryMap::from_parts` are written and compile, **untested**. Next:
+  `tests/state_dump.rs` — for each v2 sample in
+  `crates/bk-testkit/tests/data/oracle/*.state.gz` (`StateDump::parse`,
+  `dump.scope.orders`), build spaces from `dump.spaces`, map each `TypeRef`
+  to `types.base(size, Unknown)` (keep the original ref per symbol for
+  write-back), attach the function scope (`I.ghidra_id`, parent global,
+  `ScopeKind::Function(placeholder function symbol)`), convert S/M/C/E/R/F/Q
+  into a `ScopeImage` (entry refs `s<id>:<real index>`), `restore_scope`,
+  then `scope_image` → records, compare. v1 sample: skip with a reason.
+- **Clippy is not clean**: `cargo clippy -p bk-decomp-symbols --all-targets
+  -- -D warnings` reports 67 errors in the library (indexing in
+  `database/tree.rs` `parse_c_integer`, `doc_markdown`, `or_fun_call`
+  `ok_or(bad(..))` → `ok_or_else`, `map_err(|_|`, redundant closures,
+  too-many-arguments on builders and `decode_scope`/`build_variable_name`
+  (add `#[expect(clippy::too_many_arguments, reason = ...)]`), …). Tests
+  themselves not yet clippy-checked. The gate will fail until fixed.
+- All tests pass: `cargo test -p bk-decomp-symbols` (unit 7, entrymap props
+  5, scope oracle 1, context oracle 1, image oracle 1 (skips without
+  reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.
 
 ### (c) Not started, in order
 
