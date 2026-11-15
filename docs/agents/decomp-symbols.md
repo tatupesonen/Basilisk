@@ -18,6 +18,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 4.12–4.15, 4.17 | `src/comment.rs`, `src/strings.rs`, `src/cpool.rs`, `src/image/{mod,hex,xml,raw}.rs`, `src/overrides.rs` | `bb47a11` |
 | 4.18, 6.2 image, 6.3 G | `src/arch.rs` (decode_volatile, decode_incidental_copy, decode_register_data, decode_readonly, decode_global, add_to_global_scope, add_other_space, build_default_symbols, fill_readonly_from_image, read_loader_symbols, globalify); replay `tests/image_oracle.rs` (needs reference + Ghidra; skips otherwise): **all 8,435 rows equal, 93 data tests** (B/M rows are `print map`) | `96ad501` |
 | 5.7 | `src/overlay.rs`: `Overlay` (clone on first write, logged ops, `commit` replays and translates new ids by creation order); `tests/overlay.rs` (sequential commits equal direct changes; two overlays from one base; Send + Sync) | overlay commit |
+| 5.5 | `src/spacebase.rs`: `DatabaseScopes` implements `SpacebaseScopes` (frame/scope, `getSubType`, `nearestArrayedComponent*`); `tests/spacebase.rs` | spacebase commit |
 | 5.5 | `TypeFactory::type_spacebase` in `bk-decomp-types` with a test | `ab73fdc` |
 | 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
@@ -33,10 +34,6 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 
 ### (c) Not started, in order
 
-2. `SpacebaseScopes` (5.5): `src/spacebase.rs` — a view over
-   `Arc<Database>` + `Arc<TypeFactory>` + the `undefined1` id;
-   `frame_of_scope`, `scope_of_frame`, `sub_type` (type.cc
-   `TypeSpacebase::getSubType`), `nearest` (type.cc 3403–3495).
 3. `@scope` dump test (6.4) against bkstate version 2 (`master` merged
    at `dd1746a`): `bk-testkit` `oracle::state`, `ScopeSection::orders`;
    samples `crates/bk-testkit/tests/data/oracle/` (all version 2 except

@@ -25,6 +25,7 @@ pub mod overlay;
 pub mod overrides;
 pub mod print;
 pub mod scope;
+pub mod spacebase;
 pub mod strings;
 
 pub use context::ContextNames;
