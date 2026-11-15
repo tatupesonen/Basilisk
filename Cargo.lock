@@ -581,7 +581,6 @@ dependencies = [
  "rand_chacha",
  "rstest",
  "thiserror 2.0.21",
- "wait-timeout",
 ]
 
 [[package]]
@@ -784,6 +783,7 @@ dependencies = [
 name = "bk-testkit"
 version = "0.0.1"
 dependencies = [
+ "flate2",
  "insta",
  "proptest",
  "roxmltree",

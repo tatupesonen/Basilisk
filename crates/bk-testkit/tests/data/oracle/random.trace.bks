@@ -1,0 +1,34 @@
+H	bkstruct	1	ok	-
+G	L3	0	S3	fallthru
+F	L2
+C	0
+S	S0	list	0	0xc00	5	7	-	S1,S6	-	-	-
+S	S1	if	0	0xc00	4	5	S0	L5,S2	-	-	S6:0:0x50
+S	L5	copy	0	0x0	0	1	S1	-	-	-	S2:0:0x10
+S	S2	switch	1	0xc00	3	4	S1	L1,S3,S5,L4	S3:0:-1:0x0:0:0,S5:2:0:0x0:0:0,L4:3:-1:0x0:1:0	L5:0:0x10	-
+S	L1	copy	1	0x10	0	1	S2	-	-	-	S3:0:0x10,S5:0:0x10,L4:0:0x10
+S	S3	infloop	4	0x800	2	1	S2	S4	-	L1:0:0x10	-
+S	S4	dowhile	4	0x0	1	1	S3	L2	-	S4:0:0x82	S4:0:0x82
+S	L2	copy	4	0x10000	0	1	S4	-	-	L2:1:0x82,L2:0:0x82	L2:1:0x82,L2:0:0x82
+S	S5	goto	3	0x400	1	1	S2	L3	S3,0x1	L1:1:0x30	-
+S	L3	copy	3	0x400	0	1	S5	-	-	-	-
+S	L4	copy	2	0x0	0	1	S2	-	-	L1:2:0x10	-
+S	S6	infloop	5	0x0	3	2	S0	S7	-	S1:0:0x10	-
+S	S7	list	5	0x0	2	2	S6	S8,S9	-	S7:0:0x82	S7:0:0x82
+S	S8	dowhile	5	0x0	1	1	S7	L0	-	S9:0:0x82	S9:0:0x10
+S	L0	copy	5	0x0	0	1	S8	-	-	L0:0:0x82	L0:0:0x82
+S	S9	dowhile	6	0x0	1	1	S7	L6	-	S8:0:0x10	S8:0:0x82
+S	L6	copy	6	0x0	0	1	S9	-	-	L6:0:0x82	L6:0:0x82
+P	S0
+R	0	blockdowhile	L2
+R	1	blockdowhile	L6
+R	2	blockdowhile	L0
+R	3	blockcat	S8
+R	4	blockinfloop	S4
+R	5	blockinfloop	S7
+R	6	casefallthru	L1
+R	7	blockgoto	L3
+R	8	blockswitch	L1
+R	9	blockproperif	L5
+R	10	blockcat	S1
+T

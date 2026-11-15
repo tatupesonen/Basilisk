@@ -12,7 +12,7 @@ defect was reproduced against the reference build (a crash, or output
 that changes from run to run), and **read** when it follows from the
 source alone. What Basilisk does instead is recorded in the feature
 specs' "Differences from Ghidra" sections and in ADR-024, ADR-038,
-ADR-039, ADR-040, ADR-041 and ADR-042. Paths are relative to
+ADR-039 to ADR-042 and ADR-045. Paths are relative to
 `Ghidra/Features/Decompiler/src/decompile/cpp/` unless they say
 otherwise.
 
@@ -48,6 +48,14 @@ and the coordinator adds it here.
 | 29 | Block structuring (`TraceDAG::pushBranches`, `blockaction.cc:983–1014`, with `openBranch` 839 and `retireBranch` 900) | When the loop-DAG view of the graph contains a cycle, one trace alternately opens and retires a branch point for ever, allocating a `BranchPoint` on every turn. Such a cycle arises because `FlowBlock::eliminateInDups`/`eliminateOutDups` (`block.cc:450–476`, 492) OR a merged edge's label into one half of the edge only and `ruleBlockCat` reads the other half, so a list can absorb a back edge and leave a cycle of tree edges | The decompiler never finishes and its memory grows (1 of 4,000 generated graphs: 25 nodes, irreducible). Basilisk returns `CfgError::TraceCycle` once a trace has opened more than 2·nodes + 8 branch points | confirmed (the reference console ran at full CPU with growing memory until killed; Basilisk's port reproduces the loop) | `agents/decomp-cfg.md`; the test `rules::endless_trace_is_an_error` and the `hang` row of the crate's `structure_blocks.txt.gz` |
 | 30 | Function state (`Funcdata::blockRemoveInternal`, `funcdata_block.cc` about line 333; `deleteCallSpecs`, `funcdata.cc:521`) | Removing a block deletes its call specifications (`delete fc`), but the call's `fspec` varnode keeps the freed pointer as its offset; `print tree varnode` then dereferences it (`FspecSpace::printRaw`, `fspec.cc:2152`) | Use after free in the console's listing | read, and seen in the state dumps (`inline.xml`, decompiles 1 and 2, at the action after `start`: `fspec` varnodes whose call specification is no longer in `qlst`); not run under a memory checker. The oracle writes `call:-` and never dereferences it | `agents/decomp-oracle.md` |
 | 31 | Function state, uninitialised members | `Action::count` and `lcount` (`action.cc:27`) and `FuncProto::extrapop` until `setModel` are not initialised; `FuncCallSpecs::matchCallCount` (`fspec.hh:1678`) is never set (`countMatchingCalls` has no caller) | Ghidra does not read them before setting them; anything that prints them reads indeterminate values (zeros on macOS, flagged by valgrind on Linux). The oracle writes `-` until they are set and leaves `matchCallCount` out | confirmed (valgrind on the build host) | `agents/decomp-oracle.md` |
+| 32 | Symbol database (`Scope::addMapSym`, `database.cc:2000`, `2010–2015`; `ScopeInternal::addMapInternal`, `1727–1730`) | An entry that runs past the end of its space is appended to the symbol before the exception is thrown; the handler's `removeSymbol` then erases it through an indeterminate iterator | SIGSEGV in `rangemap::erase`. Basilisk checks first and rejects the entry (ADR-045) | confirmed (crash under lldb, run W3) | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 33 | Prototypes (`FuncProto::encode`, `fspec.cc:4569`) | No check for a prototype without a model; reached by `ScopeInternal::encode` of an instantiated function that never got a prototype | SIGSEGV when such a scope is encoded | confirmed (crash, run W3) | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 34 | Symbol database (`Scope::addUnassigned`, `database.cc:1294–1297`) | Uses a symbol after it has been freed | Use after free | read | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 35 | Symbol database (`ScopeInternal::clearCategory`, `clearUnlockedCategory`, `database.cc:2175`, `2226`) | Empty category slots are dereferenced | Null dereference | read | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 36 | Load image and strings (`LoadImageXml::open`, `loadimage_xml.cc:115–135`; `StringManager::decode`, `stringmanage.cc:246–266`) | The hex loops stop only on a non-positive `char`; at the end of the text `(char)EOF` is 255 where `char` is unsigned (Linux AArch64, for one). Hex digits are not validated either | The loops never end on a platform with unsigned `char` — the hang seen on 2026-11-12 and the reason the reference is built with `-fsigned-char`. Basilisk reads as the signed build does and always terminates (ADR-045) | read; the hang itself was observed | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 37 | Constant pool (`cpool.cc`, `cpool.hh`) | `CPoolRecord::encode` (67) writes bytes as characters, not hex, so Ghidra cannot read its own encoding; `ConstantPool::putRecord` (160) leaves `flags`, `value` and `byteDataLen` uninitialised; `CheapSorter(refs)` (`cpool.hh:182`) reads `refs[0]` of a possibly empty list; `CPoolRecord::decode` (141–145) leaves bytes indeterminate when there are fewer hex tokens than `length` | Wrong encoding; undefined behaviour on short or empty input. Basilisk writes hex and defines each case (ADR-045) | read | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 38 | Load image (`RawLoadImage::open`, `loadimage.cc:60`; `LoadImageXml::adjustVma`, `loadimage_xml.cc:284`) | A raw image is opened in text mode (CR LF translation on Windows); `adjustVma` truncates the offset to `int4` | Corrupted bytes on Windows; wrong addresses above 2 GiB | read | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
+| 39 | Comments and strings (`CommentDatabaseInternal::addComment`, `comment.cc:182–193`; `StringManagerUnicode::getStringData`, `stringmanage.cc:466–468`) | Past 65,535 comments at one address the key already exists, so the comment is dropped and leaked; a string read can run past a 32-byte chunk when `maximumChars` is not a multiple of the character size (not reachable with the default 2048) | A lost comment and a leak; a possible read out of bounds | read | `agents/spec-decomp-wave2.md`, `features/decomp-symbols.md` |
 
 ## Results that depend on the host
 
@@ -58,7 +66,7 @@ and the coordinator adds it here.
 | 16 | P-code snippet lexer, numbers | An octal literal holding an 8 or a 9 (`09`) is read through the stream's number parser | 0 with libstdc++, an overflow error with libc++ | confirmed | `features/sleigh-snippet.md` §8 |
 | 23 | Value ranges (`CircleRange::pushForwardBinary`, `INT_LEFT`, `rangeutil.cc:1269–1270`) | A shift amount of 64 or more is undefined; g++ on x86-64 shifts modulo 64, Apple clang on AArch64 vectorises the two shifts into one `USHL` that reads the amount as a signed byte | The same Ghidra source gives different ranges on Linux x86-64 and macOS arm64 (834 of 152,913 oracle rows) | confirmed (two oracle tables) | `agents/decomp-range.md`, ADR-041 |
 | 27 | Varnode bank (`varnode.cc:39`, `73`) | The offsets of `iop` and `fspec` varnodes and of `LOAD`/`STORE` space constants are heap pointers, and the bank's two orders compare them | `print tree varnode` lists varnodes in a different order in two runs of one binary (43 of the 93 data tests on macOS). No effect on decompiled output observed | confirmed (two runs compared) | `agents/spec-decomp-wave1.md`, `research/decomp-wave1/runs.md` R5, ADR-042 |
-| 28 | Block ordering (`FlowBlock::compareFinalOrder`, `block.cc:718`; used by `orderBlocks`, `block.hh:448`) | Not a strict weak ordering: index 0 compares less than itself, and two blocks ending in `RETURN` compare equal | `std::sort` leaves the order of such blocks to the C++ library (same kind as entry 15) | read; how often a tie occurs is open | `agents/spec-decomp-wave1.md`, `features/decomp-cfg.md` §10 |
+| 28 | Block ordering (`FlowBlock::compareFinalOrder`, `block.cc:718`; used by `orderBlocks`, `block.hh:448`) | Not a strict weak ordering: index 0 compares less than itself, and two blocks ending in `RETURN` compare equal | `std::sort` leaves the order of such blocks to the C++ library (same kind as entry 15) | confirmed: of 40,000 structure dumps of generated graphs, 15 differ between the libc++ and libstdc++ builds, all ties between `RETURN` blocks on top levels of 17 or more nodes (libc++ reverses five such nodes in one row; Basilisk sorts stably and differs from libc++ in 1 row, from libstdc++ in 15). No tie occurs in the corpora (607 decompilations) | `agents/spec-decomp-wave1.md`, `agents/decomp-cfg.md`, `features/decomp-cfg.md` §10, ADR-040 |
 
 ## Smaller observations
 
@@ -81,6 +89,22 @@ and the coordinator adds it here.
 * `defineBitrange` (`slgh_compile.cc` 2800–2822) computes
   `(size-bitoffset-numb)/8` in 32-bit unsigned arithmetic, wrapping like
   entry 13 (`agents/sleigh-fixups.md`).
+* Symbol database, read (`agents/spec-decomp-wave2.md`):
+  `Symbol::getMapEntryPosition` (`database.cc:395`) tests the
+  argument's size instead of each entry's, so a piece gets position 0
+  (Basilisk reproduces it; the oracle's dump writes this number);
+  `Symbol::getResolutionDepth` (422–424) caches a depth that renames
+  never invalidate (reproduced);
+  `ContextInternal::decodeContext` (`globalcontext.cc:355–358`) zeroes
+  the whole default before every `<set>` of a default point set
+  (ADR-045); `ArchitectureGhidra::buildSymbols`
+  (`ghidra_arch.cc:405–429`) resolves `next` from the last volatile
+  symbol; `Architecture::decodeFlowOverride` (`architecture.cc:475–476`)
+  closes its element twice.
+* Latent: `PcodeOpBank::destroy` (`op.cc:1052–1056`) erases from the
+  tree chosen by the op's current opcode, so an `INDIRECT` living in
+  `optree` would leave a stale entry; no path creates one today
+  (`agents/spec-decomp-wave2.md`).
 * `Funcdata::clear` does not clear `processing_complete`, so during a
   second decompile of a function the flag is set at every stop and
   `print C` there throws "No structure present" (seen in the dumps of

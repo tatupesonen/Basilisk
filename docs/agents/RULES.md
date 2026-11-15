@@ -116,6 +116,14 @@ rules so merges are clean and the result is shippable.
   pipe it — and fix everything it reports. `gate.log` is git-ignored.
 - Temporary files go in your worktree's `target/` or a directory you
   create with a unique name; never in the Ghidra tree.
+- **Checked-in data and line ends.** A Windows checkout converts text
+  files to CRLF (`.gitattributes`, ADR-022). A data file your tests
+  read with an exact reader — an oracle capture, a table, a sample of a
+  line-based format — must either be gzip-compressed (`*.gz` is binary)
+  or be pinned with a `text eol=lf` line for its directory in
+  `.gitattributes`. Neither the gate nor the Wine check can catch a
+  miss (a Linux checkout has LF); CI's Windows job does, after the
+  fact.
 - **Disk space is shared and finite.** A full disk stops every agent on
   the machine. Check `df -h /System/Volumes/Data` before a full gate or
   any large build; if less than 10 GB is free, stop, commit and report
@@ -171,8 +179,8 @@ rules so merges are clean and the result is shippable.
 - **No `timeout` command on the development Mac.** Bound a command with
   the Bash tool's timeout parameter or
   `perl -e 'alarm N; exec @ARGV' <cmd> …` (N in seconds).
-- **Do not fan out.** The owner caps the number of running workers (two
-  as of the evening of 2026-11-14;
+- **Do not fan out.** The owner caps the number of running workers (three
+  as of 2026-11-15;
   `DIRECTION.md` has the current figure), and the coordinator fills
   every slot. Work alone: start no helper subagents.
 - **A usage limit can stop you at any moment.** Write results to files as

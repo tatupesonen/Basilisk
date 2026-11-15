@@ -1,0 +1,111 @@
+H	bkstruct	1	ok	-
+F	L1
+F	L18
+F	L23
+F	L37
+F	L27
+F	L28
+F	L32
+C	6
+S	S0	list	0	0x0	9	42	-	S1,S24	-	-	-
+S	S1	ifelse	0	0x0	8	35	S0	S2,S22,L34	-	-	S24:0:0x50
+S	S2	list	0	0x0	7	32	S1	S3,S12	-	-	L34:0:0x10,S22:0:0x10
+S	S3	ifelse	0	0x0	6	17	S2	S4,S7,L16	-	-	S12:0:0x50
+S	S4	list	0	0x0	3	5	S3	S5,L4	-	-	L16:0:0x10,S7:0:0x10
+S	S5	ifelse	0	0x0	2	4	S4	L0,S6,L3	-	-	L4:0:0x50
+S	L0	copy	0	0x200	0	1	S5	-	-	-	L3:0:0x10,S6:0:0x10
+S	S6	if	1	0x0	1	2	S5	L1,L2	-	L0:1:0x10	-
+S	L1	copy	1	0x10000	0	1	S6	-	-	-	L2:0:0x10
+S	L2	copy	2	0x0	0	1	S6	-	-	L1:0:0x10	-
+S	L3	copy	3	0x0	0	1	S5	-	-	L0:0:0x10	-
+S	L4	copy	4	0x0	0	1	S4	-	-	S5:0:0x40	-
+S	S7	ifelse	5	0x0	5	11	S3	L5,S8,L15	-	S4:1:0x10	-
+S	L5	copy	5	0x0	0	1	S7	-	-	-	L15:0:0x10,S8:0:0x10
+S	S8	ifelse	6	0x0	4	9	S7	L6,S9,L14	-	L5:1:0x10	-
+S	L6	copy	6	0x0	0	1	S8	-	-	-	L14:0:0x10,S9:0:0x10
+S	S9	ifelse	7	0x0	3	7	S8	L7,S10,L13	-	L6:1:0x10	-
+S	L7	copy	7	0x0	0	1	S9	-	-	-	L13:0:0x10,S10:0:0x10
+S	S10	ifelse	8	0x0	2	5	S9	L8,S11,L12	-	L7:1:0x10	-
+S	L8	copy	8	0x0	0	1	S10	-	-	-	L12:0:0x10,S11:0:0x10
+S	S11	ifelse	9	0x0	1	3	S10	L9,L10,L11	-	L8:1:0x10	-
+S	L9	copy	9	0x0	0	1	S11	-	-	-	L11:0:0x10,L10:0:0x10
+S	L10	copy	10	0x0	0	1	S11	-	-	L9:1:0x10	-
+S	L11	copy	11	0x0	0	1	S11	-	-	L9:0:0x10	-
+S	L12	copy	12	0x0	0	1	S10	-	-	L8:0:0x10	-
+S	L13	copy	13	0x0	0	1	S9	-	-	L7:0:0x10	-
+S	L14	copy	14	0x0	0	1	S8	-	-	L6:0:0x10	-
+S	L15	copy	15	0x0	0	1	S7	-	-	L5:0:0x10	-
+S	L16	copy	16	0x0	0	1	S3	-	-	S4:0:0x10	-
+S	S12	list	17	0x0	5	15	S2	S13,S16,S18	-	S3:0:0x40	-
+S	S13	ifelse	17	0x0	3	5	S12	L17,S14,L21	-	-	S16:0:0x50
+S	L17	copy	17	0x0	0	1	S13	-	-	-	L21:0:0x10,S14:0:0x10
+S	S14	list	18	0x0	2	3	S13	S15,L20	-	L17:1:0x10	-
+S	S15	if	18	0x0	1	2	S14	L18,L19	-	-	L20:0:0x30
+S	L18	copy	18	0x10000	0	1	S15	-	-	-	L19:0:0x10
+S	L19	copy	19	0x0	0	1	S15	-	-	L18:0:0x10	-
+S	L20	copy	20	0x0	0	1	S14	-	-	S15:0:0x20	-
+S	L21	copy	21	0x0	0	1	S13	-	-	L17:0:0x10	-
+S	S16	ifelse	22	0x0	2	4	S12	L22,S17,L25	-	S13:0:0x50	S18:0:0x50
+S	L22	copy	22	0x0	0	1	S16	-	-	-	L25:0:0x10,S17:0:0x10
+S	S17	if	23	0x0	1	2	S16	L23,L24	-	L22:1:0x10	-
+S	L23	copy	23	0x10000	0	1	S17	-	-	-	L24:0:0x10
+S	L24	copy	24	0x0	0	1	S17	-	-	L23:0:0x10	-
+S	L25	copy	25	0x0	0	1	S16	-	-	L22:0:0x10	-
+S	S18	list	26	0x0	4	6	S12	S19,L31	-	S16:0:0x40	-
+S	S19	ifelse	26	0x0	3	5	S18	L26,S20,L30	-	-	L31:0:0x50
+S	L26	copy	26	0x0	0	1	S19	-	-	-	L30:0:0x10,S20:0:0x10
+S	S20	if	27	0x0	2	3	S19	S21,L29	-	L26:1:0x10	-
+S	S21	condition	27	0x0	1	2	S20	L27,L28	BOOL_AND	-	L29:0:0x10
+S	L27	copy	27	0x0	0	1	S21	-	-	-	L28:0:0x10
+S	L28	copy	28	0x0	0	1	S21	-	-	L27:0:0x10	-
+S	L29	copy	29	0x0	0	1	S20	-	-	S21:0:0x10	-
+S	L30	copy	30	0x0	0	1	S19	-	-	L26:0:0x10	-
+S	L31	copy	31	0x0	0	1	S18	-	-	S19:0:0x40	-
+S	S22	if	32	0x0	2	2	S1	L32,S23	-	S2:1:0x10	-
+S	L32	copy	32	0x10000	0	1	S22	-	-	-	S23:0:0x10
+S	S23	goto	33	0x0	1	1	S22	L33	L37,0x1	L32:0:0x10	-
+S	L33	copy	33	0x0	0	1	S23	-	-	-	-
+S	L34	copy	34	0x0	0	1	S1	-	-	S2:0:0x10	-
+S	S24	list	35	0x0	5	7	S0	S25,L41	-	S1:0:0x40	-
+S	S25	whiledo	35	0x0	4	6	S24	L35,S26	-	-	L41:0:0x10
+S	L35	copy	35	0x1000	0	1	S25	-	-	S26:0:0x282	S26:0:0x10
+S	S26	list	36	0x0	3	5	S25	S27,L40	-	L35:0:0x10	L35:0:0x282
+S	S27	ifelse	36	0x0	2	4	S26	L36,S28,L39	-	-	L40:0:0x250
+S	L36	copy	36	0x0	0	1	S27	-	-	-	L39:0:0x10,S28:0:0x210
+S	S28	if	37	0x0	1	2	S27	L37,L38	-	L36:1:0x210	-
+S	L37	copy	37	0x10020	0	1	S28	-	-	-	L38:0:0x10
+S	L38	copy	38	0x0	0	1	S28	-	-	L37:0:0x10	-
+S	L39	copy	39	0x0	0	1	S27	-	-	L36:0:0x10	-
+S	L40	copy	40	0x0	0	1	S26	-	-	S27:0:0x40	-
+S	L41	copy	41	0x0	0	1	S24	-	-	S25:0:0x10	-
+P	S0
+R	0	blockor	L27
+R	1	blockproperif	L1
+R	2	blockifelse	L9
+R	3	blockproperif	L18
+R	4	blockproperif	L23
+R	5	blockgoto	L33
+R	6	blockproperif	L37
+R	7	blockproperif	S21
+R	8	blockcat	S15
+R	9	blockifelse	L0
+R	10	blockifelse	L8
+R	11	blockifelse	L17
+R	12	blockifelse	L26
+R	13	blockifelse	L36
+R	14	blockcat	S5
+R	15	blockcat	S19
+R	16	blockifelse	L7
+R	17	blockifelse	L22
+R	18	blockcat	S13
+R	19	blockifelse	L6
+R	20	blockcat	S27
+R	21	blockifelse	L5
+R	22	blockwhiledo	L35
+R	23	blockifelse	S4
+R	24	blockcat	S3
+R	25	blockcat	S25
+R	26	blockifnoexit	L32
+R	27	blockifelse	S2
+R	28	blockcat	S1
+T

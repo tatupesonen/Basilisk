@@ -809,9 +809,92 @@ From plan 6, made concrete:
 
 (The implementing agent appends further differences here.)
 
+Appended by the implementation (track `decomp-oracle`):
+
+- `bk dump state` writes, besides 4.4's fields, the op's `print raw` text
+  (`@ops`), `alttree` ops (`main`/`alt`), the action state of groups and
+  pools stopped mid-way, `lanedMap`, `unionMap`, the local overrides, the
+  function's own output trials (`Funcdata::activeoutput`), and jump tables'
+  `recoverCount`, `displayFormat`, `block2addr`, load tables and original
+  model; it leaves out what Ghidra never initialises or never sets:
+  `Action::count`/`lcount` before the action first ran (`-`),
+  `FuncProto::extrapop` without a model (`-`) and
+  `FuncCallSpecs::matchCallCount` (always). An `fspec` varnode whose call
+  spec Ghidra deleted (`deleteCallSpecs`) is written `call:-`, never
+  dereferenced. A space constant's `nzm` is written as its key.
+- `@c` is written when the function is finished and the root action is not
+  stopped mid-way: `processing_complete` survives `Funcdata::clear`, so on
+  a second decompilation of the same function it is set at every stop.
+- `bk list actions` renders the lines in a fresh stream: `list action`
+  pads the position with whatever fill the console's stream was left with
+  (spaces in a fresh console).
+- `bk break start` on a rule is an error: Ghidra checks only a rule's
+  action breakpoint (`ActionPool::processOp`), so it would never stop.
+- Fact blocks keep `FlowBlock`'s type `t_plain`: nothing in the structurer
+  reads the copied block's type, and `t_basic` would invite a cast to
+  `BlockBasic`.
+- `bk capture structure` (not in 4.10) runs one decompilation and writes
+  every structuring run's graph and structure: the mainloop's
+  `blockstructure` runs an unknown number of times, which a static
+  console script with `bk break` and `continue` cannot follow. It installs
+  the switch defaults before writing a run's blocks, as
+  `ActionBlockStructure` does next; plain `bk dump blocks` writes the
+  labels as they are at the stop.
+- The capture driver runs the consoles in the corpus directory with
+  relative paths, so no output names where the corpus is.
+
+Appended by track `decomp-oracle-v2` (format `bkstate 2`):
+
+- `@scope` carries, for the function's local scope, what an exact rebuild
+  of its `ScopeInternal` needs and the symbol and entry records do not
+  give: the scope's ids and children (`I`), the category slots with empty
+  ones (`C`), `multiEntrySet` (`E`), each space's entry-map record list with
+  the subsort each record got at insertion (`R`) and its fragment multiset
+  (`F`), and the dynamic entry list (`Q`). The record list and fragment
+  order depend on insertion history (`rangemap.hh`); the subsort is
+  computed once at insertion from the symbol's `addrtied` flag and the
+  entry's use limit, which can change afterwards; `multiEntrySet`
+  membership is decided when `wholeCount` reaches 2 and is not revisited.
+  The name-tree order (name, dedup) and the child order (id) follow from
+  what is written and are not repeated. Only the local scope is dumped;
+  other scopes' symbols stay `G` references.
+- Entry refs use the entry's real index in the symbol's `mapentry`, not
+  `Symbol::getMapEntryPosition` (which returns 0 for every piece,
+  database.cc:395) — in version 1 as well.
+
 ## 9. Status
 
-Not started.
+Implemented (track `decomp-oracle`, report `docs/agents/decomp-oracle.md`):
+
+- `scripts/build-reference.sh` step `[1b/5]`: `bin/decomp_dbg`,
+  `bin/decomp_bk`, `bin/decomp_bk_dbg`; own fingerprints; `STAMP` lists
+  them and `console_extension`. Both shared reference directories rebuilt:
+  only files added and `STAMP` rewritten; `bin/decomp` byte-identical.
+- The extension (`tools/reference/consoleext/`, 11 files): every command of
+  4.10 and `bk capture structure`; the optional logs of 4.12 are not
+  delivered (section 10, item 2).
+- Formats `bkstate`, `bkgraph`, `bkcfg`, `bkstruct`, `bkactions`,
+  `pcoderec` version 1 and the trace, in `tools/reference/README.md`.
+- `bk-testkit`: `oracle::{graph, cfgdump, structure, actions, state, trace,
+  pcoderec}` (typed readers, byte-identical writers, property tests, five
+  fuzz targets), `oracle::{generate, host, capture}`, the `bk-oracle`
+  driver, three new `Tool`s and consoles.
+- Captures of the data tests and the research corpus on both builds: 167
+  scripts (2 research fragments skipped: they fail in `decomp` too), 607
+  decompilations, 11,005 ops and 18,134 varnodes checked complete, 74,836
+  trace records, 767 structuring runs (each reproduced exactly by `bk
+  structure … asgiven`), every recording replayed to the same `print raw`,
+  `decomp_dbg` = `decomp`; two runs identical on each build; the builds
+  differ in 5 of 8,536 files, all `floatprint`, by NaN sign (48 lines) and
+  its bank-order consequence (8). Fixtures: `fixtures/decomp-oracle/`.
+- Nightly item `oracle` (`tools/testbed/oracle.sh`).
+- `bkstate 2` (track `decomp-oracle-v2`): the `@scope` records above;
+  `bk-testkit` reads versions 1 and 2 and writes back the version it read.
+  Over the 3,642 captured dumps (both builds, identical apart from the
+  known NaN causes): 2,983 category records, no empty slot, no symbol in
+  a multi-entry set, 42 dumps with dynamic entries, 7,750 entry-map
+  records and 8,242 fragments; every record list equals the
+  `(last, subsort)` order, which the format does not assume.
 
 ## 10. Open items
 
@@ -827,3 +910,40 @@ Not started.
    space constants in a way that reaches output (4.3): if so it is a
    host dependence of Ghidra's output itself, to be found by the tracks
    that port those passes; none was found in the data tests (R5, R6).
+
+Settled by the implementation:
+
+1. The field lists are those of the classes at commit `42db038f3c`
+   (`tools/reference/README.md`, "State dumps"). 4.4's `maxtablesize`,
+   `maxaddsub`, `maxleftright`, `maxext` are not `JumpTable` state (the last
+   three are `static constexpr`, the first a parameter of recovery), and
+   `Heritage` has no `disjoint` member (it is local to `heritage()`). A
+   jump-table model is written by kind only; `JumpBasic`'s recovered
+   internals (`jrange`, `pathMeld`, normalised and switch varnodes) are not
+   in v1 — D13 amends the format if it needs them.
+2. The hook patches are not delivered. The mutation log needs a call at the
+   top of about 60 `Funcdata` methods, several of them inline in
+   `funcdata.hh`, kept in step with Ghidra in a second source copy and a
+   third console build; the printer's pushes likewise need hooks in
+   `PrintLanguage`'s non-virtual push methods. An `Emit`-only log is not
+   transparent at the `PrintLanguage`→`Emit` boundary either: `Emit` keeps
+   non-virtual state that callers set directly (`setPendingPrint`,
+   `setIndentIncrement`, the paren and indent levels), which a forwarding
+   wrapper would not share; it is transparent below `EmitPrettyPrint`
+   (wrapping its `lowlevel`), if D16a wants the post-layout stream. D05 and
+   D16a use their stated fall-backs.
+3. `orderBlocks` ties: none. In all 607 decompilations the top level of the
+   final structure is a single node, so `orderBlocks` sorts nothing
+   (`list.size() != 1`).
+4. No sign of it: captures on two builds with different allocators and
+   heap layouts, and two runs on each, agree in every output (C, `print
+   raw`, dumps, traces) apart from the NaN sign — 607 decompilations.
+
+Settled by track `decomp-oracle-v2`:
+
+5. State dump format 2 for an exact rebuild of a function scope
+   (`decomp-symbols.md` 6.4): delivered as `bkstate 2`. Left out on
+   purpose: whether a space has an empty entry map (Ghidra creates one on
+   first use and keeps it when emptied; queries answer the same as with
+   none), `Scope::owner` (a cache link, null for local scopes), and the
+   database's resolve map (it holds no function scopes).

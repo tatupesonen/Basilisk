@@ -641,3 +641,9 @@ The work counter (`Limits::max_steps`, default `2·(n+e)² + 10⁶`) measured
 at most 0.97·(n+e)² steps on 1,200 generated graphs of up to 1,000 nodes
 and 0.85·(n+e)² on the 3,000-node graph above; reducible graphs take
 0.02·(n+e)².
+
+Corpus (2026-11-15, same host): the largest structuring graph of the 767
+captured runs (`datatests/elseif`, 42 nodes, 61 edges) structures as given
+in 7 µs and 798 steps; command `cargo test -p bk-decomp-cfg --release
+--test corpus -- --ignored largest_corpus_graph --nocapture`.
+

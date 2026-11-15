@@ -1,0 +1,12 @@
+# host differences: <file>	<cause>	<lines>
+datatests/floatprint.0.end.state	nan-order	2
+datatests/floatprint.0.end.state	nan-sign	10
+datatests/floatprint.0.final.state	nan-order	2
+datatests/floatprint.0.final.state	nan-sign	8
+datatests/floatprint.0.p3.state	nan-order	2
+datatests/floatprint.0.p3.state	nan-sign	8
+datatests/floatprint.0.p4.state	nan-order	2
+datatests/floatprint.0.p4.state	nan-sign	8
+datatests/floatprint.0.trace.gz	nan-sign	14
+total	nan-order	8
+total	nan-sign	48

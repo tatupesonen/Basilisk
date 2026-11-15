@@ -911,3 +911,48 @@ and the two specifications hold.
     the graph input is `bk dump blocks` at each actual structuring run,
     and one function can give several runs.
 
+## 12. Amendments, 2026-11-15 (from the D06 specification and the D05 revision)
+
+`docs/agents/spec-decomp-wave2.md`; decided in ADR-043 to ADR-046. Where
+this section and an earlier one disagree, this section and the two
+specifications hold.
+
+1. **Section 2 (dependency rule) and the D06 row, `globalcontext.*`**:
+   the context store is `bk-sleigh`'s (ADR-026). It moves to a small
+   crate `bk-context`, re-exported by `bk-sleigh`; `bk-decomp-symbols`
+   depends on `bk-context`, not on `bk-sleigh` (ADR-043). The move is
+   step 0 of the D06 track.
+2. **Section 6 (D06), "`<binaryimage>` loading with `print
+   map`-equivalent output"**: `print map` shows only the global scope.
+   The evidence is the image table from Ghidra's loader (all 93 data
+   tests: 349 chunks, 1,744 load probes) plus `print map` itself where
+   the reference is present.
+3. **Section 6 (D06) and 8 (3d), the function-summary acceptance** (a
+   test host answering "does not return" changes flow like `override
+   flow … callreturn`): it needs flow following and moves to D09. D06
+   delivers the two summary methods on the host trait with provenance.
+4. **Per-function overlays** (new; ADR-044): Ghidra's console is
+   sequential and a later function sees the `DAT_` symbols an earlier
+   one created, so program state is frozen during a decompilation and
+   each function's additions go into an overlay committed in operation
+   order; the console and the data-test runner commit after every
+   function; D17 specifies the parallel driver's commit policy.
+5. **The D05 row, "the low-level halves of `funcdata_op.cc` and
+   `funcdata_varnode.cc`"**: those methods consult D06, D07 and D14
+   state. D05 implements the structural part and calls a trait,
+   `FunctionEnv`, which D07 implements (ADR-046).
+6. **Section 6 (D05), "mutations recorded from Ghidra's trace"**: the
+   trace records touched ops, not calls, and D00 found a mutation log
+   impractical. D05's test is the re-dump comparison.
+7. **Section 6 (D06), `DecompilerPspecVolatilityTest`**: its property
+   part can be ported in D06; only the whole-decompile part waits for
+   M5.
+8. **`ScopeLocal` (`varmap.*`)** is not in any row: it belongs to D11;
+   D06 leaves function scopes, an extension slot and the calls it needs.
+   `CommentSorter` belongs to D16b; applying overrides to D09 and D07.
+9. **The state dump** needs a format version 2 for D06: a `@scope`
+   section with the symbol ids, the record and fragment orders of each
+   space's entry map and the dynamic-entry order (fields in the
+   report). A follow-up to D00 (`decomp-oracle-v2`), before D05 starts
+   so that D05 builds on the final `oracle::state`.
+
