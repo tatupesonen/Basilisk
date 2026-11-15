@@ -843,6 +843,25 @@ Appended by the implementation (track `decomp-oracle`):
 - The capture driver runs the consoles in the corpus directory with
   relative paths, so no output names where the corpus is.
 
+Appended by track `decomp-oracle-v2` (format `bkstate 2`):
+
+- `@scope` carries, for the function's local scope, what an exact rebuild
+  of its `ScopeInternal` needs and the symbol and entry records do not
+  give: the scope's ids and children (`I`), the category slots with empty
+  ones (`C`), `multiEntrySet` (`E`), each space's entry-map record list with
+  the subsort each record got at insertion (`R`) and its fragment multiset
+  (`F`), and the dynamic entry list (`Q`). The record list and fragment
+  order depend on insertion history (`rangemap.hh`); the subsort is
+  computed once at insertion from the symbol's `addrtied` flag and the
+  entry's use limit, which can change afterwards; `multiEntrySet`
+  membership is decided when `wholeCount` reaches 2 and is not revisited.
+  The name-tree order (name, dedup) and the child order (id) follow from
+  what is written and are not repeated. Only the local scope is dumped;
+  other scopes' symbols stay `G` references.
+- Entry refs use the entry's real index in the symbol's `mapentry`, not
+  `Symbol::getMapEntryPosition` (which returns 0 for every piece,
+  database.cc:395) — in version 1 as well.
+
 ## 9. Status
 
 Implemented (track `decomp-oracle`, report `docs/agents/decomp-oracle.md`):
@@ -869,6 +888,13 @@ Implemented (track `decomp-oracle`, report `docs/agents/decomp-oracle.md`):
   differ in 5 of 8,536 files, all `floatprint`, by NaN sign (48 lines) and
   its bank-order consequence (8). Fixtures: `fixtures/decomp-oracle/`.
 - Nightly item `oracle` (`tools/testbed/oracle.sh`).
+- `bkstate 2` (track `decomp-oracle-v2`): the `@scope` records above;
+  `bk-testkit` reads versions 1 and 2 and writes back the version it read.
+  Over the 3,642 captured dumps (both builds, identical apart from the
+  known NaN causes): 2,983 category records, no empty slot, no symbol in
+  a multi-entry set, 42 dumps with dynamic entries, 7,750 entry-map
+  records and 8,242 fragments; every record list equals the
+  `(last, subsort)` order, which the format does not assume.
 
 ## 10. Open items
 
@@ -912,3 +938,12 @@ Settled by the implementation:
 4. No sign of it: captures on two builds with different allocators and
    heap layouts, and two runs on each, agree in every output (C, `print
    raw`, dumps, traces) apart from the NaN sign — 607 decompilations.
+
+Settled by track `decomp-oracle-v2`:
+
+5. State dump format 2 for an exact rebuild of a function scope
+   (`decomp-symbols.md` 6.4): delivered as `bkstate 2`. Left out on
+   purpose: whether a space has an empty entry map (Ghidra creates one on
+   first use and keeps it when emptied; queries answer the same as with
+   none), `Scope::owner` (a cache link, null for local scopes), and the
+   database's resolve map (it holds no function scopes).
