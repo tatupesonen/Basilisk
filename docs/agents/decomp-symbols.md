@@ -3,79 +3,143 @@
 Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 (step 0, ADR-043), `crates/bk-decomp-symbols` (new). State: in progress.
 
-## Step 0 — the context store moves to `bk-context` (done)
+## Status and how to continue
 
-- `crates/bk-sleigh/src/context/{mod,db,partmap,tracked}.rs` moved (git
-  rename) to `crates/bk-context/src/{lib,db,partmap,tracked}.rs`;
-  `bk-sleigh` has `pub use bk_context as context;` and keeps its
-  `pub use context::{ContextDb, …}` line, so every path compiles unchanged.
-- `PartMap` and `Bounds` are public in `bk-context` (documented, one new
-  unit test; three small accessors added: `point_mut`, `len`,
-  `clear_points`). The hot look-ups (`ContextDb::get`, `get_with_range`,
-  `variable`, `context_at`, `PartMap::get`, `bounds`) are `#[inline]`.
-- Tests on the build host: `cargo test -p bk-sleigh -p bk-context` all
-  green (bk-context 9 unit tests; bk-sleigh unit and integration suites
-  unchanged).
-- Speed (build host, `crates/bk-sleigh/tests/reference_bench/compare.sh
-  $BASILISK_REFERENCE_DIR 7 7`, pinned to one core, 7 rounds each, run as
-  after / before (master `4d12e6e`) / after in one job). Ratio Basilisk /
-  Ghidra, median of rounds:
+### (a) Done, by spec section
 
-  | | after (1) | before | after (2) |
-  |---|---|---|---|
-  | decode only | 1.174 | 1.111 | 1.169 |
-  | decode + lift (counting emitter) | 1.033 | 1.008 | 1.032 |
-  | decode + text | 1.509 | 1.449 | 1.533 |
-  | decode + text + lift | 1.215 | 1.185 | 1.227 |
+| Spec | What | Commit |
+|---|---|---|
+| Step 0 / ADR-043 | `bk-sleigh`'s context store moved to `crates/bk-context`, re-exported as `bk_sleigh::context`; `PartMap` public | `de37c32` |
+| 4.2 | `EntryMap` (`src/entrymap/{mod,bucket,look}.rs`): fragments in buckets per `(last, subsort)`, C++ hinted-insert order, record list; property test against a literal transliteration of `rangemap.hh` (`tests/entrymap_props.rs`, `tests/common/rangemap_model.rs`) | `fc99a5f` |
+| 4.1, 4.4–4.10 | `Database` (`src/database/{mod,resolve,tree}.rs`), data (`src/model.rs`), scope behaviour (`src/scope/{add,build,find,query,names,mutate}.rs`), flags, errors, ids | `89ed526` |
+| 4.4, 4.11 | printing and symbol helpers (`src/print.rs`), codecs (`src/codec/{symbol,scope}.rs`, `FunctionCodec` hook) | `0f8d053` |
+| 6.2 scope | generator `tests/oracle/scope.cc` (header rows `H P C T` added to the prototype), table `tests/data/scope.txt.gz`, replay `tests/scope_oracle.rs` + `tests/common/{oracle,scope_gen}.rs`: **all 205,104 case rows equal** | `085e561` |
+| 4.16, 6.2 context | `src/context.rs` (`ContextNames` over `bk_context::ContextDb`; `bk-context` gained `grow`, `set_tracked_at`, `tracked_points`, `tracked_default`, `has_split_points`); generator `tests/oracle/context.cc`, table `tests/data/context.txt.gz`, replay `tests/context_oracle.rs`: **all 85,713 case rows equal** | `d2ded67` |
+| 4.12–4.15, 4.17 | `src/comment.rs`, `src/strings.rs`, `src/cpool.rs`, `src/image/{mod,hex,xml,raw}.rs`, `src/overrides.rs` | `bb47a11` |
+| 4.18, 6.2 image, 6.3 G | `src/arch.rs` (decode_volatile, decode_incidental_copy, decode_register_data, decode_readonly, decode_global, add_to_global_scope, add_other_space, build_default_symbols, fill_readonly_from_image, read_loader_symbols, globalify); replay `tests/image_oracle.rs` (needs reference + Ghidra; skips otherwise): **all 8,435 rows equal, 93 data tests** (B/M rows are `print map`) | `96ad501` |
+| 5.5 | `TypeFactory::type_spacebase` in `bk-decomp-types` with a test | `ab73fdc` |
+| 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost` | `aafa1a6` (no tests yet) |
 
-  Absolute: bk decode only 5.36 / 5.20 / 5.39 M instructions/s (best).
-  No slowdown; the move is within noise (slightly faster).
-- Gate on the build host at `de37c32`: exit 0, `tests: 2359 passed, 0 failed`.
+All three oracle tables were generated twice on each reference build
+(`tests/oracle/regen.sh`): byte-identical between libc++ (Mac) and
+libstdc++ (build host): scope sha256 `aeba1648…cb7cd0`, context `327094a1…`
+(after header rows; earlier version `b9c75574…`), image `fc4be5c8…`. One
+copy of each is checked in; the replays pin an FNV-1a of the text.
 
-## Done / in progress / next
+### (b) In progress
 
-- [x] Step 0.
-- [x] `EntryMap` (`src/entrymap/`) + property test against a literal
-      transliteration of `rangemap.hh` (`tests/entrymap_props.rs`).
-- [x] Database, scopes, symbols, entries, queries, names, mutations,
-      printing, symbol/scope/db codecs (`src/database/`, `src/scope/`,
-      `src/print.rs`, `src/codec/`).
-- [x] Scope oracle: generator `tests/oracle/scope.cc`, table
-      `tests/data/scope.txt.gz` (205,124 rows incl. 20 header rows),
-      replay `tests/scope_oracle.rs` — every row equal.
-- [x] Context names + `<context_points>` (`src/context.rs`); oracle
-      `tests/oracle/context.cc`, table `tests/data/context.txt.gz`
-      (85,723 rows), replay `tests/context_oracle.rs` — every row equal.
-- [x] Comments, strings, constant pool, load images (xml, raw, hex),
-      overrides, arch filling (`src/arch.rs`).
-- [x] Image oracle: table `tests/data/image.txt.gz` (8,435 rows),
-      replay `tests/image_oracle.rs` (needs reference + Ghidra) — every row
-      equal for all 93 data tests.
-- [x] Tables regenerated twice on each host (`tests/oracle/regen.sh`):
-      byte-identical between libc++ (Mac) and libstdc++ (build host).
-- [x] `git merge master` (1 of 2) for bkstate version 2.
-- [ ] Host trait, cache layer, scripted host; overlays and commit.
-- [ ] `Spacebase` constructor in `bk-decomp-types`; `SpacebaseScopes`,
-      `TypeSource`.
-- [ ] `@scope` dump test (version 2), pspec volatility test, unit tests per
-      behaviour table, codec property tests.
-- [ ] Fuzz targets, benchmarks, testbed checks, both gates, report.
+- Host layer: code written and compiling; **no tests yet**. Needed (spec
+  6.1 last bullet): `tests/host_cache.rs` against `ScriptedHost` — holes
+  stop repeat queries; a space without a global range is never asked;
+  `FUN_`/`DAT_` names not asked; one comment fill per `clear`; `clear`
+  restores properties; asserted call order.
 
-## Findings so far (for the report)
+### (c) Not started, in order
 
-- Ghidra `rangemap::insert` inserts a record's last fragment twice when
-  the record ends at an existing piece end (reproduced).
-- Ghidra `rangemap::erase` re-sews `b|b+1` from the first following
-  fragment only and can stretch a neighbour left of its start; queries
-  then return it (reproduced). A later erase of that record leaves
-  dangling fragments (use after free; Basilisk removes them). Confirmed
-  with `tests/oracle/rangemap_defects.cc` against Ghidra's header.
-- `Duplicate scope id: <full name>` always has an empty name (the new scope
-  has no parent yet when Ghidra asks).
-- `getLastAddrOpen` is never invalid (spec 4.3 wrong in detail).
-- `decodeFlowOverride` does not close twice in this commit (spec 4.21
-  row 16 wrong).
-- `Funcdata::getName` is the name at creation; a rename of the function
-  symbol does not change what `queryFunction` callers print (D07).
-- Spec's "`Model` provenance for pspec default symbols": `Provenance::Model`
-  is the AI provenance; Basilisk uses `Imported`.
+1. Overlay and commit (5.7, ADR-044): planned `src/overlay.rs` —
+   `Overlay { base: Arc<Database>, work: Option<Database>, log: Vec<Op> }`,
+   clone-on-first-write, ops logged with ids; `commit(into)` replays the log
+   and maps new arena ids (ids below the base's arena lengths are kept).
+   Test: committing after each "function" equals doing the operations
+   directly on the database (sequential behaviour).
+2. `SpacebaseScopes` (5.5): `src/spacebase.rs` — a view over
+   `Arc<Database>` + `Arc<TypeFactory>` + the `undefined1` id;
+   `frame_of_scope`, `scope_of_frame`, `sub_type` (type.cc
+   `TypeSpacebase::getSubType`), `nearest` (type.cc 3403–3495).
+3. `@scope` dump test (6.4) against bkstate version 2 (`master` merged
+   at `dd1746a`): `bk-testkit` `oracle::state`, `ScopeSection::orders`;
+   samples `crates/bk-testkit/tests/data/oracle/` (all version 2 except
+   `switchind.end.v1.state.gz`). Compare entries by their REAL index in the
+   symbol's list (coordinator correction), rebuild the maps from the `R`
+   records' stored subsorts.
+4. `tests/pspec_volatility.rs` (6.5, `DecompilerPspecVolatilityTest`
+   property part).
+5. Unit tests per behaviour table (6.1): makeNameUnique cases,
+   buildUndefinedName error, buildVariableName rules, addMap steps (join
+   pieces, wrap error leaves scope unchanged, kludge), categories with
+   holes, getMapEntryPosition quirk, isValueClose, codecs round trip
+   (comment, strings incl. codepoint branches, cpool, binaryimage, override,
+   context points), 65,536th comment error.
+6. Properties (6.6): codec round trips; provenance never changes answers.
+7. Fuzz targets in `fuzz/` (7 targets of 6.6) + regressions dir.
+8. Benchmarks (5.8) + `docs/PERF.md`; `docs/inventory/tests/` line for
+   DecompilerPspecVolatilityTest stays open (D17).
+9. Spec "Differences"/"Status"/"Open items" appends; final report.
+10. Testbed: `scripts/remote.sh long fuzz 300 <targets>`,
+    `scripts/remote.sh wine -- -p bk-decomp-symbols -p bk-context`,
+    `scripts/remote.sh arm64 -- -p bk-decomp-symbols`; clippy for
+    `x86_64-pc-windows-msvc`; `scripts/check-dep-age.py master`; both gates.
+
+### (d) Decisions and traps
+
+- API shape: scope behaviour is methods on `Database` taking a `ScopeId`;
+  mutations needing types take `&TypeFactory`/`&mut TypeFactory` (the
+  symbol caches its type's size, "unknown" metatype and primitive-whole
+  flag so queries need no factory). `resolution_depth` takes `&mut self`
+  (its cache).
+- Function scopes are created by `create_function_scope` (D07 calls it);
+  the scope oracle's replay calls it at `+func`. `Funcdata::getName` is a
+  snapshot (the replay keeps the creation-time name).
+- `isGlobal()` in Ghidra is "not a function scope" — namespaces are
+  global for `persist` and properties.
+- Defined where Ghidra is undefined: entry past the end of its space
+  checked before any change (ADR-045); stray fragments of a stretched
+  record removed on erase; empty category slots skipped; cpool `<data>`
+  needs `length` hex tokens; `retypeSymbol` re-add checked for wrap first.
+- Entry printing uses `' '` for a space without shortcut.
+- Image replay space setup: the language's spaces, then `fspec`, `iop`,
+  `join`, then the `.cspec` (stack) — the order Ghidra's indices show.
+- Oracle commands: `sh crates/bk-decomp-symbols/tests/oracle/regen.sh REF
+  GHIDRA OUTDIR libcxx|libstdcxx` (builds the three generators with
+  `build.sh`, runs each twice, compares). On the build host:
+  `scripts/remote.sh run -- bash -c 'CXX=g++ sh crates/bk-decomp-symbols/tests/oracle/regen.sh "$BASILISK_REFERENCE_DIR" "$BASILISK_GHIDRA_DIR" target/oracle-host libstdcxx'`.
+- Rerun tests on the host: `scripts/remote.sh run -- cargo test -p bk-decomp-symbols`.
+
+### (e) Gate and merges
+
+- Last gate: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
+  `tests: 2359 passed, 0 failed`. Not run since (planned at the end and
+  after the next big step).
+- `git merge master`: 1 of 2 used (`dd1746a`, bkstate version 2).
+
+### (f) Open questions, proposed ADRs, Ghidra defects
+
+- Ghidra defects (confirmed with `tests/oracle/rangemap_defects.cc`,
+  compiled against Ghidra's own `rangemap.hh`, on the Mac reference):
+  1. `rangemap::insert` (rangemap.hh, `insert`, the `if (f <= b)` after the
+     loop): a record ending at an existing piece end gets its last
+     fragment twice. Harmless; reproduced.
+  2. `rangemap::erase` (rangemap.hh, `erase`, `if ((*low).a-1 == b)`): the
+     right re-sew looks at the first following fragment only, so a record
+     starting at `b+1` that is not first in its piece is stretched left;
+     `findContainer` then returns it for addresses it does not cover.
+     Reproduced (behaviour).
+  3. Follow-on: erasing such a stretched record walks from its own start
+     and leaves fragments pointing at the freed list node (use after
+     free). Basilisk removes them.
+- Spec items found wrong: 4.3 (`getLastAddrOpen` is never invalid); 4.21
+  row 16 (`decodeFlowOverride` closes once in this commit); 4.7 (the
+  duplicate-scope message has an empty full name); 4.5/5.4 "Model"
+  provenance for pspec default symbols (`Provenance::Model` is the AI
+  one; Basilisk uses `Imported`); 4.5/4.21 row 4 (dump uses the real index —
+  coordinator's correction); 4.12 the comment-key error comes at the
+  65,537th comment at one address; `smallvec` is not in the workspace
+  (buckets use a small enum instead).
+- Follow-up for `bk-cspec`: `FuncProto` has no public `set_override`
+  (Ghidra's `insertProtoOverride` marks the prototype); the `ProtoCodec`
+  hook's `decode` must return it marked.
+
+## Step 0 — measurement
+
+Build host, `crates/bk-sleigh/tests/reference_bench/compare.sh
+$BASILISK_REFERENCE_DIR 7 7` (pinned, 7 rounds), after / before (master
+`4d12e6e`) / after in one job; ratio Basilisk / Ghidra, median:
+
+| | after (1) | before | after (2) |
+|---|---|---|---|
+| decode only | 1.174 | 1.111 | 1.169 |
+| decode + lift (counting emitter) | 1.033 | 1.008 | 1.032 |
+| decode + text | 1.509 | 1.449 | 1.533 |
+| decode + text + lift | 1.215 | 1.185 | 1.227 |
+
+bk decode only 5.36 / 5.20 / 5.39 M instructions/s (best): no slowdown.
