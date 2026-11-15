@@ -5,7 +5,6 @@
     <!-- crown -->
     <path d="M95.1 55.1 L88.4 26.3 L116.3 45.7 L128 4 L139.7 45.7 L167.6 26.3 L160.9 55.1 Z"/>
     <!-- slit pupil -->
-    <path d="M128 126 A63.1 63.1 0 0 1 128 210 A63.1 63.1 0 0 1 128 126 Z"/>
   </g>
   <!-- wordmark: monoline letters drawn as strokes (no font needed); the i-dots repeat the slit pupil -->
   <g transform="translate(244 81.4) scale(0.74)">
