@@ -1,0 +1,6 @@
+# orig log: 165 runs, 165 identical, 372060 bytes
+# orig nolog: 165 runs, 165 identical, 372060 bytes
+# xml log: 165 runs, 165 identical, 2807326 bytes
+# flat log: 165 runs, 165 identical, 488111 bytes
+# java log: 165 runs, 165 identical, 490161 bytes
+# options log: 165 runs, 165 identical, 600502 bytes

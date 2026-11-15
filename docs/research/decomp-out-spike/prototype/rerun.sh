@@ -36,7 +36,7 @@ tail -1 "$work/results/diag.txt"
 grep -c "Execution error\|Low-level ERROR" "$work"/run/logs/*/*.out | grep -v ':0$' > "$work/results/console-errors.txt" || true
 if [ -n "${BK_OUT:-}" ]; then
   cp "$work"/results/* "$BK_OUT/"
-  (cd "$work/run" && tar -czf "$BK_OUT/logs-orig.tgz" logs/orig logs/*/*.out)
+  (cd "$work/run" && tar -czf "$BK_OUT/logs-orig.tgz" logs/orig logs/xml/*.out logs/flat/*.out logs/java/*.out logs/options/*.out)
 fi
 echo "identity exit $id_status, comparison exit $cmp_status"
 [ "$id_status" -eq 0 ]

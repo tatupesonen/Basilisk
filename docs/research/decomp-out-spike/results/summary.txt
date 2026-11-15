@@ -1,0 +1,5 @@
+orig	functions	397	match	397	errors	0	emit_calls	76719	emit_calls_match	76719	push_op	8127	push_atom	11268	push_vn	8388	structural	25686	state	12462	mods_differ	0
+xml	functions	794	match	794	errors	0	emit_calls	153438	emit_calls_match	153438	push_op	16254	push_atom	22536	push_vn	16776	structural	51372	state	24924	mods_differ	0
+flat	functions	794	match	794	errors	0	emit_calls	153290	emit_calls_match	153290	push_op	16181	push_atom	22797	push_vn	17161	structural	44321	state	19958	mods_differ	0
+java	functions	794	match	794	errors	0	emit_calls	152907	emit_calls_match	152907	push_op	15819	push_atom	22861	push_vn	16776	structural	51372	state	18432	mods_differ	0
+options	functions	397	match	397	errors	0	emit_calls	78003	emit_calls_match	78003	push_op	6683	push_atom	10028	push_vn	8250	structural	27081	state	10755	mods_differ	0
