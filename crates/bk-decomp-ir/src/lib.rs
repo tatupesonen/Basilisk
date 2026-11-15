@@ -46,6 +46,8 @@ pub mod props;
 pub mod record;
 pub mod semantics;
 mod ssa;
+#[cfg(feature = "bkstate")]
+pub mod state;
 pub mod unit;
 pub mod varnode;
 
