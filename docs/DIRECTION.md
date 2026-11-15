@@ -182,6 +182,10 @@ and a sane architecture in mind.
   - *Two agents again* (owner, 2026-11-14, evening: "You can start two
     agents"). The cap is two running workers, counting helpers; the rule
     that every agent builds on kassini stands.
+  - *Three agents* (owner, 2026-11-15, about 02:00: "Use 3 agents for
+    now"). The cap is three running workers, counting helpers; the
+    coordinator keeps all three slots filled. This replaces the cap of
+    two.
   - *The remote setup may be improved without asking* (owner,
     2026-11-14: "You can also autonomously make improvements to the
     remote setup"): what is installed on kassini, how it is laid out,
