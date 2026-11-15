@@ -9,6 +9,7 @@
 //! classes `*_ghidra.*`. Specification: `docs/features/decomp-symbols.md`.
 
 pub mod codec;
+pub mod context;
 pub mod database;
 pub mod entrymap;
 pub mod error;
@@ -18,6 +19,7 @@ pub mod model;
 pub mod print;
 pub mod scope;
 
+pub use context::ContextNames;
 pub use database::{ArchEnv, Database, RegisterNames};
 pub use error::{DataUnavail, HostError, Result, SymbolError};
 pub use flags::VarnodeFlags;

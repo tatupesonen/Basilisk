@@ -5,6 +5,7 @@
     reason = "each test crate uses a different part"
 )]
 
+pub mod context_gen;
 pub mod oracle;
 pub mod rangemap_model;
 pub mod scope_gen;

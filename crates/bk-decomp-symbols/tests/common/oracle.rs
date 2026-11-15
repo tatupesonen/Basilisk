@@ -60,7 +60,9 @@ pub fn arch_from_header(rows: &[(i64, &str, &str)]) -> Arch {
         let size: u32 = f[3].parse().unwrap();
         let word: u32 = f[4].parse().unwrap();
         let big = f[5] == "1";
-        shortcuts.push((index, f.get(7).copied().unwrap_or(" ").to_owned()));
+        if let Some(sc) = f.get(7) {
+            shortcuts.push((index, (*sc).to_owned()));
+        }
         let space = match (ty, name) {
             (0, _) => Space::constant(),
             (1, "OTHER") => Space::other(),
@@ -130,4 +132,11 @@ pub fn arch_from_header(rows: &[(i64, &str, &str)]) -> Arch {
 /// Escapes a row's text as the generators do.
 pub fn esc(s: &str) -> String {
     s.replace('\n', "\\n").replace('\t', "\\t")
+}
+
+/// FNV-1a 64 of some bytes (pins a table's content).
+pub fn fnv64(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| {
+        (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3)
+    })
 }

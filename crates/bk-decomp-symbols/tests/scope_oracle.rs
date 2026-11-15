@@ -69,7 +69,18 @@ fn replay(table: &str) {
     );
 }
 
+/// The table, generated twice on each reference build (libc++ on macOS
+/// AArch64, libstdc++ on x86-64 Linux): all four byte-identical, so one copy
+/// is checked in and its hash pinned (`tests/data/README.md`).
 #[test]
-fn scope_table_libcxx_replays() {
-    replay("scope.libcxx.txt.gz");
+fn scope_table_replays() {
+    let text = read_table("scope.txt.gz");
+    assert_eq!(
+        format!("{:016x}", common::oracle::fnv64(text.as_bytes())),
+        SCOPE_FNV64
+    );
+    replay("scope.txt.gz");
 }
+
+/// FNV-1a of the table (its SHA-256, in the README, is aeba1648…cb7cd0).
+const SCOPE_FNV64: &str = "5d598463d6637b48";

@@ -1,9 +1,14 @@
-// Prototype oracle for D06 (decomp-symbols): Ghidra's ContextInternal over
+// Oracle for D06 (decomp-symbols): Ghidra's ContextInternal over
 // generated operation sequences.  Spaces come from the x86-64 architecture
 // of a data test; each case uses a fresh ContextInternal with generated
 // variables.  Usage: context_oracle SLEIGHHOME datatest.xml SEED CASES
 // Random draws are xorshift64*, one per statement (argument evaluation
-// order is unspecified in C++).
+// order is unspecified in C++).  Header rows (case -1):
+//   H  bk-context-oracle 1 <seed> <cases>
+//   P  index name type addrsize wordsize bigendian highest   (one per space)
+// The Rust replay (tests/context_oracle.rs) draws the same numbers, drives
+// Basilisk's ContextNames over bk_context::ContextDb with the same
+// operations, and requires every other row to be equal.
 #include "libdecomp.hh"
 #include "xml_arch.hh"
 #include "globalcontext.hh"
@@ -140,6 +145,16 @@ int main(int argc,char **argv)
   reg = conf->getSpaceByName("register");
   rs = strtoull(argv[3],0,0) | 1;
   int4 cases = atoi(argv[4]);
+  kase = -1;
+  { ostringstream h; h << "bk-context-oracle 1 " << argv[3] << ' ' << cases; row("H",h.str()); }
+  for(int4 i=0;i<conf->numSpaces();++i) {
+    AddrSpace *spc = conf->getSpace(i);
+    if (spc == (AddrSpace *)0) continue;
+    ostringstream p;
+    p << dec << i << ' ' << spc->getName() << ' ' << (int4)spc->getType() << ' ' << spc->getAddrSize() << ' '
+      << spc->getWordSize() << ' ' << (spc->isBigEndian() ? 1 : 0) << ' ' << hex << spc->getHighest();
+    row("P",p.str());
+  }
   for(kase=0;kase<cases;++kase) {
     try { one(); }
     catch(LowlevelError &err) { row("!case",err.explain); }

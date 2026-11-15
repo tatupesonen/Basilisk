@@ -86,6 +86,35 @@ impl ContextDb {
         self.size
     }
 
+    /// Grows the number of words to `size`, padding the default with zero
+    /// words (Ghidra `FreeArray::reset`, as `registerVariable` uses it).
+    /// Only possible before the first split point; returns `false` (and
+    /// changes nothing) otherwise or when `size` is not larger.
+    pub fn grow(&mut self, size: usize) -> bool {
+        if !self.blobs.is_empty() || size <= self.size {
+            return false;
+        }
+        let old = self.blobs.default_value().words.clone();
+        let half = old.len() / 2;
+        let mut words = vec![0; size.saturating_mul(2)];
+        for i in 0..half {
+            if let (Some(v), Some(m)) = (old.get(i), old.get(half + i)) {
+                if let Some(slot) = words.get_mut(i) {
+                    *slot = *v;
+                }
+                if let Some(slot) = words.get_mut(size + i) {
+                    *slot = *m;
+                }
+            }
+        }
+        *self.blobs.default_value_mut() = Blob {
+            words: words.into_boxed_slice(),
+        };
+        self.size = size;
+        self.changes = self.changes.wrapping_add(1);
+        true
+    }
+
     /// A counter that changes whenever the context changes.
     pub fn change_count(&self) -> u64 {
         self.changes
@@ -223,6 +252,30 @@ impl ContextDb {
         if let Some(set) = self.tracked.clear_range(first, end, Clone::clone) {
             *set = values;
         }
+    }
+
+    /// Replaces the tracked values at the split point `addr`, splitting
+    /// there first (Ghidra `decodeTracked(trackbase.split(addr))`).
+    pub fn set_tracked_at(&mut self, addr: Address, values: Vec<TrackedValue>) {
+        self.tracked.split_with(addr, Clone::clone);
+        if let Some(set) = self.tracked.point_mut(&addr) {
+            *set = values;
+        }
+    }
+
+    /// The tracked split points and their sets, in order.
+    pub fn tracked_points(&self) -> impl Iterator<Item = (Address, &[TrackedValue])> {
+        self.tracked.iter().map(|(addr, set)| (*addr, set.as_slice()))
+    }
+
+    /// The tracked set before the first split point.
+    pub fn tracked_default(&self) -> &[TrackedValue] {
+        self.tracked.default_value()
+    }
+
+    /// Whether there are context split points (tracked sets aside).
+    pub fn has_split_points(&self) -> bool {
+        !self.blobs.is_empty()
     }
 
     /// The tracked values in force at `addr` (Ghidra `getTrackedSet`).
@@ -370,6 +423,30 @@ mod tests {
         let mut out = [9u32; 2];
         let _ = ContextSource::context_at(&db, at(0x18), &mut out);
         assert_eq!(out, [0x3412, 0]);
+    }
+
+    #[test]
+    fn growing_pads_the_default_and_tracked_points_iterate() {
+        let mut db = ContextDb::new(1);
+        db.set_default(0, u32::MAX, 7);
+        assert!(db.grow(3));
+        assert_eq!(db.default_words(), [7, 0, 0]);
+        assert!(!db.grow(2));
+        db.change_point(at(4), 2, 1, 1);
+        assert!(db.has_split_points());
+        assert!(!db.grow(5));
+        let reg = TrackedValue {
+            space: SpaceId::new(4),
+            offset: 0,
+            size: 4,
+            big_endian: false,
+            value: 9,
+        };
+        db.set_tracked_at(at(0x10), vec![reg]);
+        db.set_tracked_at(at(0x10), vec![reg, reg]);
+        let points: Vec<(u64, usize)> = db.tracked_points().map(|(a, s)| (a.offset(), s.len())).collect();
+        assert_eq!(points, [(0x10, 2)]);
+        assert_eq!(db.tracked_default().len(), 0);
     }
 
     #[test]
