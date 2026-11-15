@@ -92,6 +92,8 @@ pub struct Ssa {
     pub(crate) entries: Vec<EntryRef>,
     pub(crate) entry_index: HashMap<EntryRef, u32>,
     pub(crate) recorder: Option<Box<dyn Recorder>>,
+    /// The function's entry (`Funcdata::getAddress`), for use points.
+    pub(crate) entry: Address,
 }
 
 impl fmt::Debug for Ssa {
@@ -141,7 +143,28 @@ impl Ssa {
             entries: Vec::new(),
             entry_index: HashMap::new(),
             recorder: None,
+            entry: Address::INVALID,
         })
+    }
+
+    /// Sets the function's entry address (`Funcdata::baseaddr`).
+    pub fn set_entry(&mut self, entry: Address) {
+        self.entry = entry;
+    }
+
+    /// The function's entry address.
+    pub fn entry(&self) -> Address {
+        self.entry
+    }
+
+    /// The address a non-written varnode comes into scope at
+    /// (`getAddress() + -1`).
+    pub(crate) fn before_entry(&self) -> Address {
+        if self.entry.is_invalid() {
+            self.entry
+        } else {
+            self.entry.add(&self.spaces, -1)
+        }
     }
 
     /// The address spaces.

@@ -577,6 +577,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-decomp-ir"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+ "bk-decomp-cfg",
+ "bk-decomp-types",
+ "bk-pcode",
+ "bk-testkit",
+ "proptest",
+ "rstest",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "bk-decomp-range"
 version = "0.0.1"
 dependencies = [
