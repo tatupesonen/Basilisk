@@ -3,7 +3,7 @@
 //! 3055–3617; spec 4.3, 4.7).
 
 mod resolve;
-mod tree;
+pub(crate) mod tree;
 
 use std::collections::BTreeMap;
 use std::fmt;

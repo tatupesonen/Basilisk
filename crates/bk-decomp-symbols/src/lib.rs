@@ -9,15 +9,20 @@
 //! classes `*_ghidra.*`. Specification: `docs/features/decomp-symbols.md`.
 
 pub mod codec;
+pub mod comment;
 pub mod context;
+pub mod cpool;
 pub mod database;
 pub mod entrymap;
 pub mod error;
 pub mod flags;
 pub mod ids;
+pub mod image;
 pub mod model;
+pub mod overrides;
 pub mod print;
 pub mod scope;
+pub mod strings;
 
 pub use context::ContextNames;
 pub use database::{ArchEnv, Database, RegisterNames};
