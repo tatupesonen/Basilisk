@@ -113,4 +113,4 @@ Making every diagnostic equal to Ghidra's, one test case per message, is still o
 ## See also
 
 - [How SLEIGH decodes an instruction](/docs/internals/sleigh/).
-- [`basilisk disasm`](/docs/cli/disasm/) uses the compiled files.
+- [`basilisk sleigh decode`](/docs/cli/sleigh-decode/) uses the compiled files.

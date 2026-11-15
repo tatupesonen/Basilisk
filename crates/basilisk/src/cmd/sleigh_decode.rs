@@ -1,4 +1,4 @@
-//! `basilisk disasm`: a linear sweep over raw bytes with p-code, written in
+//! `basilisk sleigh decode`: a linear sweep over raw bytes with p-code, written in
 //! `pcodedump`'s record format byte for byte (`features/sleigh-pcode.md`
 //! 4.7, ADR-023) or as a human listing.
 
@@ -16,7 +16,7 @@ use bk_sleigh::{Decoder, Language};
 
 /// The help text.
 pub(crate) const USAGE: &str = "\
-USAGE: basilisk disasm --language <id> [options] [--hex HEXBYTES | <file> | -]
+USAGE: basilisk sleigh decode --language <id> [options] [--hex HEXBYTES | <file> | -]
 
 Decodes the bytes as a linear sweep from the base address and prints every
 instruction with its p-code.
@@ -273,7 +273,7 @@ fn listing(records: &str, out: &mut String) {
     }
 }
 
-/// Runs `basilisk disasm` with the arguments after the subcommand.
+/// Runs `basilisk sleigh decode` with the arguments after the subcommand.
 pub(crate) fn run(args: &[OsString]) -> ExitCode {
     let opt = match parse(args) {
         Ok(Parsed::Help) => {
@@ -282,7 +282,7 @@ pub(crate) fn run(args: &[OsString]) -> ExitCode {
         }
         Ok(Parsed::Run(opt)) => opt,
         Err(e) => {
-            eprintln!("basilisk disasm: {e}");
+            eprintln!("basilisk sleigh decode: {e}");
             eprint!("{USAGE}");
             return ExitCode::from(2);
         }
@@ -290,7 +290,7 @@ pub(crate) fn run(args: &[OsString]) -> ExitCode {
     let data = match input(&opt) {
         Ok(data) => data,
         Err(e) => {
-            eprintln!("basilisk disasm: {e}");
+            eprintln!("basilisk sleigh decode: {e}");
             return ExitCode::from(2);
         }
     };
@@ -298,7 +298,7 @@ pub(crate) fn run(args: &[OsString]) -> ExitCode {
     let lang = match load(&opt) {
         Ok(lang) => lang,
         Err(e) => {
-            eprintln!("basilisk disasm: {e}");
+            eprintln!("basilisk sleigh decode: {e}");
             return ExitCode::from(1);
         }
     };
@@ -306,7 +306,7 @@ pub(crate) fn run(args: &[OsString]) -> ExitCode {
     for (name, value) in &opt.context {
         if !lang.set_context_everywhere(&mut context, name, *value) {
             eprintln!(
-                "basilisk disasm: cannot load {}: unknown context variable {name}",
+                "basilisk sleigh decode: cannot load {}: unknown context variable {name}",
                 opt.language
             );
             return ExitCode::from(1);
@@ -356,7 +356,7 @@ pub(crate) fn run(args: &[OsString]) -> ExitCode {
         .write_all(text.as_bytes())
         .and_then(|()| stdout.flush())
     {
-        eprintln!("basilisk disasm: writing the output: {e}");
+        eprintln!("basilisk sleigh decode: writing the output: {e}");
         return ExitCode::FAILURE;
     }
     if opt.timing {

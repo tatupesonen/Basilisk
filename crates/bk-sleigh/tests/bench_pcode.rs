@@ -255,7 +255,8 @@ fn bench_pcode_x86_64() {
     let pcodedump = reference.tool_path(bk_testkit::Tool::Pcodedump);
     let r = reference.root().as_os_str();
     let ours_quiet = [
-        "disasm".as_ref(),
+        "sleigh".as_ref(),
+        "decode".as_ref(),
         "--root".as_ref(),
         r,
         "--language".as_ref(),
@@ -271,7 +272,7 @@ fn bench_pcode_x86_64() {
     let a = time_command(&basilisk, &ours_quiet, &file);
     let b = time_command(&pcodedump, &theirs_quiet, &file);
     eprintln!(
-        "end to end --quiet, {} bytes: basilisk disasm {:.3} s, pcodedump {:.3} s",
+        "end to end --quiet, {} bytes: basilisk sleigh decode {:.3} s, pcodedump {:.3} s",
         big.len(),
         a,
         b
@@ -279,7 +280,7 @@ fn bench_pcode_x86_64() {
     let a = time_command(&basilisk, &ours_quiet[..5], &file);
     let b = time_command(&pcodedump, &theirs_quiet[..3], &file);
     eprintln!(
-        "end to end, full listing to a null device: basilisk disasm {a:.3} s, pcodedump {b:.3} s"
+        "end to end, full listing to a null device: basilisk sleigh decode {a:.3} s, pcodedump {b:.3} s"
     );
     eprintln!("load average after: {}", load_average());
 }

@@ -26,7 +26,7 @@ The list of modules and how to name a language is on [Processors](/docs/formats/
 
 :::caution[Not yet]
 Basilisk cannot load an executable yet. The ELF parser exists as a library; loaders arrive with the program
-database in milestone M4. Until then [`basilisk disasm`](/docs/cli/disasm/) works on raw code bytes.
+database in milestone M4. Until then [`basilisk sleigh decode`](/docs/cli/sleigh-decode/) works on raw code bytes.
 :::
 
 | Format | Today | Planned |

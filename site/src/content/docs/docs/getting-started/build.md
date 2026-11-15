@@ -32,7 +32,7 @@ The binary is `target/release/basilisk` (`basilisk.exe` on Windows). The example
 
 ## Ghidra's language files
 
-The interface needs nothing more. The command line's [`disasm`](/docs/cli/disasm/) and
+The interface needs nothing more. The command line's [`sleigh decode`](/docs/cli/sleigh-decode/) and
 [`sleigh compile`](/docs/cli/sleigh-compile/) work on Ghidra's processor descriptions, which Basilisk reads
 unchanged and does not copy into its own repository. Get them once:
 

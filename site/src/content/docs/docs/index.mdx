@@ -11,7 +11,7 @@ loaders, SLEIGH, p-code, analysis, the decompiler and a desktop interface. These
 and how it works inside.
 
 <Callout kind="caution" title="Early development">
-Basilisk cannot open a real program yet. What works today is the language layer: it disassembles bytes and
+Basilisk cannot open a real program yet. What works today is the language layer: it decodes instructions from raw bytes and
 lifts them to p-code for every processor Ghidra ships, and it compiles SLEIGH specifications to the same
 bytes as Ghidra's compiler. The desktop interface runs on a built-in demo program. The decompiler is being
 ported now. Every page says what exists today and what is planned. The [status matrix](/status/) and the
@@ -32,7 +32,7 @@ ported now. Every page says what exists today and what is planned. The [status m
 |---|---|---|
 | [Getting started](/docs/getting-started/) | What Basilisk is, building it, a first disassembly | Builds and runs |
 | [The interface](/docs/interface/) | The CodeBrowser window, one page per view | On demo data |
-| [The command line](/docs/cli/) | `basilisk` and its subcommands | `gui`, `disasm`, `sleigh compile` |
+| [The command line](/docs/cli/) | `basilisk` and its subcommands | `gui`, `sleigh decode`, `sleigh compile` |
 | [Analysis](/docs/analysis/) | Disassembly and auto-analysis | Planned (M5) |
 | [The decompiler](/docs/decompiler/) | Decompiling functions to C | Being ported (M3) |
 | [Scripting and plugins](/docs/scripting/) | Python scripts, analyzers, loaders, exporters | Designed; planned (M9) |

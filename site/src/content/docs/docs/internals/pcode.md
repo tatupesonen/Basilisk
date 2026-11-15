@@ -86,4 +86,4 @@ The arithmetic matters for parity. When the decompiler folds constants, or an em
 Ghidra computes. `bk-pcode` is tested against tables generated from Ghidra's own implementation for every
 operation and size.
 
-See p-code for your own bytes with [`basilisk disasm`](/docs/cli/disasm/).
+See p-code for your own bytes with [`basilisk sleigh decode`](/docs/cli/sleigh-decode/).

@@ -1,4 +1,4 @@
-# SLEIGH runtime, part 2: p-code generation, `Translate`, `basilisk disasm` (`bk-sleigh`)
+# SLEIGH runtime, part 2: p-code generation, `Translate`, `basilisk sleigh decode` (`bk-sleigh`)
 
 Track `sleigh-pcode`, milestone M1. Starts when `sleigh-decode`
 (`features/sleigh-decode.md`) is merged; same crate, so the two never run
@@ -17,7 +17,7 @@ need, weave in delay-slot and cross-built instructions, resolve labels to
 relative branches, and hand the operations to an emitter. With this the
 crate offers the whole of Ghidra's `Translate` interface, which is what
 the decompiler, the emulator and the disassembler stand on. The track
-also delivers the `basilisk disasm` command and completes the differential
+also delivers the `basilisk sleigh decode` command and completes the differential
 test of M1.
 
 ## 2. Ghidra sources
@@ -28,7 +28,7 @@ test of M1.
 | `CPP/semantics.cc`, `semantics.hh` | `PcodeBuilder::build`; `ConstTpl::fix`/`fixSpace`; `VarnodeTpl::isDynamic`, `isRelative`; the directive opcodes |
 | `CPP/translate.hh` | `Translate`, `PcodeEmit`, `UnimplError`, `UniqueLayout` |
 | `CPP/inject_sleigh.cc` | `InjectPayloadSleigh::inject`, `setupParameters` — how a free-standing template is built with fixed parameter handles |
-| `tools/reference/pcodedump.cc` (basilisk) | The oracle and its output format, which `basilisk disasm` reproduces |
+| `tools/reference/pcodedump.cc` (basilisk) | The oracle and its output format, which `basilisk sleigh decode` reproduces |
 
 C++ is authoritative. Java's `PcodeEmit` additionally applies flow
 overrides, fall-through overrides and `CALLOTHER` fix-ups; those are
@@ -39,7 +39,7 @@ overrides, fall-through overrides and `CALLOTHER` fix-ups; those are
 **In.** In crate **`bk-sleigh`** (owned by this track while it runs): the
 p-code builder; the emitter interface; `Translate::one_instruction`;
 building p-code from a free-standing template with given parameter
-handles (the mechanism injection needs); `basilisk disasm` in the
+handles (the mechanism injection needs); `basilisk sleigh decode` in the
 `basilisk` binary crate (one new subcommand module; the only file outside
 `bk-sleigh` this track touches besides the shared files every track
 appends to); the full differential test; throughput benchmarks.
@@ -142,9 +142,9 @@ byte source implements it:
 `set_context_default(name, value)`, `allow_context_set(bool)` (when
 false, commits are not applied — `ContextCache::allowSet`).
 
-### 4.7 `basilisk disasm`
+### 4.7 `basilisk sleigh decode`
 ```
-basilisk disasm --language <id> [--root <ghidra-or-reference-dir>] [--base <addr>]
+basilisk sleigh decode --language <id> [--root <ghidra-or-reference-dir>] [--base <addr>]
                 [--context NAME=VALUE]... [--hex HEXBYTES | <file> | -]
                 [--format pcodedump|text] [--no-pcode] [--quiet] [--timing]
 ```
@@ -186,7 +186,7 @@ in binary mode there. No timing- or locale-dependent formatting
 **What later tracks get**: `PcodeEmit`, `lift`, `build_template` and
 `InjectContext`, `trait Translate`, the `pcodedump`-format writer (reused
 by tests of the compiler: compile with basilisk, decode with basilisk,
-compare with the oracle), `basilisk disasm`.
+compare with the oracle), `basilisk sleigh decode`.
 
 ## 6. Tests
 
@@ -202,7 +202,7 @@ through a `Program` and Java's override machinery
 Part 1's harness (byte sources, context configurations, coverage table,
 resynchronisation) with the comparison extended to **all** records: `P`
 (opcode, output, inputs — space name, offset, size, register name) and
-`U` (kind, message). With `basilisk disasm --format pcodedump` this is a
+`U` (kind, message). With `basilisk sleigh decode --format pcodedump` this is a
 byte comparison of the two tools' outputs per stream, except at the
 tolerated differences:
 
@@ -262,15 +262,15 @@ session.
 |---|---|---|
 | decode + lift, counting emitter | 1.5 M instructions/s, 6.1 M ops/s | at least the reference in the same session |
 | decode + text + lift | 0.84 M/s | at least the reference in the same session |
-| `basilisk disasm --quiet` end to end on the 778 kB sample | `pcodedump --quiet`: 0.14 s after a 41–48 ms load | no slower in total |
-| `basilisk disasm` with the full listing to a null device | `pcodedump`: 0.65 s | no slower |
+| `basilisk sleigh decode --quiet` end to end on the 778 kB sample | `pcodedump --quiet`: 0.14 s after a 41–48 ms load | no slower in total |
+| `basilisk sleigh decode` with the full listing to a null device | `pcodedump`: 0.65 s | no slower |
 | allocations per instruction in steady state | — | 0, asserted with `dhat` |
 
 ## 7. Acceptance
 
 1. The differential test of 6.2 passes for every language with the
    coverage and feature columns satisfied.
-2. `basilisk disasm --format pcodedump` output equals `pcodedump`'s for
+2. `basilisk sleigh decode --format pcodedump` output equals `pcodedump`'s for
    the 6.2 streams outside the tolerated differences; the command's help
    text and exit statuses are tested.
 3. Tests of 6.3–6.5 pass; fuzz target 60 s clean; no panic on any input.
@@ -355,7 +355,7 @@ Built by track `sleigh-pcode` (2026-11-14; report `docs/agents/sleigh-pcode.md`)
   `delay`, `crossbuild`, `inject` became `build` (ops, labels, `BUILD`),
   `nested` (delay slots and crossbuild), `buffer` and `pcode/mod.rs`
   (injection).
-* **`basilisk disasm`** (`crates/basilisk/src/cmd/disasm.rs`), plus
+* **`basilisk sleigh decode`** (`crates/basilisk/src/cmd/disasm.rs`), plus
   `--sla-dir` for a root without compiled files.
 * **Differential test**: every record (`I`, `E`, `P`, `U`, `T`) equal to
   `pcodedump`'s for all 175 language pairs; template and feature coverage in

@@ -1,6 +1,6 @@
 //! `pcodedump`'s linear sweep and record format (format version 1 of
 //! `tools/reference/README.md`), written byte for byte as the oracle
-//! writes it: the output of `basilisk disasm --format pcodedump` and the
+//! writes it: the output of `basilisk sleigh decode --format pcodedump` and the
 //! basilisk side of the differential test.
 
 use std::fmt::Write as _;

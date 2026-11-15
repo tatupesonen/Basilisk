@@ -1487,3 +1487,34 @@ where Ghidra consults that state. D07's function state implements the
 trait; D05 ships a table-driven implementation for its own tests.
 Whether the trait should be split is an open item of the D05
 specification, to be settled by the D05 track.
+
+## ADR-047 — `basilisk disasm` is reserved for the flow-following disassembler; the linear sweep is `basilisk sleigh decode`
+(Coordinator, 2026-11-15, on the owner's decision: "Yes it should be different name".)
+
+**Context.** M1 delivered a command named `basilisk disasm` (ADR-023). It
+is a linear sweep over raw bytes: decode at an address, advance by the
+instruction's length, repeat. It exists to drive the SLEIGH decoder and
+to be compared record for record with the reference tool `pcodedump`,
+which does the same sweep around Ghidra's C++ engine. Ghidra's own
+disassembler is not linear: it follows the flow of control from entry
+points and propagates context along each path. The name `disasm` made
+the M1 command look like Basilisk's version of that disassembler, and
+the site presented it as such.
+
+**Decision.**
+* The linear sweep is **`basilisk sleigh decode`**, beside
+  `basilisk sleigh compile`. Options, output formats and exit statuses
+  are unchanged; the differential tests against `pcodedump` use it.
+* **`basilisk disasm` is reserved** for the flow-following disassembler
+  of M5 (`bk-disasm`): given a loadable file it disassembles from entry
+  points and symbols by following flow. Until then the name prints a
+  pointer to `sleigh decode` and exits with status 2.
+* Whole-program analysis (function-start patterns, switch tables,
+  references) stays with `basilisk analyze`.
+* Documentation calls what exists today "instruction decoding", not
+  "disassembly", wherever the difference matters.
+
+**Consequences.** ADR-023's sentence about `basilisk disasm` writing
+`pcodedump`'s format now applies to `sleigh decode`. Feature specs,
+`tools/reference/README.md`, `PERF.md` and the site use the new name;
+historical track reports under `docs/agents/` keep the old one.
