@@ -94,6 +94,7 @@ class Function:
     def __init__(self, num, name):
         self.num, self.name, self.options, self.root, self.status = num, name, None, None, None
         self.pushes = {"op": 0, "atom": 0, "vn": 0, "state": 0, "struct": 0}
+        self.vnmods = []
 
 
 class TreeError(Exception):
@@ -162,6 +163,7 @@ def build(fn):
                     break
         elif tag == "V":
             fn.pushes["vn"] += 1
+            fn.vnmods.append(int(r[3], 16))
         elif tag == "M":
             fn.pushes["state"] += 1
     if stack or expr:

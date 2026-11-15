@@ -15,6 +15,7 @@ Variants of every script (each run by both consoles):
   xml     every `print C` followed by `print C xml`
   flat    every `print C` followed by `print C flat`         (coverage only)
   java    every `print C` followed by `print language java`  (coverage only)
+  options the script with non-default printer options after the load (coverage only)
 
 The instrumented console runs `orig` twice (with and without BK_PRINTLOG) and
 the others with BK_PRINTLOG. Its standard output and exit status must equal
@@ -31,8 +32,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 SKIP_RESEARCH = {"a07_switch.a64-gcc-O2", "a07_switch.x64-gcc-O2"}
-VARIANTS = ["orig", "xml", "flat", "java"]
+VARIANTS = ["orig", "xml", "flat", "java", "options"]
 EXTRA = {"xml": "print C xml", "flat": "print C flat", "java": "print language java"}
+# Non-default printer options, set after the load command (coverage only)
+OPTIONS = ["option inplaceops on", "option nullprinting on", "option nocastprinting on",
+           "option conventionprinting off", "option commentstyle cplusplus", "option commentindent 8",
+           "option integerformat hex", "option braceformat function same", "option braceformat ifelse next",
+           "option braceformat loop skip", "option braceformat switch next", "option namespacestrategy all",
+           "option commentinstruction header on", "option commentinstruction warningheader on",
+           "option commentheader warning on", "option maxlinewidth 60", "option indentincrement 4"]
 
 
 def until_quit(cmds):
@@ -72,10 +80,10 @@ def research():
 
 
 def variant(load, cmds, v):
-    lines = [load]
+    lines = [load] + (OPTIONS if v == "options" else [])
     for c in cmds:
         lines.append(c)
-        if v != "orig" and c.strip() == "print C":
+        if v in EXTRA and c.strip() == "print C":
             lines.append(EXTRA[v])
     return lines
 

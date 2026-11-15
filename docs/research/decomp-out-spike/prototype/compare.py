@@ -84,6 +84,12 @@ def run_file(tree_path, stats, failures, coverage):
                 for kind, logged, ours in pr.mod_mismatches[:3]:
                     failures.append(f"{tree_path.name}\t{fn.num}\t{fn.name}\tmods\t{kind} logged {logged:#x} recomputed {ours:#x}")
             collect_coverage(fn.root, coverage)
+            for m in fn.vnmods:
+                for bit in range(16):
+                    if m & (1 << bit):
+                        coverage[f"mod-at-pushVn:{1 << bit:#x}"] += 1
+            for line in expected:
+                coverage["emit:" + line.split("\t")[0]] += 1
         except (T.TreeError, Pr.Mismatch, IndexError, ValueError, KeyError) as e:
             stats["functions_error"] += 1
             failures.append(f"{tree_path.name}\t{fn.num}\t{fn.name}\terror\t{type(e).__name__}: {e}")

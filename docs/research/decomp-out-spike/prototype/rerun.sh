@@ -25,16 +25,18 @@ python3 "$here/run_corpus.py" --instr "$work/instr/bin/decomp_instr" --out "$wor
 mkdir -p "$work/results"
 cp "$work/run/identity.txt" "$work/results/"
 cmp_status=0
-(cd "$here" && python3 compare.py "$work/run/logs/orig" "$work/run/logs/xml" "$work/run/logs/flat" "$work/run/logs/java" \
+(cd "$here" && python3 compare.py "$work/run/logs/orig" "$work/run/logs/xml" "$work/run/logs/flat" "$work/run/logs/java" "$work/run/logs/options" \
    --summary "$work/results/summary.txt" --failures "$work/results/failures.txt" \
    --coverage "$work/results/coverage.txt") || cmp_status=$?
 cat "$work"/run/logs/*/*.diag | awk -F'\t' '$1=="S" {d+=$3; i+=$5} $1=="D" {print}' > "$work/results/diag.txt"
 awk -F'\t' '$1=="S" {d+=$3; i+=$5} END {print "direct emits " d ", interleaved " i}' "$work"/run/logs/*/*.diag \
   >> "$work/results/diag.txt"
 tail -1 "$work/results/diag.txt"
+# Console errors (the same in both consoles, identity checks that), per variant
+grep -c "Execution error\|Low-level ERROR" "$work"/run/logs/*/*.out | grep -v ':0$' > "$work/results/console-errors.txt" || true
 if [ -n "${BK_OUT:-}" ]; then
   cp "$work"/results/* "$BK_OUT/"
-  tar -C "$work/run" -czf "$BK_OUT/logs-orig.tgz" logs/orig
+  (cd "$work/run" && tar -czf "$BK_OUT/logs-orig.tgz" logs/orig logs/*/*.out)
 fi
 echo "identity exit $id_status, comparison exit $cmp_status"
 [ "$id_status" -eq 0 ]
