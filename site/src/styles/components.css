@@ -417,3 +417,25 @@ a.bk-shot-frame:hover {
     rotate: -14deg;
   }
 }
+
+/* The serpent blinks: its eye (a hole in the head) closes for an instant
+   every few seconds. Off under reduced motion. */
+.bk-mark-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes bk-eye-blink {
+    0%,
+    91%,
+    100% {
+      transform: scaleY(1);
+    }
+    95% {
+      transform: scaleY(0.06);
+    }
+  }
+  .bk-mark-eye {
+    animation: bk-eye-blink 5.5s ease-in-out 1.5s infinite;
+  }
+}
