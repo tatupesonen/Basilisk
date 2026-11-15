@@ -418,7 +418,7 @@ and `<--` state marker. The path joins the names from the root with `:`
 (`universal:fullloop:mainloop:blockstructure`); a line's position is its
 index.
 
-### State dumps, `bkstate` version 1 (`bk dump state`)
+### State dumps, `bkstate` version 2 (`bk dump state`)
 
 Everything that defines where Ghidra's pipeline stands for the current
 function, every object named by a reproducible key, never a host pointer:
@@ -439,7 +439,7 @@ dead one —, space index); Ghidra's own order among those varnodes follows
 heap addresses.
 
 ```
-BKSTATE	1	<ghidra commit>	<architecture id>
+BKSTATE	2	<ghidra commit>	<architecture id>
 @<section>	<record count>          (18 sections, in this order, each present)
 …
 END	<number of lines before END>
@@ -460,10 +460,16 @@ END	<number of lines before END>
 | `@callspecs` | per call spec in `qlst` order: `C` call, op, name, entry, effective_extrapop, stackoffset, stackPlaceholderSlot, paramshift, isinputactive, isoutputactive, isbadjumptable, isstackoutputlock, inputConsume; then its prototype records (`M`, `Q`, `X`, `Y`) and, when active, `A`/`T` for `activeinput` and `activeoutput` |
 | `@jumptables` | `J` per table: table, BRANCHIND, opaddress, addresstable, block2addr (`<out-edge position>:<address index>`), labels, defaultBlock, lastBlock, switchVarConsume, recoverCount, displayFormat, partialTable, collectloads, defaultIsFolded, model kind, original model kind, isOverride · `D` per load table: address, size, entries |
 | `@scope` | `Z` the local scope: name, stack space, stackGrowsNegative, rangeLocked, overlapProblems, openParamRefs, minParamOffset, maxParamOffset, owned ranges · `N` name recommendations · `D` dynamic recommendations · `Y` type recommendations · `S` per symbol, by id: id, name, display name, type, flags, dispflags, category, catindex, nameDedup, kind, wholeCount · `M` per map entry of it: storage (address, `hash:0x…` or `-`), size, offset, use-limit ranges, extraflags, properties · `G` per symbol of another scope that the function's records name: id, name, scope, storage |
+| `@scope`, version 2 | after the `G` records, when there is a local scope: `I` the scope's Ghidra id (`uniqueId`), next symbol counter (`nextUniqueId`), display name, parent's id (or `-`), children's ids in id order · `C` per category vector, in category order: its slots in `catindex` order (`s<id>`, `null` for an empty slot) · `E` `multiEntrySet` in its order · `R` per record of each space's entry map, spaces in index order, records in record-list order: space, entry ref, first, last, the subsort computed at insertion (use index, use offset) · `F` per fragment, same spaces, in multiset order: space, first, last, entry ref · `Q` the dynamic entry list in order. An entry ref is `s<symbol id>:<index of the entry in the symbol's mapentry>` (the real index, not `Symbol::getMapEntryPosition`, which gives 0 for every piece). |
 | `@heritage` | `Z` pass, maxdepth · `I` per heritaged space: space, delay, deadcodedelay, deadremoved, loadGuardSearch, warningissued, hasCallPlaceholders · `M` per `globaldisjoint` range: address, size, pass · `L` per load and store guard: `load`/`store`, op, space, pointerBase, minimum, maximum, step, analysis state · `C` loadCopyOps |
 | `@highs` | `H` per high variable: high, members (`inst` order), numMergeClasses, highflags, flags, type, name representative, symbol, symbol offset, piece (`<first high of the group>:<offset>:<size>:<group size>:<group symbol offset>`) |
 | `@types` | `T` per referenced type: name in the dump, Ghidra's id, metatype, size, name, `Datatype::encode` on one line |
 | `@c` | `C` per line of `print C`, when the function is finished (`processing_complete` set and the root action not stopped mid-way: the flag survives `Funcdata::clear`) |
+
+Version 1 (D00's first format) is version 2 without `@scope`'s `I`, `C`,
+`E`, `R`, `F`, `Q` records; `bk-testkit` reads both and writes back the
+version it read. Only the function's local scope is dumped; symbols of
+other scopes are named by `G` references.
 
 Left out, deliberately: host addresses; caches Ghidra rebuilds from the
 state (covers, `HighVariable`'s cached properties beyond what `highflags`
