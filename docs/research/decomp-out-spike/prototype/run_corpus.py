@@ -121,6 +121,8 @@ def main():
     ap.add_argument("--jobs", type=int, default=os.cpu_count())
     ap.add_argument("--only")
     args = ap.parse_args()
+    args.instr = str(Path(args.instr).resolve())
+    args.out = str(Path(args.out).resolve())
     ghidra = os.environ["BASILISK_GHIDRA_DIR"]
     ref = os.environ["BASILISK_REFERENCE_DIR"]
     items = data_tests(ghidra) + research()
