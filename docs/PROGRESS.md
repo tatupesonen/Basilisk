@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 02:44) — STOPPED, see "Running"
+## Now — RESUME HERE (2026-11-15 03:43) — STOPPED, machine shut down; see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -105,6 +105,40 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
+
+**MACHINE SHUT DOWN at the owner's request (2026-11-15, 03:43), after
+everything was pushed.** `master` is `a7b7540` plus this note, the same
+on the remote and on the build host. **First thing next session: check
+CI run 43663964511 (integration, head `957d143`) and the CI and Pages
+runs on `master` `a7b7540`** — at shutdown the Windows and macOS test
+jobs were still running; the other six jobs, the gate on the build
+host (2,423 tests) and the site check were green. If one failed, fix it
+before anything else.
+
+Done after the agents stopped (all on `master`):
+* **The site.** Documentation pages rewritten and extended (first
+  disassembly, coming from Ghidra, `sleigh decode` and `sleigh compile`
+  references, processors, SLEIGH, p-code, how results are checked);
+  front page: real decoder output in the hero, a stats band, a lighter
+  goals grid, more contrast, CSS-only motion (no script, native
+  scrolling), the milestone strip with true progress (`plan.ts` has a
+  `partial` state and task counts), the internal screenshot tag
+  removed. The owner preferred the original headings; they are back.
+* **The logo.** The pupil in the middle of the mark is removed (site
+  components and the six main SVGs in `assets/brand`); the serpent's
+  eye blinks (cut with a mask in `Mark.astro`/`Logo.astro`). **Not
+  redone:** the PNG renders in `assets/brand/png` (favicon, touch
+  icon), `basilisk-icon-small.svg`, the PNGs embedded in `bk-ui`, the
+  design variants — they still show the old mark.
+* **ADR-047: `basilisk sleigh decode`** is the linear sweep's name;
+  `basilisk disasm` is reserved for the flow-following disassembler of
+  M5 and until then prints a pointer and exits 2. The coordinator made
+  this code change directly (a mechanical rename, agents stopped).
+  The three unfinished branches do not use the old name.
+* Not verified by eye: the animations playing, the light theme and the
+  phone layout after the redesign; the section reveal starts from
+  transparent (view timeline) — if a browser leaves a section hidden,
+  start it from visible.
 
 **STOPPED (2026-11-15, 02:44). No agent is running.** The owner:
 "Stop work for now until current tracks are done as we are low on usage
