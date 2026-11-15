@@ -9,3 +9,4 @@ pub mod context_gen;
 pub mod oracle;
 pub mod rangemap_model;
 pub mod scope_gen;
+pub mod small;

@@ -18,7 +18,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 4.12–4.15, 4.17 | `src/comment.rs`, `src/strings.rs`, `src/cpool.rs`, `src/image/{mod,hex,xml,raw}.rs`, `src/overrides.rs` | `bb47a11` |
 | 4.18, 6.2 image, 6.3 G | `src/arch.rs` (decode_volatile, decode_incidental_copy, decode_register_data, decode_readonly, decode_global, add_to_global_scope, add_other_space, build_default_symbols, fill_readonly_from_image, read_loader_symbols, globalify); replay `tests/image_oracle.rs` (needs reference + Ghidra; skips otherwise): **all 8,435 rows equal, 93 data tests** (B/M rows are `print map`) | `96ad501` |
 | 5.5 | `TypeFactory::type_spacebase` in `bk-decomp-types` with a test | `ab73fdc` |
-| 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost` | `aafa1a6` (no tests yet) |
+| 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
 All three oracle tables were generated twice on each reference build
 (`tests/oracle/regen.sh`): byte-identical between libc++ (Mac) and
@@ -28,11 +28,7 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 
 ### (b) In progress
 
-- Host layer: code written and compiling; **no tests yet**. Needed (spec
-  6.1 last bullet): `tests/host_cache.rs` against `ScriptedHost` — holes
-  stop repeat queries; a space without a global range is never asked;
-  `FUN_`/`DAT_` names not asked; one comment fill per `clear`; `clear`
-  restores properties; asserted call order.
+- Nothing half-done; next is (c) 1.
 
 ### (c) Not started, in order
 
