@@ -20,6 +20,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 5.7 | `src/overlay.rs`: `Overlay` (clone on first write, logged ops, `commit` replays and translates new ids by creation order); `tests/overlay.rs` (sequential commits equal direct changes; two overlays from one base; Send + Sync) | overlay commit |
 | 5.5 | `src/spacebase.rs`: `DatabaseScopes` implements `SpacebaseScopes` (frame/scope, `getSubType`, `nearestArrayedComponent*`); `tests/spacebase.rs` | spacebase commit |
 | 5.5 | `TypeFactory::type_spacebase` in `bk-decomp-types` with a test | `ab73fdc` |
+| 6.4 | `src/restore.rs` (`ScopeImage`, `restore_scope`, `scope_image`), `EntryMap::from_parts`; `tests/state_dump.rs`: every v2 sample of `bk-testkit` (5; the v1 sample skips with a reason) rebuilt from `@scope` (subsorts read from `R`), every `S M Z-ranges I C E R F Q` record equal and the whole dump written back byte-equal; a second test restores an API-built scope (overlaps, use points, multi-entry, dynamic, category holes) and compares 1,700 queries (`query_by_addr`, `query_container`) with the original | state-dump commit |
 | 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
 All three oracle tables were generated twice on each reference build
@@ -28,19 +29,8 @@ libstdc++ (build host): scope sha256 `aeba1648…cb7cd0`, context `327094a1…`
 (after header rows; earlier version `b9c75574…`), image `fc4be5c8…`. One
 copy of each is checked in; the replays pin an FNV-1a of the text.
 
-### (b) In progress (stopped here on the coordinator's instruction)
+### (b) In progress
 
-- `src/restore.rs` (`ScopeImage`, `Database::restore_scope`,
-  `Database::scope_image`, `kind_from_name`/`kind_name`) and
-  `EntryMap::from_parts` are written and compile, **untested**. Next:
-  `tests/state_dump.rs` — for each v2 sample in
-  `crates/bk-testkit/tests/data/oracle/*.state.gz` (`StateDump::parse`,
-  `dump.scope.orders`), build spaces from `dump.spaces`, map each `TypeRef`
-  to `types.base(size, Unknown)` (keep the original ref per symbol for
-  write-back), attach the function scope (`I.ghidra_id`, parent global,
-  `ScopeKind::Function(placeholder function symbol)`), convert S/M/C/E/R/F/Q
-  into a `ScopeImage` (entry refs `s<id>:<real index>`), `restore_scope`,
-  then `scope_image` → records, compare. v1 sample: skip with a reason.
 - Clippy is clean (`cargo clippy -p bk-decomp-symbols -p bk-context
   --all-targets -- -D warnings`), commit "fix(decomp-symbols): clippy".
   Exceptions taken with `#[expect]`: `too_many_arguments` on
@@ -49,18 +39,12 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
   `indexing_slicing` on the const CRC table (compile-time evaluation);
   `many_single_char_names` on three oracle generator functions (they
   follow the C++ generators line by line).
-- All tests pass: `cargo test -p bk-decomp-symbols` (unit 7, entrymap props
+- All tests pass: `cargo test -p bk-decomp-symbols` (state dump 2, unit 7, entrymap props
   5, scope oracle 1, context oracle 1, image oracle 1 (skips without
   reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.
 
 ### (c) Not started, in order
 
-3. `@scope` dump test (6.4) against bkstate version 2 (`master` merged
-   at `dd1746a`): `bk-testkit` `oracle::state`, `ScopeSection::orders`;
-   samples `crates/bk-testkit/tests/data/oracle/` (all version 2 except
-   `switchind.end.v1.state.gz`). Compare entries by their REAL index in the
-   symbol's list (coordinator correction), rebuild the maps from the `R`
-   records' stored subsorts.
 4. `tests/pspec_volatility.rs` (6.5, `DecompilerPspecVolatilityTest`
    property part).
 5. Unit tests per behaviour table (6.1): makeNameUnique cases,
