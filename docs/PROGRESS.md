@@ -127,6 +127,20 @@ report):
 | `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
 | `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
 
+**`decomp-symbols` reported at 20:07 and was sent back** (not merged):
+clippy clean, 69 tests, both gates green (2,482 tests), fuzz, Wine and
+arm64 clean — but five acceptance conditions of its spec's section 7
+were not met: whether the image oracle ran or skipped, the live
+`print map` check on all 93 data tests, the `@scope` rebuild over all
+3,642 captured dumps, the properties at 1,000,000 cases, and unit tests
+per row of 4.6. It was resumed to do them before the merge. **A third
+rarely failing test** showed in its first gate run: `bk-decomp-range`
+`tests/no_allocation.rs::methods_do_not_allocate` (for the follow-ups
+track, with the `bk-ui` task test). Its Ghidra finding (white space in
+mixed XML content dropped by `xml.y:451–466` `print_content`; `bk-marshal`
+behaves the same) and the three `rangemap.hh` defects go into
+GHIDRA-BUGS when it reports again.
+
 **Merged 20:04: `decomp-out-spike` and `range-proptest`** (`234a43b`;
 CI run 43923279796 green on all 8 jobs; integration gate 2,425 tests,
 0 new packages, advisories ok; worktrees and branches removed, the
