@@ -7,7 +7,10 @@
     "print C globals" comes first: "print C types" as the first print of a
     session reads an empty indent stack (prettyprint.cc:702) and crashes,
     because docTypeDefinitions never calls beginDocument. The second
-    "print C globals" flushes what "print C types" left in the queue.
+    "print C globals" flushes what "print C types" left in the queue. The
+    function pointer and the array are mapped after "print C types", which
+    throws "Unsupported typedef" for any pointer type (printc.cc:2466);
+    they reach function_call and array_expr inside a declaration.
 -->
 <bytechunk space="ram" offset="0x100000">
 c3
@@ -23,6 +26,8 @@ c3
   <com>map address r0x200010 big bigone</com>
   <com>print C globals</com>
   <com>print C types</com>
+  <com>map address r0x200020 int4 (*cb)(int4 a,char *b)</com>
+  <com>map address r0x200030 int4 tab[4][2]</com>
   <com>print C globals</com>
   <com>quit</com>
 </script>
