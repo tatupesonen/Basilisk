@@ -92,3 +92,13 @@ type-operator table or `allowcontextset` (`U` rows).
 
 `python3 plan_graph.py CPP > plan_graph.txt` (text scan; the method and
 its limits are in the script's head comment).
+
+## X7. `normalizesetup` runs once per root instance (Mac, Ghidra's own console)
+
+`REF/bin/decomp`: `load test file DT/elseif.xml`, `option setaction
+normalize`, `map fun r0x1006ca testElseIf`, `load function testElseIf`,
+`decompile` three times, `print actionstats`: `universal Tested=3`,
+`start Tested=3`, `defaultparams Tested=3`, `extrapopsetup Tested=3`, but
+`normalizesetup Tested=1`. Cause (read, `coreaction.hh:646`):
+`ActionNormalizeSetup::reset` does not call `Action::reset`, so the status
+`status_end` that `rule_onceperfunc` leaves is never cleared.
