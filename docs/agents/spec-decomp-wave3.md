@@ -332,3 +332,21 @@ rests on a text scan except where a row says "read".
 ## Commits
 
 `git log --oneline master..spec-decomp-wave3`.
+
+## State at stop
+
+- `decomp-core.md`: all nine sections, the implementation plan and open
+  items are present. Complete and verified against the source: section 3
+  (scope, ownership table), 4.A.1 to 4.A.5, 4.A.7 to 4.A.9, 4.A.12,
+  4.A.13, and all of part B (4.B.1 to 4.B.9), with the runs X1 to X7.
+  Drafts with "to be specified" marks and line ranges: 4.A.6, 4.A.10,
+  4.A.11, 4.A.14 and all of part C (function lists, bodies unread).
+  Nothing is missing as a section.
+- `decomp-typeop.md`: started as an outline only. Boundary, dependencies
+  and design are stated; the behaviour section is a list of what to read.
+- Plan against the source: 14 findings in the table above (D07 is 16,000
+  lines and splits in three; D08 sits below core; D10 needs the value-set
+  solver; D12 needs D13 and R7 code; D14 does not need D11 for merging).
+- Next agent, first: specify D08's section 4 from `typeop.cc`, `cast.cc`,
+  `unionresolve.cc` and prototype its oracle table; then the "to be
+  specified" items of `decomp-core.md` in the order of its steps.
