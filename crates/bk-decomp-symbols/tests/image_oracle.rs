@@ -324,3 +324,132 @@ fn image_table_replays() {
         g.len()
     );
 }
+
+/// The `print map` lines the reference console prints for a data test:
+/// what follows the command's echo (the global scope's empty full name,
+/// then the bounds, `Scope `, the entries) up to the next prompt.
+fn console_print_map(
+    console: &Path,
+    reference: &Path,
+    data_test: &Path,
+    dir: &Path,
+) -> Vec<String> {
+    let script = dir.join(format!(
+        "{}.script",
+        data_test.file_stem().unwrap().to_string_lossy()
+    ));
+    std::fs::write(
+        &script,
+        format!("load test file {}\nprint map\n", data_test.display()),
+    )
+    .unwrap();
+    // As `echo | decomp_bk -i SCRIPT` (tools/reference/README.md): the
+    // console reads the script, then one empty line from its input.
+    let mut child = std::process::Command::new(console)
+        .arg("-i")
+        .arg(&script)
+        .env("LC_ALL", "C")
+        .env("SLEIGHHOME", reference)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    {
+        use std::io::Write as _;
+        let _ = child.stdin.take().unwrap().write_all(b"\n");
+    }
+    let out = child.wait_with_output().unwrap();
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    let mut lines = text.lines().skip_while(|l| !l.ends_with("> print map"));
+    assert!(
+        lines.next().is_some(),
+        "{}: no print map in the console's output:\n{text}",
+        data_test.display()
+    );
+    let mut got: Vec<String> = lines
+        .take_while(|l| !l.starts_with("init>") && !l.starts_with("[decomp]>"))
+        .map(str::to_owned)
+        .collect();
+    // The first line is the global scope's full name, which is empty.
+    assert_eq!(
+        got.first().map(String::as_str),
+        Some(""),
+        "{}",
+        data_test.display()
+    );
+    got.remove(0);
+    got
+}
+
+/// Spec 6.3 (L): `print map` in the reference console after `load test
+/// file` equals Basilisk's `print_bounds` + `print_entries` of the global
+/// scope after the same load, for every data test. Needs the reference
+/// build (`bin/decomp_bk`) and the Ghidra tree. Run:
+///
+///     cargo test -p bk-decomp-symbols --test image_oracle -- --ignored --nocapture print_map
+#[test]
+#[ignore = "runs the reference console 93 times (L)"]
+fn print_map_equals_the_reference_console() {
+    let Some(reference) = bk_testkit::paths::reference_dir() else {
+        panic!("needs the reference directory");
+    };
+    let Some(ghidra) = bk_testkit::paths::ghidra_dir() else {
+        panic!("needs the Ghidra tree");
+    };
+    let console = reference.root().join("bin").join("decomp_bk");
+    assert!(console.is_file(), "{}", console.display());
+    let registry = LanguageRegistry::builder()
+        .ghidra_root(ghidra.root())
+        .sla_overlay(reference.root())
+        .build()
+        .unwrap();
+    let dt = ghidra
+        .root()
+        .join("Ghidra/Features/Decompiler/src/decompile/datatests");
+    let mut files: Vec<_> = std::fs::read_dir(&dt)
+        .unwrap()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "xml"))
+        .collect();
+    files.sort();
+    assert_eq!(files.len(), 93);
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("print_map");
+    std::fs::create_dir_all(&dir).unwrap();
+    let table = ids::id_table();
+    let mut equal = 0;
+    let mut differ = Vec::new();
+    for f in &files {
+        let mut rows = String::new();
+        one(&mut rows, f, &registry, &table);
+        let ours: Vec<String> = rows
+            .lines()
+            .filter_map(|l| l.strip_prefix("B\t").or_else(|| l.strip_prefix("M\t")))
+            .map(str::to_owned)
+            .collect();
+        let theirs = console_print_map(&console, reference.root(), f, &dir);
+        if ours == theirs {
+            equal += 1;
+        } else {
+            let first = ours
+                .iter()
+                .zip(&theirs)
+                .position(|(a, b)| a != b)
+                .unwrap_or_else(|| ours.len().min(theirs.len()));
+            differ.push(format!(
+                "{}: {} lines vs {}; first difference at line {first}:\n  basilisk: {:?}\n  console:  {:?}",
+                f.file_name().unwrap().to_string_lossy(),
+                ours.len(),
+                theirs.len(),
+                ours.get(first),
+                theirs.get(first)
+            ));
+        }
+    }
+    eprintln!(
+        "print map: {equal} of {} data tests equal to the reference console",
+        files.len()
+    );
+    assert!(differ.is_empty(), "{}", differ.join("\n"));
+}
