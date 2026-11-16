@@ -51,6 +51,9 @@ pub(crate) fn fx(n: usize) -> Fx {
     let reg = m.space_by_name("register").unwrap().id();
     let mut ssa = Ssa::new(Arc::new(m), UNIQ_BASE).unwrap();
     let blocks: Vec<NodeId> = (0..n).map(|_| ssa.add_block(0).unwrap()).collect();
+    for (i, &b) in blocks.iter().enumerate() {
+        ssa.cfg_mut().set_index(b, i as i32).unwrap();
+    }
     for w in blocks.windows(2) {
         ssa.cfg_mut().add_edge(w[0], w[1]).unwrap();
     }

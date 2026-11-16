@@ -490,3 +490,6 @@ impl Ssa {
         self.compute_cover(vn).map(|c| self.cover_text(&c))
     }
 }
+
+#[cfg(test)]
+mod tests;
