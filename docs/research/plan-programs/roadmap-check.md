@@ -23,7 +23,7 @@ Path abbreviations: `SM/` = `Ghidra/Framework/SoftwareModeling/src/main/java/ghi
 1. **Ghidra's source tree holds no test binaries.** `Ghidra/Test/TestResources`
    contains three directories of C sources and no `data/` directory
    (measured: `find` over the tree for executables, objects and saved
-   programs finds only 15 data-type archives, two GNU disassembler files
+   programs finds only 16 data-type archives, two GNU disassembler files
    and six DMG libraries). The binaries Ghidra's tests name live in a
    separate repository, `ghidra.bin` (`build.gradle:59`,
    `BIN_REPO = ../ghidra.bin`), which is not public. `LOOP.md`'s rule
@@ -48,8 +48,9 @@ Path abbreviations: `SM/` = `Ghidra/Framework/SoftwareModeling/src/main/java/ghi
    `ref-headless` oracle. `PLAN.md` says this; the count shows how
    completely it is true.
 3. **Data-type archives and Function ID databases are Ghidra databases.**
-   The 15 shipped `.gdt` archives (21.6 MB; `Ghidra/Features/Base/data/typeinfo/`,
-   one in `Features/Rust`) start with a Java serialisation header and
+   The 16 shipped `.gdt` archives (21.7 MB; 14 under
+   `Ghidra/Features/Base/data/typeinfo/`, one in `Features/Rust`, one
+   for the emulator tests) start with a Java serialisation header and
    hold a ZIP of a Ghidra buffer file (`xxd`: `aced 0005 … PK 03 04`;
    `Ghidra/Framework/FileSystem/…/store/db/PackedDatabase.java`). The
    analyzer that applies them, `ApplyDataArchiveAnalyzer`, is on by
@@ -105,9 +106,9 @@ importing files where it matters.
 
 | Plan item | Ghidra code | Size | Needs, by the source | Place in the order |
 |---|---|---:|---|---|
-| Flow-following disassembler | `SM/program/disassemble` (6 files) | 3,669 | `model.lang`, `model.mem`, `model.listing`, `program.util` (context), `database.register` (1 file). **It has a mode with no program**: `Disassembler.getDisassembler(Language, AddressFactory, …)` (`Disassembler.java:171`) and `pseudoDisassembleBlock(MemBuffer, RegisterValue, int)` (`:778`) return instruction blocks from bytes; a program is consulted at six `program == null` checks and instructions are stored through one call, `listing.addInstructions(instructionSet, false)` (`:639`) | **Can start before M4**: it needs `sleigh-language` and a byte source. Storing its result is M4's code manager (`CodeManager.addInstructions`, `SM/program/database/code/CodeManager.java:408`) |
+| Flow-following disassembler | `SM/program/disassemble` (6 files) | 3,669 | `model.lang`, `model.mem`, `model.listing`, `program.util` (context), `database.register` (1 file). **It has a mode with no program**: `Disassembler.getDisassembler(Language, AddressFactory, …)` (`Disassembler.java:171`) and `pseudoDisassembleBlock(MemBuffer, RegisterValue, int)` (`:778`) return instruction blocks from bytes; `program` is tested against null in six places and instructions are stored through one call, `listing.addInstructions(instructionSet, false)` (`:639`) | **Can start before M4**: it needs `sleigh-language` and a byte source. Storing its result is M4's code manager (`CodeManager.addInstructions`, `SM/program/database/code/CodeManager.java:408`) |
 | Auto-analysis manager | `BASE/app/plugin/core/analysis/AutoAnalysisManager.java` (1,801), `AnalysisScheduler`, `AnalysisTaskList`, `BASE/app/services/{Analyzer,AbstractAnalyzer,AnalysisPriority,AnalyzerType}` | about 2,900 | Commands (`Framework/Project`'s `BackgroundCommand`), program events, options | Right. Small; the weight is in the analyzers |
-| Analyzers | 133 concrete classes in 30 modules (`analyzers.tsv`): `Features/Base` 45 (13,698 lines), `FileFormats` 33 (5,569), `Processors/*` 31 (10,625), `BytePatterns` 5, `MicrosoftCodeAnalyzer` 5, `Decompiler` 3, and others | 36,582 for the analyzer classes alone | What they call is larger than they are: commands (`app.cmd`, 126 files, 19,083), **block models** (`SM/program/model/block`, 6,789), **symbolic propagation** (`BASE/program/util/SymbolicPropogator.java` 3,047 + `VarnodeContext.java` 2,159; at least 17 analyzers use it), byte-pattern search (`BASE/util/bytesearch`, 4,590), the demangler framework (5,664), GCC exception tables (`BASE/app/plugin/exceptionhandlers`, 6,751), `util.state` (4,741) | Right, with three parts the plan does not name (bold) that are tracks of their own |
+| Analyzers | 133 concrete classes in 30 modules (`analyzers.tsv`): `Features/Base` 45 (13,698 lines), `FileFormats` 33 (5,569), `Processors/*` 31 (10,625), `BytePatterns` 5, `MicrosoftCodeAnalyzer` 5, `Decompiler` 3, and others | 36,582 for the analyzer classes alone | What they call is larger than they are: commands (`app.cmd`, 126 files, 19,083), **block models** (`SM/program/model/block`, 6,789), **symbolic propagation** (`BASE/program/util/SymbolicPropogator.java` 3,047 + `VarnodeContext.java` 2,159; 19 analyzer files name it and 13 classes extend `ConstantPropagationAnalyzer`), byte-pattern search (`BASE/util/bytesearch`, 4,590), the demangler framework (5,664), GCC exception tables (`BASE/app/plugin/exceptionhandlers`, 6,751), `util.state` (4,741) | Right, with three parts the plan does not name (bold) that are tracks of their own |
 | Decompiler wired to the program | `Ghidra/Features/Decompiler/src/main/java/ghidra/app/decompiler` (9,292), `app/cmd/function` (1,141), the three analyzers (966), `SM/program/model/pcode` (the result model: `HighFunction`, `HighSymbol`, …; 18,039) | about 29,000 | The program model (399 file imports), M3 | Right. Two of its analyzers are on by default (fact 4) |
 | `basilisk analyze` | `BASE/app/util/headless` | 4,222 | Importer, analysis, scripts (3 files: pre- and post-scripts are M9) | Right |
 
@@ -123,7 +124,7 @@ importing files where it matters.
 | Emulator | `Ghidra/Framework/Emulation` (478 files) | 71,882, of which **the JIT (`ghidra.pcode.emu.jit.*`) is 45,439**: it compiles p-code to JVM bytecode | `model.pcode` (221 file imports), `model.address` (112), `model.lang` (97), the Java SLEIGH classes (34), `model.listing` (22), `model.mem` (20). **Not** the database, `Framework/DB`, `Project` or `Base` | The plan says it "needs only M1 and M2". It needs M1 **with `sleigh-language`** (registers, instruction prototypes, p-code objects), and nothing of M2. The JIT cannot be ported as it is; what replaces it is a decision (section 6) |
 | Processor emulator tests (126 classes) | `Ghidra/Processors/*/src/test.processors`; harness `BASE/test/processors/support` (5,342) | — | **A loaded program** (the harness imports the test binary with the ELF loader), **test binaries that are not in the tree** (fact 1), cross compilers for each processor | Cannot run before M4's ELF loader. Needs a toolchain track on the build host; its output doubles as the per-processor corpus for loaders and relocations |
 | Assembler | `SM/app/plugin/assembler` (117 files) | 17,728; `WildcardAssembler` 1,870 | The Java SLEIGH classes (59 files), `model.lang`, `model.listing` (11) | Needs `sleigh-language`; otherwise independent, as the plan says |
-| (in `PARITY.md` under M6) `MicrosoftCodeAnalyzer`, `Objective-C`, `Swift`, `Rust`, `GhidraGo`, Go (`format.golang`, 16,718), `SystemEmulation`, `Sarif` | — | 9,977; 6,925; 10,905; 2,966; 1,324; 16,718; 9,194; 13,673 | `Objective-C` imports the decompiler (1 file) and has an analyzer on by default; `SystemEmulation`'s build file depends on `Debugger` (one class used); `GhidraGo` is a URL handler for projects (needs `Project`), not the Go language | `PLAN.md`'s M6 list names none of these; `PARITY.md` does. `GhidraGo` belongs with M8 |
+| (in `PARITY.md` under M6) `MicrosoftCodeAnalyzer`, `Objective-C`, `Swift`, `Rust`, `GhidraGo`, Go (`format.golang`, 16,718), `SystemEmulation`, `Sarif` | — | 9,977; 6,925; 10,905; 2,966; 1,324; 16,718; 9,194; 13,673 | `Objective-C` imports the decompiler (1 file) and has an analyzer on by default; `SystemEmulation`'s build file depends on `Debugger` (one class used); `GhidraGo` opens `ghidra://` links in a running tool (`GhidraGoPlugin`, `GhidraGoSender`; it imports `Project`) and is not the Go language | `PLAN.md`'s M6 list names none of these; `PARITY.md` does. `GhidraGo` belongs with M8 |
 
 ### M7 — User interface
 
@@ -162,7 +163,7 @@ script".
 | `Ghidra/Debug` | 217,653 Java main + 23,251 Python (agents) | `Framework-TraceModeling` (69,835) is built on `Framework/DB` (58 file imports) and `Emulation` (24): a second database-backed model. `Debugger-importers`, `Debugger-dap`, `Debugger-jpda`, `AnnotationValidator` and the `drgn` and `x64dbg` agents are not named in `PARITY.md` |
 | `VersionTracking` (+BSim link) | 57,488 | Sessions are Ghidra databases (`fw.DB` in 25 files) |
 | `BSim` (+visualiser, Elastic) | 49,627 | Needs the decompiler's signatures (`signature.*`, not in M3) and a database server |
-| `FileFormats` | 79,066 | 667 files; 52 file systems; 33 analyzers; its loaders (`DexLoader`, `ApkLoader`, dump files, dyld cache extraction) |
+| `FileFormats` | 79,066 | 667 files; 48 file systems; 33 analyzers; its loaders (`DexLoader`, `ApkLoader`, dump files, dyld cache extraction) |
 | Other loaders in `Base` | COFF 4,194 + loader 844; OMF 5,250; NE 2,783; MZ 618; PEF 3,284; SOM 3,868; XCOFF 1,166; a.out 1,084; and `DefLoader`, `MapLoader`, `DbgLoader`, `GdtLoader`, `GzfLoader`, `XmlLoader`, Motorola hex, OMF-51, DYLD cache | COFF is needed by PE work earlier: `PeLoader` shares the debug-symbol loader (`AbstractPeDebugLoader`) and MSVC objects are COFF |
 | `Extensions` | 27,237 | `Jython` and the OSGi bundle host (`BASE/app/plugin/core/osgi`, 5,147) are replaced by ADR-014; `SampleTablePlugin`, `sample`, `bundle_examples` are examples |
 | Processors' other Java | 44,716 in all; analyzers 10,625; emulate-state modifiers 3,332; p-code injection 1,258; `JVM` 11,619 and `Dalvik` 573 (class-file and DEX support) | Analyzers are M5 by the source (several are on by default for their processor) |
