@@ -301,19 +301,19 @@ mod spacebase_tests {
 
     #[test]
     fn spacebase_types_are_interned_by_space_and_scope() {
-        let mut f =
+        let mut types =
             TypeFactory::with_core_types(TypeEnv::simple(8, false), DataOrganization::default())
                 .unwrap();
         let space = bk_marshal::SpaceId::new(3);
-        let a = f.type_spacebase(space, 0x1234).unwrap();
-        let b = f.type_spacebase(space, 0x1234).unwrap();
-        let c = f.type_spacebase(space, 0x99).unwrap();
-        assert_eq!(a, b);
-        assert_ne!(a, c);
-        let e = f.get(a).unwrap();
-        assert_eq!((e.size(), e.metatype()), (0, Metatype::Spacebase));
+        let first = types.type_spacebase(space, 0x1234).unwrap();
+        let again = types.type_spacebase(space, 0x1234).unwrap();
+        let other = types.type_spacebase(space, 0x99).unwrap();
+        assert_eq!(first, again);
+        assert_ne!(first, other);
+        let entry = types.get(first).unwrap();
+        assert_eq!((entry.size(), entry.metatype()), (0, Metatype::Spacebase));
         assert_eq!(
-            e.kind(),
+            entry.kind(),
             &TypeKind::Spacebase {
                 space,
                 scope: 0x1234
