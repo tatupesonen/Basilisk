@@ -69,8 +69,9 @@ fn read_gz(path: &std::path::Path) -> String {
 }
 
 /// The address spaces of a dump (`@spaces`, `P` records; spacetype numbers
-/// of Ghidra's `spacetype` enum). A spacebase space is based on `ram`, the
-/// only base the samples' architecture has.
+/// of Ghidra's `spacetype` enum). The dump does not name a spacebase
+/// space's base: it is taken as `ram` (any case), else the first processor
+/// space; only the stack's own sizes matter to a scope.
 fn spaces_from_dump(records: &[SpaceRecord]) -> Arc<SpaceManager> {
     let mut m = SpaceManager::new();
     let mut ram: Option<Space> = None;
@@ -95,7 +96,8 @@ fn spaces_from_dump(records: &[SpaceRecord]) -> Arc<SpaceManager> {
                 &p.name,
                 index,
                 p.addr_size,
-                ram.as_ref().expect("a spacebase space after ram"),
+                ram.as_ref()
+                    .expect("a processor space before the spacebase"),
                 p.delay,
                 p.flags & FORMAL_STACK != 0,
                 big,
@@ -107,13 +109,14 @@ fn spaces_from_dump(records: &[SpaceRecord]) -> Arc<SpaceManager> {
             6 => Space::join(index, big).unwrap(),
             other => panic!("space type {other}"),
         };
-        if p.name == "ram" {
+        if p.kind == 1 && p.name != "OTHER" && (ram.is_none() || p.name.eq_ignore_ascii_case("ram"))
+        {
             ram = Some(space.clone());
         }
         let id = m.insert_space(space).unwrap();
         assert_eq!(id.index(), index, "space {}", p.name);
     }
-    let ram = m.space_by_name("ram").unwrap().id();
+    let ram = ram.unwrap().id();
     m.set_default_code_space(ram).unwrap();
     m.set_default_data_space(ram).unwrap();
     Arc::new(m)
@@ -123,21 +126,29 @@ fn new_types() -> TypeFactory {
     TypeFactory::with_core_types(TypeEnv::simple(8, false), DataOrganization::default()).unwrap()
 }
 
-/// A database with a function scope of the given identity under the global
-/// scope, ready for [`Database::restore_scope`].
+/// A database with a function scope of the given identity under the
+/// global scope, or under a namespace of the given id (the dump names the
+/// parent by id only), ready for [`Database::restore_scope`].
 fn function_scope(
     spaces: &Arc<SpaceManager>,
     name: &str,
     ghidra_id: u64,
+    parent: Option<u64>,
     types: &mut TypeFactory,
 ) -> (Database, ScopeId) {
     let mut db = Database::new(ArchEnv::new(Arc::clone(spaces)), true);
     let global = db.global().unwrap();
+    let parent = match parent {
+        Some(id) if id != db.scope(global).unwrap().ghidra_id() => db
+            .find_create_scope(id, &format!("ns{id:x}"), Some(global))
+            .unwrap(),
+        _ => global,
+    };
     let code = types.type_code().unwrap();
     // The function symbol the scope belongs to; only its id is needed.
-    let owner: SymbolId = db.add_symbol(global, name, code, types).unwrap();
+    let owner: SymbolId = db.add_symbol(parent, name, code, types).unwrap();
     let scope = db
-        .attach_scope(name, ghidra_id, Some(global), ScopeKind::Function(owner))
+        .attach_scope(name, ghidra_id, Some(parent), ScopeKind::Function(owner))
         .unwrap();
     (db, scope)
 }
@@ -442,8 +453,13 @@ fn check_dump(text: &str, what: &str) -> bool {
     let names = Names { spaces: &spaces };
     let mut types = new_types();
     let (image, dump_types) = image_from_dump(&dump, &names, &mut types);
-    let (mut db, scope) =
-        function_scope(&spaces, &local.name, orders.identity.ghidra_id, &mut types);
+    let (mut db, scope) = function_scope(
+        &spaces,
+        &local.name,
+        orders.identity.ghidra_id,
+        orders.identity.parent,
+        &mut types,
+    );
     for r in &local.ranges {
         db.add_range(scope, names.space(&r.space), r.first, r.last)
             .unwrap();
@@ -574,7 +590,7 @@ fn a_scope_built_through_the_api_restores_to_the_same_image_and_answers() {
     let stack = spaces.space_by_name("stack").unwrap().id();
     let ram = spaces.space_by_name("ram").unwrap().id();
     let mut types = new_types();
-    let (mut db, scope) = function_scope(&spaces, "f", 0x4000_0000_0000_0000, &mut types);
+    let (mut db, scope) = function_scope(&spaces, "f", 0x4000_0000_0000_0000, None, &mut types);
     let t4 = types.base(4, Metatype::Unknown).unwrap();
     let t8 = types.base(8, Metatype::Unknown).unwrap();
     let t2 = types.base(2, Metatype::Unknown).unwrap();
@@ -625,7 +641,8 @@ fn a_scope_built_through_the_api_restores_to_the_same_image_and_answers() {
 
     let image = db.scope_image(scope).unwrap();
     assert!(image.records.len() >= 8 && image.dynamic.len() == 1 && !image.multi.is_empty());
-    let (mut copy, copy_scope) = function_scope(&spaces, "f", 0x4000_0000_0000_0000, &mut types);
+    let (mut copy, copy_scope) =
+        function_scope(&spaces, "f", 0x4000_0000_0000_0000, None, &mut types);
     copy.restore_scope(copy_scope, &image, &types).unwrap();
     assert_eq!(copy.scope_image(copy_scope).unwrap(), image);
     let (a, b) = (db.scope(scope).unwrap(), copy.scope(copy_scope).unwrap());
