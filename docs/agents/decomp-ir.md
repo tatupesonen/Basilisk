@@ -37,7 +37,7 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 8 | covers | `src/cover/tests.rs` (from `cover.cc`) | pass; the console half is impossible (see the spec, 8) |
 | 9 (L) | block facts = `bk dump blocks` at both `blockstructure` stops and after | `tests/block_facts.rs` | 1,684 stops, 6,065 blocks, 0 differ; 137 dumps unreadable (empty input slots, see follow-ups) |
 | 10 | unit table = inventory 5.2/6; duplicates, unknown names, wrong groups refused | `tests/units.rs` | pass |
-| 11 | fuzz `bk_decomp_ir_state` | `fuzz/fuzz_targets/`, replay `tests/fuzz_regressions.rs` | first 300 s run: 1 finding (a dump with a written varnode without a def was accepted; `load` now refuses states that break the invariants); second 300 s run: 0 findings, 69,332 execs |
+| 11 | fuzz `bk_decomp_ir_state` | `fuzz/fuzz_targets/`, replay `tests/fuzz_regressions.rs` | first 300 s run: 1 finding (a dump with a written varnode without a def was accepted; `load` now refuses states that break the invariants); second 300 s run: 0 findings, 69,332 execs; after review step A the target also mutates (new op, clear dead varnodes, covers): 300 s, 0 findings, 82,457 execs |
 | 12 | benchmarks, bytes per op/varnode | `tests/bench.rs` (ignored) | `docs/PERF.md` |
 
 The invariant checker (`Ssa::invariant_violations`, `src/check.rs`) is run
@@ -129,10 +129,19 @@ exception list.
   returns -1, 0 or 1) as a boolean, so of several PIECEs naming a varnode
   the last in descend order wins unless two are unordered, not "the
   earliest". Basilisk reproduces it.
-- Withdrawn: `VarnodeBank::searchvn`'s uninitialised `create_index`
-  (`varnode.cc:1220`) is never read: the comparators read it only when both
-  varnodes are free, and `searchvn`'s flags are always `input` or `written`
-  (`varnode.cc:1224`, 1656–1672, 1830–1879).
+- `VarnodeBank::searchvn`'s `create_index` is never initialised
+  (`Varnode::Varnode`, `varnode.cc:610`–`638`, does not set it;
+  `searchvn` is built at `varnode.cc:1220`). Corrected (the first version
+  of this note said its flags were never free, which is wrong:
+  `beginDef`/`endDef(0, addr)` set `searchvn.flags = 0`, `varnode.cc:1916`
+  and the `endDef` twin). The def-order comparator
+  (`VarnodeCompareDefLoc`, `varnode.cc:60`–`77`) reads `create_index` only
+  after the addresses and the sizes are equal and both are free; `searchvn`
+  then has size 0 (`beginDef`) or 1,000,000 (`endDef`), and no varnode of
+  either size is ever created, so the indeterminate value is never read
+  in a comparison that decides anything, on any build. Basilisk's bound
+  keys use create index 0 (`bank/range.rs`, `def_class_addr_bounds`), which
+  gives the same ranges. A latent hazard, not an observable defect.
 - Ghidra defect: `BlockBasic::insert` (`block.cc:2298`–`2301`) can repeat
   an `order` (`ordafter/2 + ordbefore/2`); corpus `divopt`. Basilisk
   reproduces it.
@@ -146,5 +155,7 @@ exception list.
   (`tools/reference/consoleext/bk_ids.cc:42`); 137 of 1,821 dumps taken at
   `blockstructure` have such slots and do not parse (the standard capture
   points happen to have none). The join records (above). A `bk print cover`
-  console command for spec test 8. `Cfg` has no allocation-free `size_out`,
+  console command for spec test 8. Reading and writing ops with empty
+  input slots (mid-pass states) is waiting on that same `bk-testkit` reader
+  change, which goes with the oracle track that adds `@joins`. `Cfg` has no allocation-free `size_out`,
   `out(i)`, `in(i)`; `bk-core` `write_raw_sized` is crate-private.
