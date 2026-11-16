@@ -29,3 +29,4 @@ vendor/** -text
 crates/bk-testkit/tests/data/oracle/** text eol=lf
 crates/bk-testkit/tests/data/oracle/*.gz binary
 fixtures/decomp-oracle/** text eol=lf
+crates/bk-decomp-ir/tests/data/*.txt text eol=lf
