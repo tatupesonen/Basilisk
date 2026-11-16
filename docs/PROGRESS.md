@@ -127,6 +127,29 @@ report):
 | `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
 | `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
 
+**`decomp-ir` (D05) reported finished at 20:13** (head `dfebe94`,
+pushed; both gates green, 2,489 tests; not merged yet). **It is under
+independent review** before the merge, as `PLAN.md` "Order of work"
+sets for data-model tracks: reviewer `a50fda968a778e978` (Opus 5.5,
+started 20:17) on a detached read-only checkout
+`../basilisk-wt/review-decomp-ir`; it reports findings to the
+coordinator and changes nothing. After the review: fixes go back to the
+D05 agent (`aebffc71c4b0d4ebb`, resumable), then the coordinator merges
+through `integration`. **Only the coordinator merges** (owner, 20:16:
+"Remember that you merge all work, not the agents"). D05's numbers:
+3,642 dumps load on both machines, 3,566 write back byte for byte, the
+other 76 are the pinned list with join-space varnodes; `print raw`
+equal in 607 of 607; block facts equal at 1,684 stops (137 dumps there
+cannot be read: empty input slots written as `-`). GHIDRA-BUGS 46 to 48
+added. **It asks for an oracle change — the next line-1 task, after
+`decomp-symbols` has finished using the references:** (1) a `@joins`
+section in `bkstate` after `@spaces` (`J <offset hex> <size dec>
+<npieces> <space:0xoff:size>…`, every record of
+`AddrSpaceManager::splitlist` in creation order; `install_joins` on the
+branch already replays it), (2) `bk-testkit`'s `StateDump` reads an
+op's empty input slot (`-`), (3) a `bk print cover` console command
+(Ghidra's own `print cover varnode` cannot be run, entry 48).
+
 **The cap drops to two when the specs are done** (owner, about 20:10:
 "Once the specs are done, go down to 2 agents"): when
 `spec-decomp-wave3` and `plan-programs` have both handed back, at most
