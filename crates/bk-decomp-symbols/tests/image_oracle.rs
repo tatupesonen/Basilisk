@@ -287,6 +287,9 @@ fn image_table_replays() {
             .as_encoded_bytes()
             .cmp(b.file_name().unwrap().as_encoded_bytes())
     });
+    // The table covers the 93 data tests; a different count means the
+    // tree is not the one the table was made from, never a silent pass.
+    assert_eq!(files.len(), 93, "data tests in {}", dt.display());
     let table = ids::id_table();
     let want = read_table("image.txt.gz");
     let mut got = String::new();
@@ -314,5 +317,10 @@ fn image_table_replays() {
         w.len(),
         g.len(),
         bad.join("\n")
+    );
+    eprintln!(
+        "image table: {} data tests replayed, {} rows equal",
+        files.len(),
+        g.len()
     );
 }
