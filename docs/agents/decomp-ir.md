@@ -1,4 +1,4 @@
-# Track `decomp-ir` (D05) — status (in progress)
+# Track `decomp-ir` (D05) — status (done, waiting for review)
 
 Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 `crates/bk-decomp-ir`.
@@ -22,23 +22,30 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 4.5 | `op_semantics` | `semantics.rs` | uncommitted |
 | 4.9 | Units, origins, soundness, table, Ghidra name list generated from the inventory | `unit/` | uncommitted |
 
-### (b) In progress
+### (b) Tests and results (2026-11-16)
 
-- Clippy clean (`f…` commits of 2026-11-16, no blanket `allow`).
-- **Corpus (L), `tests/corpus.rs`**, on the build host (x86-64,
-  libstdc++), 2026-11-16: 3,642 dumps loaded (all), **3,566 written back
-  byte for byte**; `print raw` at the first point equal to the console's in
-  **607 of 607** decompilations. The 76 others are exactly the dumps in which
-  an op reads or writes a join-space varnode (77 dumps hold join varnodes;
-  in one no op names them, and it round-trips); they are a pinned, named exception
-  (`tests/support/join_dumps.rs`): the test asserts that the set of dumps
-  whose ops name join varnodes equals that list, that each of them equals the dump
-  once every `j{…}` address is blanked (only op-text lines printing a join
-  differ), and that every other dump is exact. See "Join records" below.
-  Rerun: `scripts/remote.sh run -- cargo test -p bk-decomp-ir --test
-  corpus -- --nocapture` (captures into `target/decomp-ir/capture` on the
-  host when absent; summary in `target/decomp-ir/corpus.txt`).
-- Mac (libc++) corpus run not done yet.
+| Spec test | What | Where | Result |
+|---|---|---|---|
+| 1 (L) | corpus round trip, all points | `tests/corpus.rs` | host and Mac: 3,642 loaded, 3,566 byte for byte, 76 pinned join dumps (`support/join_dumps.rs`), invariants hold in all |
+| 1 (S) | checked-in subset: 120 dumps of 20 functions covering all 137 opcode and flag-bit features of the capture | `tests/subset.rs`, `tests/data/subset/` (selection `select_subset`, ignored) | pass |
+| 2 | op texts (in 1), block `print raw` at p1 | `tests/corpus.rs` | 607 of 607 equal |
+| 3 | orders after load (in 1); creation-order independence | `src/mutate/tests/props.rs` | pass |
+| 4a | one or more unit tests per method of 4.5, citing the C++ | `src/mutate/tests/{op,insert,varnode,annotate}.rs` | 39 tests pass |
+| 5 | trace recorder grammar and range filter | `src/record/tests.rs` | 2 tests pass |
+| 6 | invariants under random calls; refused single-step calls change nothing; dump → load → dump on reachable states | `src/mutate/tests/props.rs`, `tests/state_props.rs` | pass (also at 50,000 cases) |
+| 7 | opcode table = `typeop.cc` constructors (G, 73 opcodes); every dumped op's flags (S, L) | `tests/opcode_table.rs`, `tests/corpus.rs` | pass |
+| 8 | covers | `src/cover/tests.rs` (from `cover.cc`) | pass; the console half is impossible (see the spec, 8) |
+| 9 (L) | block facts = `bk dump blocks` at both `blockstructure` stops and after | `tests/block_facts.rs` | 1,684 stops, 6,065 blocks, 0 differ; 137 dumps unreadable (empty input slots, see follow-ups) |
+| 10 | unit table = inventory 5.2/6; duplicates, unknown names, wrong groups refused | `tests/units.rs` | pass |
+| 11 | fuzz `bk_decomp_ir_state` | `fuzz/fuzz_targets/` | see (e) |
+| 12 | benchmarks, bytes per op/varnode | `tests/bench.rs` (ignored) | `docs/PERF.md` |
+
+The invariant checker (`Ssa::invariant_violations`, `src/check.rs`) is run
+by the corpus, subset, property and fuzz tests and by `load` itself.
+Reruns: `scripts/remote.sh run -- cargo test -p bk-decomp-ir --test corpus
+-- --nocapture` (captures into `target/decomp-ir/capture` when absent);
+the same with `--test block_facts`; on the Mac set
+`BASILISK_REFERENCE_DIR=/Users/…/reference` and `BASILISK_GHIDRA_DIR`.
 
 ### Join records (request for the dump format)
 
@@ -71,28 +78,14 @@ on the dump's spaces and *check* each offset, with no new `bk-core` API:
 `StateDump` parses the section, `load` calls it and the 76 dumps leave the
 exception list.
 
-### (c) Not started, in order
+### (c) Not done
 
-1. (done) `state/` (spec 4.8): build a `SpaceManager` from `@spaces` (+ a
-   register table), load `@function K`, `@varnodes`, `@ops`, `@oplists`,
-   `@blocks` (Cfg nodes/edges/idom/numdesc, ranges, op order) into an `Ssa`;
-   keep the `StateDump` for pass-through; write back recomputing loc/def
-   order with canonical keys (fspec → qlst position, dead call last), op
-   texts with `op_text`, all other sections unchanged. Dump-local type ids:
-   `t<n>` ↔ `TypeId::from_raw(n)`. `RawNames` from `@callspecs` (`C` name,
-   entry).
-2. Register/user-op tables for the S tests: generate per architecture from
-   the language (bk-sleigh `Language::registers()`, `user_op_name`) in a G
-   test, check them in gzipped.
-3. Tests: unit tests per mutation method (cite C++ lines), properties
-   (proptest, spec 6.6), round trip and text on `bk-testkit`'s samples
-   (`crates/bk-testkit/tests/data/oracle/switchind.*.state.gz`, version 1),
-   L test over a fresh capture (`bk_testkit::oracle::capture`), opcode table
-   against the console, covers, block facts against `.blocks.bkg`, unit
-   table (test 10), fuzz target `fuzz/fuzz_targets/bk_decomp_ir_state.rs`,
-   benchmarks (`#[ignore]` release tests), size assertions.
-4. Feature doc sections 8–10 append, inventory test lines, PERF.md.
-5. Testbed: fuzz 300 s, wine, arm64, both gates.
+- The join records (above): needs the dump format change.
+- Spec test 8 against the console: impossible in Ghidra's console; a
+  `bk print cover <varnode>` command in the console extension would make it
+  possible (a request for D00's owner).
+- Benchmarks have no reference-console time beside them.
+- Spec 4.9's `Profile` is D07's (as the spec says).
 
 ### (d) Decisions and traps
 
