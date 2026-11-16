@@ -25,6 +25,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 6.1 names | `tests/names.rs`: `makeNameUnique` (15 cases incl. x form, non-conforming names, the taken-answer error), `buildUndefinedName` (10 cases incl. the predecessor-only look and C++ `>> hex` reading), `buildVariableName` (every rule, the index bumps and the ten-bump fallback) | names commit |
 | 6.1 entries | `SymbolData::is_value_close` (was missing; database.cc:726–743); `tests/entries.rs`: addMap flags by scope / global range / use limit (the kludge, properties), the wrap error leaving the scope unchanged, join pieces (endian order, precis flags only for primitive types, constant padding), `getMapEntryPosition`'s quirk, category holes, `isValueClose` (14 cases) | entries commit |
 | 6.1 codecs | `tests/codecs.rs` (11): comments (uniq numbering, no-duplicate, clearType, decode renumbering, unknown type, missing text, the comment past uniq 65535 refused), every `getCodepoint` branch (27 cases) and `writeUtf8` (12), the string cache (32-byte reads keeping bytes after the terminator, wide conversion, cached failures), internal strings (hash, truncation), `<stringmanage>` round trip and appending, the constant pool round trip (unknown tag as primitive, short `<data>` error, duplicate key), overrides (`printRaw`, messages, `hasDeadcodeDelay`, round trip skipping unknown children), the XML image (reads, padding grows by one pad per round trip as in Ghidra) | codecs commit |
+| 6.6 properties | `tests/properties.rs` (6, proptest, `PROPTEST_CASES` honoured; 20,000 cases each passed on the Mac): `<db>` round trip (exact up to internal ids without read-only symbols; stable from the second round with them), provenance never changes encoding / printed maps / queries, comments, strings, constant pool, overrides round trips | properties commit |
 | 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
 All three oracle tables were generated twice on each reference build
@@ -43,13 +44,12 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
   `indexing_slicing` on the const CRC table (compile-time evaluation);
   `many_single_char_names` on three oracle generator functions (they
   follow the C++ generators line by line).
-- All tests pass: `cargo test -p bk-decomp-symbols` (state dump 2, pspec volatility 2, names 3, entries 6, codecs 11, unit 7, entrymap props
+- All tests pass: `cargo test -p bk-decomp-symbols` (state dump 2, pspec volatility 2, names 3, entries 6, codecs 11, properties 6, unit 7, entrymap props
   5, scope oracle 1, context oracle 1, image oracle 1 (skips without
   reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.
 
 ### (c) Not started, in order
 
-6. Properties (6.6): codec round trips; provenance never changes answers.
 7. Fuzz targets in `fuzz/` (7 targets of 6.6) + regressions dir.
 8. Benchmarks (5.8) + `docs/PERF.md`; `docs/inventory/tests/` line for
    DecompilerPspecVolatilityTest stays open (D17).
