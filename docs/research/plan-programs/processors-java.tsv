@@ -1,0 +1,35 @@
+kind	files	lines
+elf-relocation	55	11769
+macho-relocation	10	911
+coff-relocation	6	1249
+elf-extension	14	3465
+analyzer	31	10625
+emulate-state	9	3332
+loader	1	230
+pcode-inject	17	1258
+other	98	11877
+
+module	elf-relocation	macho-relocation	coff-relocation	elf-extension	analyzer	emulate-state	loader	pcode-inject	other
+68000	0	0	0	0	443	141	0	0	29
+AARCH64	798	243	202	87	293	1698	0	0	126
+ARM	1167	191	199	221	879	159	0	0	323
+Atmel	987	0	0	96	0	0	0	0	0
+DATA	0	0	0	0	0	0	0	0	48
+Dalvik	0	0	0	0	0	0	0	337	236
+HCS12	0	0	0	202	126	0	0	0	0
+Hexagon	604	0	0	145	996	697	0	0	621
+JVM	0	0	0	0	1301	0	230	921	9167
+Loongarch	588	0	0	0	144	0	0	0	0
+MIPS	1700	0	330	982	1417	136	0	0	58
+NDS32	291	0	0	0	172	0	0	0	0
+PIC	292	0	0	314	3174	0	0	0	30
+PowerPC	1068	182	166	1113	754	110	0	0	55
+RISCV	711	0	0	46	141	62	0	0	0
+Sparc	670	0	0	0	242	0	0	0	0
+SuperH4	395	0	0	0	280	0	0	0	0
+TI_MSP430	421	0	0	88	0	0	0	0	0
+Toy	0	0	0	0	57	0	0	0	0
+Xtensa	298	0	0	0	0	160	0	0	198
+eBPF	165	0	0	49	106	0	0	0	434
+tricore	689	0	0	0	0	169	0	0	92
+x86	925	295	352	122	100	0	0	0	460
