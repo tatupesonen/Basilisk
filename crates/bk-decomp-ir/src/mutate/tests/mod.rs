@@ -7,8 +7,10 @@ use crate::ids::{OpId, UnitId};
 use crate::record::Recorder;
 use crate::ssa::Ssa;
 
+mod annotate;
 mod insert;
 mod op;
+mod props;
 mod varnode;
 
 /// A recorder that keeps the ops reported as changing (`debugModCheck`).

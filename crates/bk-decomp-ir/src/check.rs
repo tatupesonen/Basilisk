@@ -23,13 +23,13 @@ impl Ssa {
     /// * a varnode is `written` exactly when it has a defining op, and that
     ///   op has it as output (and conversely);
     /// * each varnode's reader list is, as a multiset, the slots of live
-    ///   ops that read it; a free varnode that is not a space base has at
-    ///   most one reader (`Varnode::addDescend`, `varnode.cc`);
+    ///   ops that read it;
     /// * the trees hold exactly the ops that are not retired, under their
     ///   sequence numbers; `alttree` holds only `INDIRECT`s;
     /// * an op is in the alive list exactly when it is not `dead`, and in a
     ///   block exactly when it is alive; each block's ops name the block as
-    ///   parent and their `order` increases;
+    ///   parent and their `order` does not decrease (Ghidra can repeat one,
+    ///   see `check_blocks`);
     /// * each op of an opcode list has an opcode of that list and each op
     ///   with such an opcode is in its list once.
     pub fn invariant_violations(&self) -> Vec<String> {
@@ -117,13 +117,11 @@ impl Ssa {
         }
         let mut listed: HashMap<(VarnodeId, OpId), usize> = HashMap::new();
         for vn in self.live_varnodes() {
-            let readers = self.readers(vn);
-            let flags = self.varnode_flags(vn);
-            let free = flags & (vflags::INPUT | vflags::WRITTEN) == 0;
-            if free && flags & vflags::SPACEBASE == 0 && readers.len() > 1 {
-                bad.push(format!("{vn}: free with {} readers", readers.len()));
-            }
-            for op in readers {
+            // Not checked: "a free varnode has at most one reader". Ghidra
+            // enforces it only when a reader is added (`Varnode::addDescend`,
+            // `varnode.cc:330`–`336`); `opUnsetOutput` (`funcdata_op.cc:52`)
+            // frees a varnode whatever its readers.
+            for op in self.readers(vn) {
                 *listed.entry((vn, op)).or_default() += 1;
             }
         }
@@ -218,8 +216,14 @@ impl Ssa {
                         o.parent
                     ));
                 }
-                if last.is_some_and(|l| l >= o.order) {
-                    bad.push(format!("{op}: order {} does not increase", o.order));
+                // Non-decreasing, not increasing: `BlockBasic::insert`
+                // (`block.cc:2298`–`2301`) takes `ordafter/2 + ordbefore/2`,
+                // which equals `ordbefore` when the two are odd and two
+                // apart, so ops appended after order 0xfffffffd all get
+                // 0xfffffffd (seen in the corpus: `divopt`). Basilisk keeps
+                // Ghidra's numbering.
+                if last.is_some_and(|l| l > o.order) {
+                    bad.push(format!("{op}: order {} decreases", o.order));
                 }
                 last = Some(o.order);
             }
