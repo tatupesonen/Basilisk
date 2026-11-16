@@ -3,8 +3,9 @@
  *
  * Linked only into the instrumented console built by build-instr.sh from a
  * copy of Ghidra's source patched with 0001-printer-hooks.patch. When the
- * environment variable BK_PRINTLOG is set to a path prefix, every
- * PrintLanguage::docFunction is logged into three files:
+ * environment variable BK_PRINTLOG is set to a path prefix, every document
+ * the printer produces (docFunction, docAllGlobals, docSingleGlobal,
+ * docTypeDefinitions) is logged into three files:
  *
  *   <prefix>.tree   what the printer decided: structural events (entry to and
  *                   exit from PrintC's emit methods, with the facts they read),
@@ -498,24 +499,56 @@ string PrintLog::facts(const PrintLanguage *lng,int4 ev,const void *a,const void
   case bk_ev_localVarDecls:
     s << fdKey((const Funcdata *)a);
     break;
+  case bk_ev_globalVarDeclsRecursive:
+    s << esc(((const Scope *)a)->getName());
+    break;
+  case bk_ev_typeDefinition:
+    s << typeKey((const Datatype *)a);
+    break;
+  case bk_ev_structDefinition: {
+    // The name and the field count emitStructDefinition reads (printc.cc:2201)
+    const TypeStruct *ct = (const TypeStruct *)a;
+    s << esc(ct->getDisplayName()) << '\t' << ct->numDepend();
+    break;
+  }
+  case bk_ev_enumDefinition: {
+    // The name and the value names emitEnumDefinition prints directly (printc.cc:2234)
+    const TypeEnum *ct = (const TypeEnum *)a;
+    s << esc(ct->getDisplayName()) << '\t' << ct->getSize();
+    int4 n = 0;
+    for(map<uintb,string>::const_iterator it=ct->beginEnum();it!=ct->endEnum();++it) n += 1;
+    s << '\t' << n;
+    for(map<uintb,string>::const_iterator it=ct->beginEnum();it!=ct->endEnum();++it) s << '\t' << esc((*it).second);
+    break;
+  }
   default:
     break;
   }
   return s.str();
 }
 
+/// The printer's document entry points: each is logged as one F ... /F block
+bool isDocument(int4 ev)
+{
+  return ev == bk_ev_docFunction || ev == bk_ev_docAllGlobals || ev == bk_ev_docSingleGlobal
+    || ev == bk_ev_docTypeDefinitions;
+}
+
 void PrintLog::enter(const PrintLanguage *lng,int4 ev,const void *a,const void *b,intb c)
 {
-  if (ev == bk_ev_docFunction) {
+  if (isDocument(ev)) {
     docDepth += 1;
     if (docDepth == 1) {
       cur = lng;
       count += 1;
       fnum = count;
       const PrintC *pc = (const PrintC *)lng;
-      const Funcdata *fd = (const Funcdata *)a;
-      tree << "F\t" << fnum << '\t' << esc(fd->getName()) << '\n';
-      emit << "F\t" << fnum << '\t' << esc(fd->getName()) << '\n';
+      // A function's name; the other documents are named after their entry point
+      string name;
+      if (ev == bk_ev_docFunction) name = esc(((const Funcdata *)a)->getName());
+      else name = string("<") + EVENT_NAMES[ev] + ">";
+      tree << "F\t" << fnum << '\t' << name << '\n';
+      emit << "F\t" << fnum << '\t' << name << '\n';
       // The printer's options and the emitter's configuration
       tree << "O\t" << esc(lng->getName()) << '\t' << hexs(pc->mods) << '\t' << pc->option_brace_func << '\t'
 	   << pc->option_brace_ifelse << '\t' << pc->option_brace_loop << '\t' << pc->option_brace_switch << '\t'
@@ -541,7 +574,7 @@ void PrintLog::leave(const PrintLanguage *lng,int4 ev,bool unwinding)
 {
   if (fnum == 0) return;
   tree << "<\t" << EVENT_NAMES[ev] << (unwinding ? "\t!" : "") << '\n';
-  if (ev == bk_ev_docFunction) {
+  if (isDocument(ev)) {
     docDepth -= 1;
     if (docDepth == 0) {
       tree << "/F\t" << fnum << '\t' << (unwinding ? "error" : "ok") << '\n';

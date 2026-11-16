@@ -350,6 +350,74 @@ class Printer:
         o.call("flush")
         self.mods = modsave
 
+    # ---------------------------------------------------------- other documents
+    def k_docAllGlobals(self, n, f, k):
+        # printc.cc:2764
+        i = self.out.open("beginDocument")
+        self.node(k.take("globalVarDeclsRecursive"))
+        self.out.tagLine()
+        self.out.call("endDocument", i)
+        self.out.call("flush")
+
+    def k_docSingleGlobal(self, n, f, k):
+        # printc.cc:2774 (no caller in Ghidra's C++)
+        i = self.out.open("beginDocument")
+        self.node(k.take("varDeclStatement"))
+        self.out.tagLine()
+        self.out.call("endDocument", i)
+        self.out.call("flush")
+
+    def k_globalVarDeclsRecursive(self, n, f, k):
+        # printc.cc:2751: the scope's declarations, then each child scope
+        self.rest(k)
+
+    def k_docTypeDefinitions(self, n, f, k):
+        # printc.cc:2482: no beginDocument and no flush
+        self.rest(k)
+
+    def k_typeDefinition(self, n, f, k):
+        self.child(k)
+
+    def k_structDefinition(self, n, f, k):
+        # printc.cc:2201: fields are separated by commas
+        o = self.out
+        o.tagLine()
+        o.print("typedef struct", KEYWORD)
+        i = o.openBraceIndent("{", 0)
+        o.tagLine()
+        nf = int(f[1])
+        for j in range(nf):
+            self.expr(k.take("expr"))
+            if j != nf - 1:
+                o.print(",")
+                o.tagLine()
+        o.closeBraceIndent("}", i)
+        o.spaces(1)
+        o.print(f[0])
+        o.print(";")
+
+    def k_enumDefinition(self, n, f, k):
+        # printc.cc:2234: every value is followed by a semicolon
+        o = self.out
+        names = f[3:3 + int(f[2])]
+        o.tagLine()
+        o.print("typedef enum", KEYWORD)
+        i = o.openBraceIndent("{", 0)
+        o.tagLine()
+        for j, name in enumerate(names):
+            o.print(name, CONST)
+            o.spaces(1)
+            o.print("=", NOCOLOR)
+            o.spaces(1)
+            self.expr(k.take("expr"))
+            o.print(";")
+            if j != len(names) - 1:
+                o.tagLine()
+        o.closeBraceIndent("}", i)
+        o.spaces(1)
+        o.print(f[0])
+        o.print(";")
+
     def k_commentFuncHeader(self, n, f, k):
         o = self.out
         extra = False

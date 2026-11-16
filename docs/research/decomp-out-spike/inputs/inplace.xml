@@ -1,0 +1,46 @@
+<decompilertest>
+<binaryimage arch="x86:LE:32:default:win">
+<!--
+    decomp-out-spike coverage input (not a Ghidra test): the in-place
+    operators |= and <<= on a global, and BOOL_XOR (printed only when the
+    rule bxor2notequal is off). Assembled with clang (i386):
+      f_or:  mov eax,[esp+4]; or [0x200000],eax; ret
+      f_shl: mov ecx,[esp+4]; shl dword [0x200000],cl; ret
+      (0x100016: unused)
+      f_xor: mov eax,[esp+4]; test eax,eax; setne al; mov edx,[esp+8];
+             test edx,edx; setne dl; xor al,dl; ret
+-->
+<bytechunk space="ram" offset="0x100000">
+8b442404090500002000c38b4c2404d3
+2500002000c3a10000200099f77c2404
+891500002000c38b44240485c00f95c0
+8b54240885d20f95c230d0c38b442404
+</bytechunk>
+<bytechunk space="ram" offset="0x200000">
+00000000
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="f_or"/>
+<symbol space="ram" offset="0x10000b" name="f_shl"/>
+<symbol space="ram" offset="0x100027" name="f_xor"/>
+</binaryimage>
+<script>
+  <com>option inplaceops on</com>
+  <com>parse line extern void f_or(int4 x);</com>
+  <com>parse line extern void f_shl(int4 x);</com>
+  <com>parse line extern bool f_xor(int4 x,int4 y);</com>
+  <com>lo fu f_or</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu f_shl</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option togglerule bxor2notequal off</com>
+  <com>lo fu f_xor</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="Inplace or" min="1" max="1">uRam00200000 \|= x;</stringmatch>
+<stringmatch name="Inplace shift" min="1" max="1">uRam00200000 &lt;&lt;= </stringmatch>
+<stringmatch name="Boolean xor" min="1" max="1">x != 0 \^\^ y != 0</stringmatch>
+</decompilertest>

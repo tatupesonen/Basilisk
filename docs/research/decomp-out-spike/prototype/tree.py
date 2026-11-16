@@ -10,6 +10,7 @@ expressions pushed while it was open. An expression is an `OpNode` (an
 OpToken with exactly `stage` children) or an `Atom`. The expressions are
 rebuilt from the pushes alone, with the arity of each token.
 """
+import gzip
 
 # OpToken table of printc.cc:23-77 and printjava.cc:21:
 # name: (stage, precedence, associative, type, spacing, bump)
@@ -101,10 +102,18 @@ class TreeError(Exception):
     pass
 
 
+def open_log(path):
+    """Open a log file as text; a name ending in .gz is read through gzip."""
+    path = str(path)
+    if path.endswith(".gz"):
+        return gzip.open(path, "rt", encoding="utf-8", errors="surrogateescape", newline="\n")
+    return open(path, encoding="utf-8", errors="surrogateescape", newline="\n")
+
+
 def read_functions(path):
-    """Yield (Function) for every F ... /F block of a .tree file."""
+    """Yield (Function) for every F ... /F block of a .tree file (or .tree.gz)."""
     fn = None
-    with open(path, encoding="utf-8", errors="surrogateescape") as f:
+    with open_log(path) as f:
         for line in f:
             r = line.rstrip("\n").split("\t")
             tag = r[0]

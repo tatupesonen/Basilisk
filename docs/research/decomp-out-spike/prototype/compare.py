@@ -3,7 +3,7 @@
 
     compare.py LOGDIR [LOGDIR...] [--summary FILE] [--failures FILE]
 
-For every `<name>.tree` in the directories: build each function's tree from
+For every `<name>.tree` (or `<name>.tree.gz`) in the directories: build each function's tree from
 the `.tree` file alone (tree.py), print it (printer.py), and compare the
 resulting call sequence with the function's calls in `<name>.emit`, after
 renumbering the begin/open ids of both by order of first appearance. Prints
@@ -51,7 +51,7 @@ def canon(lines):
 
 def read_emit(path):
     res, cur = {}, None
-    with open(path, encoding="utf-8", errors="surrogateescape") as f:
+    with T.open_log(path) as f:
         for line in f:
             line = line.rstrip("\n")
             if line.startswith("F\t"):
@@ -65,7 +65,9 @@ def read_emit(path):
 
 
 def run_file(tree_path, stats, failures, coverage):
-    emit = read_emit(tree_path.with_suffix(".emit"))
+    name = tree_path.name
+    base = name[:-len(".tree.gz")] if name.endswith(".tree.gz") else name[:-len(".tree")]
+    emit = read_emit(tree_path.with_name(base + ".emit" + (".gz" if name.endswith(".gz") else "")))
     for fn in T.read_functions(tree_path):
         stats["functions"] += 1
         expected = canon(emit.get(fn.num, []))
@@ -141,7 +143,7 @@ def main():
     cov_all = Counter()
     for d in args.dirs:
         stats, failures, cov = Counter(), [], Counter()
-        for p in sorted(Path(d).glob("*.tree")):
+        for p in sorted(Path(d).glob("*.tree")) + sorted(Path(d).glob("*.tree.gz")):
             run_file(p, stats, failures, cov)
         cov_all.update(cov)
         name = Path(d).name

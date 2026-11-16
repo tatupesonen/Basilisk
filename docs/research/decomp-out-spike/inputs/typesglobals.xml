@@ -1,0 +1,30 @@
+<decompilertest>
+<binaryimage arch="x86:LE:32:default:gcc">
+<!--
+    decomp-out-spike coverage input (not a Ghidra test): the printer's
+    other document entry points, "print C types" (docTypeDefinitions,
+    printc.cc:2482) and "print C globals" (docAllGlobals, printc.cc:2764).
+    "print C globals" comes first: "print C types" as the first print of a
+    session reads an empty indent stack (prettyprint.cc:702) and crashes,
+    because docTypeDefinitions never calls beginDocument. The second
+    "print C globals" flushes what "print C types" left in the queue.
+-->
+<bytechunk space="ram" offset="0x100000">
+c3
+</bytechunk>
+<bytechunk space="ram" offset="0x200000">
+0000000000000000000000000000000000000000000000000000000000000000
+</bytechunk>
+</binaryimage>
+<script>
+  <com>parse line struct big { int4 a; int4 b; int4 c; int4 d; };</com>
+  <com>parse line enum col { RED=0, GREEN=1, BLUE=5 };</com>
+  <com>map address r0x200000 int4 counter</com>
+  <com>map address r0x200010 big bigone</com>
+  <com>print C globals</com>
+  <com>print C types</com>
+  <com>print C globals</com>
+  <com>quit</com>
+</script>
+<stringmatch name="Global" min="1" max="1">big bigone;</stringmatch>
+</decompilertest>
