@@ -127,6 +127,15 @@ report):
 | `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
 | `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
 
+**The cap drops to two when the specs are done** (owner, about 20:10:
+"Once the specs are done, go down to 2 agents"): when
+`spec-decomp-wave3` and `plan-programs` have both handed back, at most
+two agents run. So: do not start a new agent in a slot that an
+implementation track frees if that would leave more than two running
+after the two Fable tracks end. With two slots the order is line 1
+(the decompiler's chain) always, and the second slot alternating
+between line 2 (specs ahead, side tracks) and line 3 (programs).
+
 **`decomp-symbols` reported at 20:07 and was sent back** (not merged):
 clippy clean, 69 tests, both gates green (2,482 tests), fuzz, Wine and
 arm64 clean — but five acceptance conditions of its spec's section 7

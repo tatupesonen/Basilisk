@@ -76,6 +76,13 @@ and a sane architecture in mind.
   "Or rather, with 3 agents"), as on 2026-11-15. A fourth was added the same evening on the
   owner's request ("Spawn another fable subagent to plan onwards"): the
   planning agent for M4 onwards. The cap for the other work stays three.
+* **Two agents once the specs are done** (owner, 2026-11-16 about 20:10:
+  "Once the specs are done, go down to 2 agents"). When the wave 3
+  specification agent and the planning agent have both handed back, no
+  more than two agents run. The coordinator reads "the specs" as those
+  two Fable tracks; until both are done the four running agents
+  continue, and a slot freed by an implementation agent is refilled
+  only while that keeps the total at two after the specs end.
 * **Agents push their own branch** (owner, 2026-11-15: "Also push those
   work branches"): a plain push of its own branch after each commit,
   never force, never another branch, never `master`. If the permission
