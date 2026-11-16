@@ -1685,3 +1685,27 @@ testbed, uncommitted** (owner, 2026-11-16: "Yes, and you can also put
 them on testbed"); the manifest says how each is obtained, and nothing
 proprietary enters the public repository.
 
+## ADR-058 — The emulator is an interpreter; a JIT is left for later
+(Coordinator, 2026-11-16, on the owner's decision: "Leave JIT for later then.")
+
+**Context.** 45,439 of the 71,882 lines of Ghidra's `Framework/Emulation`
+are a JIT (`ghidra.pcode.emu.jit.*`) that compiles p-code to JVM bytecode.
+It cannot be ported as it is. A JIT gives only speed, and only for long
+emulations (fuzzing, unpacking, whole-program runs); the interpreter
+defines the semantics, and both must give the same results.
+
+**Decision.** `bk-emu` (M6) ports the p-code interpreter and is accepted
+on its parity with Ghidra's. No JIT is planned or designed for now. The
+interpreter is benchmarked against Ghidra's emulator, with and without
+its JIT, on the same workloads, and the numbers go into `PERF.md`. A JIT
+is reconsidered only if those numbers show a gap on a use that matters;
+it would then be a Basilisk design, not a port, and would need its own
+decision: it means `unsafe`, executable memory with different rules on
+each of the three systems, code Miri cannot check, and either a large
+dependency or a backend per host processor (ADR-005, ADR-011, ADR-020).
+
+**Consequences.** The size of M6's emulator item is the 26,000 lines
+without the JIT. Ghidra's JIT-specific classes and their tests are marked
+not applicable in the test checklist, with this ADR as the reason, until
+a JIT exists.
+

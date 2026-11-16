@@ -168,7 +168,7 @@ this list follows its waves.
 ### M6 — Headless core complete
 - [ ] Exporters (C, XML/SARIF, binary, hex), import/export round trips
 - [ ] DWARF, PDB, GNU and Microsoft demanglers (the GNU one ported from libiberty, ADR-018), Function ID
-- [ ] Emulator (`bk-emu`) and the processor emulator tests (126 classes); needs `sleigh-language`, its tests need M4 and built binaries; Ghidra's JIT is 45,439 of the module's 71,882 lines and needs a decision (owner)
+- [ ] Emulator (`bk-emu`) and the processor emulator tests (126 classes); needs `sleigh-language`, its tests need M4 and built binaries; an interpreter only — Ghidra's JIT (45,439 of the module's 71,882 lines) is left for later (ADR-058)
 - [ ] RTTI class recovery (28,042 lines of Ghidra scripts)
 - [ ] Assembler (`bk-asm`)
 

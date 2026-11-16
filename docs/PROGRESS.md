@@ -186,8 +186,8 @@ GHIDRA-BUGS 52. **The owner decided (20:30):** Ghidra's packed
 databases (`.gdt`, `.fidb`) are read, read-only (ADR-054); system
 binaries and MSVC-built samples may be kept on the build host and the
 testbed, uncommitted (ADR-057); **the storage engine is pure Rust
-only** (ADR-050; LMDB is out); the emulator's JIT is under discussion
-("I don't understand why we want JIT at all"). Not yet applied from the
+only** (ADR-050; LMDB is out); the emulator is an interpreter and the JIT is left
+for later (ADR-058; "Leave JIT for later then."). Not yet applied from the
 report: the `PARITY.md` row changes, the split of four tracks marked
 "to split", the items marked "to be planned". The storage study's only
 measurements were copied out of its build directory to
