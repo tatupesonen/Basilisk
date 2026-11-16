@@ -174,7 +174,7 @@ fn bench_context_lookup() {
     let mut ctx = ContextNames::new();
     ctx.set_space_limits(&m);
     ctx.register_variable("mode", 0, 3).unwrap();
-    ctx.register_variable("wide", 30, 33).unwrap();
+    ctx.register_variable("wide", 28, 31).unwrap();
     // 10,000 split points.
     for i in 0..10_000u64 {
         ctx.set_variable("mode", Address::new(RAM, i * 64), (i % 16) as u32)

@@ -258,7 +258,7 @@ pub(crate) fn run(target: Target, data: &[u8]) {
             let mut ctx = ContextNames::new();
             ctx.set_space_limits(sp);
             let _ = ctx.register_variable("mode", 0, 3);
-            let _ = ctx.register_variable("wide", 30, 33);
+            let _ = ctx.register_variable("wide", 28, 31);
             let _ = ctx.register_variable("high", 60, 63);
             if ctx.decode(&mut dec, sp).is_ok() {
                 let _ = ctx.encode(&mut enc, sp);
