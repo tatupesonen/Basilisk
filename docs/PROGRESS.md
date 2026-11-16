@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-16 20:05) — four agents running; see "Running"
+## Now — RESUME HERE (2026-11-16 20:32) — two agents running (`decomp-ir` fixing review findings, `spec-decomp-wave3` finishing); see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -167,6 +167,34 @@ slots (mid-pass states) goes to the oracle track with `@joins`.
 **`decomp-symbols` (D06) met all acceptance conditions at about 20:20** and is
 on `integration` (CI run 43928154285); merge when green. GHIDRA-BUGS 49
 to 51 added (`rangemap.hh`).
+
+**Merged 20:31: `decomp-symbols` (D06)** (`11eb74f`; CI run 43928154285
+green on all 8 jobs; integration gate 2,492 tests, 0 new packages,
+advisories ok; worktree and branches removed, the host's `master`
+published). New crates `bk-context` and `bk-decomp-symbols`; every
+acceptance condition of the spec met (image oracle 93 data tests and
+8,435 rows, `print map` 93 of 93 on both machines, `@scope` rebuilt for
+3,642 of 3,642 dumps, properties at 1,000,000 cases, a test per query
+rule). Open by design: `<protooverride>` round trips (D07's prototype
+codec), one checklist line (D17).
+
+**Merged 20:27 (documents): `plan-programs`** — `features/program-plan.md`
+(the port plan for M4 and M5), `research/plan-programs/roadmap-check.md`
+(M4 to M10 against Ghidra's source) and its report. Recorded from it:
+ADR-049 to ADR-057, the corrected "Order of work" in `PLAN.md`,
+GHIDRA-BUGS 52. **The owner decided (20:30):** Ghidra's packed
+databases (`.gdt`, `.fidb`) are read, read-only (ADR-054); system
+binaries and MSVC-built samples may be kept on the build host and the
+testbed, uncommitted (ADR-057); **the storage engine is pure Rust
+only** (ADR-050; LMDB is out); the emulator's JIT is under discussion
+("I don't understand why we want JIT at all"). Not yet applied from the
+report: the `PARITY.md` row changes, the split of four tracks marked
+"to split", the items marked "to be planned". The storage study's only
+measurements were copied out of its build directory to
+`../basilisk-wt/store-spike/tools/store-spike/results-aborted-2026-11-13/`
+(uncommitted, in the paused worktree). `../spec-macho` and
+`../spec-program-model` are empty worktrees; the plan supersedes the
+second.
 
 **The cap drops to two when the specs are done** (owner, about 20:10:
 "Once the specs are done, go down to 2 agents"): when

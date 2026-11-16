@@ -1604,8 +1604,10 @@ points of Ghidra's manager protocol. Beside them: `bk-addr`, `bk-task`
 waits for the engine. The engine is chosen when the paused storage study
 is finished; the study adds a memory-first candidate. Its only numbers so
 far are from an aborted run (LMDB about 1 million instructions a second
-on load, `redb` 0.2 to 0.4 million) and decide nothing. Whether an engine
-written in C is acceptable is the owner's (ADR-005 says pure Rust).
+on load, `redb` 0.2 to 0.4 million) and decide nothing. **The engine is
+pure Rust** (owner, 2026-11-16: "Pure Rust only"; ADR-005): engines
+written in C, LMDB among them, are out of the comparison whatever their
+numbers; the study compares Rust candidates and the memory-first design.
 
 ## ADR-051 — One logical change log; readers use snapshots
 (Coordinator, 2026-11-16, from `plan-programs`; plan section 3.)
@@ -1644,9 +1646,12 @@ one-time analyzers.
 
 Data files under `Ghidra/Features/*/data` (patterns, type archives,
 Function ID databases, symbol tables) are read in place, like processor
-data, and never copied into the repository. Whether the packed databases
-among them (`.gdt`, `.fidb`) may be read at all is the owner's decision;
-it narrows ADR-003.
+data, and never copied into the repository. **The packed databases among
+them (`.gdt`, `.fidb`) are read, read-only** (owner, 2026-11-16: "Yes,
+read-only"): a small reader of Ghidra's packed database format, used for
+the shipped data-type archives and Function ID databases and for a
+user's own archives. This narrows ADR-003, which still stands for
+programs and projects: Basilisk does not read or write those.
 
 ## ADR-055 — Loaders are written against a `LoadTarget` trait; format parsers hold no program code
 (Coordinator, 2026-11-16, from `plan-programs`.)
@@ -1674,7 +1679,9 @@ its corpus: compiler-built samples per format and processor, Ghidra's
 p-code test sources, deliberately damaged files, and named system
 binaries, recorded in a manifest with how each is obtained. `LOOP.md`'s
 rule about referring to Ghidra's test resources in place applies only to
-the three source directories that exist. Whether system binaries and
-samples built with Microsoft's compiler may be kept on the build host,
-uncommitted, is the owner's decision.
+the three source directories that exist. **System binaries and samples
+built with Microsoft's compiler may be kept on the build host and the
+testbed, uncommitted** (owner, 2026-11-16: "Yes, and you can also put
+them on testbed"); the manifest says how each is obtained, and nothing
+proprietary enters the public repository.
 
