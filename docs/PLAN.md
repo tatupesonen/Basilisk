@@ -155,18 +155,21 @@ this list follows its waves.
 - [ ] `bk-datatypes`: built-in types, composites, archives, data organisation from `.cspec`
 - [ ] `bk-loader` + ELF, PE, Mach-O, raw binary, Intel hex; relocation handlers per processor
 - [ ] `basilisk import`
+- [ ] From the roadmap check against Ghidra's source (`research/plan-programs/roadmap-check.md`), also in M4: the corpus of test binaries (ADR-057); a program builder for tests (449 Ghidra test files use `ProgramBuilder`); the domain-object layer — transactions, undo, events, options — which Ghidra keeps in `Framework/Project`; external locations, program trees, the source map, function tags; the read-only reader of Ghidra's packed databases if the owner allows it (the 16 shipped `.gdt` archives and the `.fidb` files; the analyzer applying the archives is on by default); the file-open part of the file-system layer; the binary, hex and XML exporters (moved from M6); the editing commands with undo and redo (moved from M7, which binds them to actions)
 
 ### M5 — Disassembly and auto-analysis
 - [ ] Flow-following disassembler, instruction prototypes, context propagation; the command `basilisk disasm` on a loaded program (ADR-047)
 - [ ] Auto-analysis manager and scheduling
 - [ ] Analyzers in Ghidra's priority order: entry points, function starts (pattern files), references, switch tables, stack, data and strings, no-return, call-fixups, demanglers, format-specific analyzers
 - [ ] Decompiler wired to the program (parameter ID, switch analysis, decompiler-dependent analyzers)
+- [ ] Block models, symbolic propagation, the byte-search engine. Ghidra's default analysis runs two decompiler analyzers and several analyzers filed under M6: M5's whole-binary oracle runs with those switched off until they land (analysis profiles, ADR-056)
 - [ ] `basilisk analyze` (headless: import, analyse, export); whole-binary differential tests against Ghidra headless
 
 ### M6 — Headless core complete
 - [ ] Exporters (C, XML/SARIF, binary, hex), import/export round trips
 - [ ] DWARF, PDB, GNU and Microsoft demanglers (the GNU one ported from libiberty, ADR-018), Function ID
-- [ ] Emulator (`bk-emu`) and the processor emulator tests (126 classes)
+- [ ] Emulator (`bk-emu`) and the processor emulator tests (126 classes); needs `sleigh-language`, its tests need M4 and built binaries; Ghidra's JIT is 45,439 of the module's 71,882 lines and needs a decision (owner)
+- [ ] RTTI class recovery (28,042 lines of Ghidra scripts)
 - [ ] Assembler (`bk-asm`)
 
 ### M7 — egui UI
@@ -204,17 +207,32 @@ lines) — and none of that depends on M3. So M4 starts now, beside M3.
   a row remain; more agents do not shorten it, they only take the side
   tracks (D08, D09, D10, D12, D13, D15, D16c, D18, D19, the nine rule
   families).
-* *Programs* (M4 → M5 → M7 on real binaries): `ref-headless` and the
-  storage decision (ADR-003) → program-model plan and specs →
-  `bk-store`, `bk-program`, `bk-datatypes` → loaders → flow-following
-  disassembly and auto-analysis → the decompiler wired to a program →
-  the interface on real programs. This is the longest chain in the
-  project and the one every later milestone hangs from.
-* *Independent of both*, usable to fill a slot at any time:
-  `sleigh-language` (M1's open item; M5 needs it), the emulator and the
-  assembler (M6; they need only M1 and M2), PE and Mach-O parsers, the
-  demanglers, the plugin tracks P0, P1 and P3, DWARF and PDB parsers
-  (format parsing needs only `bk-bin`).
+* *Programs* (M4 → M5 → M7 on real binaries). The detailed plan is
+  `features/program-plan.md` (2026-11-16, measured from Ghidra's source;
+  it corrects the first version of this section). The long pole is the
+  model chain, eight tracks in a row, three of them large: the store
+  interface → `bk-store` → the address map → memory → symbols → code
+  units → functions → program assembly → loader acceptance.
+  `sleigh-language` (M1's open item) joins it at code units —
+  instructions are stored as a prototype id — so it is a chain track,
+  started now, not fill-in work. Beside the chain run three more lines:
+  data types; format parsers and relocation tables; the disassembler
+  core. Loaders are written against a recording `LoadTarget` and
+  analyzers are accepted from Ghidra's dumped state (ADR-053, ADR-055),
+  so neither waits for the model. Six to ten slots are usable through
+  M4.
+* *First steps on the programs side, all startable today*: the
+  `ref-headless` oracle and the corpus (Ghidra's tree has no test
+  binaries, so the project builds one, ADR-057); the storage study
+  resumed (the table interface is fixed first, the engine chosen when
+  the study ends, ADR-050); `bk-task`; `sleigh-language`; `bk-addr`;
+  the built-in data types; the PE and Mach-O parsers; the relocation
+  tables.
+* *Independent of both*, usable to fill a slot at any time: the
+  demanglers, the plugin tracks P0, P1 and P3, the DWARF and PDB readers
+  (their appliers need M4). The emulator and the assembler are **not**
+  independent: they need `sleigh-language`, and the emulator's tests
+  need M4 and binaries that must be built.
 
 **Slots** (three agents; a fourth and fifth would go to the programs
 chain and to the independent work, which is where the width is):

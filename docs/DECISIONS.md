@@ -1586,3 +1586,95 @@ from the spike's report and Ghidra's printer source. Ghidra's flat mode
 and `print C types` are defective (GHIDRA-BUGS 40, 43, 44); D16b's spec
 says what Basilisk prints there.
 
+## ADR-049 — The program side is area crates and one assembling crate
+(Coordinator, 2026-11-16, from track `plan-programs`; `features/program-plan.md` section 2.)
+
+Area crates — `bk-memory`, `bk-refs`, `bk-symbols`, `bk-datatypes`,
+`bk-listing`, `bk-functions` — own their tables and the rules inside one
+area. Effects that cross areas are written once, in `bk-program`, at the
+points of Ghidra's manager protocol. Beside them: `bk-addr`, `bk-task`
+(the monitor type), `bk-cmd`, `bk-reloc-*`, `bk-cparser`, `bk-export`,
+`bk-ui-program`, `bk-decomp-host`. This replaces the single `bk-program`,
+`bk-datatypes`, `bk-store`, `bk-loader*` rows of the crate map (ADR-013).
+
+## ADR-050 — ADR-003 is decided in two parts: the table interface now, the engine by the finished study
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 3.)
+
+`bk-store`'s table interface is fixed by its specification; no track
+waits for the engine. The engine is chosen when the paused storage study
+is finished; the study adds a memory-first candidate. Its only numbers so
+far are from an aborted run (LMDB about 1 million instructions a second
+on load, `redb` 0.2 to 0.4 million) and decide nothing. Whether an engine
+written in C is acceptable is the owner's (ADR-005 says pure Rust).
+
+## ADR-051 — One logical change log; readers use snapshots
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 3.)
+
+One log of logical changes is the source of undo, of change sets and of
+events. Readers work on snapshots while one writer changes the program; a
+snapshot is the frozen state ADR-044 requires for a decompilation, and it
+is what keeps the interface from blocking. Undo survives a save. How undo
+of bulk steps is stored stays open until the storage study ends. This
+differs from Ghidra, whose undo is page deltas of its database.
+
+## ADR-052 — Ids are never reused
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+An id given to a symbol, a function, a variable or any other record is
+not given again in that program, also after undo. Ghidra reuses record
+keys after undo (`db/Table.java:605–611`; GHIDRA-BUGS 52). Variables have
+an identity of their own. The Python bindings rely on this
+(`plugin-binding-constraints.md`).
+
+## ADR-053 — Parity of the Java side is measured at six levels with a program dump
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 4. The counterpart of ADR-027.)
+
+Ghidra, built on the build host, runs headless with a script that writes
+a Basilisk-defined, versioned text dump of the program: 21 sorted
+sections, no Ghidra ids. Basilisk writes the same format, and can load a
+dump, so an analyzer is accepted from Ghidra's state before it, as
+decompiler passes are. Levels P0 to P5 run from a loader's result to
+whole analysis; runs of Ghidra with a subset of analyzers are an accepted
+oracle. The oracle track is `ref-headless` (P00). Not yet verified by
+running: headless compilation of the script, timings, isolation of
+one-time analyzers.
+
+## ADR-054 — ADR-002 covers the data files of Ghidra's features
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+Data files under `Ghidra/Features/*/data` (patterns, type archives,
+Function ID databases, symbol tables) are read in place, like processor
+data, and never copied into the repository. Whether the packed databases
+among them (`.gdt`, `.fidb`) may be read at all is the owner's decision;
+it narrows ADR-003.
+
+## ADR-055 — Loaders are written against a `LoadTarget` trait; format parsers hold no program code
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+A loader calls a trait for everything it creates. A recording
+implementation makes a loader testable against Ghidra's dump before the
+program model exists; the program model implements the same trait.
+Format parsers (`bk-elf`, `bk-pe`, `bk-macho`, …) depend only on `bk-bin`
+(as today). Loaders give typed diagnostics and a partial program from a
+damaged file, where Ghidra often gives up.
+
+## ADR-056 — Analysis improvements live in profiles
+(Coordinator, 2026-11-16, from `plan-programs`; ADR-025 applied to analysis.)
+
+The `ghidra` analysis profile reproduces Ghidra's analyzers, their order
+and options, and is what the oracle is compared with. Improvements are
+other, named profiles.
+
+## ADR-057 — The corpus of test binaries is built by the project
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+Ghidra's public tree has no test binaries (they are in a repository that
+is not public), and its loaders have 54 tests in all. The project builds
+its corpus: compiler-built samples per format and processor, Ghidra's
+p-code test sources, deliberately damaged files, and named system
+binaries, recorded in a manifest with how each is obtained. `LOOP.md`'s
+rule about referring to Ghidra's test resources in place applies only to
+the three source directories that exist. Whether system binaries and
+samples built with Microsoft's compiler may be kept on the build host,
+uncommitted, is the owner's decision.
+
