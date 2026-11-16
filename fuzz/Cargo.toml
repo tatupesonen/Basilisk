@@ -19,6 +19,7 @@ bk-binutils-sys = { path = "../crates/bk-binutils-sys" }
 bk-core = { path = "../crates/bk-core" }
 bk-cspec = { path = "../crates/bk-cspec" }
 bk-decomp-cfg = { path = "../crates/bk-decomp-cfg" }
+bk-decomp-ir = { path = "../crates/bk-decomp-ir" }
 bk-decomp-range = { path = "../crates/bk-decomp-range" }
 bk-decomp-types = { path = "../crates/bk-decomp-types" }
 bk-elf = { path = "../crates/bk-elf" }
@@ -57,6 +58,13 @@ bench = false
 [[bin]]
 name = "bk_decomp_cfg_xml"
 path = "fuzz_targets/bk_decomp_cfg_xml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_ir_state"
+path = "fuzz_targets/bk_decomp_ir_state.rs"
 test = false
 doc = false
 bench = false

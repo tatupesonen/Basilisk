@@ -29,6 +29,7 @@ dependencies = [
  "bk-core",
  "bk-cspec",
  "bk-decomp-cfg",
+ "bk-decomp-ir",
  "bk-decomp-range",
  "bk-decomp-types",
  "bk-elf",
@@ -105,6 +106,18 @@ name = "bk-decomp-cfg"
 version = "0.0.1"
 dependencies = [
  "bk-marshal",
+ "thiserror",
+]
+
+[[package]]
+name = "bk-decomp-ir"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+ "bk-decomp-cfg",
+ "bk-decomp-types",
+ "bk-pcode",
+ "bk-testkit",
  "thiserror",
 ]
 
