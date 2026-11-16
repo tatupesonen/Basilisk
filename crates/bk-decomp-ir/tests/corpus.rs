@@ -159,6 +159,7 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     let (mut loaded, mut equal, mut raw_eq, mut raw_n) = (0, 0, 0, 0);
     let mut causes: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut with_joins = BTreeSet::new();
+    let mut join_vn_dumps = 0;
     let mut report = String::new();
     for path in all
         .iter()
@@ -170,12 +171,22 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         let l = lang(&reg, &mut cache, &dump.arch_id);
         let spaces = Arc::new(spaces_from_dump(&dump, Arc::clone(&l.regs)).unwrap());
         let join_name = spaces.join_space().map(|s| s.name().to_owned());
-        let has_join = dump
+        // A join varnode prints only where an op reads or writes it.
+        let joins: BTreeSet<_> = dump
             .varnodes
             .iter()
-            .any(|v| Some(&v.space) == join_name.as_ref());
+            .filter(|v| Some(&v.space) == join_name.as_ref())
+            .map(|v| v.id)
+            .collect();
+        let has_join = dump.ops.iter().any(|o| {
+            o.output.is_some_and(|v| joins.contains(&v))
+                || o.inputs.iter().any(|v| joins.contains(v))
+        });
         if has_join {
             with_joins.insert(name.clone());
+        }
+        if !joins.is_empty() {
+            join_vn_dumps += 1;
         }
         let ssa = match load(&dump, Arc::clone(&spaces)) {
             Ok(s) => s,
@@ -214,7 +225,8 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         }
     }
     let summary = format!(
-        "dumps loaded {loaded}, written equal {equal}; print raw equal {raw_eq} of {raw_n}; differences {causes:?}\n"
+        "dumps loaded {loaded}, written equal {equal}; print raw equal {raw_eq} of {raw_n}; differences {causes:?}; dumps with join varnodes {join_vn_dumps}, with ops printing them {}\n",
+        with_joins.len()
     );
     std::fs::create_dir_all(&out_dir).unwrap();
     std::fs::write(out_dir.join("corpus.txt"), format!("{summary}{report}")).unwrap();

@@ -1,4 +1,5 @@
-//! The corpus dumps that contain join-space varnodes (pinned; spec test 1).
+//! The corpus dumps whose ops read or write join-space varnodes (pinned;
+//! spec test 1).
 //!
 //! A `bkstate` dump (format version 2) does not carry Ghidra's join records
 //! (`JoinRecord`, `translate.hh:198`), so a loaded state cannot print a
@@ -8,7 +9,8 @@
 //! from what the dump has. These dumps are the named exception of the
 //! corpus test until the dump format carries the records
 //! (`docs/agents/decomp-ir.md`, "Join records"). The list is the capture
-//! of 2026-11-16 on the build host: 3,642 dumps, 76 with join varnodes.
+//! of 2026-11-16 on the build host: 3,642 dumps, 76 of them with an op that
+//! prints a join varnode (more dumps hold join varnodes no op names).
 
 /// The dumps, by path under the capture directory, `/`-separated.
 pub(crate) const JOIN_DUMPS: &[&str] = &[
