@@ -51,15 +51,19 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
   5, scope oracle 1, context oracle 1, image oracle 1 (skips without
   reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.
 
-### (c) Not started, in order
+### (c) Testbed results, and what is left
 
-1. Testbed: `scripts/remote.sh long fuzz 300 <the seven targets>`,
-   `scripts/remote.sh wine -- -p bk-decomp-symbols -p bk-context`,
-   `scripts/remote.sh arm64 -- -p bk-decomp-symbols -p bk-context`.
-   Done locally: clippy for `x86_64-pc-windows-msvc` (clean),
-   `scripts/check-dep-age.py master` (0 new registry packages), 25 s of
-   each fuzz target on the Mac.
-2. Both gates; final report.
+- `scripts/remote.sh long fuzz 300 <seven targets>` (at `e791b8f`):
+  `fuzz: 7 targets x 300 s on 12 cores, 0 findings` (1.5–3.1 M executions
+  per target).
+- `scripts/remote.sh wine -- -p bk-decomp-symbols -p bk-context`:
+  `wine gnu: 66 passed, 0 failed, 3 ignored`.
+- `scripts/remote.sh arm64 -- -p bk-decomp-symbols -p bk-context`:
+  `arm64 (qemu): 66 passed, 0 failed, 3 ignored, 0 SKIPPED`.
+- Mac: clippy for `x86_64-pc-windows-msvc` clean; 25 s per fuzz target, no
+  finding; `scripts/check-dep-age.py master`: `0 new registry packages
+  against master; 0 younger than 14 days; 0 lookups failed`, exit 0.
+- Left: both gates, then the final report.
 
 ### (d) Decisions and traps
 
