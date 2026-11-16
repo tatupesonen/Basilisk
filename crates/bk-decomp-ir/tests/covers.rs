@@ -161,6 +161,9 @@ fn covers_print_as_the_console() {
         "covers: {equal} equal, {} differ, {dirty} dirty in the console, {other} not printed",
         bad.len()
     );
+    for b in bad.iter().take(5) {
+        eprintln!("{b}");
+    }
     assert!(equal > 0);
     assert!(bad.is_empty(), "{}", bad[..bad.len().min(20)].join("\n"));
 }
