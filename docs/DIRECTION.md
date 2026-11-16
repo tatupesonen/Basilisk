@@ -63,7 +63,13 @@ and a sane architecture in mind.
   when Fable 5.2 usage is exhausted it is an Opus 5.5 agent at **high**
   effort. Every specification is written from Ghidra's source, read at
   the pinned commit and cited by file and line, never from memory of
-  Ghidra. This replaces "including specification and research tracks"
+  Ghidra. **And from the project's own design documents** (owner, same
+  day: "Remember to read the docs for design too", meaning the software
+  design): the ADRs in `DECISIONS.md`, the architecture and crate map
+  in `PLAN.md`, the feature-document sections and the engineering and
+  testing rules in `LOOP.md`, and for the decompiler
+  `features/decomp-plan.md` with its amendments and the neighbouring
+  specs. A spec brief lists them. This replaces "including specification and research tracks"
   in the entry of 2026-11-14 below; implementation agents stay Opus 5.5
   at medium effort.
 * **Three agents** (owner, 2026-11-16: "Continue with two agents", then
