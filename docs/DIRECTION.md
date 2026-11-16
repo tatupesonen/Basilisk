@@ -76,6 +76,14 @@ and a sane architecture in mind.
   "Or rather, with 3 agents"), as on 2026-11-15. A fourth was added the same evening on the
   owner's request ("Spawn another fable subagent to plan onwards"): the
   planning agent for M4 onwards. The cap for the other work stays three.
+* **Finished work goes to `master` promptly** (owner, 2026-11-16: "we
+  also want to merge basically everything to master that's finished so
+  all fresh agents have up to date specs"; and "Remember that you merge
+  all work, not the agents"). The coordinator merges a track as soon as
+  it has reported and its gate and CI are green, specifications and
+  plans included; a fresh agent's worktree is cut from that `master`.
+  A review that is still running does not hold a green branch back: its
+  findings are fixed on a follow-up branch.
 * **Two agents once the specs are done** (owner, 2026-11-16 about 20:10:
   "Once the specs are done, go down to 2 agents"). When the wave 3
   specification agent and the planning agent have both handed back, no
