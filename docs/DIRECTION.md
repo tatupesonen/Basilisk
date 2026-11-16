@@ -56,6 +56,22 @@ and a sane architecture in mind.
 
 ## Working rules
 
+* **Specifications are written with Fable 5.2** (owner, 2026-11-16:
+  "Remember to write specs using Fable 5.2. If we are out of Fable 5.2
+  usage, use opus 5.5 on high. And remember to look at the ghidra
+  source."). A specification track is a Fable 5.2 agent at high effort;
+  when Fable 5.2 usage is exhausted it is an Opus 5.5 agent at **high**
+  effort. Every specification is written from Ghidra's source, read at
+  the pinned commit and cited by file and line, never from memory of
+  Ghidra. This replaces "including specification and research tracks"
+  in the entry of 2026-11-14 below; implementation agents stay Opus 5.5
+  at medium effort.
+* **Three agents** (owner, 2026-11-16: "Continue with two agents", then
+  "Or rather, with 3 agents"), as on 2026-11-15.
+* **Agents push their own branch** (owner, 2026-11-15: "Also push those
+  work branches"): a plain push of its own branch after each commit,
+  never force, never another branch, never `master`. If the permission
+  system refuses an agent's push, the coordinator pushes that branch.
 * **Division of labour** (owner, 2026-11-12): the coordinator (Claude Fable)
   writes the docs — ADRs, plan, feature specs, agent rules — and manages
   subagents, which write the code from those docs. The coordinator spawns
