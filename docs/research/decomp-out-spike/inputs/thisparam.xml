@@ -1,0 +1,28 @@
+<decompilertest>
+<binaryimage arch="x86:LE:32:default:gcc">
+<!--
+    decomp-out-spike coverage input (not a Ghidra test): a __thiscall
+    method returning a structure in memory, so the hidden return pointer
+    is parameter 0 and "this" is parameter 1 (FuncProto::updateThisPointer,
+    fspec.cc:3566). Printed in Java, which hides "this", the parameter list
+    shows an empty slot (printc.cc:2312-2317). Assembled with clang (i386):
+      mov eax,[esp+4]; mov edx,[esp+12]; mov [eax],edx;
+      mov dword [eax+4],0; mov dword [eax+8],0; mov dword [eax+12],0; ret 4
+-->
+<bytechunk space="ram" offset="0x100000">
+8b4424048b54240c8910c74004000000
+00c7400800000000c7400c00000000c2
+0400
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="meth"/>
+</binaryimage>
+<script>
+  <com>parse line struct big { int4 a; int4 b; int4 c; int4 d; };</com>
+  <com>parse line extern big __thiscall meth(int4 x,int4 y);</com>
+  <com>lo fu meth</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="This second" min="1" max="1">meth\(big \*rethidden,int4 x,int4 y\)</stringmatch>
+</decompilertest>

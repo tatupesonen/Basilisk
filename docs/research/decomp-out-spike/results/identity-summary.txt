@@ -1,0 +1,17 @@
+build host (Linux x86-64, GCC, libstdc++), job 20261116-123933-run:
+# orig log: 169 runs, 169 identical, 375608 bytes
+# orig nolog: 169 runs, 169 identical, 375608 bytes
+# xml log: 169 runs, 169 identical, 2821596 bytes
+# flat log: 169 runs, 169 identical, 492205 bytes
+# java log: 169 runs, 169 identical, 494300 bytes
+# options log: 169 runs, 169 identical, 608617 bytes
+# typesglobals: 0 runs differ, not counted: print C types reads an empty indent stack (prettyprint.cc:702), so the reference console's own text varies between runs
+
+Mac (macOS arm64, Apple clang 17, libc++):
+# orig log: 169 runs, 169 identical, 375606 bytes
+# orig nolog: 169 runs, 169 identical, 375606 bytes
+# xml log: 169 runs, 169 identical, 2821592 bytes
+# flat log: 169 runs, 168 identical, 492757 bytes
+# java log: 169 runs, 169 identical, 494296 bytes
+# options log: 169 runs, 169 identical, 608615 bytes
+# typesglobals: 1 runs differ, not counted: print C types reads an empty indent stack (prettyprint.cc:702), so the reference console's own text varies between runs

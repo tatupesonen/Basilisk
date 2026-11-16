@@ -116,6 +116,39 @@ fn size_of(r: &CircleRange) -> u32 {
     if r.mask() == 0xff { 1 } else { 2 }
 }
 
+/// Ghidra's result for an intersection of ranges of different sizes where it
+/// differs from the set intersection, or `None` where it does not.
+///
+/// Ranges of different sizes are a real input: the jump-table recovery
+/// intersects a switch variable's range with guard ranges taken through
+/// copies, extensions and truncations of it (`GuardRecord::quasiCopy` and
+/// `valueMatch`, jumptable.cc:1158–1163), and `intersect` handles a mask
+/// difference on purpose: it cuts the wider range down to the narrower
+/// domain (`newDomain`) and gives the result the narrower mask
+/// (rangeutil.cc:582–594, 661). Values are compared as values, so the
+/// result is the set intersection, with one Ghidra defect: a wide range
+/// that starts above the narrow domain and ends at its phase inside it
+/// (`[ff41,0)` in two bytes) has no value there, but the cut gives
+/// `[rem, rem)`, which `newDomain` then reads as everything
+/// (rangeutil.cc:151–166). The intersection is then the narrow range's
+/// values of that phase. A wide range of the smaller step that wraps is
+/// already excluded by the caller.
+fn mixed_size_result(a: &CircleRange, b: &CircleRange) -> Option<BTreeSet<u64>> {
+    if a.mask() == b.mask() || a.is_empty() || b.is_empty() {
+        return None;
+    }
+    let (wide, narrow) = if a.mask() > b.mask() { (a, b) } else { (b, a) };
+    let new_step = u64::from(a.step().max(b.step()).unsigned_abs());
+    let rem = wide.min() % new_step;
+    let empty_cut = wide.min() > narrow.mask() && wide.end() <= narrow.mask() && wide.end() == rem;
+    empty_cut.then(|| {
+        elements(narrow)
+            .into_iter()
+            .filter(|x| x % new_step == rem)
+            .collect()
+    })
+}
+
 proptest! {
     #![proptest_config(config())]
 
@@ -140,6 +173,7 @@ proptest! {
             let past_top = |x: u64| x.div_ceil(big) * big > smaller.mask();
             prop_assume!(!(a.step() != b.step()
                 && (want.is_empty() || smaller.min() > smaller.end() || past_top(smaller.min()) || past_top(smaller.end()))));
+            let want = mixed_size_result(&a, &b).unwrap_or(want);
             prop_assert_eq!(elements(&c), want, "{} ∩ {} = {}", a, b, c);
         } else {
             prop_assert_eq!(c, a, "a failed intersection left the receiver changed");
@@ -384,6 +418,55 @@ proptest! {
         let c3 = CircleRange::from_parts(f[4], g[4], f[2] | g[2], steps[2], false);
         exercise(&a, &b, &c3, op, val, sizes, max_step);
     }
+}
+
+/// Ranges of different sizes, as Ghidra intersects them
+/// (`mixed_size_result`): the result takes the narrower domain and holds
+/// the common values.
+#[test]
+fn intersect_of_different_sizes_takes_the_narrower_domain() {
+    // A 1-byte receiver: [10,20) ∩ [18,130) of two bytes = [18,20).
+    let mut c = CircleRange::new(0x10, 0x20, 1, 1);
+    assert_eq!(
+        c.intersect(&CircleRange::new(0x18, 0x130, 2, 1)),
+        Combined::Done
+    );
+    assert_eq!(c, CircleRange::new(0x18, 0x20, 1, 1));
+    // A 2-byte receiver: the result has the 1-byte mask.
+    let mut c = CircleRange::new(0x18, 0x130, 2, 1);
+    assert_eq!(
+        c.intersect(&CircleRange::new(0x10, 0x20, 1, 1)),
+        Combined::Done
+    );
+    assert_eq!(c, CircleRange::new(0x18, 0x20, 1, 1));
+    // Nothing of [100,200) in two bytes fits in one byte.
+    let mut c = CircleRange::new(0, 0x80, 1, 1);
+    assert_eq!(
+        c.intersect(&CircleRange::new(0x100, 0x200, 2, 1)),
+        Combined::Done
+    );
+    assert!(c.is_empty());
+}
+
+/// The minimal case CI found (run 43661252298): the full 1-byte range and
+/// `[ff41,0)` of two bytes have no common value, but Ghidra's `newDomain`
+/// cuts the 2-byte range to `[0,0)` and reads that as everything
+/// (rangeutil.cc:151–166), so the result is the full 1-byte range.
+#[test]
+fn intersect_reads_an_empty_cut_as_everything() {
+    let a = CircleRange::new(0, 0, 1, 1);
+    let b = CircleRange::from_parts(0xff41, 0, 0xffff, 1, false);
+    let mut c = a;
+    assert_eq!(c.intersect(&b), Combined::Done);
+    assert_eq!(c, CircleRange::new(0, 0, 1, 1));
+    assert!(c.is_full());
+    // The same cut with the 2-byte range as the receiver.
+    let mut c = b;
+    assert_eq!(
+        c.intersect(&CircleRange::new(0x10, 0x20, 1, 1)),
+        Combined::Done
+    );
+    assert_eq!(c, CircleRange::new(0x10, 0x20, 1, 1));
 }
 
 /// Calls every method once on arbitrary inputs.
