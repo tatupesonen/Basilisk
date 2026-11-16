@@ -22,7 +22,7 @@
 //! - [`Recorder`]: watches mutations; [`TraceRecorder`] reproduces Ghidra's
 //!   `OPACTION_DEBUG` trace.
 //! - [`props`]: the opcode table; [`semantics`]: what each op means at a
-//!   unit boundary; [`unit`]: units, origins and soundness as data.
+//!   unit boundary; [`mod@unit`]: units, origins and soundness as data.
 //! - `state` (feature `bkstate`): `bkstate` dumps to and from an [`Ssa`].
 //!
 //! Ids are indices that are never reused within a function; nothing
