@@ -3,3 +3,4 @@
 
 pub(crate) mod join_dumps;
 pub(crate) mod lang;
+pub(crate) mod opflags;

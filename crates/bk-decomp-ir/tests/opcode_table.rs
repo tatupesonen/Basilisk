@@ -12,8 +12,9 @@
 //!
 //! * (G) against Ghidra's `TypeOp*` constructors in `typeop.cc`: the name,
 //!   `opflags` and `addlflags` each constructor sets, for every opcode;
-//! * (S) against the ops of the checked-in dumps: each op's
-//!   `setOpcode`-owned flag bits (`op.cc:299`–`308`) are the table's;
+//! * (S) against the ops of the checked-in dumps (and, in `corpus.rs`, of
+//!   the whole capture): each op's `setOpcode`-owned flag bits are the
+//!   table's up to Ghidra's later marks (`support/opflags.rs`);
 //! * `op_semantics` is total (unit test in `semantics.rs`).
 
 mod support;
@@ -155,12 +156,12 @@ fn dumped_ops_carry_the_tables_flags() {
         let dump = StateDump::parse(&read_text(&path).unwrap()).unwrap();
         for o in &dump.ops {
             let opc = OpCode::from_name(&o.opcode).unwrap();
-            assert_eq!(
-                o.flags & oflags::OPCODE_BITS,
-                props(opc).flags,
-                "{point} {:?} {}",
+            assert!(
+                support::opflags::table_explains(opc, o.flags),
+                "{point} {:?} {} {:#x}",
                 o.seq,
-                o.opcode
+                o.opcode,
+                o.flags
             );
             seen.insert(opc);
         }

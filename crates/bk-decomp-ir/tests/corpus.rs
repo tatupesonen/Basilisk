@@ -25,8 +25,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bk_core::RegisterLookup;
-use bk_decomp_ir::flags::oflags;
-use bk_decomp_ir::props::props;
 use bk_decomp_ir::state::{CanonicalCalls, DumpNames, load, spaces_from_dump, write};
 use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
@@ -173,7 +171,7 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         // Test 7 (L): every op's setOpcode-owned flag bits are the table's.
         for o in &dump.ops {
             let opc = bk_pcode::OpCode::from_name(&o.opcode).unwrap();
-            if o.flags & oflags::OPCODE_BITS != props(opc).flags {
+            if !support::opflags::table_explains(opc, o.flags) {
                 *causes.entry("opcode-flags").or_default() += 1;
                 let _ = writeln!(report, "OPFLAGS {name} {:?} {}", o.seq, o.opcode);
             }

@@ -68,6 +68,20 @@ impl RegisterLookup for RegTable {
     }
 }
 
+/// The languages of the corpus capture, whose tables are checked in.
+pub(crate) const LANGUAGES: &[&str] = &[
+    "x86:LE:64:default",
+    "AARCH64:LE:64:v8A",
+    "x86:LE:32:default",
+    "MIPS:BE:32:default",
+    "ARM:LE:32:v8",
+    "MIPS:LE:32:default",
+    "PowerPC:BE:32:default",
+    "Toy:BE:32:builder.align2",
+    "8051:BE:16:default",
+    "68000:BE:32:MC68020",
+];
+
 /// A language's tables as read from `tests/data/lang`.
 #[derive(Debug, Default)]
 pub(crate) struct LangTables {

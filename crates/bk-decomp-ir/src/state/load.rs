@@ -442,5 +442,15 @@ pub fn load(dump: &StateDump, spaces: Arc<SpaceManager>) -> Result<Ssa, StateErr
     l.load_lists()?;
     l.load_block_ops()?;
     l.load_banks()?;
+    // A dump the IR's invariants refuse (a written varnode without a def,
+    // a reader list that disagrees with the ops, …) is refused here, so
+    // that every loaded state is one the mutation methods can work on.
+    let bad = l.ssa.invariant_violations();
+    if let Some(first) = bad.first() {
+        return Err(inconsistent(
+            "loaded state",
+            format!("{first} ({} problems)", bad.len()),
+        ));
+    }
     Ok(l.ssa)
 }

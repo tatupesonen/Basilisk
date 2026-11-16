@@ -18,12 +18,7 @@ use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
 use support::lang::LangTables;
 
-/// The languages the checked-in dumps use.
-pub const LANGUAGES: &[&str] = &[
-    "x86:LE:64:default",
-    "AARCH64:LE:64:v8A",
-    "x86:LE:32:default",
-];
+use support::lang::LANGUAGES;
 
 fn generate(registry: &LanguageRegistry, id: &str) -> LangTables {
     let lang = Language::load(registry, &LanguageId::new(id).unwrap()).unwrap();
