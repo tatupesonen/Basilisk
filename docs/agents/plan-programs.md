@@ -213,4 +213,10 @@ Nothing here was confirmed by running Ghidra.
 
 ## Commits
 
-    git log --oneline master..plan-programs
+    62137bc docs(plan-programs): track report
+    a719fc3 docs(plan-programs): the programs port plan for M4 and M5
+    557df22 docs(plan-programs): roadmap check, counts corrected after re-measuring
+    7a2b600 docs(plan-programs): the roadmap M4 to M10 checked against Ghidra's source
+    5197ef7 docs(plan-programs): measurement scripts over Ghidra's source and their output
+    de3e796 docs(plan-programs): track start
+    (and the commit that adds this list)
