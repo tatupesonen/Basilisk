@@ -534,6 +534,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-context"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+]
+
+[[package]]
 name = "bk-core"
 version = "0.0.1"
 dependencies = [
@@ -587,6 +594,26 @@ dependencies = [
  "flate2",
  "proptest",
  "rstest",
+]
+
+[[package]]
+name = "bk-decomp-symbols"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.13.2",
+ "bk-context",
+ "bk-core",
+ "bk-cspec",
+ "bk-decomp-types",
+ "bk-lang",
+ "bk-marshal",
+ "bk-sleigh",
+ "bk-testkit",
+ "flate2",
+ "proptest",
+ "rstest",
+ "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -689,6 +716,7 @@ name = "bk-sleigh"
 version = "0.0.1"
 dependencies = [
  "bk-bin",
+ "bk-context",
  "bk-core",
  "bk-elf",
  "bk-lang",

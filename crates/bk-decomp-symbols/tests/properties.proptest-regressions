@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e1014edd5a58772db3ba0dccb9911b1a13675518ff5f9a3add5ed34a986930d4 # shrinks to comments = [(0, 0, 0, " <")]
+cc de18062bdf37b59bde0565d32140505c7efd9f3ae33424e85da6fd23c4a7b611 # shrinks to ops = [Op { what: 0, name: 0, prefix: 3, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 4, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }]
+cc 917b95b228c5b5561e446f0f7bb1d778b73efad334dbfb7833e00c6788478449 # shrinks to ops = [Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 24689, ty: 0, locks: 152, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 24682, ty: 2, locks: 244, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }, Op { what: 0, name: 0, prefix: 0, offset: 0, ty: 0, locks: 0, provenance: 0 }]

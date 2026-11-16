@@ -9,42 +9,47 @@ use bk_core::Address;
 /// Values over the address line: the value at an address is that of the
 /// last split point at or before it, or the default before the first.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct PartMap<V> {
+pub struct PartMap<V> {
     default: V,
     points: BTreeMap<Address, V>,
 }
 
 /// Where an address sits between split points ([`PartMap::bounds`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Bounds {
+pub struct Bounds {
     /// The split point at or before the address, if any.
-    pub(crate) before: Option<Address>,
+    pub before: Option<Address>,
     /// The first split point after the address, if any.
-    pub(crate) after: Option<Address>,
+    pub after: Option<Address>,
 }
 
 impl<V> PartMap<V> {
-    pub(crate) fn new(default: V) -> Self {
+    /// An empty map: every point has `default`.
+    pub fn new(default: V) -> Self {
         Self {
             default,
             points: BTreeMap::new(),
         }
     }
 
-    pub(crate) fn default_value(&self) -> &V {
+    /// The value before the first split point.
+    pub fn default_value(&self) -> &V {
         &self.default
     }
 
-    pub(crate) fn default_value_mut(&mut self) -> &mut V {
+    /// The value before the first split point, to change it.
+    pub fn default_value_mut(&mut self) -> &mut V {
         &mut self.default
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
+    /// Whether there is no split point.
+    pub fn is_empty(&self) -> bool {
         self.points.is_empty()
     }
 
     /// The value at `point` (Ghidra `getValue`).
-    pub(crate) fn get(&self, point: Address) -> &V {
+    #[inline]
+    pub fn get(&self, point: Address) -> &V {
         self.points
             .range(..=point)
             .next_back()
@@ -53,7 +58,8 @@ impl<V> PartMap<V> {
 
     /// The value at `point` and the split points around it (Ghidra
     /// `bounds`).
-    pub(crate) fn bounds(&self, point: Address) -> (&V, Bounds) {
+    #[inline]
+    pub fn bounds(&self, point: Address) -> (&V, Bounds) {
         let before = self.points.range(..=point).next_back();
         let after = self
             .points
@@ -69,7 +75,7 @@ impl<V> PartMap<V> {
 
     /// Introduces a split point at `point` whose value is `copy` of the value
     /// in force there; an existing split point is kept (Ghidra `split`).
-    pub(crate) fn split_with(&mut self, point: Address, copy: impl Fn(&V) -> V) {
+    pub fn split_with(&mut self, point: Address, copy: impl Fn(&V) -> V) {
         if self.points.contains_key(&point) {
             return;
         }
@@ -79,7 +85,7 @@ impl<V> PartMap<V> {
 
     /// The split points from `first` (inclusive) to `end` (exclusive; to the
     /// end when `None`), in order.
-    pub(crate) fn range_mut(
+    pub fn range_mut(
         &mut self,
         first: Address,
         end: Option<Address>,
@@ -95,7 +101,7 @@ impl<V> PartMap<V> {
     /// Removes the split points strictly between `first` and `end` after
     /// splitting at both, and returns the value at `first` (Ghidra
     /// `clearRange`).
-    pub(crate) fn clear_range(
+    pub fn clear_range(
         &mut self,
         first: Address,
         end: Address,
@@ -114,14 +120,43 @@ impl<V> PartMap<V> {
         self.points.get_mut(&first)
     }
 
+    /// The value stored at the split point `point`, if there is one.
+    pub fn point_mut(&mut self, point: &Address) -> Option<&mut V> {
+        self.points.get_mut(point)
+    }
+
+    /// The number of split points.
+    pub fn len(&self) -> usize {
+        self.points.len()
+    }
+
+    /// Removes every split point; the default stays.
+    pub fn clear_points(&mut self) {
+        self.points.clear();
+    }
+
     /// The split points in order.
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (&Address, &V)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Address, &V)> {
         self.points.iter()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn point_access_and_clearing() {
+        let mut map = PartMap::new(0u32);
+        assert!(map.point_mut(&at(4)).is_none());
+        map.split_with(at(4), |v| *v + 1);
+        *map.point_mut(&at(4)).unwrap() = 7;
+        assert_eq!((map.len(), *map.get(at(9))), (1, 7));
+        map.clear_points();
+        assert!(map.is_empty());
+        assert_eq!(*map.get(at(9)), 0);
+        *map.default_value_mut() = 3;
+        assert_eq!(*map.default_value(), 3);
+    }
+
     use bk_core::SpaceId;
 
     use super::*;

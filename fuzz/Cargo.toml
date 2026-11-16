@@ -20,6 +20,7 @@ bk-core = { path = "../crates/bk-core" }
 bk-cspec = { path = "../crates/bk-cspec" }
 bk-decomp-cfg = { path = "../crates/bk-decomp-cfg" }
 bk-decomp-range = { path = "../crates/bk-decomp-range" }
+bk-decomp-symbols = { path = "../crates/bk-decomp-symbols" }
 bk-decomp-types = { path = "../crates/bk-decomp-types" }
 bk-elf = { path = "../crates/bk-elf" }
 bk-lang = { path = "../crates/bk-lang" }
@@ -64,6 +65,55 @@ bench = false
 [[bin]]
 name = "bk_decomp_range_ops"
 path = "fuzz_targets/bk_decomp_range_ops.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_binaryimage"
+path = "fuzz_targets/bk_decomp_symbols_binaryimage.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_commentdb"
+path = "fuzz_targets/bk_decomp_symbols_commentdb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_constantpool"
+path = "fuzz_targets/bk_decomp_symbols_constantpool.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_context_points"
+path = "fuzz_targets/bk_decomp_symbols_context_points.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_override"
+path = "fuzz_targets/bk_decomp_symbols_override.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_scope"
+path = "fuzz_targets/bk_decomp_symbols_scope.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bk_decomp_symbols_stringmanage"
+path = "fuzz_targets/bk_decomp_symbols_stringmanage.rs"
 test = false
 doc = false
 bench = false
