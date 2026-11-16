@@ -25,6 +25,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bk_core::RegisterLookup;
+use bk_decomp_ir::flags::oflags;
+use bk_decomp_ir::props::props;
 use bk_decomp_ir::state::{CanonicalCalls, DumpNames, load, spaces_from_dump, write};
 use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
@@ -168,6 +170,14 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         let name = dump_name(&cap, path);
         let text = read_text(path).unwrap();
         let dump = StateDump::parse(&text).unwrap_or_else(|e| panic!("{name}: {e}"));
+        // Test 7 (L): every op's setOpcode-owned flag bits are the table's.
+        for o in &dump.ops {
+            let opc = bk_pcode::OpCode::from_name(&o.opcode).unwrap();
+            if o.flags & oflags::OPCODE_BITS != props(opc).flags {
+                *causes.entry("opcode-flags").or_default() += 1;
+                let _ = writeln!(report, "OPFLAGS {name} {:?} {}", o.seq, o.opcode);
+            }
+        }
         let l = lang(&reg, &mut cache, &dump.arch_id);
         let spaces = Arc::new(spaces_from_dump(&dump, Arc::clone(&l.regs)).unwrap());
         let join_name = spaces.join_space().map(|s| s.name().to_owned());
@@ -252,6 +262,7 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     assert_eq!(equal + pinned.len(), loaded, "every other dump is exact");
     let other = causes.get("other").copied().unwrap_or(0)
         + causes.get("invariant").copied().unwrap_or(0)
+        + causes.get("opcode-flags").copied().unwrap_or(0)
         + causes.get("load-error").copied().unwrap_or(0)
         + causes.get("print-raw").copied().unwrap_or(0);
     assert_eq!(
