@@ -73,7 +73,9 @@ and a sane architecture in mind.
   in the entry of 2026-11-14 below; implementation agents stay Opus 5.5
   at medium effort.
 * **Three agents** (owner, 2026-11-16: "Continue with two agents", then
-  "Or rather, with 3 agents"), as on 2026-11-15.
+  "Or rather, with 3 agents"), as on 2026-11-15. A fourth was added the same evening on the
+  owner's request ("Spawn another fable subagent to plan onwards"): the
+  planning agent for M4 onwards. The cap for the other work stays three.
 * **Agents push their own branch** (owner, 2026-11-15: "Also push those
   work branches"): a plain push of its own branch after each commit,
   never force, never another branch, never `master`. If the permission

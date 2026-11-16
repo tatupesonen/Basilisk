@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-16 19:27) — three agents running; see "Running"
+## Now — RESUME HERE (2026-11-16 20:05) — four agents running; see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -124,7 +124,20 @@ report):
 |---|---|---|
 | `decomp-symbols` (D06) | `adc10fb4fccb83e94` | clippy clean and a green gate first; the `@scope` dump test on `bkstate` 2; the remaining tests, fuzz targets, benchmarks, spec appends; testbed, both gates, report |
 | `decomp-ir` (D05) | `aebffc71c4b0d4ebb` | clippy clean, re-run the corpus, green gate; the 76 dumps with join-space varnodes: it specifies the join records it needs from the state dump (a `bkstate` addition the coordinator schedules; it must not touch the console extension or the shared references) and pins those 76 by name meanwhile; the remaining tests; testbed, both gates, report |
-| `decomp-out-spike` (D16a) | `abc4c6c4bf243d8c0` | rerun to confirm the numbers, the Mac run, `report.md`, the README section, a log sample, gate; **then a second small task on a new branch `range-proptest`** (below) |
+| `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
+| `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
+
+**Merged 20:04: `decomp-out-spike` and `range-proptest`** (`234a43b`;
+CI run 43923279796 green on all 8 jobs; integration gate 2,425 tests,
+0 new packages, advisories ok; worktrees and branches removed, the
+host's `master` published). The spike's answer is **yes** — ADR-048
+confirms ADR-025 3c: the output is `PrintC`'s emission tree (3,231 of
+3,231 documents, 618,300 of 618,300 `Emit` calls on both machines).
+GHIDRA-BUGS 40 to 45 added. The spike's report is the section "Report"
+of `docs/agents/decomp-out-spike.md` (the agent's harness refused to let
+it create `report.md`; the coordinator did not move it, the owner was
+told). The property test now expects Ghidra's result for ranges of
+different sizes (Ghidra's `newDomain` defect, entry 45).
 
 **A property test on `master` fails rarely**: `bk-decomp-range`
 `intersect_is_exact_when_it_succeeds` (CI run 43661252298, on a
