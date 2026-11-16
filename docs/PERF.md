@@ -647,3 +647,26 @@ captured runs (`datatests/elseif`, 42 nodes, 61 edges) structures as given
 in 7 µs and 798 steps; command `cargo test -p bk-decomp-cfg --release
 --test corpus -- --ignored largest_corpus_graph --nocapture`.
 
+
+### `bk-decomp-symbols`
+
+2026-11-16, the Linux build host (a 20-vCPU x86-64 Linux VM, AMD Ryzen
+Threadripper 7970X), rustc 1.100.0, `--release`, one test thread, best of
+five runs inside each of two jobs (the two columns; the host was shared,
+so the spread is load). Command:
+
+    cargo test -p bk-decomp-symbols --release --test bench -- --ignored --nocapture --test-threads=1
+
+| Benchmark | Run 1 | Run 2 |
+|---|---:|---:|
+| insert 100,000 global symbols (1–24 bytes, a tenth overlapping) | 73 ms (732 ns/symbol) | 91 ms (914 ns/symbol) |
+| 1,000,000 `query_by_addr` at random addresses over them | 409 ns/call | 563 ns/call |
+| 1,000,000 `query_container` (size 4) | 397 ns/call | 676 ns/call |
+| `print_entries` of a 10,000-entry scope (329 kB of text) | 1.39 ms | 1.68 ms |
+| 1,000,000 context look-ups (`variable_at` + `context`) over 10,000 split points | — | 133 ns |
+
+A query resolves the address's scope, then searches one space's fragment
+tree (`O(log n)`) and walks the overlapping fragments of one piece; it
+allocates nothing. The random probes miss the caches on most calls over a
+1.6 MB address range. Not measured: loading the 93 data-test images against
+the reference console's `load test file` (spec 5.8's budget).
