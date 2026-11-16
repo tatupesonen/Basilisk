@@ -150,7 +150,7 @@ branch already replays it), (2) `bk-testkit`'s `StateDump` reads an
 op's empty input slot (`-`), (3) a `bk print cover` console command
 (Ghidra's own `print cover varnode` cannot be run, entry 48).
 
-**The review of D05 came back at 20:27: merge after two fixes.** The
+**The review of D05 came back at 20:24: merge after two fixes.** The
 reviewer reproduced one real bug — the sort key of an `iop` varnode
 changes after insertion (`src/ssa.rs:272`), which corrupts the bank
 orders and can be triggered through the public API and from a dump —
@@ -164,7 +164,7 @@ found them right. **The D05 agent was resumed with the findings**: step
 A (items 1 to 8) before the merge, step B (accessors, ranged cursors,
 `cfg_mut`) as a second merge. Reading and writing ops with empty input
 slots (mid-pass states) goes to the oracle track with `@joins`.
-**`decomp-symbols` (D06) met all acceptance conditions at 20:21** and is
+**`decomp-symbols` (D06) met all acceptance conditions at about 20:20** and is
 on `integration` (CI run 43928154285); merge when green. GHIDRA-BUGS 49
 to 51 added (`rangemap.hh`).
 
