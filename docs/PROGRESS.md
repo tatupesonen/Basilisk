@@ -127,15 +127,15 @@ report):
 | `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
 | `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
 
-**`decomp-ir` (D05) reported finished at 20:13** (head `dfebe94`,
+**`decomp-ir` (D05) reported finished at about 20:12** (head `dfebe94`,
 pushed; both gates green, 2,489 tests; not merged yet). **It is under
 independent review** before the merge, as `PLAN.md` "Order of work"
 sets for data-model tracks: reviewer `a50fda968a778e978` (Opus 5.5,
-started 20:17) on a detached read-only checkout
+started 20:15) on a detached read-only checkout
 `../basilisk-wt/review-decomp-ir`; it reports findings to the
 coordinator and changes nothing. After the review: fixes go back to the
 D05 agent (`aebffc71c4b0d4ebb`, resumable), then the coordinator merges
-through `integration`. **Only the coordinator merges** (owner, 20:16:
+through `integration`. **Only the coordinator merges** (owner, about 20:14:
 "Remember that you merge all work, not the agents"). D05's numbers:
 3,642 dumps load on both machines, 3,566 write back byte for byte, the
 other 76 are the pinned list with join-space varnodes; `print raw`
