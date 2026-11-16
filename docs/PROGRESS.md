@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-16 19:33) — three agents running; see "Running"
+## Now — RESUME HERE (2026-11-16 19:27) — three agents running; see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -113,7 +113,7 @@ is green; the nightly of 2026-11-16 passed (gate 2,423 tests, wine,
 oracle, differential). The build host now reports 15 GB of memory (it
 had 32): agents are told not to run several heavy jobs at once.
 **Three fresh agents continue the three unfinished tracks** (started
-19:32; each was pointed at "Status and how to continue" in its track
+19:26; each was pointed at "Status and how to continue" in its track
 report):
 
 | Branch | Agent id | Task |
