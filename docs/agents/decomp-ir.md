@@ -26,7 +26,7 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 
 | Spec test | What | Where | Result |
 |---|---|---|---|
-| 1 (L) | corpus round trip, all points | `tests/corpus.rs` | host and Mac: 3,642 loaded, 3,566 byte for byte, 76 pinned join dumps (`support/join_dumps.rs`), invariants hold in all |
+| 1 (L) | corpus round trip, all points | `tests/corpus.rs` | host (libstdc++) and Mac (libc++): 3,642 loaded, 3,566 byte for byte, 76 pinned join dumps (`support/join_dumps.rs`), invariants hold in all. The two captures are byte-identical except 4 dumps of `datatests/floatprint` |
 | 1 (S) | checked-in subset: 120 dumps of 20 functions covering all 137 opcode and flag-bit features of the capture | `tests/subset.rs`, `tests/data/subset/` (selection `select_subset`, ignored) | pass |
 | 2 | op texts (in 1), block `print raw` at p1 | `tests/corpus.rs` | 607 of 607 equal |
 | 3 | orders after load (in 1); creation-order independence | `src/mutate/tests/props.rs` | pass |
@@ -37,7 +37,7 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 8 | covers | `src/cover/tests.rs` (from `cover.cc`) | pass; the console half is impossible (see the spec, 8) |
 | 9 (L) | block facts = `bk dump blocks` at both `blockstructure` stops and after | `tests/block_facts.rs` | 1,684 stops, 6,065 blocks, 0 differ; 137 dumps unreadable (empty input slots, see follow-ups) |
 | 10 | unit table = inventory 5.2/6; duplicates, unknown names, wrong groups refused | `tests/units.rs` | pass |
-| 11 | fuzz `bk_decomp_ir_state` | `fuzz/fuzz_targets/` | see (e) |
+| 11 | fuzz `bk_decomp_ir_state` | `fuzz/fuzz_targets/`, replay `tests/fuzz_regressions.rs` | first 300 s run: 1 finding (a dump with a written varnode without a def was accepted; `load` now refuses states that break the invariants); second 300 s run: 0 findings, 69,332 execs |
 | 12 | benchmarks, bytes per op/varnode | `tests/bench.rs` (ignored) | `docs/PERF.md` |
 
 The invariant checker (`Ssa::invariant_violations`, `src/check.rs`) is run
@@ -110,19 +110,39 @@ exception list.
 - `UnitInfo` has `groups` (a list), not `group`: `directwrite` and
   `unreachable` are placed with two groups each.
 
-### (e) Gates
+### (e) Gates and testbed
 
-No gate run yet (neither remote run). The one allowed merge from `master` (bkstate v2) is used:
-`6457fb4`.
+- `scripts/remote.sh long fuzz 300 bk_decomp_ir_state`: 0 findings (after
+  the fix above).
+- `scripts/remote.sh wine -- -p bk-decomp-ir`: 66 passed, 0 failed, 4 ignored.
+- `scripts/remote.sh arm64 -- -p bk-decomp-ir`: 66 passed, 0 failed, 4 ignored.
+- Windows cross-check: `cargo clippy -p bk-decomp-ir --all-targets
+  --target x86_64-pc-windows-msvc` clean on the Mac.
+- Gates: see the final commit's report (both remote runs).
 
 ### (f) Open questions, ADRs, Ghidra defects
 
-- Ghidra defect candidate: `PieceNode::findRoot` (op.cc:883) uses
-  `compareOrder`'s -1/0/1 result as a boolean, so "attach to the earliest"
-  attaches to any ordered op. Basilisk reproduces it.
-- Ghidra defect candidate: `VarnodeBank`'s template varnode `searchvn`
-  never initialises `create_index` (varnode.cc:1220); read only for
-  size-0 free varnodes, which do not occur.
-- Follow-ups for other crates: `Cfg` has no allocation-free `size_out`,
-  `out(i)`, `in(i)`; `bk-core` `write_raw_sized` (returns the implied size)
-  is crate-private; the state dump lacks join records and register names.
+- Ghidra defect (confirmed by reading): `PieceNode::findRoot`
+  (`op.cc:883`–`884`) uses `compareOrder` (`op.cc:808`–`820`, which
+  returns -1, 0 or 1) as a boolean, so of several PIECEs naming a varnode
+  the last in descend order wins unless two are unordered, not "the
+  earliest". Basilisk reproduces it.
+- Withdrawn: `VarnodeBank::searchvn`'s uninitialised `create_index`
+  (`varnode.cc:1220`) is never read: the comparators read it only when both
+  varnodes are free, and `searchvn`'s flags are always `input` or `written`
+  (`varnode.cc:1224`, 1656–1672, 1830–1879).
+- Ghidra defect: `BlockBasic::insert` (`block.cc:2298`–`2301`) can repeat
+  an `order` (`ordafter/2 + ordbefore/2`); corpus `divopt`. Basilisk
+  reproduces it.
+- Ghidra defect: the console cannot run `print cover varnode <vn>`
+  (`ifacedecomp.cc:111`–`112` register `varnode` and `varnodehigh`;
+  `IfaceStatus::expandCom`, `interface.cc:436`–`475`, then reads the
+  varnode as a fourth command word). Reproduce: `decompile`, then
+  `print cover varnode [register,0x0,4](i)` → "ERROR: Invalid command".
+- Follow-ups: `bk-testkit`'s `StateDump` reads an op's inputs as a plain
+  list, but the console writes an empty slot as `-`
+  (`tools/reference/consoleext/bk_ids.cc:42`); 137 of 1,821 dumps taken at
+  `blockstructure` have such slots and do not parse (the standard capture
+  points happen to have none). The join records (above). A `bk print cover`
+  console command for spec test 8. `Cfg` has no allocation-free `size_out`,
+  `out(i)`, `in(i)`; `bk-core` `write_raw_sized` is crate-private.
