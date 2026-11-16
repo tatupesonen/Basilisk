@@ -190,7 +190,7 @@ fn block_facts_equal_the_consoles_at_blockstructure() {
     // Pinned (2026-11-16 capture; the same on the Mac and the build host
     // for these scripts): the exception may not grow unnoticed.
     assert_eq!((compared, skipped), (STOPS_COMPARED, 0), "stops compared / without a graph");
-    let pinned: Vec<&str> = UNREADABLE.lines().collect();
+    let pinned: Vec<&str> = UNREADABLE.lines().filter(|l| !l.is_empty()).collect();
     assert_eq!(unreadable, pinned, "dumps with empty input slots");
     assert!(bad.is_empty(), "{:#?}", &bad[..bad.len().min(30)]);
 }
