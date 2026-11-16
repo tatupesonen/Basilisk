@@ -1,7 +1,7 @@
 # Track `decomp-symbols` — status
 
 Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
-(step 0, ADR-043), `crates/bk-decomp-symbols` (new). State: in progress.
+(step 0, ADR-043), `crates/bk-decomp-symbols` (new). State: done, awaiting review.
 
 ## Status and how to continue
 
@@ -63,7 +63,11 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 - Mac: clippy for `x86_64-pc-windows-msvc` clean; 25 s per fuzz target, no
   finding; `scripts/check-dep-age.py master`: `0 new registry packages
   against master; 0 younger than 14 days; 0 lookups failed`, exit 0.
-- Left: both gates, then the final report.
+- Gates at `1a352a9`: `scripts/remote.sh gate` first run exit 1,
+  `tests: 681 passed, 1 failed` — `bk-decomp-range`
+  `tests/no_allocation.rs` `methods_do_not_allocate` (outside this track,
+  unchanged by it); rerun: exit 0, `tests: 2482 passed, 0 failed`.
+  `scripts/remote.sh gate --no-ref`: exit 0, `tests: 2482 passed, 0 failed`.
 
 ### (d) Decisions and traps
 
@@ -92,7 +96,7 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 
 ### (e) Gate and merges
 
-- Gates: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
+- Final gates: see (c). Earlier gates: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
   `tests: 2359 passed, 0 failed`. After the clippy fixes at `8b2e16d`:
   `scripts/remote.sh gate`, exit 0, `tests: 2451 passed, 0 failed`.
 - Pushing: every commit is pushed to `origin decomp-symbols` (plain push).
