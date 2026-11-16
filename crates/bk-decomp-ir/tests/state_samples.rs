@@ -113,3 +113,17 @@ fn join_records_replay_at_the_offsets_the_dump_names() {
     skewed.offset = 0x20;
     assert!(install_joins(&fresh, &[records[0].clone(), skewed]).is_err());
 }
+
+#[test]
+fn an_iop_offset_that_names_no_op_is_refused() {
+    // Review finding: an `iop` varnode with a plain offset sorted by a key
+    // that changed once an op with that id was created. Each kind of offset
+    // now belongs to one kind of space.
+    let text = read_text(&sample_dir().join("switchind.end.state.gz")).unwrap();
+    let edited = text.replacen("\tiop\top:ram:0x100021:0x10\t", "\tiop\t0x17\t", 1);
+    assert_ne!(edited, text);
+    let dump = StateDump::parse(&edited).unwrap();
+    let spaces = Arc::new(spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap());
+    let err = load(&dump, spaces).unwrap_err();
+    assert!(err.to_string().contains("offset kind"), "{err}");
+}

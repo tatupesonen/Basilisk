@@ -32,6 +32,15 @@ impl Ssa {
                 limit: u64::from(MAX_VARNODES),
             });
         }
+        // An `iop` key is the named op's time; an offset naming no op
+        // would change key when that op is created later.
+        if self.is_space(addr, crate::ssa::SpecialSpace::Iop)
+            && usize::try_from(addr.offset()).map_or(true, |i| i >= self.ops.len())
+        {
+            return Err(IrError::IopNamesNoOp {
+                offset: addr.offset(),
+            });
+        }
         let flags = self.initial_flags(addr);
         let nzm = if addr.is_constant() {
             addr.offset()

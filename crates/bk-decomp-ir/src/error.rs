@@ -153,6 +153,13 @@ pub enum IrError {
     /// An `iop` varnode does not name a live op.
     #[error("varnode {0} does not name an op")]
     NotAnOpReference(VarnodeId),
+    /// An `iop` address must name an op of the function (Ghidra's offset is
+    /// a live `PcodeOp*`, `newVarnodeIop`, `funcdata_varnode.cc:190`).
+    #[error("iop address {offset:#x} names no op of the function")]
+    IopNamesNoOp {
+        /// The offset (an op id).
+        offset: u64,
+    },
     /// The function has no basic block 0 where one is needed.
     #[error("{0}: the function has no basic blocks")]
     NoBlocks(&'static str),

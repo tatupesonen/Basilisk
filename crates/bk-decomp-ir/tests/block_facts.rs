@@ -30,6 +30,13 @@ use bk_testkit::{Tool, require_ghidra, require_tool, workspace_root};
 
 const STOPS: usize = 3;
 
+/// The stops whose dump and graph are compared.
+const STOPS_COMPARED: usize = 1684;
+
+/// The dumps `bk-testkit` cannot read because a dead op has an empty input
+/// slot (`-`); waiting on the reader change that goes with `@joins`.
+const UNREADABLE: &str = include_str!("data/facts_unreadable.txt");
+
 fn script(s: &CorpusScript, positions: &[u32], out: &Path) -> Vec<String> {
     let mut lines = vec![s.load.clone()];
     let mut k = 0;
@@ -117,10 +124,12 @@ fn block_facts_equal_the_consoles_at_blockstructure() {
         .filter(|p| p.extension().is_some_and(|e| e == "state"))
         .collect();
     files.sort();
-    let (mut compared, mut blocks, mut bad, mut unreadable) = (0, 0, Vec::new(), 0);
+    let (mut compared, mut blocks, mut bad) = (0, 0, Vec::new());
+    let (mut unreadable, mut skipped) = (Vec::new(), 0);
     for state in &files {
         let bkg = state.with_extension("bkg");
         let (Ok(st), Ok(g)) = (read_text(state), read_text(&bkg)) else {
+            skipped += 1;
             continue;
         };
         // A dump whose dead ops have empty input slots (`-`) does not
@@ -129,7 +138,7 @@ fn block_facts_equal_the_consoles_at_blockstructure() {
         let dump = match StateDump::parse(&st) {
             Ok(d) => d,
             Err(e) if format!("{e:?}").contains("field: \"inputs\"") => {
-                unreadable += 1;
+                unreadable.push(state.file_name().unwrap().to_string_lossy().into_owned());
                 continue;
             }
             Err(e) => panic!("{}: {e}", state.display()),
@@ -173,9 +182,15 @@ fn block_facts_equal_the_consoles_at_blockstructure() {
         }
     }
     eprintln!(
-        "block facts: {compared} stops, {blocks} blocks compared, {} differ; {unreadable} dumps with empty input slots unreadable",
-        bad.len()
+        "block facts: {compared} stops, {blocks} blocks compared, {} differ; {} dumps with empty input slots unreadable; {skipped} stops without a graph",
+        bad.len(),
+        unreadable.len()
     );
-    assert!(compared > 0, "no stops captured in {}", out.display());
+    std::fs::write(workspace_root().join("target/decomp-ir/facts-unreadable.txt"), unreadable.join("\n")).unwrap();
+    // Pinned (2026-11-16 capture; the same on the Mac and the build host
+    // for these scripts): the exception may not grow unnoticed.
+    assert_eq!((compared, skipped), (STOPS_COMPARED, 0), "stops compared / without a graph");
+    let pinned: Vec<&str> = UNREADABLE.lines().collect();
+    assert_eq!(unreadable, pinned, "dumps with empty input slots");
     assert!(bad.is_empty(), "{:#?}", &bad[..bad.len().min(30)]);
 }

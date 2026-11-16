@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bk_core::{Address, RangeList, SpaceManager};
+use bk_core::{Address, RangeList, SpaceKind, SpaceManager};
 use bk_decomp_cfg::NodeId;
 use bk_pcode::OpCode;
 use bk_testkit::oracle::StateDump;
@@ -184,6 +184,23 @@ impl Loader<'_> {
             .space_by_name(space)
             .ok_or_else(|| dangling("space", space))?;
         let id = s.id();
+        // Each kind of offset belongs to one kind of space: an `iop` varnode
+        // names an op (`newVarnodeIop`, `funcdata_varnode.cc:190`), an
+        // `fspec` varnode a call spec (`newVarnodeCallSpecs`, 219), a space
+        // constant lives in the constant space (`createConstFromSpace`).
+        let kind = s.kind().clone();
+        let fits = match off {
+            VarnodeOffset::Plain(_) => !matches!(kind, SpaceKind::Iop | SpaceKind::Fspec),
+            VarnodeOffset::Op(_) => kind == SpaceKind::Iop,
+            VarnodeOffset::Call(_) | VarnodeOffset::DeadCall => kind == SpaceKind::Fspec,
+            VarnodeOffset::Space(_) => kind == SpaceKind::Constant,
+        };
+        if !fits {
+            return Err(inconsistent(
+                "offset kind for its space",
+                format!("{space} {off:?}"),
+            ));
+        }
         Ok(match off {
             VarnodeOffset::Plain(v) => (Address::new(id, *v), false),
             VarnodeOffset::Op(seq) => (Address::new(id, u64::from(self.op(seq)?.get())), false),

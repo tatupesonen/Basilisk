@@ -328,3 +328,30 @@ fn errors_change_nothing() {
     let _ = Address::constant(0);
     fix.ok();
 }
+
+#[test]
+fn an_iop_address_must_name_an_op() {
+    // Review finding: `new_varnode(8, iop:3)` before op 3 existed sorted
+    // under the key MAX, then under op 3's time once it was created; the
+    // varnode was then lost to `bank_remove`. Ghidra's offset is always a
+    // live `PcodeOp*` (`newVarnodeIop`, `funcdata_varnode.cc:190`).
+    let mut fix = fx(1);
+    let iop = fix.ssa.spaces().iop_space().unwrap().id();
+    assert!(matches!(
+        fix.ssa
+            .new_varnode(&mut fix.env, 8, Address::new(iop, 3), None),
+        Err(IrError::IopNamesNoOp { offset: 3 })
+    ));
+    for i in 0..4 {
+        fix.op(OpCode::Copy, 0, 0x100 + i);
+    }
+    let vn = fix
+        .ssa
+        .new_varnode(&mut fix.env, 8, Address::new(iop, 3), None)
+        .unwrap();
+    fix.ok();
+    fix.op(OpCode::Copy, 0, 0x200);
+    fix.ssa.destroy_varnode(vn).unwrap();
+    assert_eq!(fix.ssa.loc_order().count(), 0);
+    fix.ok();
+}

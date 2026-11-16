@@ -19,7 +19,7 @@ impl Ssa {
     /// consistent:
     ///
     /// * the loc and def orders hold exactly the live varnodes, under the
-    ///   keys their fields give;
+    ///   keys their fields give; an `iop` offset names an op;
     /// * a varnode is `written` exactly when it has a defining op, and that
     ///   op has it as output (and conversely);
     /// * each varnode's reader list is, as a multiset, the slots of live
@@ -84,6 +84,14 @@ impl Ssa {
                 }
                 None if written => bad.push(format!("{vn}: written without a def")),
                 None => {}
+            }
+            if self.is_space(d.loc, crate::ssa::SpecialSpace::Iop)
+                && usize::try_from(d.loc.offset()).map_or(true, |i| i >= self.ops.len())
+            {
+                bad.push(format!(
+                    "{vn}: iop offset {:#x} names no op",
+                    d.loc.offset()
+                ));
             }
             if d.flags & vflags::INPUT != 0 && written {
                 bad.push(format!("{vn}: both input and written"));
