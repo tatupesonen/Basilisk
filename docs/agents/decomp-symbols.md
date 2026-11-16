@@ -106,10 +106,10 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 
 ### (e) Gate and merges
 
-- Last gate: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
-  `tests: 2359 passed, 0 failed`. Not run since (planned at the end and
-  after the next big step).
-- Pushing: `7dfd5c0` was pushed; later pushes were refused by the session's permission system (a coordinator message is not the user's consent), so later commits are local only.
+- Gates: step 0 at `de37c32`, `scripts/remote.sh gate`, exit 0,
+  `tests: 2359 passed, 0 failed`. After the clippy fixes at `8b2e16d`:
+  `scripts/remote.sh gate`, exit 0, `tests: 2451 passed, 0 failed`.
+- Pushing: every commit is pushed to `origin decomp-symbols` (plain push).
 - `git merge master`: 1 of 2 used (`dd1746a`, bkstate version 2).
 
 ### (f) Open questions, proposed ADRs, Ghidra defects
