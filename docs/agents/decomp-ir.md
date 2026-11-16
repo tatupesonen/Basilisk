@@ -28,10 +28,11 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 - **Corpus (L), `tests/corpus.rs`**, on the build host (x86-64,
   libstdc++), 2026-11-16: 3,642 dumps loaded (all), **3,566 written back
   byte for byte**; `print raw` at the first point equal to the console's in
-  **607 of 607** decompilations. The 76 others are exactly the dumps that
-  contain join-space varnodes; they are a pinned, named exception
+  **607 of 607** decompilations. The 76 others are exactly the dumps in which
+  an op reads or writes a join-space varnode (77 dumps hold join varnodes;
+  in one no op names them, and it round-trips); they are a pinned, named exception
   (`tests/support/join_dumps.rs`): the test asserts that the set of dumps
-  with join varnodes equals that list, that each of them equals the dump
+  whose ops name join varnodes equals that list, that each of them equals the dump
   once every `j{…}` address is blanked (only op-text lines printing a join
   differ), and that every other dump is exact. See "Join records" below.
   Rerun: `scripts/remote.sh run -- cargo test -p bk-decomp-ir --test
