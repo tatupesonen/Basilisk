@@ -716,9 +716,49 @@ differ only in `floatprint` (D00's report).
 
 (The implementing agent appends further differences here.)
 
+Appended by D05 (2026-11-16):
+
+- Checks come before changes. Where Ghidra changes state and then throws
+  (`markIndirectCreation` sets the op flag before it finds input 0 is not
+  a constant, `funcdata_op.cc:751`; `opSetInput` unsets the old input before
+  `addDescend` throws for a free varnode with a reader, `varnode.cc:336`),
+  Basilisk refuses first and changes nothing. Duplicate sequence numbers
+  (`newOp(inputs, seq)`), an empty slot in `opUnsetInput`, a slot out of
+  range and a stale id are errors; null slots in `opUnlink`/`opDestroyRaw`
+  are skipped.
+- `BlockBasic::setOrder` divides by the op count (`block.cc:2707`); on an
+  empty block Basilisk does nothing.
+- `BlockBasic::insert` (`block.cc:2298`–`2301`) can give an op the same
+  `order` as its predecessor (`ordafter/2 + ordbefore/2` loses one when
+  both are odd and two apart: every op appended after order 0xfffffffd
+  gets 0xfffffffd; the corpus has it, `divopt`). Basilisk keeps Ghidra's
+  numbering, so orders along a block are non-decreasing, not increasing.
+- `load` refuses a dump whose state breaks the IR's invariants (a written
+  varnode without a def, reader lists that disagree with the ops, …;
+  `Ssa::invariant_violations`); Ghidra never reads such a state.
+- Join records: a version-2 dump does not carry them, so a loaded state
+  prints a join varnode as `{unlinked:0x…}`; `state::install_joins` replays
+  them once the dump carries Ghidra's `splitlist` (see the status report).
+- Spec 6 test 6's invariant "a free non-spacebase varnode has at most one
+  reader" is not one of Ghidra's: `opUnsetOutput` frees a varnode whatever
+  its readers (`funcdata_op.cc:52`); only adding a reader checks it
+  (`varnode.cc:330`). It is not asserted.
+- Spec 6 test 8's console half cannot run: `print cover varnode <vn>` is
+  unreachable in Ghidra's console because `varnode` is a prefix of
+  `varnodehigh` and `IfaceStatus::expandCom` (`interface.cc:436`–`475`)
+  then reads the varnode as a fourth command word ("Invalid command").
+  Covers are tested against `cover.cc` by hand-derived cases instead.
+
 ## 9. Status
 
-Not started. D00 and D04 are merged (2026-11-15); D02 merged earlier.
+Done (D05, 2026-11-16) except as listed in `docs/agents/decomp-ir.md`:
+the IR, the mutation interface, the state load/dump, `print raw`, covers,
+block facts, the unit table, the trace recorder and the opcode table, with
+the tests of section 6 (test 8 against `cover.cc` instead of the console;
+the 76 corpus dumps whose ops print join varnodes are a pinned exception
+until the dump carries join records). Inventory: no Ghidra test in
+`docs/inventory/tests/` names this crate's classes alone; the decompiler's
+data tests belong to the whole pipeline.
 
 ## 10. Open items
 

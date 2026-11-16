@@ -68,3 +68,6 @@ impl Ssa {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
