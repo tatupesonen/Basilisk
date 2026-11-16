@@ -128,7 +128,7 @@ pub fn codepoint(buf: &[u8], charsize: usize, big_endian: bool) -> Option<(u32, 
     };
     // Ghidra's codepoint is a signed int; every caller treats a negative
     // one (UTF-32 with the top bit set) as invalid.
-    if (cp as i32) < 0 || (cp >= 0xd800 && (cp > 0x10ffff || cp <= 0xdfff)) {
+    if (cp as i32) < 0 || (cp >= 0xd800 && (cp > 0x0010_ffff || cp <= 0xdfff)) {
         return None;
     }
     Some((cp, skip))

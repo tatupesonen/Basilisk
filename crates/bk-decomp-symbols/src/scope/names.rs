@@ -118,6 +118,10 @@ impl Database {
 
     /// Ghidra `ScopeInternal::buildVariableName` (spec 4.8, rules 1–8).
     /// `index` is read and, for local variables, advanced.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Ghidra's buildVariableName arguments plus the scope and type factory it reads from `this`"
+    )]
     pub fn build_variable_name(
         &self,
         scope: ScopeId,
@@ -154,18 +158,15 @@ impl Database {
                 None => self.space_word_name(&mut s, addr, types, ty),
             }
         } else if flags.contains(VarnodeFlags::INPUT) && *index < 0 {
-            match self.register_name(addr, sz) {
-                Some(reg) => {
-                    let _ = write!(s, "in_{reg}");
-                }
-                None => {
-                    let space = self
-                        .env
-                        .spaces
-                        .space_of(addr)
-                        .map_or("", bk_core::Space::name);
-                    let _ = write!(s, "in_{space}_{:08x}", addr.offset());
-                }
+            if let Some(reg) = self.register_name(addr, sz) {
+                let _ = write!(s, "in_{reg}");
+            } else {
+                let space = self
+                    .env
+                    .spaces
+                    .space_of(addr)
+                    .map_or("", bk_core::Space::name);
+                let _ = write!(s, "in_{space}_{:08x}", addr.offset());
             }
         } else if flags.contains(VarnodeFlags::INPUT) {
             let _ = write!(s, "param_{index}");

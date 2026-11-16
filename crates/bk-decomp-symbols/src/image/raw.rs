@@ -63,7 +63,7 @@ impl LoadImage for RawImage {
         Ok(())
     }
 
-    fn arch_type(&self) -> &str {
+    fn arch_type(&self) -> &'static str {
         "unknown"
     }
 

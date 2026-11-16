@@ -249,11 +249,11 @@ impl Database {
             let mut id = 0u64;
             while let Some(attr) = dec.next_attribute()? {
                 if attr == ATTRIB_NAME {
-                    name = dec.read_string()?.to_owned();
+                    dec.read_string()?.clone_into(&mut name);
                 } else if attr == ATTRIB_ID {
                     id = dec.read_unsigned()?;
                 } else if attr == ATTRIB_LABEL {
-                    display = dec.read_string()?.to_owned();
+                    dec.read_string()?.clone_into(&mut display);
                 }
             }
             let parent = if dec.peek_element() == Some(ELEM_PARENT.code()) {
@@ -275,6 +275,10 @@ impl Database {
     /// Ghidra `Database::decodeScope`: a `<scope>`, or a wrapper element
     /// whose attributes go to `wrapping` around one, attached as a new scope
     /// of the given name, id and kind under its `<parent>`.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Ghidra's decodeScope arguments plus the type factory, function codec and wrapper hook it reads from globals"
+    )]
     pub fn decode_scope(
         &mut self,
         dec: &mut dyn Decoder<'_>,
@@ -328,7 +332,7 @@ impl Database {
                 if attr == ATTRIB_ID {
                     id = dec.read_unsigned()?;
                 } else if attr == ATTRIB_LABEL {
-                    display = dec.read_string()?.to_owned();
+                    dec.read_string()?.clone_into(&mut display);
                 }
             }
             let name = dec.read_string_attr(ATTRIB_CONTENT)?.to_owned();

@@ -25,7 +25,7 @@ use crate::scope::add::ID_BASE;
 
 impl Database {
     /// Ghidra `Symbol::encodeHeader`.
-    fn encode_header(&self, sym: &SymbolData, enc: &mut dyn Encoder) -> Result<()> {
+    fn encode_header(sym: &SymbolData, enc: &mut dyn Encoder) -> Result<()> {
         enc.write_string(ATTRIB_NAME, &sym.name)?;
         enc.write_unsigned(ATTRIB_ID, sym.ghidra_id);
         let f = sym.flags;
@@ -71,13 +71,13 @@ impl Database {
         match &sym.kind {
             SymbolKind::Plain => {
                 enc.open_element(ELEM_SYMBOL);
-                self.encode_header(sym, enc)?;
+                Self::encode_header(sym, enc)?;
                 types.encode_ref(enc, sym.ty)?;
                 enc.close_element(ELEM_SYMBOL);
             }
             SymbolKind::Equate { value } => {
                 enc.open_element(ELEM_EQUATESYMBOL);
-                self.encode_header(sym, enc)?;
+                Self::encode_header(sym, enc)?;
                 enc.open_element(ELEM_VALUE);
                 enc.write_unsigned(ATTRIB_CONTENT, *value);
                 enc.close_element(ELEM_VALUE);
@@ -85,7 +85,7 @@ impl Database {
             }
             SymbolKind::UnionFacet { field, .. } => {
                 enc.open_element(ELEM_FACETSYMBOL);
-                self.encode_header(sym, enc)?;
+                Self::encode_header(sym, enc)?;
                 enc.write_signed(ATTRIB_FIELD, i64::from(*field));
                 enc.write_bool(ATTRIB_ADDRTIED, true);
                 types.encode_ref(enc, sym.ty)?;
@@ -93,7 +93,7 @@ impl Database {
             }
             SymbolKind::Label => {
                 enc.open_element(ELEM_LABELSYM);
-                self.encode_header(sym, enc)?;
+                Self::encode_header(sym, enc)?;
                 enc.close_element(ELEM_LABELSYM);
             }
             SymbolKind::ExternRef { ref_addr } => {
@@ -170,7 +170,7 @@ impl Database {
     }
 
     /// Ghidra `Symbol::decodeHeader`: the attributes of a symbol element.
-    fn decode_header(&self, sym: &mut SymbolData, dec: &mut dyn Decoder<'_>) -> Result<()> {
+    fn decode_header(sym: &mut SymbolData, dec: &mut dyn Decoder<'_>) -> Result<()> {
         sym.name = "".into();
         sym.display_name = "".into();
         sym.category = category::NONE;
@@ -220,12 +220,12 @@ impl Database {
                     sym.flags |= VarnodeFlags::VOLATILE;
                 }
             } else if attr == ATTRIB_LABEL {
-                display = check_name(dec.read_string()?)?.to_owned();
+                check_name(dec.read_string()?)?.clone_into(&mut display);
             }
         }
         sym.catindex = if sym.category == category::FUNCTION_PARAMETER {
             u32::try_from(dec.read_unsigned_attr(ATTRIB_INDEX)?)
-                .map_err(|_| SymbolError::Limit("category index"))?
+                .map_err(|_out_of_range| SymbolError::Limit("category index"))?
         } else {
             0
         };
@@ -238,7 +238,6 @@ impl Database {
     }
 
     fn set_decoded_type(
-        &self,
         sym: &mut SymbolData,
         ty: bk_decomp_types::TypeId,
         types: &TypeFactory,
@@ -262,18 +261,18 @@ impl Database {
     ) -> Result<SymbolData> {
         let kind = dec.peek_element();
         let unknown = types.base(1, Metatype::Unknown)?;
-        let mut sym = self.new_symbol(scope, SymbolKind::Plain, "", unknown, types)?;
+        let mut sym = Self::new_symbol(scope, SymbolKind::Plain, "", unknown, types)?;
         sym.name_provenance = bk_core::Provenance::Analysis;
         if kind == Some(ELEM_SYMBOL.code()) {
             let el = dec.open_element_expecting(ELEM_SYMBOL)?;
-            self.decode_header(&mut sym, dec)?;
+            Self::decode_header(&mut sym, dec)?;
             let ty = types.decode_type(dec)?;
-            self.set_decoded_type(&mut sym, ty, types)?;
+            Self::set_decoded_type(&mut sym, ty, types)?;
             sym.check_size_type_lock();
             dec.close_element(el)?;
         } else if kind == Some(ELEM_EQUATESYMBOL.code()) {
             let el = dec.open_element_expecting(ELEM_EQUATESYMBOL)?;
-            self.decode_header(&mut sym, dec)?;
+            Self::decode_header(&mut sym, dec)?;
             let sub = dec.open_element_expecting(ELEM_VALUE)?;
             let value = dec.read_unsigned_attr(ATTRIB_CONTENT)?;
             dec.close_element(sub)?;
@@ -283,7 +282,7 @@ impl Database {
             let codec = codec.ok_or(SymbolError::NoFunctionCodec)?;
             let decoded = codec.decode(self, scope, dec)?;
             let code = types.type_code()?;
-            self.set_decoded_type(&mut sym, code, types)?;
+            Self::set_decoded_type(&mut sym, code, types)?;
             let mut consume = self.env.min_funcsymbol_size;
             if consume < decoded.size && decoded.size > 1 && decoded.size <= 8 {
                 consume = decoded.size;
@@ -298,7 +297,7 @@ impl Database {
         } else if kind == Some(ELEM_FUNCTIONSHELL.code()) {
             let el = dec.open_element_expecting(ELEM_FUNCTIONSHELL)?;
             let code = types.type_code()?;
-            self.set_decoded_type(&mut sym, code, types)?;
+            Self::set_decoded_type(&mut sym, code, types)?;
             sym.kind = SymbolKind::Function {
                 consume_size: self.env.min_funcsymbol_size,
             };
@@ -311,7 +310,7 @@ impl Database {
                 } else if attr == ATTRIB_ID {
                     sym.ghidra_id = dec.read_unsigned()?;
                 } else if attr == ATTRIB_LABEL {
-                    display = check_name(dec.read_string()?)?.to_owned();
+                    check_name(dec.read_string()?)?.clone_into(&mut display);
                 }
             }
             sym.display_name = if display.is_empty() {
@@ -322,7 +321,7 @@ impl Database {
             dec.close_element(el)?;
         } else if kind == Some(ELEM_LABELSYM.code()) {
             let el = dec.open_element_expecting(ELEM_LABELSYM)?;
-            self.decode_header(&mut sym, dec)?;
+            Self::decode_header(&mut sym, dec)?;
             sym.kind = SymbolKind::Label;
             dec.close_element(el)?;
         } else if kind == Some(ELEM_EXTERNREFSYMBOL.code()) {
@@ -331,9 +330,9 @@ impl Database {
             let mut display = String::new();
             while let Some(attr) = dec.next_attribute()? {
                 if attr == ATTRIB_NAME {
-                    name = check_name(dec.read_string()?)?.to_owned();
+                    check_name(dec.read_string()?)?.clone_into(&mut name);
                 } else if attr == ATTRIB_LABEL {
-                    display = check_name(dec.read_string()?)?.to_owned();
+                    check_name(dec.read_string()?)?.clone_into(&mut display);
                 }
             }
             let ref_addr = Address::decode(dec, &self.env.spaces)?;
@@ -341,11 +340,11 @@ impl Database {
             sym = self.new_extern_ref(scope, ref_addr, &name, &display, types)?;
         } else if kind == Some(ELEM_FACETSYMBOL.code()) {
             let el = dec.open_element_expecting(ELEM_FACETSYMBOL)?;
-            self.decode_header(&mut sym, dec)?;
+            Self::decode_header(&mut sym, dec)?;
             let field = dec.read_signed_attr(ATTRIB_FIELD)?;
             let addr_based = dec.read_bool_attr(ATTRIB_ADDRTIED)?;
             let ty = types.decode_type(dec)?;
-            self.set_decoded_type(&mut sym, ty, types)?;
+            Self::set_decoded_type(&mut sym, ty, types)?;
             sym.check_size_type_lock();
             dec.close_element(el)?;
             let mut test = ty;
@@ -384,14 +383,13 @@ impl Database {
         let sym = self.decode_symbol(scope, dec, types, codec)?;
         let sym = self.add_symbol_internal(scope, sym)?;
         let entries = self.decode_entries(scope, sym, dec);
-        let result = match entries {
-            Ok(()) => Some(sym),
-            Err(_) => {
-                let name = self.symbol(sym)?.name.to_string();
-                self.warn(format!("Throwing out symbol with invalid mapping: {name}"));
-                self.remove_symbol(sym)?;
-                None
-            }
+        let result = if let Ok(()) = entries {
+            Some(sym)
+        } else {
+            let name = self.symbol(sym)?.name.to_string();
+            self.warn(format!("Throwing out symbol with invalid mapping: {name}"));
+            self.remove_symbol(sym)?;
+            None
         };
         dec.close_element(el)?;
         Ok(result)

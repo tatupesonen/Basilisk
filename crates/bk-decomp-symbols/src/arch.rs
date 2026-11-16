@@ -1,6 +1,6 @@
 //! What the architecture puts into the symbol table and property map, as
 //! functions over a [`Database`] named after Ghidra's (architecture.cc
-//! 335–357, 436–447, 813–925, 1160–1415; sleigh_arch.cc 265–300; spec
+//! 335–357, 436–447, 813–925, 1160–1415; `sleigh_arch.cc` 265–300; spec
 //! 4.18). D07 calls them in Ghidra's order:
 //!
 //! 1. while reading the `.pspec`: [`decode_volatile`],
@@ -174,7 +174,7 @@ pub fn build_default_symbols(
         let mut volatile: Option<bool> = None;
         while let Some(attr) = dec.next_attribute()? {
             if attr == ATTRIB_NAME {
-                name = dec.read_string()?.to_owned();
+                dec.read_string()?.clone_into(&mut name);
             } else if attr == ATTRIB_ADDRESS {
                 let text = dec.read_string()?;
                 addr = match (text, last) {
@@ -214,7 +214,8 @@ pub fn build_default_symbols(
                 db.clear_property_range(VarnodeFlags::VOLATILE, &range);
             }
         }
-        let size32 = i32::try_from(size).map_err(|_| SymbolError::Limit("default symbol size"))?;
+        let size32 = i32::try_from(size)
+            .map_err(|_out_of_range| SymbolError::Limit("default symbol size"))?;
         let ty = types.base(size32, Metatype::Unknown)?;
         let global = db.global_scope()?;
         let entry = db.add_symbol_at(global, &name, ty, addr, Address::INVALID, types)?;

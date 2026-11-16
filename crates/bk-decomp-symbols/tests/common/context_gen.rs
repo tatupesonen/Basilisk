@@ -49,6 +49,10 @@ impl ContextGen<'_> {
         }
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "names follow the C++ generator in tests/oracle line by line"
+    )]
     fn one(&mut self) -> Result<(), SymbolError> {
         let mut ctx = ContextNames::new();
         ctx.set_space_limits(self.spaces);
@@ -80,15 +84,13 @@ impl ContextGen<'_> {
                 }
                 2 => {
                     let a = self.rand_addr();
-                    let b = if self.rng.r(4) != 0 {
-                        Some(a.add(self.spaces, i64::from(1 + self.rng.r(0x20))))
-                    } else {
-                        None
-                    };
+                    let b = (self.rng.r(4) != 0)
+                        .then(|| a.add(self.spaces, i64::from(1 + self.rng.r(0x20))));
                     ctx.set_variable_region(&v, a, b, val)?;
-                    let bt = b.map_or("- -".to_owned(), |b| {
-                        format!("{} {}", self.name(b), b.offset())
-                    });
+                    let bt = b.map_or_else(
+                        || "- -".to_owned(),
+                        |b| format!("{} {}", self.name(b), b.offset()),
+                    );
                     format!("region {v} {} {:x} {bt} {val:x}", self.name(a), a.offset())
                 }
                 3 => {

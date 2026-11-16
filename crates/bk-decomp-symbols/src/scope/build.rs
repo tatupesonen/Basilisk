@@ -20,7 +20,7 @@ impl Database {
         ty: TypeId,
         types: &TypeFactory,
     ) -> Result<SymbolId> {
-        let sym = self.new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
+        let sym = Self::new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
         self.add_symbol_internal(scope, sym)
     }
 
@@ -36,7 +36,7 @@ impl Database {
         types: &TypeFactory,
     ) -> Result<EntryId> {
         let ty = stripped(types, ty);
-        let sym = self.new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
+        let sym = Self::new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.add_map_point(sym, addr, usepoint)
     }
@@ -56,7 +56,7 @@ impl Database {
         }
         let code = types.type_code()?;
         let consume_size = self.env.min_funcsymbol_size;
-        let mut sym = self.new_symbol(
+        let mut sym = Self::new_symbol(
             scope,
             SymbolKind::Function { consume_size },
             name,
@@ -113,7 +113,7 @@ impl Database {
             name = format!("{shortcut}{}_exref", ref_addr.raw(spaces));
         }
         let mut sym =
-            self.new_symbol(scope, SymbolKind::ExternRef { ref_addr }, &name, ty, types)?;
+            Self::new_symbol(scope, SymbolKind::ExternRef { ref_addr }, &name, ty, types)?;
         sym.display_name = if display.is_empty() {
             name.into()
         } else {
@@ -140,7 +140,7 @@ impl Database {
             }
         }
         let ty = types.base(1, Metatype::Unknown)?;
-        let sym = self.new_symbol(scope, SymbolKind::Label, name, ty, types)?;
+        let sym = Self::new_symbol(scope, SymbolKind::Label, name, ty, types)?;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.add_map_point(sym, addr, Address::INVALID)?;
         Ok(sym)
@@ -157,7 +157,7 @@ impl Database {
         hash: u64,
         types: &TypeFactory,
     ) -> Result<SymbolId> {
-        let sym = self.new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
+        let sym = Self::new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
         let size = sym.type_size;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.direct_dynamic_entry(scope, sym, hash, size, caddr)?;
@@ -165,6 +165,10 @@ impl Database {
     }
 
     /// Adds an equate (Ghidra `addEquateSymbol`).
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Ghidra's addEquateSymbol arguments plus the scope and type factory it reads from `this`"
+    )]
     pub fn add_equate_symbol(
         &mut self,
         scope: ScopeId,
@@ -176,7 +180,7 @@ impl Database {
         types: &mut TypeFactory,
     ) -> Result<SymbolId> {
         let ty = types.base(1, Metatype::Unknown)?;
-        let mut sym = self.new_symbol(scope, SymbolKind::Equate { value }, name, ty, types)?;
+        let mut sym = Self::new_symbol(scope, SymbolKind::Equate { value }, name, ty, types)?;
         sym.disp |= format;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.direct_dynamic_entry(scope, sym, hash, 1, addr)?;
@@ -184,6 +188,10 @@ impl Database {
     }
 
     /// Adds a union facet (Ghidra `addUnionFacetSymbol`).
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Ghidra's addUnionFacetSymbol arguments plus the scope and type factory it reads from `this`"
+    )]
     pub fn add_union_facet_symbol(
         &mut self,
         scope: ScopeId,
@@ -198,7 +206,7 @@ impl Database {
             field,
             addr_based: false,
         };
-        let sym = self.new_symbol(scope, kind, name, ty, types)?;
+        let sym = Self::new_symbol(scope, kind, name, ty, types)?;
         let sym = self.add_symbol_internal(scope, sym)?;
         self.direct_dynamic_entry(scope, sym, hash, 1, addr)?;
         Ok(sym)
@@ -218,7 +226,7 @@ impl Database {
             return Err(SymbolError::ConflictVarnode);
         }
         let ty = stripped(types, ty);
-        let sym = self.new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
+        let sym = Self::new_symbol(scope, SymbolKind::Plain, name, ty, types)?;
         let sym = self.add_symbol_internal(scope, sym)?;
         let mut use_limit = bk_core::RangeList::default();
         if let Some(space) = facts.def_addr.space() {

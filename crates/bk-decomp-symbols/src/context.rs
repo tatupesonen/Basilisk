@@ -130,7 +130,7 @@ impl ContextNames {
         Ok(())
     }
 
-    /// Ghidra `setContextChangePoint` (value ORed in unmasked).
+    /// Ghidra `setContextChangePoint` (value `ORed` in unmasked).
     pub fn set_context_change_point(&mut self, addr: Address, word: usize, mask: u32, value: u32) {
         self.db.change_point(addr, word, mask, value);
     }

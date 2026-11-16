@@ -215,7 +215,7 @@ impl Database {
     }
 
     /// Ghidra `setDisplayFormat`: replaces the low three display bits (the
-    /// value is ORed in unmasked, as Ghidra does).
+    /// value is `ORed` in unmasked, as Ghidra does).
     pub fn set_display_format(&mut self, sym: SymbolId, format: u32) -> Result<()> {
         let data = self.symbol_mut(sym)?;
         data.disp = (data.disp & 0xffff_fff8) | format;
@@ -273,7 +273,8 @@ impl Database {
             return Ok(());
         };
         let index = if cat > 0 {
-            u32::try_from(list.len()).map_err(|_| SymbolError::Limit("category index"))?
+            u32::try_from(list.len())
+                .map_err(|_out_of_range| SymbolError::Limit("category index"))?
         } else {
             index
         };
@@ -359,9 +360,7 @@ impl Database {
                 if self.symbol(sym)?.is_size_type_locked() {
                     self.reset_size_lock_type(sym, types)?;
                 }
-            } else if data.category == category::EQUATE {
-                continue;
-            } else {
+            } else if data.category != category::EQUATE {
                 self.remove_symbol(sym)?;
             }
         }

@@ -70,7 +70,11 @@ impl ScriptedHost {
 }
 
 fn a(addr: Address) -> String {
-    format!("{:?}:{:#x}", addr.space().map(|s| s.index()), addr.offset())
+    format!(
+        "{:?}:{:#x}",
+        addr.space().map(bk_core::SpaceId::index),
+        addr.offset()
+    )
 }
 
 impl ProgramHost for ScriptedHost {

@@ -258,7 +258,7 @@ impl CommentDb {
             let addr = Address::decode(dec, spaces)?;
             let mut text = String::new();
             if let Some(sub) = dec.open_element()? {
-                text = dec.read_string_attr(ATTRIB_CONTENT)?.to_owned();
+                dec.read_string_attr(ATTRIB_CONTENT)?.clone_into(&mut text);
                 dec.close_element(sub)?;
             }
             dec.close_element(c)?;

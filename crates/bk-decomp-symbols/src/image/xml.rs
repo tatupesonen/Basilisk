@@ -1,5 +1,5 @@
 //! The `<binaryimage>` load image of the data tests (Ghidra `LoadImageXml`,
-//! loadimage_xml.cc; spec 4.15).
+//! `loadimage_xml.cc`; spec 4.15).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;

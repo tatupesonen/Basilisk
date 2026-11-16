@@ -1,5 +1,5 @@
 //! Load images (Ghidra `LoadImage`, `RawLoadImage`, `LoadImageXml`;
-//! loadimage.cc, loadimage_xml.cc; spec 4.15).
+//! loadimage.cc, `loadimage_xml.cc`; spec 4.15).
 
 pub mod hex;
 mod raw;

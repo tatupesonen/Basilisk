@@ -41,13 +41,14 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
   `ScopeKind::Function(placeholder function symbol)`), convert S/M/C/E/R/F/Q
   into a `ScopeImage` (entry refs `s<id>:<real index>`), `restore_scope`,
   then `scope_image` → records, compare. v1 sample: skip with a reason.
-- **Clippy is not clean**: `cargo clippy -p bk-decomp-symbols --all-targets
-  -- -D warnings` reports 67 errors in the library (indexing in
-  `database/tree.rs` `parse_c_integer`, `doc_markdown`, `or_fun_call`
-  `ok_or(bad(..))` → `ok_or_else`, `map_err(|_|`, redundant closures,
-  too-many-arguments on builders and `decode_scope`/`build_variable_name`
-  (add `#[expect(clippy::too_many_arguments, reason = ...)]`), …). Tests
-  themselves not yet clippy-checked. The gate will fail until fixed.
+- Clippy is clean (`cargo clippy -p bk-decomp-symbols -p bk-context
+  --all-targets -- -D warnings`), commit "fix(decomp-symbols): clippy".
+  Exceptions taken with `#[expect]`: `too_many_arguments` on
+  `decode_scope`, `add_equate_symbol`, `add_union_facet_symbol`,
+  `build_variable_name` (Ghidra's arguments plus scope and type factory);
+  `indexing_slicing` on the const CRC table (compile-time evaluation);
+  `many_single_char_names` on three oracle generator functions (they
+  follow the C++ generators line by line).
 - All tests pass: `cargo test -p bk-decomp-symbols` (unit 7, entrymap props
   5, scope oracle 1, context oracle 1, image oracle 1 (skips without
   reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.

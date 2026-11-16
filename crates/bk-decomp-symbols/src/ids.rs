@@ -68,7 +68,7 @@ ids!(AttributeId, ATTRIBUTES:
     ATTRIB_TAG = ("tag", 83);
     /// `label` (jumptable.cc; read for display names).
     ATTRIB_LABEL = ("label", 131);
-    /// `arch` (loadimage_xml.cc).
+    /// `arch` (`loadimage_xml.cc`).
     ATTRIB_ARCH = ("arch", 135);
     /// `addrtied` (varmap.cc; written by union facets).
     ATTRIB_ADDRTIED = ("addrtied", 30);
@@ -157,9 +157,9 @@ ids!(ElementId, ELEMENTS:
     ELEM_OVERRIDE = ("override", 223);
     /// `<protooverride>` (override.cc).
     ELEM_PROTOOVERRIDE = ("protooverride", 224);
-    /// `<binaryimage>` (loadimage_xml.cc).
+    /// `<binaryimage>` (`loadimage_xml.cc`).
     ELEM_BINARYIMAGE = ("binaryimage", 230);
-    /// `<bytechunk>` (loadimage_xml.cc).
+    /// `<bytechunk>` (`loadimage_xml.cc`).
     ELEM_BYTECHUNK = ("bytechunk", 231);
     /// `<function>` (fspec.cc / funcdata.cc; decoded by D07).
     ELEM_FUNCTION = ("function", 116);

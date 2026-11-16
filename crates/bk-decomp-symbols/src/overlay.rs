@@ -420,16 +420,22 @@ impl Overlay {
                 ));
             }
             let after = lengths(into);
-            for k in 0..3 {
-                let made_work = logged.after[k].saturating_sub(work_len[k]);
-                let made_into = after[k].saturating_sub(before[k]);
+            let arenas = spans
+                .iter_mut()
+                .zip(logged.after)
+                .zip(work_len)
+                .zip(after)
+                .zip(before);
+            for ((((span, work_after), work_before), into_after), into_before) in arenas {
+                let made_work = work_after.saturating_sub(work_before);
+                let made_into = into_after.saturating_sub(into_before);
                 if made_work != made_into {
                     return Err(SymbolError::Limit(
                         "overlay commit diverged from the overlay",
                     ));
                 }
                 if made_work > 0 {
-                    spans[k].push((work_len[k], before[k], made_work));
+                    span.push((work_before, into_before, made_work));
                 }
             }
             work_len = logged.after;
@@ -576,7 +582,7 @@ fn map_index(index: u32, base: usize, spans: &[(usize, usize, usize)]) -> Result
     for &(work, target, count) in spans {
         if i >= work && i < work + count {
             return u32::try_from(target + (i - work))
-                .map_err(|_| SymbolError::Limit("arena index"));
+                .map_err(|_out_of_range| SymbolError::Limit("arena index"));
         }
     }
     Err(SymbolError::StaleId {

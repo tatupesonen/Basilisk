@@ -50,7 +50,7 @@ fn replay(table: &str) {
                 .iter()
                 .zip(&got)
                 .position(|(a, b)| a != b)
-                .unwrap_or(want.len().min(got.len()));
+                .unwrap_or_else(|| want.len().min(got.len()));
             bad.push(format!(
                 "case {case}, row {at}:\n  want: {}\n  got:  {}",
                 want.get(at).unwrap_or(&"<end>"),

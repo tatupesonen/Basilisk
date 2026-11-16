@@ -344,7 +344,7 @@ impl Database {
                 let s = self.scope(scope)?;
                 (s.parent, s.ghidra_id, s.name.to_string())
             };
-            let parent = parent.ok_or(SymbolError::NoParentRef { name: name.clone() })?;
+            let parent = parent.ok_or_else(|| SymbolError::NoParentRef { name: name.clone() })?;
             let removed = self.scope_mut(parent)?.children.remove(&ghidra_id);
             if removed.is_none() {
                 return Err(SymbolError::NoParentRef { name });

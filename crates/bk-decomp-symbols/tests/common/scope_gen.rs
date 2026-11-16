@@ -15,6 +15,11 @@ use super::oracle::{Arch, esc};
 const NAMES: [&str; 9] = ["a", "b", "sym", "sym_00", "sym_01", "Var1", "x", "lab", "f"];
 
 /// xorshift64*, as the generator.
+/// Namespace paths the generator creates (as `scope.cc`).
+const PATHS: [&str; 3] = ["ns1::x", "ns2::x", "ns1::ns3::x"];
+/// Varnode flags `buildVariableName` is asked with (as `scope.cc`).
+const FLS: [u32; 6] = [0, 0x8000, 0x4000, 0x08, 0x8000 | 0x4000, 0x40_0000];
+
 pub struct Rng(pub u64);
 
 impl Rng {
@@ -70,7 +75,10 @@ impl<'a> Gen<'a> {
             .map(Database::take_warnings)
             .unwrap_or_default();
         if !warnings.is_empty() {
-            let w: String = warnings.iter().map(|m| format!("WARNING: {m}\n")).collect();
+            let w = warnings.iter().fold(String::new(), |mut w, m| {
+                let _ = writeln!(w, "WARNING: {m}");
+                w
+            });
             let _ = writeln!(self.out, "{}\tW\t{}", self.kase, esc(&w));
         }
     }
@@ -173,8 +181,8 @@ impl<'a> Gen<'a> {
     pub fn one_case(&mut self) {
         let result = self
             .build()
-            .and_then(|()| self.populate())
-            .and_then(|()| self.mutate())
+            .map(|()| self.populate())
+            .map(|()| self.mutate())
             .and_then(|()| self.query())
             .and_then(|()| self.dump());
         if let Err(e) = result {
@@ -196,7 +204,6 @@ impl<'a> Gen<'a> {
         self.rng.r(2);
         self.row("global", "");
         let nns = self.rng.r(4);
-        const PATHS: [&str; 3] = ["ns1::x", "ns2::x", "ns1::ns3::x"];
         for path in PATHS.iter().take(nns as usize) {
             let (ns, _) = self.db().find_create_scope_from_symbol_name(path, None)?;
             if !self.scopes.contains(&ns) {
@@ -251,7 +258,7 @@ impl<'a> Gen<'a> {
         Ok(())
     }
 
-    fn populate(&mut self) -> R<()> {
+    fn populate(&mut self) {
         let n = 1 + self.rng.r(40);
         for _ in 0..n {
             let sc = self.rand_scope();
@@ -259,9 +266,12 @@ impl<'a> Gen<'a> {
                 self.row("!add", &e.to_string());
             }
         }
-        Ok(())
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "names follow the C++ generator in tests/oracle line by line"
+    )]
     fn populate_one(&mut self, sc: ScopeId) -> R<()> {
         match self.rng.r(9) {
             0..=2 => {
@@ -433,11 +443,11 @@ impl<'a> Gen<'a> {
         Ok(())
     }
 
-    fn mutate(&mut self) -> R<()> {
+    fn mutate(&mut self) {
         let n = self.rng.r(8);
         for _ in 0..n {
             if self.syms.is_empty() {
-                return Ok(());
+                return;
             }
             let k = self.rng.r(self.syms.len() as u32) as usize;
             let Some(s) = self.syms[k] else { continue };
@@ -445,7 +455,6 @@ impl<'a> Gen<'a> {
                 self.row("!mut", &e.to_string());
             }
         }
-        Ok(())
     }
 
     fn mutate_one(&mut self, k: usize, s: SymbolId) -> R<()> {
@@ -542,14 +551,9 @@ impl<'a> Gen<'a> {
             let sc = self.scopes[0];
             let a = self.rand_data();
             let u = self.rand_use();
-            const FLS: [u32; 6] = [0, 0x8000, 0x4000, 0x08, 0x8000 | 0x4000, 0x40_0000];
             let fl = FLS[self.rng.r(6) as usize];
             let mut index = self.rng.r(3) as i32;
-            let ct = if self.rng.r(4) != 0 {
-                Some(self.rand_type())
-            } else {
-                None
-            };
+            let ct = (self.rng.r(4) != 0).then(|| self.rand_type());
             let types = &self.arch.types;
             let nm = self.db.as_ref().unwrap().build_variable_name(
                 sc,
@@ -566,6 +570,10 @@ impl<'a> Gen<'a> {
         Ok(())
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "names follow the C++ generator in tests/oracle line by line"
+    )]
     fn query_one(&mut self, sc: ScopeId, a: Address, sz: i32, u: Address, q: &str) -> R<()> {
         let db = self.db.as_ref().unwrap();
         let (kind, text) = match self.rng.r(13) {
@@ -688,10 +696,10 @@ impl<'a> Gen<'a> {
             db.encode_scope(sc, &mut enc, types, None)?;
             let xml = enc.into_string();
             let data = db.scope(sc)?;
-            let multi: String = data
-                .multi_entry()
-                .map(|s| format!("{} ", self.sym_str(Some(s))))
-                .collect();
+            let multi = data.multi_entry().fold(String::new(), |mut m, s| {
+                let _ = write!(m, "{} ", self.sym_str(Some(s)));
+                m
+            });
             let mut cats = String::new();
             for j in 0..data.category_count() {
                 let _ = write!(cats, "[{j}:");
@@ -706,10 +714,10 @@ impl<'a> Gen<'a> {
             self.row("cats", &cats);
         }
         let db = self.db.as_ref().unwrap();
-        let props: String = db
-            .property_points()
-            .map(|(a, v)| format!("{}={v:x} ", self.addr_str(a)))
-            .collect();
+        let props = db.property_points().fold(String::new(), |mut p, (a, v)| {
+            let _ = write!(p, "{}={v:x} ", self.addr_str(a));
+            p
+        });
         self.row("props", &props);
         Ok(())
     }

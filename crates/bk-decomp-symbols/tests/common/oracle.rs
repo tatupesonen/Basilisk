@@ -88,7 +88,7 @@ pub fn arch_from_header(rows: &[(i64, &str, &str)]) -> Arch {
     for (index, shortcut) in &shortcuts {
         let got = m
             .space_at(*index)
-            .and_then(|s| s.shortcut())
+            .and_then(Space::shortcut)
             .map(String::from)
             .unwrap_or_default();
         assert_eq!(&got, shortcut, "shortcut of space {index}");

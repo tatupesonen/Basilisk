@@ -33,7 +33,8 @@ use bk_marshal::{Document, ElementRef, IdTable, XmlDecoder};
 use common::oracle::{fnv64, read_table};
 
 fn space_name(m: &SpaceManager, a: Address) -> String {
-    m.space_of(a).map_or("?".into(), |s| s.name().to_owned())
+    m.space_of(a)
+        .map_or_else(|| "?".into(), |s| s.name().to_owned())
 }
 
 fn child<'a>(root: ElementRef<'a>, name: &str) -> Option<ElementRef<'a>> {
@@ -55,7 +56,7 @@ fn one(out: &mut String, path: &Path, registry: &LanguageRegistry, table: &IdTab
         .compiler_specs()
         .iter()
         .find(|c| c.id.as_str() == parts[4])
-        .or(desc.default_compiler_spec())
+        .or_else(|| desc.default_compiler_spec())
         .unwrap();
     let lang = bk_sleigh::Language::load(registry, &lang_id).unwrap();
     let mut m = SpaceManager::new();

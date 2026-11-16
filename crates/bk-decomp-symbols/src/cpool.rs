@@ -155,7 +155,7 @@ impl CPoolRecord {
         let mut data = None;
         let sub = dec.open_element()?.ok_or(SymbolError::CpoolMissingData)?;
         if sub == ELEM_TOKEN.code() {
-            token = dec.read_string_attr(ATTRIB_CONTENT)?.to_owned();
+            dec.read_string_attr(ATTRIB_CONTENT)?.clone_into(&mut token);
         } else {
             let len = dec.read_signed_attr(ATTRIB_LENGTH)?;
             if !(0..limits::MAX_CPOOL_DATA).contains(&len) {
@@ -204,7 +204,8 @@ fn parse_hex_tokens(text: &str, count: usize) -> Result<Vec<u8>> {
             .unwrap_or(rest);
         let digits = body.bytes().take_while(u8::is_ascii_hexdigit).count();
         let token = body.get(..digits).unwrap_or("");
-        let value = u32::from_str_radix(token, 16).map_err(|_| SymbolError::CpoolDataByte)?;
+        let value =
+            u32::from_str_radix(token, 16).map_err(|_not_hex| SymbolError::CpoolDataByte)?;
         out.push(value as u8);
         rest = body.get(digits..).unwrap_or("");
     }

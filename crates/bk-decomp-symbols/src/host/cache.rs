@@ -1,5 +1,5 @@
 //! The cache layer a program-database host is used through: Ghidra's
-//! `ScopeGhidra` and `ScopeGhidraNamespace` (database_ghidra.cc; spec
+//! `ScopeGhidra` and `ScopeGhidraNamespace` (`database_ghidra.cc`; spec
 //! 4.19). Its observable rules are Ghidra's: an address is asked only when
 //! its space has a global range, no cached entry contains it and it is not
 //! in a hole; namespace symbols mark their range as a hole; `FUN_`/`DAT_`
@@ -156,13 +156,12 @@ impl HostDatabase {
         let rec = &sym.record;
         let mut data = match &rec.kind {
             HostSymbolKind::Data { ty } => {
-                self.db
-                    .new_symbol(scope, SymbolKind::Plain, &rec.name, *ty, types)?
+                Database::new_symbol(scope, SymbolKind::Plain, &rec.name, *ty, types)?
             }
             HostSymbolKind::Function => {
                 let code = types.type_code()?;
                 let consume_size = self.db.env.min_funcsymbol_size;
-                let mut d = self.db.new_symbol(
+                let mut d = Database::new_symbol(
                     scope,
                     SymbolKind::Function { consume_size },
                     &rec.name,
@@ -174,8 +173,7 @@ impl HostDatabase {
             }
             HostSymbolKind::Label => {
                 let ty = types.base(1, Metatype::Unknown)?;
-                self.db
-                    .new_symbol(scope, SymbolKind::Label, &rec.name, ty, types)?
+                Database::new_symbol(scope, SymbolKind::Label, &rec.name, ty, types)?
             }
             HostSymbolKind::ExternRef { ref_addr } => self
                 .db
@@ -329,7 +327,13 @@ impl HostDatabase {
                 entry = self.db.map_entry_at(sym, addr)?;
             }
         }
-        Ok(entry.filter(|e| self.db.entry(*e).ok().and_then(|d| d.addr()) == Some(addr)))
+        Ok(entry.filter(|e| {
+            self.db
+                .entry(*e)
+                .ok()
+                .and_then(super::super::model::EntryData::addr)
+                == Some(addr)
+        }))
     }
 
     /// Ghidra `ScopeGhidra::findContainer`.
@@ -355,7 +359,7 @@ impl HostDatabase {
             self.db
                 .entry(*e)
                 .ok()
-                .and_then(|d| d.last_offset())
+                .and_then(super::super::model::EntryData::last_offset)
                 .is_some_and(|last| last >= end)
         }))
     }
@@ -449,11 +453,8 @@ impl HostDatabase {
         if off == 0 {
             return Ok(None);
         }
-        off = if off & 7 == 0 {
-            off - 8
-        } else {
-            off - (off & 7)
-        };
+        let misalign = off & 7;
+        off -= if misalign == 0 { 8 } else { misalign };
         let Some(space) = addr.space() else {
             return Ok(None);
         };

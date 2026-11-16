@@ -187,10 +187,13 @@ impl Database {
                 .get(r.0)
                 .and_then(|v| v.get(r.1))
                 .copied()
-                .ok_or(bad("entry reference"))
+                .ok_or_else(|| bad("entry reference"))
         };
         let sym_of = |i: usize| -> Result<SymbolId> {
-            sym_ids.get(i).copied().ok_or(bad("symbol reference"))
+            sym_ids
+                .get(i)
+                .copied()
+                .ok_or_else(|| bad("symbol reference"))
         };
         // Entry maps, space by space.
         let mut spaces: Vec<SpaceId> = image.records.iter().map(|r| r.space).collect();
@@ -210,11 +213,11 @@ impl Database {
                     let i = recs
                         .iter()
                         .position(|r| r.entry == f.entry)
-                        .ok_or(bad("fragment of no record"))?;
+                        .ok_or_else(|| bad("fragment of no record"))?;
                     Ok((f.first, f.last, i))
                 })
                 .collect::<Result<_>>()?;
-            let map = SpaceMap::from_parts(&parts, &frags).ok_or(bad("fragment order"))?;
+            let map = SpaceMap::from_parts(&parts, &frags).ok_or_else(|| bad("fragment order"))?;
             let handles: Vec<(EntryId, crate::entrymap::RecordId)> =
                 map.records().map(|(rec, e)| (e, rec)).collect();
             let data = self.scope_mut(scope)?;
@@ -313,10 +316,10 @@ impl Database {
             let Some(map) = map else { continue };
             let space = SpaceId::new(i as u32);
             for (rec, e) in map.records() {
-                let (a, b) = map.bounds(rec).ok_or(bad("record"))?;
+                let (a, b) = map.bounds(rec).ok_or_else(|| bad("record"))?;
                 records.push(RecordImage {
                     space,
-                    entry: entry_ref(e).ok_or(bad("entry reference"))?,
+                    entry: entry_ref(e).ok_or_else(|| bad("entry reference"))?,
                     first: a,
                     last: b,
                     subsort: map.subsort(rec).unwrap_or_default(),
@@ -327,7 +330,7 @@ impl Database {
                     space,
                     first: f.first,
                     last: f.last,
-                    entry: entry_ref(f.value).ok_or(bad("entry reference"))?,
+                    entry: entry_ref(f.value).ok_or_else(|| bad("entry reference"))?,
                 });
             }
         }

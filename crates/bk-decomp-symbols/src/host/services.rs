@@ -179,7 +179,7 @@ impl LoadImage for HostImage {
     fn load_fill(&self, buf: &mut [u8], addr: Address) -> Result<(), DataUnavail> {
         self.host.bytes(addr, buf)
     }
-    fn arch_type(&self) -> &str {
+    fn arch_type(&self) -> &'static str {
         "ghidra"
     }
     /// Ghidra refuses (`Cannot adjust GHIDRA virtual memory`); the host's

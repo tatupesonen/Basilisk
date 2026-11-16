@@ -7,6 +7,10 @@ use crate::ids::ScopeId;
 
 /// Ghidra's CRC-32 table (`crc32.cc`, the reflected 0xEDB88320
 /// polynomial).
+#[expect(
+    clippy::indexing_slicing,
+    reason = "const evaluation: an index past 255 fails the build, not the program"
+)]
 const CRC_TABLE: [u32; 256] = {
     let mut table = [0u32; 256];
     let mut i = 0;
@@ -29,7 +33,8 @@ const CRC_TABLE: [u32; 256] = {
 
 /// Ghidra `crc_update`: only the low byte of `val` is used.
 pub(crate) fn crc_update(reg: u32, val: u32) -> u32 {
-    CRC_TABLE[((reg ^ val) & 0xff) as usize] ^ (reg >> 8)
+    let low = usize::from((reg ^ val) as u8);
+    CRC_TABLE.get(low).copied().unwrap_or(0) ^ (reg >> 8)
 }
 
 /// The id of a namespace named `name` under the scope of id `parent`
@@ -51,12 +56,10 @@ pub fn hash_scope_name(parent: u64, name: &str) -> u64 {
 /// Overflow saturates, as `num_get` does.
 fn parse_c_integer(text: &str) -> u64 {
     let bytes = text.as_bytes();
-    let (radix, digits) = if bytes.len() >= 2 && bytes[0] == b'0' && (bytes[1] | 0x20) == b'x' {
-        (16, &bytes[2..])
-    } else if bytes.first() == Some(&b'0') {
-        (8, &bytes[1..])
-    } else {
-        (10, bytes)
+    let (radix, digits) = match bytes {
+        [b'0', x, rest @ ..] if (x | 0x20) == b'x' => (16, rest),
+        [b'0', rest @ ..] => (8, rest),
+        _ => (10, bytes),
     };
     let mut value: u64 = 0;
     for &b in digits {
@@ -107,10 +110,7 @@ impl Database {
         let delim = self.env.scope_delimiter.clone();
         let template = full.find('<');
         let mut mark = 0usize;
-        loop {
-            let Some(rel) = full.get(mark..).and_then(|rest| rest.find(delim.as_ref())) else {
-                break;
-            };
+        while let Some(rel) = full.get(mark..).and_then(|rest| rest.find(delim.as_ref())) {
             let end = mark + rel;
             if template.is_some_and(|t| end > t) {
                 break;
@@ -143,10 +143,7 @@ impl Database {
         let template = full.find('<');
         let mut mark = 0usize;
         let mut components = 0usize;
-        loop {
-            let Some(rel) = full.get(mark..).and_then(|rest| rest.find(delim.as_ref())) else {
-                break;
-            };
+        while let Some(rel) = full.get(mark..).and_then(|rest| rest.find(delim.as_ref())) {
             let end = mark + rel;
             if template.is_some_and(|t| end > t) {
                 break;

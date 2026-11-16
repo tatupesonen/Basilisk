@@ -79,7 +79,10 @@ impl SpacebaseScopes for DatabaseScopes {
         let Some(global) = self.db.global() else {
             return 0;
         };
-        let global_id = self.db.scope(global).map_or(0, |s| s.ghidra_id());
+        let global_id = self
+            .db
+            .scope(global)
+            .map_or(0, super::model::ScopeData::ghidra_id);
         let Some((space, off)) = frame else {
             return global_id;
         };
@@ -94,7 +97,7 @@ impl SpacebaseScopes for DatabaseScopes {
                     .is_ok_and(|d| d.kind() == ScopeKind::Function(sym))
             })
             .and_then(|s| self.db.scope(s).ok())
-            .map_or(global_id, |d| d.ghidra_id())
+            .map_or(global_id, super::model::ScopeData::ghidra_id)
     }
 
     fn sub_type(&self, space: SpaceId, scope: u64, off: i64) -> Option<(TypeId, i64)> {

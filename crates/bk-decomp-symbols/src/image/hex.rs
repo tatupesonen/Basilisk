@@ -1,4 +1,4 @@
-//! Ghidra's hex-content loops (loadimage_xml.cc:111–135, the same code in
+//! Ghidra's hex-content loops (`loadimage_xml.cc:111–135`, the same code in
 //! stringmanage.cc:242–266; spec 4.15, ADR-045).
 //!
 //! Ghidra skips white space, takes two characters, and continues while both

@@ -60,7 +60,7 @@ fn spaces_without_a_global_range_are_never_asked() {
             .unwrap()
             .is_none()
     );
-    assert!(host.calls().is_empty());
+    assert_eq!(host.calls(), [] as [String; 0]);
     h.add_global_range(RAM, 0, u64::MAX).unwrap();
     h.query_by_addr(glob, ram(0x1000), Address::INVALID, &mut types)
         .unwrap();
@@ -180,7 +180,7 @@ fn namespace_symbols_are_cached_with_their_path_and_marked_as_holes() {
     assert!(host.calls().is_empty(), "{:?}", host.calls());
     // Names: FUN_/DAT_ never asked; others asked.
     assert!(!h.is_name_used(ns, "FUN_00401000", None).unwrap());
-    assert!(host.calls().is_empty());
+    assert_eq!(host.calls(), [] as [String; 0]);
     assert!(h.is_name_used(ns, "taken", None).unwrap());
     assert_eq!(host.calls(), ["is_name_used(taken,0x55,0x0)"]);
     assert!(is_dynamic_symbol_name("DAT_0040abcd"));
@@ -246,7 +246,7 @@ fn one_comment_fill_per_clear_and_other_service_caches() {
     let ch = types.base(1, Metatype::Int).unwrap();
     let mut s = HostStrings::new(Arc::clone(&dynhost), 2048);
     assert_eq!(s.string_data(ram(0x500), ch).unwrap().bytes, b"hi\0");
-    assert!(s.string_data(ram(0x600), ch).unwrap().bytes.is_empty());
+    assert_eq!(s.string_data(ram(0x600), ch).unwrap().bytes, [] as [u8; 0]);
     s.string_data(ram(0x500), ch).unwrap();
     s.string_data(ram(0x600), ch).unwrap();
     assert_eq!(host.calls().len(), 4, "{:?}", host.calls());
@@ -333,9 +333,10 @@ fn the_three_d_hooks_default_to_no_opinion() {
     assert!(host.call_returns(ram(0x10), Some(ram(0x20))).is_none());
     assert!(host.data_type("int", 1, 4).is_none());
     // Plugin constraint 2: the trait object is Send + Sync + 'static.
-    fn is_send_sync<T: Send + Sync + 'static + ?Sized>() {}
     is_send_sync::<dyn ProgramHost>();
     let mut sh = ScriptedHost::new();
     sh.returns.insert(ram(0x30), false);
     assert_eq!(sh.call_returns(ram(0x30), None), Some(false));
 }
+
+fn is_send_sync<T: Send + Sync + 'static + ?Sized>() {}

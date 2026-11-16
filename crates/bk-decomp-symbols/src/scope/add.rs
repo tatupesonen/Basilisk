@@ -57,7 +57,6 @@ pub(crate) fn stripped(types: &TypeFactory, ty: TypeId) -> TypeId {
 impl Database {
     /// A fresh, unattached symbol record.
     pub(crate) fn new_symbol(
-        &self,
         scope: ScopeId,
         kind: SymbolKind,
         name: &str,
@@ -139,7 +138,7 @@ impl Database {
             if let Some(list) = data.categories.get_mut(cat) {
                 if sym.category > 0 {
                     sym.catindex = u32::try_from(list.len())
-                        .map_err(|_| SymbolError::Limit("category index"))?;
+                        .map_err(|_out_of_range| SymbolError::Limit("category index"))?;
                 }
                 let index = sym.catindex as usize;
                 if index as u64 >= limits::MAX_SYMBOLS {
@@ -205,7 +204,7 @@ impl Database {
         let EntryKind::Map { addr, .. } = entry.kind else {
             return Err(SymbolError::DecodeConflict);
         };
-        let space = addr.space().map_or(0, |s| s.index());
+        let space = addr.space().map_or(0, bk_core::SpaceId::index);
         let sub = self.subsort(&entry)?;
         let size = entry.size;
         let id = self.push_entry(entry);
