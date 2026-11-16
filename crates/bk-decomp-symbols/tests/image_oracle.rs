@@ -453,3 +453,88 @@ fn print_map_equals_the_reference_console() {
     );
     assert!(differ.is_empty(), "{}", differ.join("\n"));
 }
+
+/// Spec 5.8's budget: loading the 93 data-test images (the binary image,
+/// the language's `.sla`, `.pspec`, `.cspec`, 4.18's steps, the loader
+/// symbols; `one` also prints its rows) takes less time than the
+/// reference console's `load test file` of the same files (one console
+/// process per file, as `bk-oracle` runs it; its time includes process
+/// start). Best of three for each. Run:
+///
+///     cargo test -p bk-decomp-symbols --release --test image_oracle -- --ignored --nocapture budget
+#[test]
+#[ignore = "benchmark against the reference console (L)"]
+fn image_load_budget() {
+    let reference = bk_testkit::paths::reference_dir().expect("the reference directory");
+    let ghidra = bk_testkit::paths::ghidra_dir().expect("the Ghidra tree");
+    let console = reference.root().join("bin").join("decomp_bk");
+    let dt = ghidra
+        .root()
+        .join("Ghidra/Features/Decompiler/src/decompile/datatests");
+    let mut files: Vec<_> = std::fs::read_dir(&dt)
+        .unwrap()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "xml"))
+        .collect();
+    files.sort();
+    assert_eq!(files.len(), 93);
+    let table = ids::id_table();
+    let ours = (0..3)
+        .map(|_| {
+            let start = std::time::Instant::now();
+            let registry = LanguageRegistry::builder()
+                .ghidra_root(ghidra.root())
+                .sla_overlay(reference.root())
+                .build()
+                .unwrap();
+            for f in &files {
+                let mut rows = String::new();
+                one(&mut rows, f, &registry, &table);
+                std::hint::black_box(rows);
+            }
+            start.elapsed()
+        })
+        .min()
+        .unwrap();
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("load_budget");
+    std::fs::create_dir_all(&dir).unwrap();
+    let theirs = (0..3)
+        .map(|_| {
+            let start = std::time::Instant::now();
+            for f in &files {
+                let script = dir.join("load.script");
+                std::fs::write(&script, format!("load test file {}\n", f.display())).unwrap();
+                let mut child = std::process::Command::new(&console)
+                    .arg("-i")
+                    .arg(&script)
+                    .env("LC_ALL", "C")
+                    .env("SLEIGHHOME", reference.root())
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                    .unwrap();
+                {
+                    use std::io::Write as _;
+                    let _ = child.stdin.take().unwrap().write_all(b"\n");
+                }
+                let out = child.wait_with_output().unwrap();
+                assert!(
+                    String::from_utf8_lossy(&out.stdout).contains("test successfully loaded"),
+                    "{}",
+                    f.display()
+                );
+            }
+            start.elapsed()
+        })
+        .min()
+        .unwrap();
+    eprintln!(
+        "load 93 data-test images: basilisk {:.0} ms, reference console {:.0} ms (ratio {:.2})",
+        ours.as_secs_f64() * 1e3,
+        theirs.as_secs_f64() * 1e3,
+        ours.as_secs_f64() / theirs.as_secs_f64()
+    );
+    assert!(ours < theirs, "over budget");
+}
