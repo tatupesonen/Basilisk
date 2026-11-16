@@ -111,11 +111,11 @@ rename of the repository needs a redeploy.
 43663964511 (the rename) ended green on all 8 jobs; `master` `b3c921e`
 is green; the nightly of 2026-11-16 passed (gate 2,423 tests, wine,
 oracle, differential). The build host's visible memory varies (15 GB when
-idle at 19:25, 23 GB at 19:30 under load, no reboot since 2026-11-14):
+idle at 19:25, 23 GB at 19:48 under load, no reboot since 2026-11-14):
 the hypervisor reclaims idle memory and gives it back, so
 `remote.sh status` is not the machine's size. The coordinator first
 read the 15 as a reduction and told the agents to hold back; corrected
-by message at 19:31.
+by message at 19:49.
 **Three fresh agents continue the three unfinished tracks** (started
 19:26; each was pointed at "Status and how to continue" in its track
 report):
