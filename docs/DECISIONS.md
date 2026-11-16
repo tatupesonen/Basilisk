@@ -1518,3 +1518,63 @@ the site presented it as such.
 `pcodedump`'s format now applies to `sleigh decode`. Feature specs,
 `tools/reference/README.md`, `PERF.md` and the site use the new name;
 historical track reports under `docs/agents/` keep the old one.
+
+## ADR-048 — ADR-025 3c is confirmed: the output is built as PrintC's emission tree, then printed
+(Coordinator, 2026-11-16, from track D16a `decomp-out-spike`; its report is
+the section "Report" of `docs/agents/decomp-out-spike.md`, its evidence
+`docs/research/decomp-out-spike/`.)
+
+**Context.** ADR-025 item 3c — a typed output tree that is built first and
+printed afterwards — was conditional on a spike (`decomp-plan.md` 8.1). The
+spike instrumented Ghidra's printer (`tools/reference/patches-instr/`) to
+log, per printed document, the printer's decisions (structural events and
+every reverse-Polish push) and, separately, the resulting `Emit` calls. A
+prototype built a tree from the first log alone and printed it.
+
+**Evidence.** 169 scripts (the 93 data tests, 72 research fragments, 4
+inputs written for unreached cases) in five variants (`print C`,
+`print C xml`, `print C flat`, `print language java`, non-default printer
+options): 3,231 of 3,231 documents and 618,300 of 618,300 `Emit` calls
+reproduced, on the build host and on the Mac, with no emission interleaved
+with the expression stack (0 of 252,735 direct emits). Parentheses and the
+modifier word are recomputed from the tree with no difference. The one
+piece of `Emit` state `PrintC` reads back, `hasPendingPrint`
+(`printc.cc:3043`), is reproduced from the printer's own calls. The
+instrumented console's output is byte-identical to the reference
+console's (1,014 of 1,014 runs on the build host; on the Mac all but
+`print C types`, which the reference itself prints differently from run
+to run, GHIDRA-BUGS 43).
+
+**Decision.**
+* 3c stands. **D16b (`bk-decomp-out`) builds the emission tree**: one node
+  per thing printed, not per block of the structured hierarchy — a block
+  printed twice in two modes (`flat`, `no_branch`, `only_branch`) is two
+  nodes. Node kinds and the facts each carries are the table in the
+  spike's report; header comments get a node kind of their own (the
+  prototype told them apart by their text, which the port must not do).
+* **D16c (`bk-decomp-print`) prints from the tree and the printer options
+  alone.** Parenthesis decisions, the modifier word and pending-print
+  state are the emitter's, computed while printing.
+* **D16c is accepted on logged trees**: `bk-testkit` gets a reader for the
+  printer log (`.tree`/`.emit`, the versioned format in
+  `tools/reference/README.md`, "The printer log"). Logs and expected text
+  come from the same machine (`floatprint` differs between the two
+  reference builds); `print C types` text is excluded. The spike compared
+  `Emit` calls, not the pretty printer's text: `EmitPrettyPrint` is
+  covered by D16c's own tests (plan 8.1).
+* **Operator tokens belong to a printer-language instance**, not to
+  statics as in Ghidra, so that functions print in parallel.
+* **Not yet shown** (never reached by the corpus; D16b adds inputs before
+  claiming them): the tokens `new_op` and `instanceof` (they need a Java
+  constant pool) and `unary_plus` (never pushed by Ghidra); the nodes
+  `constructor`, `opBranch` and `docSingleGlobal` and the flags
+  `bestfit`, `force_scinote`, `force_pointer`, `option_unplaced`, which
+  have no caller or are never set in Ghidra; `nofallthru` in flat mode
+  (dead code).
+
+**Consequences.** `decomp-plan.md` 8.1's fall-back ("if the spike's answer
+is no") is not needed. The specifications of D16b and D16c are written
+from the spike's report and Ghidra's printer source. Ghidra's flat mode
+and `print C types` are defective (GHIDRA-BUGS 40, 43, 44); D16b's spec
+says what Basilisk prints there.
+
