@@ -1,0 +1,1397 @@
+# plan_graph.py output; see the script's head comment for the method
+
+## Lines per track (.cc and .hh, comments and blank lines included)
+D01         1478
+D02         9529
+D03         8849
+D04         6579
+D05         6622
+D06         8902
+D07        16239
+D08         6425
+D09         2596
+D10         4057
+D11         5679
+D12         3045
+R1-6       12627
+R7          4643
+R8          4006
+R9          3862
+D13         6061
+D14         4137
+D15          457
+D16b        6291
+D16c        2448
+D17          882
+D18          711
+none        2716
+console     6877
+bk-pcode    1729
+notM3       7808
+
+## Files of the directory that no rule assigns
+  address.cc
+  address.hh
+  comment_ghidra.cc
+  comment_ghidra.hh
+  compression.cc
+  compression.hh
+  context.cc
+  context.hh
+  cpool_ghidra.cc
+  cpool_ghidra.hh
+  database_ghidra.cc
+  database_ghidra.hh
+  doccore.hh
+  docmain.hh
+  error.hh
+  filemanage.cc
+  filemanage.hh
+  float.cc
+  float.hh
+  ghidra_arch.cc
+  ghidra_arch.hh
+  ghidra_context.cc
+  ghidra_context.hh
+  ghidra_process.cc
+  ghidra_process.hh
+  ghidra_translate.cc
+  ghidra_translate.hh
+  inject_ghidra.cc
+  inject_ghidra.hh
+  loadimage_ghidra.cc
+  loadimage_ghidra.hh
+  marshal.cc
+  marshal.hh
+  opcodes.cc
+  opcodes.hh
+  partmap.hh
+  pcodecompile.cc
+  pcodecompile.hh
+  pcodeparse.cc
+  pcodeparse.hh
+  pcoderaw.cc
+  pcoderaw.hh
+  rangemap.hh
+  semantics.cc
+  semantics.hh
+  signature_ghidra.cc
+  signature_ghidra.hh
+  slaformat.cc
+  slaformat.hh
+  sleigh.cc
+  sleigh.hh
+  sleighbase.cc
+  sleighbase.hh
+  sleighexample.cc
+  slgh_compile.cc
+  slgh_compile.hh
+  slghparse.cc
+  slghparse.hh
+  slghpatexpress.cc
+  slghpatexpress.hh
+  slghpattern.cc
+  slghpattern.hh
+  slghscan.cc
+  slghsymbol.cc
+  slghsymbol.hh
+  space.cc
+  space.hh
+  string_ghidra.cc
+  string_ghidra.hh
+  test.cc
+  test.hh
+  translate.cc
+  translate.hh
+  typegrp_ghidra.cc
+  typegrp_ghidra.hh
+  xml.cc
+  xml.hh
+
+## References: row uses names owned by column
+           D01   D02   D03   D04   D05   D06   D07   D08   D09   D10   D11   D12  R1-6    R7    R8    R9   D13   D14   D15  D16b  D16c   D17   D18  none
+D01          .     .     .     .    22     2     .     .     .     .     .     .     .     .     .     .     1     .     .     .     .     .     .     .
+D02          .     .    63     1    41    40    54     1     .     .     1     .     .     .     .     .     2     .     .     .     1     .     .     .
+D03          .   170     .     .    71    25   149     .     .     4     2     .     .     .     .     .     .     2     .     .     .     .     .     .
+D04          .     3     3     .   224     .    88     .     .     .     .     .     .     .     .     .    10     5    34    16     1     .     .     .
+D05          .    82     4    53     .    54    86     8     .     4     .     .     .     .     .     .     6    55     .     .     .     .     .     .
+D06          .   102    32     3   210     .   143     .     3     3     .     .     .     .     .     .     2     1     .     2     .     .     .     .
+D07          .   203   289    64  2360   347     .    79    24    18    31     1     .     .     .     .    41    37     1    47     5    43     1     4
+D08          .  1079    34    11  1227     9    81     .     .     .     .     .     .     .     .     .     .     .     .    75     1     .     .     3
+D09          .     2    16     9   228    17   187     2     .     .     1     .     .     .     .     .    39     .     .     .     .     .     .     .
+D10         10     5    39    31   812     5    77     .     1     .     1     .     .     .     .     2    12     .     .     .     .     .     .     .
+D11          .   164   101     6   723   135   676     4     1    19     .   104     .     .     4     .     4    65     .    12     .     .     .     .
+D12          .    31    50    83   568    28   213     1     .     .     4     .     .     1     .     .     4     .     .     .     .     .     .     .
+R1-6        11   145     7    27  2699    17  1150    17     1     .     1     1     .     1     .     .     7     4     .     .     .     .     .     .
+R7           .   118     3     .   621     .   388    14     .     .     .     1     .     .     .     2     1     1     .     .     .     .     .     .
+R8           .     2     .    21   948    12    97     6     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .
+R9           .   129     3     .   787    16   154     .     .     .     .     .     .     .     .     .     .     .     .     8     .     .     .     .
+D13        158     .     .    74   780    13   188     1     8     .     .     .     .     .     .     .     .     2     .     .     .     6     .     7
+D14          .    32     5     8   802   108    76     6     .     5     4     .     .     .     .     .     .     .     .     1     .     .     .     .
+D15          .     .     .    54    79     .    23     .     .     .     .     .     1     .     .     .     1     .     .     .     .     .     .     .
+D16b         .   287    33   106   691   242   115    49     2     .     .     .     .     .     .     .     1     8     .     .   317     .     .     1
+D16c         .    26     .     9   111    10    16     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .
+D17          .     3     8     2    35     .   338     .     .     .    28    26   136    12     4     8     .    16    10     1     .     .     .     2
+D18          .     2     .     .     .     1    99     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .
+none         .     .     .    18    31    16    14     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .     .
+console      .    56    42     5   123   140   324     .    12     3     .     .     .     .     .     .    12    14     .     3     .    27     1     7
+notM3        .     2     6     7   243    43    92     .     .     .     .     .     .     .     .     .     .     1     .     .     .     7     .     .
+
+## Names behind chosen pairs (top 25 each)
+D07 -> D08: ResolvedUnion 32, ResolveEdge 18, TypeOp 7, ResolveCache::resolution 5, ResolvedUnion::getFieldNum 4, TypeOp::getBooleanFlip 3, TypeOp::isBooleanFlipReorder 3, ResolvedUnion::isLocked 2, ResolvedUnion::setLock 2, ResolvedUnion::getDatatype 1, ResolvedUnion::setResolve 1, CastStrategy::extensions 1
+D08 -> D07: Funcdata 22, Funcdata::getUnionField 10, Funcdata::setUnionField 10, FuncCallSpecs 10, Funcdata::getCallSpecs 6, Architecture 5, UserPcodeOp 4, Funcdata::getAddressBasedUnionField 3, Funcdata::getUnionResolution 3, LaneDescription::extension 2, FuncCallSpecs::getFspecFromConst 2, Funcdata::getFuncProto 2, Funcdata::updateUnionField 1, BitFieldExpression::structure 1
+D07 -> D09: FlowInfo 18, Funcdata::doLiveInject 2, PcodeEmitFd 1, Funcdata::truncatedFlow 1, Funcdata::inlineFlow 1, FlowInfo::instruction 1
+D07 -> D10: LoadGuard 7, LoadGuard::getHighest 3, PreferSplitRecord 2, PreferSplitManager 1, Heritage::buildInfoList 1, Heritage 1, Heritage::forceRestructure 1, LoadGuard::isGuarded 1, Heritage::markRangeHeritaged 1
+D07 -> D11: ScopeLocal 18, ScopeLocal::resetLocalWindow 3, ScopeLocal::getSpaceId 2, AliasChecker 1, AliasChecker::hasLocalAlias 1, ScopeLocal::markNotMapped 1, ScopeLocal::isUnmappedUnaliased 1, ScopeLocal::remapSymbol 1, ScopeLocal::remapSymbolDynamic 1, ScopeLocal::hasTypeRecommendations 1, ScopeLocal::addTypeRecommendation 1
+D07 -> D13: JumpTable 18, Funcdata::clearJumpTables 2, Funcdata::encodeJumpTable 2, Funcdata::decodeJumpTable 2, Funcdata::findJumpTable 2, Funcdata::removeJumpTable 2, Funcdata::stageJumpTable 1, Funcdata::switchOverJumpTables 1, Funcdata::linkJumpTable 1, Funcdata::installJumpTable 1, Funcdata::recoverJumpTable 1, Funcdata::earlyJumpTableFail 1, Funcdata::installSwitchDefaults 1, JumpTable::getIndirectOp 1, EmulateSnippet::buildEmitter 1, EmulateSnippet::checkForLegalCode 1, EmulateSnippet::resetMemory 1, EmulateSnippet::getTempValue 1, EmulateSnippet 1
+D07 -> D14: HighVariable 27, Merge 4, HighVariable::isSameGroup 3, HighVariable::markExpression 1, HighVariable::getNameRepresentative 1, HighVariable::establishGroupSymbolOffset 1
+D07 -> D16b: PrintC 15, PrintLanguage 10, PrintLanguageCapability 4, PrintLanguageCapability::getDefault 1, ActionSetCasts 1, PrintC::setNULLPrinting 1, PrintC::setInplaceOps 1, PrintC::setConvention 1, PrintC::setNoCastPrinting 1, PrintC::setHideImpliedExts 1, PrintLanguage::setLineCommentIndent 1, PrintLanguage::getHeaderComment 1, PrintLanguage::setHeaderComment 1, PrintLanguage::getInstructionComment 1, PrintLanguage::setInstructionComment 1, PrintLanguage::setIntegerFormat 1, PrintC::setBraceFormatFunction 1, PrintC::setBraceFormatIfElse 1, PrintC::setBraceFormatLoop 1, PrintC::setBraceFormatSwitch 1, PrintLanguage::setNamespaceStrategy 1
+D07 -> D15: ConditionalJoin 1
+D07 -> R7: none
+D07 -> D12: ConditionalExecution 1
+D07 -> none: Emulate 2, CapabilityPoint 1, Emulate::getHalt 1
+D05 -> D07: Funcdata 71, Funcdata::checkForLanedRegister 4, Funcdata::opFlipInPlaceTest 2, FuncCallSpecs 2, CloneBlockOps 2, Funcdata::opNormalizeFlip 1, Action 1, Funcdata::isHighOn 1, Funcdata::issueDatatypeWarning 1, Funcdata::getBasicBlocks 1
+D05 -> D08: TypeOp 8
+D05 -> D14: HighVariable 37, Merge 5, HighVariable::typeDirty 3, HighVariable::remove 2, HighVariable::flagsDirty 2, HighVariable::coverDirty 2, HighVariable::numInstances 1, HighVariable::getInstance 1, HighVariable::symbolDirty 1, HighVariable::isUnattached 1
+D06 -> D07: Funcdata 81, Architecture 40, Funcdata::findPrimaryBranch 7, FuncCallSpecs 5, Funcdata::beginOpMain 3, Funcdata::endOpMain 2, TransformManager::getPiece 1, DynamicHash 1, Funcdata::forceGoto 1, Funcdata::opDeadInsertAfter 1, Funcdata::setRestartPending 1
+D04 -> D07: Funcdata 42, Action 28, ActionGroupList 7, PcodeOpNode 5, Funcdata::opFlipInPlaceExecute 2, Funcdata::opMarkNonPrinting 2, Funcdata::moveRespectingCover 1, BitFieldExpression::structure 1
+D03 -> D07: Funcdata 24, Architecture 18, FuncCallSpecs 16, TransformManager::getPiece 6, FspecSpace 6, ProtoStoreSymbol 5, Action 4, InjectPayload 3, ParameterSymbol 3, ProtoStoreSymbol::locations 3, Action::action 2, InjectContext::resources 1, PcodeInjectLibrary::decodeInject 1, PcodeInjectLibrary::getPayload 1, PcodeInjectLibrary::getCallFixupName 1, Architecture::createUnknownModel 1, PcodeInjectLibrary::getPayloadId 1, ProtoStoreSymbol::getSymbolBacked 1, FuncCallSpecs::placeholder 1, FuncCallSpecs::getSpacebaseRelative 1, FuncCallSpecs::buildParam 1, FuncCallSpecs::transferLockedInputParam 1, FuncCallSpecs::transferLockedOutputParam 1, FuncCallSpecs::transferLockedInput 1, FuncCallSpecs::transferLockedOutput 1
+D02 -> D07: Architecture 43, Rule 3, Funcdata 2, SegmentOp 2, Funcdata::getScopeLocal 1, SegmentOp::hasFarPointerSupport 1, SegmentOp::getInnerSize 1, SegmentOp::getBaseSize 1
+D02 -> D08: TypeStruct::scoreSingleComponent 1
+D08 -> D14: none
+D08 -> D06: CPoolRecord 5, Symbol 2, CPoolRecord::getToken 1, ConstantPool 1
+D08 -> D16b: PrintLanguage 75
+D08 -> D11: none
+D09 -> D13: JumpTable 26, JumpTable::getIndirectOp 3, JumpTable::getAddressByIndex 2, Funcdata::findJumpTable 1, Funcdata::linkJumpTable 1, JumpTable::checkForMultistage 1, Funcdata::recoverJumpTable 1, JumpTable::isPartial 1, JumpTable::getRecoverCount 1, Funcdata::switchOverJumpTables 1, JumpTable::setIndirectOp 1
+D09 -> D10: none
+D09 -> D08: ResolvedUnion 1, ResolveCache::resolution 1
+D09 -> D11: ActionDefaultParams 1
+D09 -> D18: none
+D10 -> D08: none
+D10 -> D11: ActionFuncLink 1
+D10 -> D14: none
+D10 -> D13: ValueSetRead 4, ValueSetSolver::getValueSetRead 4, ValueSetSolver 1, WidenerNone 1, WidenerFull 1, ValueSetSolver::establishValueSets 1
+D10 -> D09: FunctionTestProperty::expression 1
+D11 -> D10: LoadGuard 10, LoadGuard::getHighest 3, LoadGuard::getMinimum 3, Heritage 1, LoadGuard::isRangeLocked 1, LoadGuard::getMaximum 1
+D11 -> D14: ActionMarkExplicit 4, HighVariable 3, ActionAssignHigh 3, ActionMarkIndirectOnly 3, ActionMergeRequired 3, ActionMergeAdjacent 3, ActionMergeCopy 3, ActionMergeMultiEntry 3, ActionMergeType 3, ActionMarkImplied 3, ActionNameVars 3, ActionMapGlobals 3, ActionHideShadow 3, ActionDominantCopy 3, ActionCopyMarker 3, ActionDynamicSymbols 3, ActionMarkExplicit::OpStackElement 2, ActionMarkExplicit::baseExplicit 1, ActionMarkExplicit::multipleInteraction 1, ActionMarkExplicit::processMultiplier 1, ActionMarkExplicit::checkNewToConstructor 1, ActionMarkImplied::DescTreeElement 1, ActionMarkImplied::isPossibleAliasStep 1, ActionMarkImplied::isPossibleAlias 1, ActionMarkImplied::checkImpliedCover 1
+D11 -> D13: JumpTable 2, Funcdata::findJumpTable 1, JumpTable::getSwitchVarConsume 1
+D11 -> D12: ActionInputPrototype 5, ActionStackPtrFlow 4, ActionStop 3, ActionStartCleanUp 3, ActionStartTypes 3, ActionLaneDivide 3, ActionMultiCse 3, ActionShadowVar 3, ActionConstantPtr 3, ActionDeindirect 3, ActionUnreachable 3, ActionDoNothing 3, ActionLateDoNothing 3, ActionRedundBranch 3, ActionDeterminedBranch 3, ActionConditionalConst 3, ActionSwitchNorm 3, ActionActiveReturn 3, ActionLikelyTrash 3, ActionMappedLocalSync 3, ActionOutputPrototype 3, ActionUnjustifiedParams 3, ActionPrototypeWarnings 3, ActionConditionalConst::ConstPoint 2, ActionStackPtrFlow::analyzeExtraPop 1
+D11 -> R1-6: none
+D11 -> R7: none
+D11 -> D09: Funcdata::doLiveInject 1
+D11 -> D16b: ActionSetCasts 3, ActionSetCasts::checkPointerIssues 1, ActionSetCasts::testStructOffset0 1, ActionSetCasts::tryResolutionAdjustment 1, ActionSetCasts::tryResolutionCopy 1, ActionSetCasts::isOpIdentical 1, ActionSetCasts::resolveUnion 1, ActionSetCasts::castOutput 1, ActionSetCasts::castInput 1, ActionSetCasts::insertPtrsubZero 1
+D12 -> D13: JumpTable 1, JumpTable::isLabelled 1, JumpTable::matchModel 1, JumpTable::recoverLabels 1
+D12 -> D14: none
+D12 -> D10: none
+D12 -> D11: ScopeLocal 1, ScopeLocal::hasOverlapProbems 1, ScopeLocal::getSpaceId 1, ScopeLocal::hasOpenParamRefs 1
+D12 -> R7: LaneDivide 1
+R1-6 -> D10: none
+R1-6 -> D11: ScopeLocal::markNotMapped 1
+R1-6 -> D13: JumpTable 2, JumpTable::getAddressByIndex 2, Funcdata::findJumpTable 1, JumpTable::isLabelled 1, Funcdata::removeJumpTable 1
+R1-6 -> D14: Merge 2, ActionCopyMarker 1, Merge::registerProtoPartialRoot 1
+R1-6 -> R7: SubvariableFlow 1
+R1-6 -> R8: none
+R1-6 -> R9: none
+R1-6 -> D09: FunctionTestProperty::expression 1
+R1-6 -> D12: ActionDeindirect 1
+R1-6 -> D16b: none
+R7 -> D10: none
+R7 -> D11: none
+R7 -> R1-6: none
+R8 -> R1-6: none
+R8 -> D10: none
+R9 -> R1-6: none
+R9 -> D10: none
+R9 -> D11: none
+D13 -> D09: FlowInfo 6, Funcdata::truncatedFlow 1, FlowInfo::doesJumpRecord 1
+D13 -> D10: none
+D13 -> D11: none
+D13 -> D01: CircleRange 95, CircleRange::getMin 13, CircleRange::isEmpty 6, CircleRange::pullBack 5, CircleRange::circleUnion 4, CircleRange::minimalContainer 3, CircleRange::getEnd 3, CircleRange::pushForwardUnary 3, CircleRange::pushForwardBinary 3, CircleRange::isFull 3, CircleRange::invert 3, CircleRange::pullBackBinary 3, CircleRange::pushForwardTrinary 2, CircleRange::encodeRangeOverlaps 2, CircleRange::complement 1, CircleRange::convertToBoolean 1, CircleRange::newStride 1, CircleRange::newDomain 1, CircleRange::isSingle 1, CircleRange::getMaxInfo 1, CircleRange::setNZMask 1, CircleRange::setStride 1, CircleRange::pullBackUnary 1, CircleRange::translate2Op 1
+D13 -> none: Emulate 4, MemoryImage 2, PcodeEmitCache 1
+D14 -> D11: ScopeLocal 3, ScopeLocal::recoverNameRecommendationsForSymbols 1
+D14 -> D10: LoadGuard 4, LoadGuard::isGuarded 1
+D14 -> D16b: ActionSetCasts 1
+D14 -> D13: none
+D15 -> D14: none
+D15 -> D11: none
+D15 -> D13: Funcdata::installSwitchDefaults 1
+D15 -> D12: none
+D16b -> D14: HighVariable 5, HighVariable::getNameRepresentative 2, HighVariable::isUnmerged 1
+D16b -> D13: JumpTable 1
+D16b -> D15: none
+D16b -> D11: none
+D16b -> D16c: Emit 157, EmitMarkup 133, Emit::openBraceIndent 11, Emit::closeBraceIndent 10, Emit::setPendingPrint 1, Emit::hasPendingPrint 1, Emit::cancelPendingPrint 1, Emit::openBrace 1, PendPrint 1, EmitPrettyPrint 1
+D16c -> D16b: none
+D17 -> D11: ActionDirectWrite 4, ActionDeadCode 2, ActionStart 1, ActionConstbase 1, ActionNormalizeSetup 1, ActionDefaultParams 1, ActionExtraPopSetup 1, ActionPrototypeTypes 1, ActionFuncLink 1, ActionFuncLinkOutOnly 1, ActionVarnodeProps 1, ActionHeritage 1, ActionParamDouble 1, ActionSegmentize 1, ActionInternalStorage 1, ActionForceGoto 1, ActionActiveParam 1, ActionReturnRecovery 1, ActionRestrictLocal 1, ActionDynamicMapping 1, ActionSpacebase 1, ActionNonzeroMask 1, ActionInferTypes 1, ActionRestructureVarnode 1
+D17 -> D14: ActionDynamicSymbols 2, ActionAssignHigh 1, ActionMergeRequired 1, ActionMarkExplicit 1, ActionMarkImplied 1, ActionMergeMultiEntry 1, ActionMergeCopy 1, ActionDominantCopy 1, ActionMarkIndirectOnly 1, ActionMergeAdjacent 1, ActionMergeType 1, ActionHideShadow 1, ActionCopyMarker 1, ActionMapGlobals 1, ActionNameVars 1
+D17 -> D16b: ActionSetCasts 1
+D17 -> D12: ActionUnreachable 2, RuleOrPredicate 1, ActionLaneDivide 1, ActionMultiCse 1, ActionShadowVar 1, ActionDeindirect 1, ActionStackPtrFlow 1, ActionRedundBranch 1, ActionConstantPtr 1, ActionDeterminedBranch 1, ActionConditionalExe 1, ActionConditionalConst 1, ActionLikelyTrash 1, ActionDoNothing 1, ActionSwitchNorm 1, ActionUnjustifiedParams 1, ActionStartTypes 1, ActionActiveReturn 1, ActionMappedLocalSync 1, ActionStartCleanUp 1, ActionLateDoNothing 1, ActionOutputPrototype 1, ActionInputPrototype 1, ActionPrototypeWarnings 1, ActionStop 1
+D17 -> D15: ActionBlockStructure 2, ActionPreferComplement 2, ActionStructureTransform 2, ActionNodeJoin 1, ActionReturnSplit 1, ActionNormalizeBranches 1, ActionFinalStructure 1
+D18 -> D07: InjectPayload 32, InjectParameter 12, InjectContext 11, Architecture 11, ExecutablePcode 5, InjectPayload::decodePayloadAttributes 4, InjectPayload::decodePayloadParams 4, InjectPayload::sizeInput 3, InjectPayload::sizeOutput 3, InjectPayload::getParamShift 2, PcodeInjectLibrary 2, PcodeInjectLibrary::getPayload 2, PcodeInjectLibrary::getPayloadId 1, PcodeInjectLibrary::getUniqueBase 1, PcodeInjectLibrary::registerCallFixup 1, PcodeInjectLibrary::registerCallOtherFixup 1, PcodeInjectLibrary::registerCallMechanism 1, PcodeInjectLibrary::registerExeScript 1, Architecture::collectBehaviors 1, InjectPayload::orderParameters 1
+
+## Members of the D07 files: lines, and names of other tracks each uses
+## (file, class::member, lines, then track:name pairs; D02 to D06 left out)
+action.cc Action::issueWarning [D07] 11 
+action.cc Action::checkStartBreak [D07] 15 
+action.cc Action::turnOnDebug [D07] 13 
+action.cc Action::turnOffDebug [D07] 13 
+action.cc Action::printStatistics [D07] 7 
+action.cc Action::reset [D07] 8 
+action.cc Action::resetStats [D07] 9 
+action.cc Action::checkActionBreak [D07] 15 
+action.cc Action::print [D07] 16 
+action.cc Action::printState [D07] 23 
+action.cc Action::setBreakPoint [D07] 16 
+action.cc Action::clearBreakPoints [D07] 12 
+action.cc Action::setWarning [D07] 27 
+action.cc Action::disableRule [D07] 16 
+action.cc Action::enableRule [D07] 33 
+action.cc Action::getSubAction [D07] 10 
+action.cc Action::getSubRule [D07] 13 
+action.cc Action::perform [D07] 78 
+action.cc ActionGroup::addAction [D07] 6 
+action.cc ActionGroup::clearBreakPoints [D07] 9 
+action.cc ActionGroup::clone [D07] 17 
+action.cc ActionGroup::reset [D07] 10 
+action.cc ActionGroup::resetStats [D07] 10 
+action.cc ActionGroup::print [D07] 16 
+action.cc ActionGroup::printState [D07] 12 
+action.cc ActionGroup::getSubAction [D07] 25 
+action.cc ActionGroup::getSubRule [D07] 25 
+action.cc ActionGroup::apply [D07] 23 
+action.cc ActionRestartGroup::clone [D07] 17 
+action.cc ActionRestartGroup::reset [D07] 7 
+action.cc ActionRestartGroup::apply [D07] 32 
+action.cc ActionGroup::turnOnDebug [D07] 12 
+action.cc ActionGroup::turnOffDebug [D07] 13 
+action.cc ActionGroup::printStatistics [D07] 28 
+action.cc Rule::issueWarning [D07] 12 
+action.cc Rule::reset [D07] 8 
+action.cc Rule::resetStats [D07] 11 
+action.cc Rule::turnOnDebug [D07] 13 
+action.cc Rule::turnOffDebug [D07] 15 
+action.cc Rule::printStatistics [D07] 9 
+action.cc Rule::checkActionBreak [D07] 22 
+action.cc ActionPool::addRule [D07] 13 
+action.cc ActionPool::print [D07] 24 
+action.cc ActionPool::printState [D07] 12 
+action.cc ActionPool::getSubRule [D07] 33 
+action.cc ActionPool::processOp [D07] 55 
+action.cc ActionPool::apply [D07] 13 
+action.cc ActionPool::clearBreakPoints [D07] 9 
+action.cc ActionPool::clone [D07] 17 
+action.cc ActionPool::reset [D07] 10 
+action.cc ActionPool::resetStats [D07] 11 
+action.cc ActionPool::turnOnDebug [D07] 13 
+action.cc ActionPool::turnOffDebug [D07] 14 
+action.cc ActionPool::printStatistics [D07] 22 D17:ActionDatabase
+action.cc ActionDatabase::resetDefaults [D17] 20 
+action.cc ActionDatabase::getGroup [D17] 15 
+action.cc ActionDatabase::setCurrent [D17] 15 
+action.cc ActionDatabase::toggleAction [D17] 23 
+action.cc ActionDatabase::setGroup [D17] 18 
+action.cc ActionDatabase::cloneGroup [D17] 13 
+action.cc ActionDatabase::addToGroup [D17] 13 
+action.cc ActionDatabase::removeFromGroup [D17] 9 
+action.cc ActionDatabase::getAction [D17] 14 
+action.cc ActionDatabase::registerAction [D17] 19 
+action.cc ActionDatabase::deriveAction [D17] 19 
+architecture.cc ArchitectureCapability::initialize [D07] 9 
+architecture.cc ArchitectureCapability::findCapability [D07] 14 
+architecture.cc ArchitectureCapability::findCapability [D07] 14 
+architecture.cc ArchitectureCapability::getCapability [D07] 14 
+architecture.cc ArchitectureCapability::sortCapabilities [D07] 100 D08:TypeOp D16b:PrintLanguageCapability D16b:PrintLanguageCapability::getDefault
+architecture.cc Architecture::getModel [D07] 13 
+architecture.cc Architecture::hasModel [D07] 17 
+architecture.cc Architecture::getSpaceBySpacebase [D07] 26 
+architecture.cc Architecture::getLanedRegister [D07] 22 
+architecture.cc Architecture::getMinimumLanedRegisterSize [D07] 11 
+architecture.cc Architecture::setDefaultModel [D07] 12 
+architecture.cc Architecture::clearAnalysis [D07] 10 
+architecture.cc Architecture::readLoaderSymbols [D07] 18 
+architecture.cc Architecture::collectBehaviors [D07] 15 D08:TypeOp
+architecture.cc Architecture::getSegmentOp [D07] 13 
+architecture.cc Architecture::setPrototype [D07] 19 D16b:PrintLanguage
+architecture.cc Architecture::setPrintLanguage [D07] 26 D16b:PrintLanguageCapability
+architecture.cc Architecture::globalify [D07] 16 D10:LoadGuard::getHighest
+architecture.cc Architecture::decodeFlowOverride [D07] 33 
+architecture.cc Architecture::encode [D07] 18 
+architecture.cc Architecture::restoreXml [D07] 47 notM3:CallGraph::decoder
+architecture.cc Architecture::nameFunction [D07] 21 
+architecture.cc Architecture::addSpacebase [D07] 16 
+architecture.cc Architecture::buildAction [D07] 12 D17:ActionDatabase::universalAction
+architecture.cc Architecture::buildDatabase [D07] 12 
+architecture.cc Architecture::buildInstructions [D07] 6 D08:TypeOp
+architecture.cc Architecture::postSpecFile [D07] 9 
+architecture.cc Architecture::restoreFromSpec [D07] 25 
+architecture.cc Architecture::initializeSegments [D07] 17 
+architecture.cc Architecture::cacheAddrSpaceProperties [D07] 40 
+architecture.cc Architecture::decodeDynamicRule [D07] 36 notM3:RuleGeneric
+architecture.cc Architecture::decodeProto [D07] 26 
+architecture.cc Architecture::decodeProtoEval [D07] 26 
+architecture.cc Architecture::decodeDefaultProto [D07] 17 
+architecture.cc Architecture::decodeGlobal [D07] 14 
+architecture.cc Architecture::addToGlobalScope [D07] 21 
+architecture.cc Architecture::addOtherSpace [D07] 20 D10:LoadGuard::getHighest
+architecture.cc Architecture::decodeReadOnly [D07] 15 
+architecture.cc Architecture::decodeVolatile [D07] 16 
+architecture.cc Architecture::decodeReturnAddress [D07] 16 
+architecture.cc Architecture::decodeIncidentalCopy [D07] 15 
+architecture.cc Architecture::decodeRegisterData [D07] 50 
+architecture.cc Architecture::decodeStackPointer [D07] 40 notM3:DummyTranslate::getRegister
+architecture.cc Architecture::decodeDeadcodeDelay [D07] 14 
+architecture.cc Architecture::decodeInferPtrBounds [D07] 16 
+architecture.cc Architecture::decodeFuncPtrAlign [D07] 22 
+architecture.cc Architecture::decodeSpacebase [D07] 15 notM3:DummyTranslate::getRegister
+architecture.cc Architecture::decodeNoHighPtr [D07] 15 
+architecture.cc Architecture::decodePreferSplit [D07] 20 D10:PreferSplitRecord
+architecture.cc Architecture::decodeAggressiveTrim [D07] 17 
+architecture.cc Architecture::createModelAlias [D07] 21 
+architecture.cc Architecture::createUnknownModel [D07] 13 
+architecture.cc Architecture::parseProcessorConfig [D07] 67 notM3:CallGraph::decoder
+architecture.cc Architecture::parseCompilerConfig [D07] 116 D10:PreferSplitManager notM3:CallGraph::decoder
+architecture.cc Architecture::parseExtraRules [D07] 16 notM3:CallGraph::decoder
+architecture.cc Architecture::fillinReadOnlyFromLoader [D07] 20 
+architecture.cc Architecture::init [D07] 25 
+architecture.cc Architecture::resetDefaultsInternal [D07] 23 D09:FlowInfo D16b:PrintLanguage D17:ActionDatabase
+architecture.cc Architecture::resetDefaults [D07] 9 
+architecture.cc SegmentedResolver::resolve [D07] 69 
+architecture.cc Statistics::process_cast [D07] 10 
+architecture.cc Statistics::process [D07] 10 
+architecture.cc Statistics::printResults [D07] 28 
+dynamic.cc ToOpEdge::hash [D07] 17 
+dynamic.cc DynamicHash::buildVnUp [D07] 16 
+dynamic.cc DynamicHash::buildVnDown [D07] 27 
+dynamic.cc DynamicHash::buildOpUp [D07] 10 
+dynamic.cc DynamicHash::buildOpDown [D07] 8 
+dynamic.cc DynamicHash::gatherUnmarkedVn [D07] 12 
+dynamic.cc DynamicHash::gatherUnmarkedOp [D07] 11 
+dynamic.cc DynamicHash::clear [D07] 9 
+dynamic.cc DynamicHash::calcHash [D07] 66 
+dynamic.cc DynamicHash::calcHash [D07] 55 
+dynamic.cc DynamicHash::pieceTogetherHash [D07] 66 
+dynamic.cc DynamicHash::moveOffSkip [D07] 35 
+dynamic.cc DynamicHash::uniqueHash [D07] 61 
+dynamic.cc DynamicHash::uniqueHash [D07] 75 
+dynamic.cc DynamicHash::findVarnode [D07] 32 
+dynamic.cc DynamicHash::findOp [D07] 26 
+dynamic.cc DynamicHash::dedupVarnodes [D07] 26 
+dynamic.cc DynamicHash::gatherFirstLevelVars [D07] 44 
+dynamic.cc DynamicHash::getSlotFromHash [D07] 12 
+dynamic.cc DynamicHash::getMethodFromHash [D07] 9 
+dynamic.cc DynamicHash::getOpCodeFromHash [D07] 9 
+dynamic.cc DynamicHash::getPositionFromHash [D07] 9 
+dynamic.cc DynamicHash::getTotalFromHash [D07] 9 
+dynamic.cc DynamicHash::getIsNotAttached [D07] 9 
+dynamic.cc DynamicHash::clearTotalPosition [D07] 11 
+expression.cc TraverseNode::isAlternatePathValid [D07] 29 
+expression.cc BooleanMatch::sameOpComplement [D07] 36 
+expression.cc BooleanMatch::varnodeSame [D07] 18 
+expression.cc BooleanMatch::evaluate [D07] 108 D08:TypeOp::getBooleanFlip D08:TypeOp::isBooleanFlipReorder
+expression.cc BooleanExpressionMatch::verifyCondition [D07] 16 
+expression.cc TermOrder::collect [D07] 49 
+expression.cc TermOrder::sortTerms [D07] 14 
+expression.cc Term::isEquivalent [D07] 10 
+expression.cc AddExpression::isEquivalent [D07] 24 
+expression.cc AddExpression::gather [D07] 35 
+expression.cc AddExpression::gatherTwoTermsSubtract [D07] 11 
+expression.cc AddExpression::gatherTwoTermsAdd [D07] 10 
+expression.cc AddExpression::gatherTwoTermsRoot [D07] 13 
+expression.cc BitFieldExpression::getStructures [D07] 37 
+expression.cc BitFieldExpression::recoverStructurePointer [D07] 21 
+expression.cc BitFieldExpression::getPullField [D07] 35 
+expression.cc InsertExpression::getRangeMask [D07] 15 
+expression.cc InsertExpression::getLSBMask [D07] 295 
+fspec.cc FspecSpace::encodeAttributes [D07] 14 
+fspec.cc FspecSpace::encodeAttributes [D07] 15 
+fspec.cc FspecSpace::printRaw [D07] 13 
+fspec.cc FspecSpace::decode [D07] 9 
+fspec.cc ParameterSymbol::getName [D07] 6 
+fspec.cc ParameterSymbol::getType [D07] 6 
+fspec.cc ParameterSymbol::getAddress [D07] 9 
+fspec.cc ParameterSymbol::getSize [D07] 6 
+fspec.cc ParameterSymbol::hasStorage [D07] 6 
+fspec.cc ParameterSymbol::isTypeLocked [D07] 6 
+fspec.cc ParameterSymbol::isNameLocked [D07] 6 
+fspec.cc ParameterSymbol::isSizeTypeLocked [D07] 6 
+fspec.cc ParameterSymbol::isThisPointer [D07] 6 
+fspec.cc ParameterSymbol::isIndirectStorage [D07] 6 
+fspec.cc ParameterSymbol::isHiddenReturn [D07] 6 
+fspec.cc ParameterSymbol::isNameUndefined [D07] 6 
+fspec.cc ParameterSymbol::setTypeLock [D07] 13 
+fspec.cc ParameterSymbol::setNameLock [D07] 10 
+fspec.cc ParameterSymbol::setThisPointer [D07] 7 
+fspec.cc ParameterSymbol::overrideSizeLockType [D07] 6 
+fspec.cc ParameterSymbol::resetSizeLockType [D07] 6 
+fspec.cc ParameterSymbol::clone [D07] 6 
+fspec.cc ParameterSymbol::getSymbol [D07] 37 
+fspec.cc ProtoStoreSymbol::getSymbolBacked [D07] 15 
+fspec.cc ProtoStoreSymbol::setInput [D07] 68 
+fspec.cc ProtoStoreSymbol::clearInput [D07] 17 
+fspec.cc ProtoStoreSymbol::clearAllInputs [D07] 6 
+fspec.cc ProtoStoreSymbol::getNumInputs [D07] 6 
+fspec.cc ProtoStoreSymbol::getInput [D07] 11 
+fspec.cc ProtoStoreSymbol::setOutput [D07] 9 
+fspec.cc ProtoStoreSymbol::clearOutput [D07] 9 
+fspec.cc ProtoStoreSymbol::getOutput [D07] 6 
+fspec.cc ProtoStoreSymbol::clone [D07] 13 
+fspec.cc ProtoStoreSymbol::encode [D07] 6 
+fspec.cc ProtoStoreSymbol::decode [D07] 30 
+fspec.cc FuncCallSpecs::createPlaceholder [D07] 21 
+fspec.cc FuncCallSpecs::resolveSpacebaseRelative [D07] 40 
+fspec.cc FuncCallSpecs::abortSpacebaseRelative [D07] 39 
+fspec.cc FuncCallSpecs::setFuncdata [D07] 15 
+fspec.cc FuncCallSpecs::clone [D07] 18 
+fspec.cc FuncCallSpecs::getSpacebaseRelative [D07] 23 
+fspec.cc FuncCallSpecs::buildParam [D07] 33 
+fspec.cc FuncCallSpecs::transferLockedInputParam [D07] 30 
+fspec.cc FuncCallSpecs::transferLockedOutputParam [D07] 32 
+fspec.cc FuncCallSpecs::transferLockedInput [D07] 35 
+fspec.cc FuncCallSpecs::transferLockedOutput [D07] 15 
+fspec.cc FuncCallSpecs::collectUnlockedTrials [D07] 22 
+fspec.cc FuncCallSpecs::commitNewInputs [D07] 64 
+fspec.cc FuncCallSpecs::commitNewOutputs [D07] 130 
+fspec.cc FuncCallSpecs::initActiveInput [D07] 18 
+fspec.cc FuncCallSpecs::checkInputJoin [D07] 27 
+fspec.cc FuncCallSpecs::doInputJoin [D07] 32 
+fspec.cc FuncCallSpecs::lateRestriction [D07] 35 
+fspec.cc FuncCallSpecs::deindirect [D07] 42 
+fspec.cc FuncCallSpecs::forceSet [D07] 32 
+fspec.cc FuncCallSpecs::insertPcode [D07] 19 D09:Funcdata::doLiveInject
+fspec.cc FuncCallSpecs::collectOutputTrialVarnodes [D07] 28 
+fspec.cc FuncCallSpecs::finalInputCheck [D07] 21 
+fspec.cc FuncCallSpecs::checkInputTrialUse [D07] 76 D11:AliasChecker D11:AliasChecker::hasLocalAlias
+fspec.cc FuncCallSpecs::checkOutputTrialUse [D07] 24 
+fspec.cc FuncCallSpecs::buildInputFromTrials [D07] 65 D11:ScopeLocal::markNotMapped
+fspec.cc FuncCallSpecs::findPreexistingWhole [D07] 20 
+fspec.cc FuncCallSpecs::buildOutputFromTrials [D07] 77 
+fspec.cc FuncCallSpecs::getInputBytesConsumed [D07] 17 
+fspec.cc FuncCallSpecs::setInputBytesConsumed [D07] 14 
+fspec.cc FuncCallSpecs::paramshiftModifyStart [D07] 10 
+fspec.cc FuncCallSpecs::paramshiftModifyStop [D07] 23 
+fspec.cc FuncCallSpecs::hasEffectTranslate [D07] 16 
+fspec.cc FuncCallSpecs::countMatchingCalls [D07] 28 
+funcdata.cc Funcdata::clear [D07] 35 D11:ScopeLocal::resetLocalWindow D13:Funcdata::clearJumpTables
+funcdata.cc Funcdata::warning [D07] 16 
+funcdata.cc Funcdata::warningHeader [D07] 15 
+funcdata.cc Funcdata::startProcessing [D07] 20 D10:Heritage::buildInfoList
+funcdata.cc Funcdata::stopProcessing [D07] 10 
+funcdata.cc Funcdata::startTypeRecovery [D07] 27 D11:ScopeLocal
+funcdata.cc Funcdata::printRaw [D05] 21 
+funcdata.cc Funcdata::spacebase [D07] 45 
+funcdata.cc Funcdata::newSpacebasePtr [D07] 16 
+funcdata.cc Funcdata::findSpacebaseInput [D07] 18 
+funcdata.cc Funcdata::constructSpacebaseInput [D07] 23 
+funcdata.cc Funcdata::constructConstSpacebase [D07] 28 
+funcdata.cc Funcdata::spacebaseConstant [D07] 104 
+funcdata.cc Funcdata::clearCallSpecs [D07] 11 
+funcdata.cc Funcdata::issueDatatypeWarning [D07] 8 
+funcdata.cc Funcdata::getCallSpecs [D07] 20 
+funcdata.cc Funcdata::compareCallspecs [D07] 12 
+funcdata.cc Funcdata::sortCallSpecs [D07] 8 
+funcdata.cc Funcdata::deleteCallSpecs [D07] 21 
+funcdata.cc Funcdata::fillinExtrapop [D07] 34 
+funcdata.cc Funcdata::printVarnodeTree [D05] 18 
+funcdata.cc Funcdata::printLocalRange [D07] 16 D13:JumpTable
+funcdata.cc Funcdata::decodeJumpTable [D13] 15 
+funcdata.cc Funcdata::encodeJumpTable [D13] 20 
+funcdata.cc Funcdata::encodeVarnode [D07] 13 D14:HighVariable
+funcdata.cc Funcdata::encodeHigh [D07] 28 D14:HighVariable
+funcdata.cc Funcdata::encodeTree [D07] 49 
+funcdata.cc Funcdata::encode [D07] 31 D13:Funcdata::encodeJumpTable
+funcdata.cc Funcdata::decode [D07] 81 D11:ScopeLocal D11:ScopeLocal::resetLocalWindow D13:Funcdata::decodeJumpTable
+funcdata.cc Funcdata::doLiveInject [D09] 30 
+funcdata.cc PcodeEmitFd::dump [D09] 40 D08:ResolveCache::resolution D08:ResolvedUnion
+funcdata.cc Funcdata::getUnionField [D07] 24 D08:ResolveCache::resolution D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::getDatatype
+funcdata.cc Funcdata::getUnionResolution [D07] 20 D08:ResolveCache::resolution D08:ResolveEdge D08:ResolvedUnion
+funcdata.cc Funcdata::getAddressBasedUnionField [D07] 20 D08:ResolveCache::resolution D08:ResolveEdge D08:ResolvedUnion
+funcdata.cc Funcdata::setUnionField [D07] 36 D08:ResolveCache::resolution D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::isLocked
+funcdata.cc Funcdata::setAddressBasedUnionField [D07] 23 D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::isLocked
+funcdata.cc Funcdata::updateUnionField [D07] 19 D08:ResolveCache::resolution D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::setResolve
+funcdata.cc Funcdata::forceFacingType [D07] 22 D08:ResolvedUnion
+funcdata.cc Funcdata::inheritUnionField [D07] 22 D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::getFieldNum
+funcdata.cc Funcdata::inheritUnionFieldPtr [D07] 21 D08:ResolveEdge D08:ResolvedUnion D08:ResolvedUnion::getFieldNum
+funcdata.cc Funcdata::debugModCheck [D05] 12 
+funcdata.cc Funcdata::debugModClear [D05] 11 
+funcdata.cc Funcdata::debugModPrint [D05] 28 
+funcdata.cc Funcdata::debugSetRange [D05] 13 
+funcdata.cc Funcdata::debugCheckRange [D05] 24 
+funcdata.cc Funcdata::debugPrintRange [D05] 24 
+funcdata_block.cc Funcdata::printBlockTree [D07] 7 
+funcdata_block.cc Funcdata::clearBlocks [D07] 8 
+funcdata_block.cc Funcdata::clearJumpTables [D13] 22 
+funcdata_block.cc Funcdata::removeJumpTable [D13] 22 D14:HighVariable
+funcdata_block.cc Funcdata::createReplaceVarnode [D07] 19 
+funcdata_block.cc Funcdata::pushMultiequals [D07] 90 
+funcdata_block.cc Funcdata::opZeroMulti [D07] 18 
+funcdata_block.cc Funcdata::branchRemoveInternal [D07] 25 
+funcdata_block.cc Funcdata::removeBranch [D07] 13 
+funcdata_block.cc Funcdata::descendantsOutside [D07] 21 
+funcdata_block.cc Funcdata::blockRemoveInternal [D07] 73 D13:Funcdata::findJumpTable D13:Funcdata::removeJumpTable D13:JumpTable
+funcdata_block.cc Funcdata::removeDoNothingBlock [D07] 19 
+funcdata_block.cc Funcdata::removeUnreachableBlocks [D07] 57 
+funcdata_block.cc Funcdata::pushBranch [D07] 23 
+funcdata_block.cc Funcdata::linkJumpTable [D13] 19 
+funcdata_block.cc Funcdata::findJumpTable [D13] 18 
+funcdata_block.cc Funcdata::installJumpTable [D13] 28 
+funcdata_block.cc Funcdata::stageJumpTable [D13] 64 D09:FlowInfo D09:FlowInfo::doesJumpRecord D09:Funcdata::truncatedFlow D17:ActionDatabase::getCurrent D17:ActionDatabase::getCurrentName D17:ActionDatabase::setCurrent
+funcdata_block.cc Funcdata::earlyJumpTableFail [D13] 85 
+funcdata_block.cc Funcdata::recoverJumpTable [D13] 39 D09:FlowInfo
+funcdata_block.cc Funcdata::switchOverJumpTables [D13] 9 D09:FlowInfo
+funcdata_block.cc Funcdata::installSwitchDefaults [D13] 17 
+funcdata_block.cc Funcdata::structureReset [D07] 37 D10:Heritage::forceRestructure D13:JumpTable D13:JumpTable::getIndirectOp
+funcdata_block.cc Funcdata::forceGoto [D07] 38 D15:ConditionalJoin
+funcdata_block.cc Funcdata::nodeJoinCreateBlock [D07] 45 
+funcdata_block.cc Funcdata::nodeSplitBlockEdge [D07] 21 
+funcdata_block.cc Funcdata::nodeSplit [D07] 36 D12:ConditionalExecution
+funcdata_block.cc Funcdata::removeFromFlowSplit [D07] 16 
+funcdata_block.cc Funcdata::switchEdge [D07] 11 
+funcdata_block.cc Funcdata::spliceBlockBasic [D07] 43 
+funcdata_block.cc CloneBlockOps::buildOpClone [D07] 30 
+funcdata_block.cc CloneBlockOps::buildVarnodeOutput [D07] 23 
+funcdata_block.cc CloneBlockOps::cloneBlock [D07] 20 
+funcdata_block.cc CloneBlockOps::cloneExpression [D07] 23 
+funcdata_block.cc CloneBlockOps::patchInputs [D07] 50 
+funcdata_op.cc Funcdata::opSetOpcode [D05] 12 
+funcdata_op.cc Funcdata::opMarkHalt [D05] 15 
+funcdata_op.cc Funcdata::opUnsetOutput [D05] 18 
+funcdata_op.cc Funcdata::opSetOutput [D05] 22 
+funcdata_op.cc Funcdata::opUnsetInput [D05] 12 
+funcdata_op.cc Funcdata::opSetInput [D05] 27 
+funcdata_op.cc Funcdata::opSwapInput [D05] 19 
+funcdata_op.cc Funcdata::opInsert [D05] 14 
+funcdata_op.cc Funcdata::opUninsert [D05] 15 
+funcdata_op.cc Funcdata::opUnlink [D05] 24 
+funcdata_op.cc Funcdata::opDestroy [D05] 25 
+funcdata_op.cc Funcdata::opDestroyRecursive [D05] 25 
+funcdata_op.cc Funcdata::opDestroyRaw [D05] 14 
+funcdata_op.cc Funcdata::opSetAllInput [D05] 24 
+funcdata_op.cc Funcdata::opRemoveInput [D05] 17 
+funcdata_op.cc Funcdata::opInsertInput [D05] 14 
+funcdata_op.cc Funcdata::newOp [D05] 10 
+funcdata_op.cc Funcdata::newOp [D05] 11 
+funcdata_op.cc Funcdata::newIndirect [D05] 16 
+funcdata_op.cc Funcdata::opInsertBefore [D05] 28 
+funcdata_op.cc Funcdata::opInsertAfter [D05] 40 
+funcdata_op.cc Funcdata::opInsertBegin [D05] 22 
+funcdata_op.cc Funcdata::opInsertEnd [D05] 24 
+funcdata_op.cc Funcdata::createStackRef [D07] 49 
+funcdata_op.cc Funcdata::opStackStore [D07] 33 
+funcdata_op.cc Funcdata::opStackLoad [D07] 19 
+funcdata_op.cc Funcdata::opBoolNegate [D07] 19 
+funcdata_op.cc Funcdata::opUndoPtradd [D07] 37 
+funcdata_op.cc Funcdata::cloneOp [D05] 16 
+funcdata_op.cc Funcdata::getFirstReturnOp [D07] 24 
+funcdata_op.cc Funcdata::newOpBefore [D05] 27 
+funcdata_op.cc Funcdata::newIndirectOp [D05] 25 
+funcdata_op.cc Funcdata::newIndirectCreation [D05] 24 
+funcdata_op.cc Funcdata::markIndirectCreation [D05] 20 
+funcdata_op.cc Funcdata::followFlow [D09] 36 D13:Funcdata::switchOverJumpTables
+funcdata_op.cc Funcdata::truncatedFlow [D09] 61 D13:JumpTable D13:JumpTable::getIndirectOp D13:JumpTable::setIndirectOp
+funcdata_op.cc Funcdata::inlineFlow [D09] 75 D13:JumpTable
+funcdata_op.cc Funcdata::findPrimaryBranch [D07] 31 
+funcdata_op.cc Funcdata::listOps [D07] 28 
+funcdata_op.cc Funcdata::replaceLessequal [D07] 44 
+funcdata_op.cc Funcdata::distributeIntMultAdd [D07] 59 
+funcdata_op.cc Funcdata::collapseIntMultMult [D07] 29 
+funcdata_op.cc Funcdata::buildCopyTemp [D07] 63 
+funcdata_op.cc Funcdata::opFlipInPlaceTest [D07] 66 
+funcdata_op.cc Funcdata::opFlipInPlaceExecute [D07] 41 D08:TypeOp::getBooleanFlip D08:TypeOp::isBooleanFlipReorder
+funcdata_op.cc Funcdata::opNormalizeFlip [D07] 23 D08:TypeOp::getBooleanFlip D08:TypeOp::isBooleanFlipReorder
+funcdata_op.cc Funcdata::opCollapseIndirectsForCopy [D07] 123 
+funcdata_op.cc Funcdata::opCollapseIndirectsForAlias [D07] 47 D10:LoadGuard D10:LoadGuard::isGuarded
+funcdata_op.cc Funcdata::cseFindInBlock [D07] 32 
+funcdata_op.cc Funcdata::cseElimination [D07] 62 
+funcdata_op.cc Funcdata::cseEliminateList [D07] 39 
+funcdata_op.cc Funcdata::moveRespectingCover [D07] 45 D14:HighVariable D14:HighVariable::markExpression
+funcdata_varnode.cc Funcdata::setVarnodeProperties [D05] 23 D14:HighVariable
+funcdata_varnode.cc Funcdata::assignHigh [D05] 20 D14:HighVariable
+funcdata_varnode.cc Funcdata::newConstant [D05] 17 
+funcdata_varnode.cc Funcdata::newUnique [D05] 21 
+funcdata_varnode.cc Funcdata::newVarnodeOut [D05] 32 
+funcdata_varnode.cc Funcdata::newUniqueOut [D05] 19 
+funcdata_varnode.cc Funcdata::newVarnode [D05] 33 
+funcdata_varnode.cc Funcdata::newVarnodeIop [D05] 14 
+funcdata_varnode.cc Funcdata::newVarnodeSpace [D05] 15 
+funcdata_varnode.cc Funcdata::newVarnodeCallSpecs [D05] 17 
+funcdata_varnode.cc Funcdata::newCodeRef [D05] 17 
+funcdata_varnode.cc Funcdata::newVarnode [D05] 13 
+funcdata_varnode.cc Funcdata::cloneVarnode [D05] 20 
+funcdata_varnode.cc Funcdata::destroyVarnode [D05] 26 
+funcdata_varnode.cc Funcdata::checkForLanedRegister [D07] 18 D14:HighVariable
+funcdata_varnode.cc Funcdata::findHigh [D07] 24 D14:HighVariable
+funcdata_varnode.cc Funcdata::setInputVarnode [D05] 41 
+funcdata_varnode.cc Funcdata::combineInputVarnodes [D07] 81 
+funcdata_varnode.cc Funcdata::newExtendedConstant [D07] 32 
+funcdata_varnode.cc Funcdata::adjustInputVarnodes [D07] 47 D10:Heritage::markRangeHeritaged
+funcdata_varnode.cc Funcdata::destroyVarnodeRecursive [D07] 16 
+funcdata_varnode.cc Funcdata::descend2Undef [D07] 42 
+funcdata_varnode.cc Funcdata::initActiveOutput [D07] 10 
+funcdata_varnode.cc Funcdata::setHighLevel [D07] 19 
+funcdata_varnode.cc Funcdata::transferVarnodeProperties [D07] 21 
+funcdata_varnode.cc Funcdata::fillinReadOnly [D07] 82 
+funcdata_varnode.cc Funcdata::replaceVolatile [D07] 54 
+funcdata_varnode.cc Funcdata::checkIndirectUse [D07] 44 
+funcdata_varnode.cc Funcdata::markIndirectOnly [D07] 17 
+funcdata_varnode.cc Funcdata::clearDeadVarnodes [D05] 24 
+funcdata_varnode.cc Funcdata::calcNZMask [D07] 85 
+funcdata_varnode.cc Funcdata::syncVarnodesWithSymbols [D07] 55 D11:ScopeLocal D11:ScopeLocal::getSpaceId D11:ScopeLocal::isUnmappedUnaliased
+funcdata_varnode.cc Funcdata::markIndirectAliasUpdate [D07] 28 D14:HighVariable
+funcdata_varnode.cc Funcdata::syncVarnodesWithSymbol [D07] 58 D14:HighVariable
+funcdata_varnode.cc Funcdata::remapVarnode [D07] 16 D11:ScopeLocal::remapSymbol D14:HighVariable
+funcdata_varnode.cc Funcdata::remapDynamicVarnode [D07] 11 D11:ScopeLocal::remapSymbolDynamic
+funcdata_varnode.cc Funcdata::remapConflictSymbol [D07] 21 D14:HighVariable
+funcdata_varnode.cc Funcdata::detectSymbolConflicts [D07] 39 D14:HighVariable::isSameGroup
+funcdata_varnode.cc Funcdata::linkProtoPartial [D07] 24 D14:HighVariable D14:HighVariable::establishGroupSymbolOffset D14:HighVariable::getNameRepresentative D14:HighVariable::isSameGroup
+funcdata_varnode.cc Funcdata::linkSymbol [D07] 41 D14:HighVariable
+funcdata_varnode.cc Funcdata::linkSymbolReference [D07] 25 
+funcdata_varnode.cc Funcdata::findLinkedVarnode [D07] 42 
+funcdata_varnode.cc Funcdata::findLinkedVarnodes [D07] 26 
+funcdata_varnode.cc Funcdata::buildDynamicSymbol [D07] 29 D14:HighVariable
+funcdata_varnode.cc Funcdata::attemptDynamicMapping [D07] 33 
+funcdata_varnode.cc Funcdata::attemptDynamicMappingLate [D07] 66 
+funcdata_varnode.cc Funcdata::getInternalString [D07] 29 
+funcdata_varnode.cc Funcdata::testForReturnAddress [D07] 32 
+funcdata_varnode.cc Funcdata::totalReplace [D05] 22 
+funcdata_varnode.cc Funcdata::totalReplaceConstant [D05] 44 
+funcdata_varnode.cc Funcdata::splitUses [D07] 33 
+funcdata_varnode.cc Funcdata::findDisjointCover [D07] 33 
+funcdata_varnode.cc Funcdata::coverVarnodes [D07] 31 
+funcdata_varnode.cc Funcdata::applyUnionFacet [D07] 41 D08:ResolvedUnion D08:ResolvedUnion::getFieldNum D08:ResolvedUnion::setLock
+funcdata_varnode.cc Funcdata::mapGlobals [D07] 70 
+funcdata_varnode.cc Funcdata::prepareThisPointer [D07] 33 D11:ScopeLocal::addTypeRecommendation D11:ScopeLocal::hasTypeRecommendations
+funcdata_varnode.cc Funcdata::checkCallDoubleUse [D07] 49 
+funcdata_varnode.cc Funcdata::onlyOpUse [D07] 112 
+funcdata_varnode.cc Funcdata::ancestorOpUse [D07] 80 
+funcdata_varnode.cc AncestorRealistic::checkConditionalExe [D07] 29 
+funcdata_varnode.cc AncestorRealistic::enterNode [D07] 115 
+funcdata_varnode.cc AncestorRealistic::uponPop [D07] 53 
+funcdata_varnode.cc AncestorRealistic::execute [D07] 47 
+options.cc ArchOption::onOrOff [D07] 15 
+options.cc OptionDatabase::registerOption [D07] 67 
+options.cc OptionDatabase::set [D07] 13 
+options.cc OptionDatabase::decodeOne [D07] 29 
+options.cc OptionDatabase::decode [D07] 21 
+options.cc OptionExtraPop::apply [D07] 38 
+options.cc OptionReadOnly::apply [D07] 15 
+options.cc OptionDefaultPrototype::apply [D07] 15 
+options.cc OptionInferConstPtr::apply [D07] 26 
+options.cc OptionForLoops::apply [D07] 14 
+options.cc OptionInline::apply [D07] 26 
+options.cc OptionNoReturn::apply [D07] 26 
+options.cc OptionWarning::apply [D07] 20 D17:ActionDatabase::getCurrent
+options.cc OptionNullPrinting::apply [D07] 15 D16b:PrintC D16b:PrintC::setNULLPrinting
+options.cc OptionInPlaceOps::apply [D07] 15 D16b:PrintC D16b:PrintC::setInplaceOps
+options.cc OptionConventionPrinting::apply [D07] 15 D16b:PrintC D16b:PrintC::setConvention
+options.cc OptionNoCastPrinting::apply [D07] 15 D08:CastStrategy::extensions D16b:PrintC D16b:PrintC::setNoCastPrinting
+options.cc OptionHideExtensions::apply [D07] 18 D16b:PrintC D16b:PrintC::setHideImpliedExts
+options.cc OptionMaxLineWidth::apply [D07] 17 
+options.cc OptionIndentIncrement::apply [D07] 18 
+options.cc OptionCommentIndent::apply [D07] 17 D16b:PrintLanguage::setLineCommentIndent
+options.cc OptionCommentStyle::apply [D07] 12 
+options.cc OptionCommentHeader::apply [D07] 21 D16b:PrintLanguage::getHeaderComment D16b:PrintLanguage::setHeaderComment
+options.cc OptionCommentInstruction::apply [D07] 20 D16b:PrintLanguage::getInstructionComment D16b:PrintLanguage::setInstructionComment
+options.cc OptionIntegerFormat::apply [D07] 20 D16b:PrintLanguage::setIntegerFormat
+options.cc OptionBraceFormat::apply [D07] 35 D16b:PrintC D16b:PrintC::setBraceFormatFunction D16b:PrintC::setBraceFormatIfElse D16b:PrintC::setBraceFormatLoop D16b:PrintC::setBraceFormatSwitch D16c:Emit
+options.cc OptionSetAction::apply [D07] 23 D17:ActionDatabase::cloneGroup D17:ActionDatabase::setCurrent
+options.cc OptionCurrentAction::apply [D07] 27 D17:ActionDatabase::getCurrentName D17:ActionDatabase::setCurrent D17:ActionDatabase::toggleAction
+options.cc OptionAllowContextSet::apply [D07] 17 
+options.cc OptionIgnoreUnimplemented::apply [D07] 23 D09:FlowInfo
+options.cc OptionErrorUnimplemented::apply [D07] 23 D09:FlowInfo
+options.cc OptionErrorReinterpreted::apply [D07] 23 D09:FlowInfo
+options.cc OptionErrorTooManyInstructions::apply [D07] 23 D09:FlowInfo
+options.cc OptionBadDataCount::apply [D07] 29 
+options.cc OptionProtoEval::apply [D07] 24 
+options.cc OptionSetLanguage::apply [D07] 17 
+options.cc OptionJumpTableMax::apply [D07] 18 
+options.cc OptionJumpLoad::apply [D07] 22 D09:FlowInfo
+options.cc OptionToggleRule::apply [D07] 40 D17:ActionDatabase::getCurrent
+options.cc OptionAliasBlock::apply [D07] 25 
+options.cc OptionMaxInstruction::apply [D07] 20 D16b:PrintLanguage
+options.cc OptionNamespaceStrategy::apply [D07] 24 D16b:PrintLanguage D16b:PrintLanguage::setNamespaceStrategy
+options.cc OptionSplitDatatypes::getOptionBit [D07] 17 
+options.cc OptionSplitDatatypes::apply [D07] 31 D17:ActionDatabase::getCurrentName D17:ActionDatabase::toggleAction
+options.cc OptionNanIgnore::apply [D07] 35 D17:ActionDatabase::getCurrent
+pcodeinject.cc InjectPayload::decodeParameter [D07] 21 
+pcodeinject.cc InjectPayload::orderParameters [D07] 16 
+pcodeinject.cc InjectPayload::decodePayloadAttributes [D07] 28 
+pcodeinject.cc InjectPayload::decodePayloadParams [D07] 35 
+pcodeinject.cc ExecutablePcode::build [D07] 46 D13:EmulateSnippet::buildEmitter D13:EmulateSnippet::checkForLegalCode
+pcodeinject.cc ExecutablePcode::evaluate [D07] 28 D13:EmulateSnippet::getTempValue D13:EmulateSnippet::resetMemory none:Emulate::getHalt
+pcodeinject.cc PcodeInjectLibrary::registerCallFixup [D07] 16 
+pcodeinject.cc PcodeInjectLibrary::registerCallOtherFixup [D07] 16 
+pcodeinject.cc PcodeInjectLibrary::registerCallMechanism [D07] 16 
+pcodeinject.cc PcodeInjectLibrary::registerExeScript [D07] 17 
+pcodeinject.cc PcodeInjectLibrary::getPayloadId [D07] 29 
+pcodeinject.cc PcodeInjectLibrary::getCallFixupName [D07] 10 
+pcodeinject.cc PcodeInjectLibrary::getCallOtherTarget [D07] 10 
+pcodeinject.cc PcodeInjectLibrary::getCallMechanismName [D07] 18 
+pcodeinject.cc PcodeInjectLibrary::decodeInject [D07] 11 
+transform.cc LaneDescription::subset [D07] 28 
+transform.cc LaneDescription::getBoundary [D07] 33 
+transform.cc LaneDescription::restriction [D07] 25 
+transform.cc LaneDescription::extension [D07] 17 
+transform.cc TransformVar::createReplacement [D07] 43 
+transform.cc TransformOp::createReplacement [D07] 35 
+transform.cc TransformOp::attemptInsertion [D07] 19 
+transform.cc LanedIterator::normalize [D07] 64 
+transform.cc TransformManager::preserveAddress [D07] 8 
+transform.cc TransformManager::clearVarnodeMarks [D07] 14 
+transform.cc TransformManager::newPreexistingVarnode [D07] 14 
+transform.cc TransformManager::newUnique [D07] 15 
+transform.cc TransformManager::newConstant [D07] 15 
+transform.cc TransformManager::newPiece [D07] 19 
+transform.cc TransformManager::newSplit [D07] 36 
+transform.cc TransformManager::newSplit [D07] 34 
+transform.cc TransformManager::newOpReplace [D07] 21 
+transform.cc TransformManager::newIndirectReplace [D07] 31 
+transform.cc TransformManager::newOp [D07] 24 
+transform.cc TransformManager::newPreexistingOp [D07] 19 
+transform.cc TransformManager::getPreexistingVarnode [D07] 18 
+transform.cc TransformManager::getPiece [D07] 21 
+transform.cc TransformManager::getSplit [D07] 20 
+transform.cc TransformManager::getSplit [D07] 14 
+transform.cc TransformManager::specialHandling [D07] 11 
+transform.cc TransformManager::createOps [D07] 19 
+transform.cc TransformManager::createVarnodes [D07] 29 
+transform.cc TransformManager::removeOld [D07] 16 
+transform.cc TransformManager::transformInputVarnodes [D07] 11 
+transform.cc TransformManager::placeInputs [D07] 16 
+transform.cc TransformManager::apply [D07] 13 
+userop.cc UserPcodeOp::extractAnnotationSize [D07] 33 
+userop.cc DatatypeUserOp::getOutputLocal [D07] 6 
+userop.cc DatatypeUserOp::getInputLocal [D07] 9 
+userop.cc InjectedUserOp::decode [D07] 20 
+userop.cc VolatileOp::appendSize [D07] 16 
+userop.cc VolatileReadOp::getOperatorName [D07] 7 
+userop.cc VolatileReadOp::getOutputLocal [D07] 15 
+userop.cc VolatileReadOp::extractAnnotationSize [D07] 9 
+userop.cc VolatileWriteOp::getOperatorName [D07] 7 
+userop.cc VolatileWriteOp::getInputLocal [D07] 15 
+userop.cc VolatileWriteOp::extractAnnotationSize [D07] 23 
+userop.cc SegmentOp::isConcatenation [D07] 15 
+userop.cc SegmentOp::unify [D07] 29 
+userop.cc SegmentOp::execute [D07] 7 
+userop.cc SegmentOp::decode [D07] 78 
+userop.cc JumpAssistOp::decode [D07] 59 
+userop.cc InternalStringOp::getOutputLocal [D07] 31 
+userop.cc UserOpManage::initialize [D07] 16 notM3:DummyTranslate::getUserOpNames
+userop.cc UserOpManage::getOp [D07] 11 
+userop.cc UserOpManage::getOp [D07] 13 
+userop.cc UserOpManage::registerBuiltin [D07] 58 
+userop.cc UserOpManage::registerOp [D07] 44 
+userop.cc UserOpManage::decodeSegmentOp [D07] 12 
+userop.cc UserOpManage::decodeVolatile [D07] 38 
+userop.cc UserOpManage::decodeCallOtherFixup [D07] 12 
+userop.cc UserOpManage::decodeJumpAssist [D07] 17 
+userop.cc UserOpManage::manualCallOtherFixup [D07] 17 
+
+## Users of the members and classes of the D07 files, by track
+## (name [defining track]: track count, ...; members by the unique-name scan,
+## classes by name; a member no other track uses is listed with '-')
+Action::action [D07]: D03 2, D07 2
+Action::checkStartBreak [D07]: D07 1
+Action::completion [D07]: D07 1
+Action::disableRule [D07]: D07 3
+Action::enableRule [D07]: D07 3
+Action::getStatus [D07]: D07 1, console 2
+Action::perform [D07]: D07 2, D13 1, console 8, notM3 2
+Action::setBreakPoint [D07]: D07 1, console 3
+Action::setWarning [D07]: D07 2
+ActionDatabase::addToGroup [D17]: D07 1
+ActionDatabase::buildDefaultGroups [D17]: D07 1
+ActionDatabase::cloneGroup [D17]: D07 2
+ActionDatabase::deriveAction [D17]: D07 1
+ActionDatabase::getAction [D17]: D07 1
+ActionDatabase::getCurrent [D17]: D07 4, D13 2, console 26, notM3 4
+ActionDatabase::getCurrentName [D17]: D07 7, D13 1, notM3 1
+ActionDatabase::registerAction [D17]: D07 1
+ActionDatabase::removeFromGroup [D17]: D07 1
+ActionDatabase::setCurrent [D17]: D07 4, D13 3, notM3 2
+ActionDatabase::setGroup [D17]: D07 2
+ActionDatabase::toggleAction [D17]: D07 7
+ActionDatabase::universalAction [D17]: D07 2
+ActionGroup::addAction [D07]: D07 2, D17 88
+ActionPool::addRule [D07]: D07 1, D17 163
+ActionPool::processOp [D07]: D07 1
+AddExpression::gatherTwoTermsAdd [D07]: D07 1, R1-6 1
+AddExpression::gatherTwoTermsRoot [D07]: D07 1, R1-6 2
+AddExpression::gatherTwoTermsSubtract [D07]: D07 1, R1-6 1
+AddExpression::isEquivalent [D07]: D07 3, R1-6 2
+AdditiveEdge::getMultiplier [D07]: D07 1, R1-6 6
+AncestorRealistic::checkConditionalExe [D07]: D07 1
+AncestorRealistic::enterNode [D07]: D07 1
+AncestorRealistic::getSolidSlot [D07]: D07 1
+AncestorRealistic::markKill [D07]: D07 1
+AncestorRealistic::markSolid [D07]: D07 1
+AncestorRealistic::seenKill [D07]: D07 1
+AncestorRealistic::seenSolid [D07]: D07 1
+AncestorRealistic::uponPop [D07]: D07 1
+ArchOption::onOrOff [D07]: D07 21
+Architecture::addOtherSpace [D07]: D07 1
+Architecture::addSpacebase [D07]: D07 1
+Architecture::addToGlobalScope [D07]: D07 1
+Architecture::buildAction [D07]: D07 1
+Architecture::buildDatabase [D07]: D07 1
+Architecture::buildInstructions [D07]: D07 1
+Architecture::cacheAddrSpaceProperties [D07]: D07 1
+Architecture::clearAnalysis [D07]: D07 2, D09 1, console 14, notM3 4
+Architecture::collectBehaviors [D07]: D07 1, D18 1
+Architecture::createModelAlias [D07]: D07 1
+Architecture::createUnknownModel [D07]: D03 1, D07 1
+Architecture::decodeAggressiveTrim [D07]: D07 1
+Architecture::decodeDeadcodeDelay [D07]: D07 1
+Architecture::decodeDefaultProto [D07]: D07 1
+Architecture::decodeDynamicRule [D07]: D07 1
+Architecture::decodeFlowOverride [D07]: D07 1
+Architecture::decodeFuncPtrAlign [D07]: D07 1
+Architecture::decodeGlobal [D07]: D07 1
+Architecture::decodeIncidentalCopy [D07]: D07 1
+Architecture::decodeInferPtrBounds [D07]: D07 1
+Architecture::decodeNoHighPtr [D07]: D07 1
+Architecture::decodePreferSplit [D07]: D07 1
+Architecture::decodeProto [D07]: D07 1
+Architecture::decodeProtoEval [D07]: D07 1
+Architecture::decodeReadOnly [D07]: D07 1
+Architecture::decodeRegisterData [D07]: D07 1
+Architecture::decodeReturnAddress [D07]: D07 1
+Architecture::decodeSpacebase [D07]: D07 1
+Architecture::decodeStackPointer [D07]: D07 1
+Architecture::fillinReadOnlyFromLoader [D07]: D07 1
+Architecture::getLanedRegister [D07]: D07 2
+Architecture::getMinimumLanedRegisterSize [D07]: D07 3
+Architecture::getSpaceBySpacebase [D07]: D07 1, R1-6 1
+Architecture::globalify [D07]: D07 1, console 1
+Architecture::initializeSegments [D07]: D07 1
+Architecture::models [D07]: D07 1
+Architecture::nameFunction [D07]: D07 1, console 2, notM3 1
+Architecture::parseCompilerConfig [D07]: D07 1
+Architecture::parseExtraRules [D07]: D07 1
+Architecture::parseProcessorConfig [D07]: D07 1
+Architecture::readLoaderSymbols [D07]: D07 1, D09 1, console 2
+Architecture::restoreFromSpec [D07]: D07 1
+Architecture::setDebugStream [D07]: D07 1, console 3
+Architecture::setDefaultModel [D07]: D07 2
+Architecture::setPrintLanguage [D07]: D07 2, console 2
+ArchitectureCapability::getCapability [D07]: D07 1, D09 1
+ArchitectureCapability::getMajorVersion [D07]: D07 1
+ArchitectureCapability::getMinorVersion [D07]: D07 1
+ArchitectureCapability::sortCapabilities [D07]: D07 1, console 3
+BitFieldExpression::getPullField [D07]: D07 1, R9 1
+BitFieldExpression::getStructures [D07]: D07 3
+BitFieldExpression::recoverStructurePointer [D07]: D07 3
+BitFieldExpression::structure [D07]: D04 1, D07 1, D08 1
+BooleanExpressionMatch::getFlip [D07]: D07 1, D12 2
+BooleanExpressionMatch::getMultiSlot [D07]: D07 1, D12 1
+BooleanExpressionMatch::verifyCondition [D07]: D07 1, D12 2
+BooleanMatch::sameOpComplement [D07]: D07 1
+BooleanMatch::varnodeSame [D07]: D07 1
+CloneBlockOps::ClonePair [D07]: D07 1
+CloneBlockOps::buildOpClone [D07]: D07 1
+CloneBlockOps::buildVarnodeOutput [D07]: D07 1
+CloneBlockOps::cloneBlock [D07]: D07 2
+CloneBlockOps::cloneExpression [D07]: D07 1, R1-6 1
+CloneBlockOps::patchInputs [D07]: D07 1
+DynamicHash::buildOpDown [D07]: D07 1
+DynamicHash::buildOpUp [D07]: D07 1
+DynamicHash::buildVnDown [D07]: D07 1
+DynamicHash::buildVnUp [D07]: D07 1
+DynamicHash::calcHash [D07]: D07 3
+DynamicHash::clearTotalPosition [D07]: D07 1
+DynamicHash::dedupVarnodes [D07]: D07 1
+DynamicHash::findVarnode [D07]: D07 5, D11 1, D13 1, console 1
+DynamicHash::gatherFirstLevelVars [D07]: D07 1
+DynamicHash::gatherUnmarkedOp [D07]: D07 1
+DynamicHash::gatherUnmarkedVn [D07]: D07 1
+DynamicHash::getComparable [D07]: D07 1
+DynamicHash::getIsNotAttached [D07]: D07 1
+DynamicHash::getMethodFromHash [D07]: D07 1
+DynamicHash::getOpCodeFromHash [D07]: D07 1
+DynamicHash::getPositionFromHash [D07]: D07 1, console 1
+DynamicHash::getSlotFromHash [D07]: D07 3
+DynamicHash::getTotalFromHash [D07]: D07 1, console 1
+DynamicHash::moveOffSkip [D07]: D07 1
+DynamicHash::pieceTogetherHash [D07]: D07 1
+DynamicHash::uniqueHash [D07]: D07 5, console 1
+ExecutablePcode::Emitter [D07]: D07 1
+FuncCallSpecs::abortSpacebaseRelative [D07]: D03 1, D10 1
+FuncCallSpecs::buildInputFromTrials [D07]: D03 1, D11 1
+FuncCallSpecs::buildOutputFromTrials [D07]: D03 1, D12 1
+FuncCallSpecs::buildParam [D07]: D03 1
+FuncCallSpecs::checkInputTrialUse [D07]: D03 1, D11 1
+FuncCallSpecs::checkOutputTrialUse [D07]: D03 1, D12 1
+FuncCallSpecs::clearActiveInput [D07]: D03 1, D11 1
+FuncCallSpecs::clearStackPlaceholderSlot [D07]: D03 1
+FuncCallSpecs::collectOutputTrialVarnodes [D07]: D03 1
+FuncCallSpecs::collectUnlockedTrials [D07]: D03 1
+FuncCallSpecs::commitNewInputs [D07]: D03 1
+FuncCallSpecs::commitNewOutputs [D07]: D03 1
+FuncCallSpecs::compareByEntryAddress [D07]: D03 1
+FuncCallSpecs::countMatchingCalls [D07]: D03 1
+FuncCallSpecs::createPlaceholder [D07]: D03 1, D11 1
+FuncCallSpecs::deindirect [D07]: D03 1, D12 2
+FuncCallSpecs::doInputJoin [D07]: D03 1, D11 1
+FuncCallSpecs::finalInputCheck [D07]: D03 1, D11 1
+FuncCallSpecs::findPreexistingWhole [D07]: D03 1
+FuncCallSpecs::forceSet [D07]: D03 1, D12 1
+FuncCallSpecs::getActiveInput [D07]: D03 1, D07 2, D10 2, D11 3
+FuncCallSpecs::getEffectiveExtraPop [D07]: D03 1, console 2
+FuncCallSpecs::getEntryAddress [D07]: D03 1, D07 9, D09 9, D12 2, D16b 1, notM3 2
+FuncCallSpecs::getFspecFromConst [D07]: D03 1, D07 1, D08 2, D09 1, D16b 1
+FuncCallSpecs::getInputBytesConsumed [D07]: D03 1, D11 1
+FuncCallSpecs::getMatchCallCount [D07]: D03 1
+FuncCallSpecs::getParamshift [D07]: D03 1, D12 1
+FuncCallSpecs::getSpacebaseOffset [D07]: D03 1, D10 2, D11 3
+FuncCallSpecs::getSpacebaseRelative [D07]: D03 1
+FuncCallSpecs::getStackPlaceholderSlot [D07]: D03 1
+FuncCallSpecs::hasEffectTranslate [D07]: D03 1, D10 1
+FuncCallSpecs::initActiveInput [D07]: D03 1, D11 1
+FuncCallSpecs::insertPcode [D07]: D03 1, D11 1
+FuncCallSpecs::isBadJumpTable [D07]: D03 1, D14 1
+FuncCallSpecs::isInputActive [D07]: D03 1, D07 1, D10 1, D11 3, D12 1, R1-6 1, R7 1
+FuncCallSpecs::isOutputActive [D07]: D03 1, D10 1, D12 1, R1-6 2, R7 1
+FuncCallSpecs::isStackOutputLock [D07]: D03 1, D10 1
+FuncCallSpecs::lateRestriction [D07]: D03 1
+FuncCallSpecs::paramshiftModifyStart [D07]: D03 1, D12 1
+FuncCallSpecs::paramshiftModifyStop [D07]: D03 1, D12 1
+FuncCallSpecs::placeholder [D07]: D03 1
+FuncCallSpecs::resolveSpacebaseRelative [D07]: D03 1, R1-6 1
+FuncCallSpecs::setBadJumpTable [D07]: D03 1, D09 1
+FuncCallSpecs::setEffectiveExtraPop [D07]: D03 1, D11 1, D12 1
+FuncCallSpecs::setInputBytesConsumed [D07]: D03 1, R1-6 1
+FuncCallSpecs::setParamshift [D07]: D03 1, D09 1
+FuncCallSpecs::setStackOutputLock [D07]: D03 1, D11 1
+FuncCallSpecs::setStackPlaceholderSlot [D07]: D03 1
+FuncCallSpecs::transferLockedInput [D07]: D03 1
+FuncCallSpecs::transferLockedInputParam [D07]: D03 1
+FuncCallSpecs::transferLockedOutput [D07]: D03 1
+FuncCallSpecs::transferLockedOutputParam [D07]: D03 1
+Funcdata::adjustInputVarnodes [D07]: D07 1, D12 1
+Funcdata::ancestorOpUse [D07]: D07 3, D11 1
+Funcdata::applyUnionFacet [D07]: D07 1
+Funcdata::assignHigh [D05]: D07 1
+Funcdata::attemptDynamicMapping [D07]: D07 1, D11 1
+Funcdata::attemptDynamicMappingLate [D07]: D07 1, D14 1
+Funcdata::beginLaneAccess [D07]: D07 1, D12 1
+Funcdata::beginOpAlive [D07]: D07 1, D11 1, D13 1, D14 3, console 1, none 4
+Funcdata::beginOpDead [D07]: D07 1, D09 2
+Funcdata::beginOpMain [D07]: D06 3, D07 3
+Funcdata::blockRemoveInternal [D07]: D07 1
+Funcdata::branchRemoveInternal [D07]: D07 1
+Funcdata::buildCopyTemp [D07]: D07 1, R7 1
+Funcdata::buildDynamicSymbol [D07]: D07 1, console 1
+Funcdata::checkCallDoubleUse [D07]: D07 1
+Funcdata::checkForLanedRegister [D07]: D07 1
+Funcdata::checkIndirectUse [D07]: D07 1
+Funcdata::clearBlocks [D07]: D07 1
+Funcdata::clearCallSpecs [D07]: D07 1
+Funcdata::clearDeadOps [D07]: D07 1, D11 1, D15 2
+Funcdata::clearDeadVarnodes [D05]: D07 1, D11 1, D12 1
+Funcdata::clearJumpTables [D13]: D07 1
+Funcdata::clearLanedAccessMap [D07]: D07 1, D12 1
+Funcdata::cloneOp [D05]: D07 1, D09 2
+Funcdata::cloneVarnode [D05]: D07 1
+Funcdata::collapseIntMultMult [D07]: D07 1, R1-6 2
+Funcdata::combineInputVarnodes [D07]: D07 1, R8 1
+Funcdata::compareCallspecs [D07]: D07 1
+Funcdata::constructConstSpacebase [D07]: D07 1, R9 1
+Funcdata::constructSpacebaseInput [D07]: D07 1, R9 1
+Funcdata::coverVarnodes [D07]: D07 1
+Funcdata::createReplaceVarnode [D07]: D07 1
+Funcdata::createStackRef [D07]: D07 1
+Funcdata::cseEliminateList [D07]: D07 1, D11 2, R1-6 1
+Funcdata::cseElimination [D07]: D07 1
+Funcdata::cseFindInBlock [D07]: D07 1, R1-6 2
+Funcdata::debugActivate [D07]: D07 3
+Funcdata::debugBreak [D07]: D07 3
+Funcdata::debugCheckRange [D05]: D07 1
+Funcdata::debugClear [D07]: D07 1, console 1
+Funcdata::debugDeactivate [D07]: D07 1
+Funcdata::debugDisable [D07]: D07 1, console 2
+Funcdata::debugEnable [D07]: D07 1, console 1
+Funcdata::debugHandleBreak [D07]: D07 3
+Funcdata::debugModCheck [D05]: D07 1
+Funcdata::debugModClear [D05]: D07 1
+Funcdata::debugModPrint [D05]: D07 3, D11 1
+Funcdata::debugPrintRange [D05]: D07 1, console 1
+Funcdata::debugSetBreak [D07]: D07 1, console 1
+Funcdata::debugSetRange [D05]: D07 1, console 1
+Funcdata::debugSize [D07]: D07 1, console 3
+Funcdata::decodeJumpTable [D13]: D07 1
+Funcdata::deleteCallSpecs [D07]: D07 1
+Funcdata::deleteVarnode [D07]: D07 4, D10 4, R1-6 1, R7 1, R9 1
+Funcdata::descend2Undef [D07]: D07 1
+Funcdata::descendantsOutside [D07]: D07 1
+Funcdata::destroyVarnode [D05]: D07 1
+Funcdata::destroyVarnodeRecursive [D07]: D07 1, R9 20
+Funcdata::detectSymbolConflicts [D07]: D07 1
+Funcdata::disableJTCallback [D07]: D07 1
+Funcdata::distributeIntMultAdd [D07]: D07 1, R1-6 3
+Funcdata::doLiveInject [D09]: D07 2, D11 1
+Funcdata::earlyJumpTableFail [D13]: D07 1
+Funcdata::enableJTCallback [D07]: D07 1, console 2
+Funcdata::encodeHigh [D07]: D07 1
+Funcdata::encodeJumpTable [D13]: D07 1
+Funcdata::encodeTree [D07]: D07 1
+Funcdata::encodeVarnode [D07]: D07 1
+Funcdata::endLaneAccess [D07]: D07 1, D12 1
+Funcdata::endOpAlive [D07]: D07 1, D11 1, D13 1, D14 3, console 1, none 4
+Funcdata::endOpDead [D07]: D07 1, D09 2
+Funcdata::endOpMain [D07]: D06 2, D07 3
+Funcdata::fillinExtrapop [D07]: D07 1, notM3 1
+Funcdata::fillinReadOnly [D07]: D07 1, D11 1
+Funcdata::findDisjointCover [D07]: D07 1, D12 1
+Funcdata::findHigh [D07]: D07 1, console 2
+Funcdata::findJumpTable [D13]: D04 1, D07 1, D09 1, D11 1, R1-6 1
+Funcdata::findLinkedVarnode [D07]: D07 1, D11 1
+Funcdata::findLinkedVarnodes [D07]: D07 1, D14 1
+Funcdata::findPrimaryBranch [D07]: D06 7, D07 1
+Funcdata::findSpacebaseInput [D07]: D07 1, D10 1, D11 3, D12 1, console 1
+Funcdata::findVarnodeInput [D07]: D07 1, D10 1, D11 4, D17 1, console 1
+Funcdata::findVarnodeWritten [D07]: D07 1, D11 1, console 1
+Funcdata::forceFacingType [D07]: D07 1, D14 5, D16b 2, R1-6 1
+Funcdata::forceGoto [D07]: D06 1, D07 1
+Funcdata::getAddressBasedUnionField [D07]: D07 1, D08 3
+Funcdata::getBasicBlocks [D07]: D07 2, D10 7, D11 7, D12 8, D14 2, D15 4, D16b 2, R1-6 2, R8 1, console 3, notM3 1
+Funcdata::getCallSpecs [D07]: D07 2, D08 6, D09 1, D10 3, D11 10, D12 7, D14 4, D16b 2, R1-6 5, R7 2, console 3, notM3 2
+Funcdata::getCastPhaseIndex [D07]: D07 1
+Funcdata::getCleanUpIndex [D07]: D07 1
+Funcdata::getFirstReturnOp [D07]: D07 1, D11 1, D12 1, D16b 1
+Funcdata::getFuncProto [D07]: D07 8, D08 2, D09 3, D10 2, D11 29, D12 19, D16b 4, D17 5, R1-6 2, R7 1, console 13, notM3 1
+Funcdata::getHeritagePass [D07]: D07 1, D11 2
+Funcdata::getHighLevelIndex [D07]: D07 1
+Funcdata::getInternalString [D07]: D07 1, R9 2
+Funcdata::getJumpTable [D07]: D07 1, D09 1, D12 1
+Funcdata::getOverride [D07]: D07 5, D09 6, D10 2, D11 1, D12 1, D13 2, console 6
+Funcdata::getScopeLocal [D07]: D02 1, D07 3, D09 2, D10 1, D11 9, D12 10, D14 7, D16b 7, R1-6 1, R9 1, console 12
+Funcdata::getStructure [D07]: D07 2, D12 1, D15 5, D16b 1, R1-6 1
+Funcdata::getUnionField [D07]: D07 1, D08 10, D14 2, D16b 5
+Funcdata::getUnionResolution [D07]: D07 1, D08 3
+Funcdata::hasNoCode [D07]: D07 1, console 7, notM3 2
+Funcdata::hasNoStructBlocks [D07]: D07 1, D16b 1
+Funcdata::hasRestartPending [D07]: D07 2
+Funcdata::hasTypeRecoveryStarted [D07]: D07 1, D11 2, D12 2, R1-6 5
+Funcdata::hasUnreachableBlocks [D07]: D07 1, D12 1, R8 2
+Funcdata::hierarchy [D07]: D07 1
+Funcdata::inheritUnionField [D07]: D07 1, D14 3, D16b 3, R1-6 6, R9 2
+Funcdata::inheritUnionFieldPtr [D07]: D07 1, R9 2
+Funcdata::inlineFlow [D09]: D07 1, D09 1
+Funcdata::installJumpTable [D13]: D07 1, console 1
+Funcdata::installSwitchDefaults [D13]: D07 1, D15 1
+Funcdata::isDoublePrecisOn [D07]: D07 2, D11 2
+Funcdata::isHighOn [D07]: D07 1, D12 2, console 2
+Funcdata::isJumptableRecoveryOn [D07]: D07 2, D10 2, D11 2, D12 1
+Funcdata::isNormalizationOn [D07]: D07 1, D12 1
+Funcdata::isProcComplete [D07]: D07 1, notM3 2
+Funcdata::isProcStarted [D07]: D07 1, D16b 1, console 3
+Funcdata::isTypeRecoveryExceeded [D07]: D07 1, R1-6 2
+Funcdata::isTypeRecoveryOn [D07]: D07 2, D11 1, R1-6 5
+Funcdata::issueDatatypeWarning [D07]: D07 1
+Funcdata::linkJumpTable [D13]: D07 1, D09 1
+Funcdata::linkProtoPartial [D07]: D07 1
+Funcdata::linkSymbol [D07]: D07 1, D14 2
+Funcdata::linkSymbolReference [D07]: D07 1, D14 1
+Funcdata::listOps [D07]: D07 4
+Funcdata::markIndirectAliasUpdate [D07]: D07 1
+Funcdata::markIndirectCreation [D05]: D07 3, D12 1, R9 1
+Funcdata::markReturnCopy [D07]: D07 1, D10 1, R8 1
+Funcdata::moveRespectingCover [D07]: D04 1, D07 1
+Funcdata::newCodeRef [D05]: D06 3, D07 2, D09 3, R1-6 1
+Funcdata::newExtendedConstant [D07]: D07 1, R1-6 2
+Funcdata::newIndirect [D05]: D07 2, D11 1, R1-6 1, R8 1, R9 2
+Funcdata::newIndirectCreation [D05]: D07 3, D10 6, R1-6 1
+Funcdata::newIndirectOp [D05]: D07 1, D10 4
+Funcdata::newOpBefore [D05]: D07 1, D11 1, R1-6 10
+Funcdata::newSpacebasePtr [D07]: D07 1
+Funcdata::newVarnodeCallSpecs [D05]: D07 2, D09 2
+Funcdata::newVarnodeIop [D05]: D07 1, R8 1
+Funcdata::newVarnodeOut [D05]: D07 8, D09 1, D10 18, D11 8, D12 4, R1-6 11, R7 3, R8 2, R9 2
+Funcdata::newVarnodeSpace [D05]: D07 1, D11 1, R7 3, R8 2
+Funcdata::nodeJoinCreateBlock [D07]: D07 1, D15 1
+Funcdata::nodeSplit [D07]: D07 1, D15 1
+Funcdata::nodeSplitBlockEdge [D07]: D07 1
+Funcdata::numCalls [D07]: D07 1, D10 2, D11 8, D12 5, D14 4, console 4, notM3 2
+Funcdata::numJumpTables [D07]: D07 1, D09 1, D12 1
+Funcdata::onlyOpUse [D07]: D07 1
+Funcdata::opClearSpacebasePtr [D07]: D07 1, D10 1
+Funcdata::opCollapseIndirectsForAlias [D07]: D07 1, R1-6 1
+Funcdata::opCollapseIndirectsForCopy [D07]: D07 1, R1-6 1
+Funcdata::opDeadAndGone [D07]: D07 2
+Funcdata::opDeadInsertAfter [D07]: D06 1, D07 1, D09 2
+Funcdata::opDestroy [D05]: D07 4, D10 6, D11 2, D12 3, D13 1, D14 2, D15 1, R1-6 13, R7 6, R8 5, R9 3
+Funcdata::opDestroyRaw [D05]: D07 1, D09 2
+Funcdata::opDestroyRecursive [D05]: D07 1, R7 2, R9 4
+Funcdata::opFlipCondition [D07]: D07 1, R1-6 1
+Funcdata::opFlipInPlaceExecute [D07]: D04 2, D07 1, D15 1
+Funcdata::opFlipInPlaceTest [D07]: D05 2, D07 1, D15 1
+Funcdata::opInsert [D05]: D07 1, D09 2, D10 3, D12 1
+Funcdata::opInsertAfter [D05]: D04 2, D07 8, D10 20, D11 2, D14 2, D16b 1, R1-6 3, R7 5, R8 7, R9 4, notM3 1
+Funcdata::opInsertBefore [D05]: D07 7, D10 11, D11 3, D12 2, D14 3, D16b 2, R1-6 57, R7 7, R8 8, R9 17, notM3 1
+Funcdata::opInsertBegin [D05]: D07 3, D10 4, D11 3, D12 3, D14 1, D15 1, R1-6 13, R8 3
+Funcdata::opInsertEnd [D05]: D07 2, D12 1, D14 2, D15 2
+Funcdata::opInsertInput [D05]: D07 3, D10 4, D11 7, R1-6 7, R9 5
+Funcdata::opMarkCalculatedBool [D07]: D07 2, D11 1, R1-6 1
+Funcdata::opMarkCpoolTransformed [D07]: D07 1, R1-6 1
+Funcdata::opMarkHalt [D05]: D07 1, D09 1
+Funcdata::opMarkNoCollapse [D07]: D07 1, D10 1
+Funcdata::opMarkNonPrinting [D07]: D04 2, D07 1, D14 7, R9 6
+Funcdata::opMarkSpacebasePtr [D07]: D07 1, D10 4
+Funcdata::opMarkSpecialPrint [D07]: D07 1, D14 1, R1-6 2, R9 2
+Funcdata::opMarkStartBasic [D07]: D07 1, D09 12
+Funcdata::opMarkStartInstruction [D07]: D07 1, D09 2
+Funcdata::opNormalizeFlip [D07]: D05 1, D07 1, R1-6 1
+Funcdata::opRemoveInput [D05]: D07 6, D10 1, D11 5, D12 3, D15 2, D16b 1, R1-6 82, R7 2, R8 1, R9 2, notM3 2
+Funcdata::opSetAllInput [D05]: D07 3, D10 1, D11 2, D12 2, R1-6 4, R7 2, R8 6
+Funcdata::opSetOpcode [D05]: D06 15, D07 16, D09 7, D10 36, D11 12, D12 11, D14 3, D15 2, D16b 5, R1-6 234, R7 17, R8 22, R9 30, notM3 4
+Funcdata::opStackLoad [D07]: D07 3, D11 2
+Funcdata::opStackStore [D07]: D07 1
+Funcdata::opSwapInput [D05]: D07 1, D12 1, R1-6 2
+Funcdata::opUndoPtradd [D07]: D07 1, D16b 1, R1-6 2
+Funcdata::opUninsert [D05]: D04 2, D07 3, D10 1, D12 1, D15 2, R1-6 6, R8 5
+Funcdata::opUnlink [D05]: D07 3, D10 1, R1-6 1
+Funcdata::opUnsetInput [D05]: D07 2, D10 6, D12 1, R1-6 1, R9 1
+Funcdata::opUnsetOutput [D05]: D07 2, D11 3, R1-6 3, R9 3
+Funcdata::opZeroMulti [D07]: D07 1
+Funcdata::prepareThisPointer [D07]: D07 1, D11 1
+Funcdata::printBlockTree [D07]: D07 1, console 1
+Funcdata::printLocalRange [D07]: D07 1, console 1
+Funcdata::printVarnodeTree [D05]: D07 1, console 1
+Funcdata::pushBranch [D07]: D07 1, D13 1
+Funcdata::pushMultiequals [D07]: D07 1
+Funcdata::recoverJumpTable [D13]: D07 1, D09 1
+Funcdata::remapConflictSymbol [D07]: D07 1, console 2
+Funcdata::remapDynamicVarnode [D07]: D07 1, D11 1
+Funcdata::remapVarnode [D07]: D07 1, D11 1
+Funcdata::removeBranch [D07]: D07 1, D12 2
+Funcdata::removeDoNothingBlock [D07]: D07 1, D12 2
+Funcdata::removeJumpTable [D13]: D07 1, R1-6 1
+Funcdata::removeUnreachableBlocks [D07]: D07 1, D09 1, D12 1
+Funcdata::replaceLessequal [D07]: D07 1, R1-6 1
+Funcdata::replaceVolatile [D07]: D07 1, D11 1
+Funcdata::restarted [D07]: D07 1
+Funcdata::seenDeadcode [D07]: D07 1, D11 1
+Funcdata::setAddressBasedUnionField [D07]: D07 1
+Funcdata::setBasicBlockRange [D07]: D07 1, D09 3
+Funcdata::setDoublePrecisRecovery [D07]: D07 1, R8 1
+Funcdata::setInputVarnode [D05]: D07 2, D10 5, D11 2, R7 2
+Funcdata::setJumptableRecovery [D07]: D07 1
+Funcdata::setLanedRegGenerated [D07]: D07 1
+Funcdata::setNoCode [D07]: D07 1, console 1
+Funcdata::setRestartPending [D07]: D06 1, D07 4, D10 1, D13 1
+Funcdata::setTypeRecoveryExceeded [D07]: D07 1, D11 1
+Funcdata::setUnionField [D07]: D07 1, D08 10, D16b 6
+Funcdata::setVarnodeProperties [D05]: D07 1
+Funcdata::sortCallSpecs [D07]: D07 1
+Funcdata::spacebaseConstant [D07]: D07 1, D12 1
+Funcdata::spliceBlockBasic [D07]: D07 1, D12 1
+Funcdata::splitUses [D07]: D07 1
+Funcdata::stageJumpTable [D13]: D07 1
+Funcdata::startCastPhase [D07]: D07 1, D16b 1
+Funcdata::structureReset [D07]: D07 1
+Funcdata::structures [D07]: D07 1
+Funcdata::switchOverJumpTables [D13]: D07 1
+Funcdata::syncVarnodesWithSymbol [D07]: D07 1
+Funcdata::syncVarnodesWithSymbols [D07]: D07 1, D11 1, D12 1
+Funcdata::testForReturnAddress [D07]: D07 1
+Funcdata::totalReplace [D05]: D07 1, D10 3, D12 2, D14 1, R1-6 3, R7 2, R9 3
+Funcdata::totalReplaceConstant [D05]: D07 1, D11 1
+Funcdata::transferVarnodeProperties [D07]: D07 2
+Funcdata::truncatedFlow [D09]: D07 1
+Funcdata::updateUnionField [D07]: D07 1, D08 1
+Funcdata::variables [D07]: D07 1, D11 1
+Funcdata::warning [D07]: D07 1, D09 12, D12 4, D13 10, D16b 2, R1-6 1
+Funcdata::warningHeader [D07]: D07 3, D09 9, D10 2, D11 3, D12 8, D14 1, R1-6 2
+InjectContext::resources [D07]: D03 1, D07 1
+InjectPayload::decodeParameter [D07]: D07 1
+InjectPayload::decodePayloadAttributes [D07]: D07 1, D18 4
+InjectPayload::decodePayloadParams [D07]: D07 1, D18 4
+InjectPayload::getParamShift [D07]: D07 1, D09 2, D18 2
+InjectPayload::injection [D07]: D07 2
+InjectPayload::orderParameters [D07]: D07 1, D18 1
+InjectPayload::sizeInput [D07]: D07 4, D13 4, D18 3
+InjectPayload::sizeOutput [D07]: D07 3, D18 3
+InjectPayload::stream [D07]: D07 2
+InsertExpression::getLSBMask [D07]: D07 1, R9 1
+InsertExpression::getRangeMask [D07]: D07 1, R9 3
+JumpAssistOp::getCalcSize [D07]: D07 1, D13 2
+JumpAssistOp::getDefaultAddr [D07]: D07 1, D13 1
+JumpAssistOp::getIndex2Addr [D07]: D07 1, D13 2
+JumpAssistOp::getIndex2Case [D07]: D07 1, D13 2
+JumpAssistOp::index2addr [D07]: D07 1
+JumpAssistOp::index2case [D07]: D07 1
+JumpAssistOp::indices [D07]: D07 1
+LaneDescription::extension [D07]: D07 1, D08 2, D10 1, R7 3
+LaneDescription::getBoundary [D07]: D07 1, R7 3
+LaneDescription::getNumLanes [D07]: D07 2, R7 2
+LaneDescription::getPosition [D07]: D07 4, R7 3
+LaneDescription::restriction [D07]: D07 1, R7 4
+LaneDescription::subset [D07]: D07 1
+LanedRegister::LanedIterator [D07]: D07 4
+LanedRegister::addLaneSize [D07]: D07 2, D12 5
+LanedRegister::allowedLane [D07]: D07 1, D12 5
+LanedRegister::getSizeBitMask [D07]: D07 2
+LanedRegister::parseSizes [D07]: D07 3
+OptionDatabase::decodeOne [D07]: D07 1
+OptionDatabase::registerOption [D07]: D07 1
+OptionSplitDatatypes::getOptionBit [D07]: D07 1
+PcodeInjectLibrary::decodeInject [D07]: D03 1, D07 10
+PcodeInjectLibrary::getCallFixupName [D07]: D03 1, D07 1, D09 1
+PcodeInjectLibrary::getCallMechanismName [D07]: D07 1
+PcodeInjectLibrary::getCallOtherTarget [D07]: D07 2
+PcodeInjectLibrary::getPayload [D07]: D03 1, D07 5, D09 2, D11 1, D13 4, D18 2, console 1
+PcodeInjectLibrary::getPayloadId [D07]: D03 1, D07 1, D18 1, console 1
+PcodeInjectLibrary::getUniqueBase [D07]: D07 1, D18 1
+PcodeInjectLibrary::registerCallFixup [D07]: D07 1, D18 1
+PcodeInjectLibrary::registerCallMechanism [D07]: D07 1, D18 1
+PcodeInjectLibrary::registerCallOtherFixup [D07]: D07 1, D18 1
+PcodeInjectLibrary::registerExeScript [D07]: D07 1, D18 1
+PcodeOpNode::compareByHigh [D07]: D07 2
+ProtoStoreSymbol::getSymbolBacked [D07]: D03 1
+ProtoStoreSymbol::locations [D07]: D03 3
+PullExpression::bitfield [D07]: D07 2, R9 1
+Rule::Breakpoint [D07]: D07 1
+Rule::clearBreak [D07]: D07 1
+Rule::clearDisable [D07]: D07 2
+Rule::getBreakPoint [D07]: D07 2
+Rule::isDisabled [D07]: D07 3
+Rule::setBreak [D07]: D07 2
+Rule::setDisable [D07]: D07 2
+SegmentOp::getBaseSize [D07]: D02 1, D07 2
+SegmentOp::getInnerSize [D07]: D02 1, D07 3
+SegmentOp::getResolve [D07]: D07 4
+SegmentOp::hasFarPointerSupport [D07]: D02 1, D07 1, R1-6 1
+SegmentOp::isConcatenation [D07]: D07 1, R1-6 1
+Statistics::countCast [D07]: D07 1, D16b 2
+Statistics::printResults [D07]: D07 2, console 1
+Statistics::process [D07]: D07 3
+Statistics::process_cast [D07]: D07 1
+Statistics::process_cover [D07]: D07 2
+TermOrder::additiveCompare [D07]: D07 3
+TermOrder::getSort [D07]: D07 1, R1-6 1
+TermOrder::sortTerms [D07]: D07 1, R1-6 1
+TransformManager::clearVarnodeMarks [D07]: D07 1, R7 3
+TransformManager::createOps [D07]: D07 1
+TransformManager::createVarnodes [D07]: D07 1
+TransformManager::getPiece [D07]: D03 6, D06 1, D07 1, D10 9, D11 4, R1-6 1, R7 1
+TransformManager::getPreexistingVarnode [D07]: D07 1, R7 11
+TransformManager::getSplit [D07]: D07 2, R7 2
+TransformManager::newIndirectReplace [D07]: D07 1, R7 3
+TransformManager::newOpReplace [D07]: D07 1, R7 25
+TransformManager::newPiece [D07]: D07 1, R7 1
+TransformManager::newPreexistingOp [D07]: D07 1, R7 11
+TransformManager::newPreexistingVarnode [D07]: D07 1, R7 1
+TransformManager::newSplit [D07]: D07 2, R7 3
+TransformManager::placeInputs [D07]: D07 1
+TransformManager::preexistingGuard [D07]: D07 2, R7 1
+TransformManager::removeOld [D07]: D07 1
+TransformManager::specialHandling [D07]: D07 1
+TransformManager::transformInputVarnodes [D07]: D07 1
+TransformOp::attemptInsertion [D07]: D07 2
+TransformOp::exists [D07]: D07 1
+TransformOp::splitting [D07]: D07 1
+TransformVar::getOriginal [D07]: D07 1, R7 6
+TransformVar::temporary [D07]: D07 2
+TraverseNode::isAlternatePathValid [D07]: D07 3
+UserOpManage::decodeCallOtherFixup [D07]: D07 3
+UserOpManage::decodeJumpAssist [D07]: D07 2
+UserOpManage::decodeSegmentOp [D07]: D07 3
+UserOpManage::numSegmentOps [D07]: D07 3, D11 1
+UserOpManage::registerBuiltin [D07]: D07 4, R9 2
+UserOpManage::registerOp [D07]: D07 1
+UserPcodeOp::getDisplay [D07]: D07 2, D16b 1
+VolatileOp::appendSize [D07]: D07 3
+class Action [D07]: D03 4, D04 28, D05 1, D07 152, D11 271, D12 4, D17 54, console 18, notM3 1
+class ActionDatabase [D17]: D07 9
+class ActionGroup [D07]: D07 13, D17 7
+class ActionGroupList [D07]: D04 7, D07 12, D11 66, D12 2, D17 8, R1-6 141, R7 12, R8 4, R9 8, notM3 1
+class ActionPool [D07]: D07 9, D17 5, R1-6 1
+class ActionRestartGroup [D07]: D07 2, D17 1
+class AddExpression [D07]: D07 4, R1-6 4
+class AdditiveEdge [D07]: D07 10, R1-6 1
+class AncestorRealistic [D07]: D07 3, D11 1
+class ArchOption [D07]: D07 53, console 1
+class Architecture [D07]: D02 43, D03 18, D06 40, D07 185, D08 5, D09 9, D11 10, D12 3, D13 11, D16b 18, D17 2, D18 11, R1-6 9, R7 1, R9 2, console 56, none 1, notM3 19
+class ArchitectureCapability [D07]: D07 10, D09 4, console 9, notM3 2
+class BitFieldExpression [D07]: D07 4, R9 1
+class BooleanExpressionMatch [D07]: D07 2, D12 2
+class BooleanMatch [D07]: D07 4, R1-6 6
+class CloneBlockOps [D07]: D05 2, D07 3, R1-6 1
+class DatatypeUserOp [D07]: D07 8
+class DynamicHash [D07]: D06 1, D07 16, D11 3, D13 1, D14 1, console 5
+class ExecutablePcode [D07]: D07 8, D13 8, D18 5
+class FspecSpace [D07]: D03 6, D07 1
+class FuncCallSpecs [D07]: D03 16, D05 2, D06 5, D07 21, D08 10, D09 47, D10 11, D11 14, D12 9, D14 2, D16b 6, R1-6 10, R7 4, console 2, notM3 2
+class Funcdata [D07]: D02 2, D03 24, D04 42, D05 16, D06 81, D07 118, D08 22, D09 26, D10 12, D11 167, D12 53, D13 85, D14 16, D15 8, D16b 39, D16c 16, D17 3, R1-6 322, R7 46, R8 71, R9 58, console 93, none 5, notM3 41
+class InjectContext [D07]: D07 8, D09 5, D18 11
+class InjectParameter [D07]: D07 10, D18 12
+class InjectPayload [D07]: D03 3, D07 34, D09 5, D11 1, D18 32, console 2
+class InjectedUserOp [D07]: D07 8, D09 2
+class InsertExpression [D07]: D07 4, D16b 1, R9 4
+class InsertStoreExpression [D07]: D07 4, D16b 1
+class InternalStringOp [D07]: D07 7
+class JumpAssistOp [D07]: D07 7, D13 3
+class LaneDescription [D07]: D07 20, D12 1, R7 4
+class LanedRegister [D07]: D07 20, D11 5, D12 13
+class OptionAliasBlock [D07]: D07 4
+class OptionAllowContextSet [D07]: D07 4
+class OptionBadDataCount [D07]: D07 4
+class OptionBraceFormat [D07]: D07 4
+class OptionCommentHeader [D07]: D07 4
+class OptionCommentIndent [D07]: D07 4
+class OptionCommentInstruction [D07]: D07 4
+class OptionCommentStyle [D07]: D07 4
+class OptionConventionPrinting [D07]: D07 4
+class OptionCurrentAction [D07]: D07 4
+class OptionDatabase [D07]: D07 6, console 1
+class OptionDefaultPrototype [D07]: D07 4
+class OptionErrorReinterpreted [D07]: D07 4
+class OptionErrorTooManyInstructions [D07]: D07 4
+class OptionErrorUnimplemented [D07]: D07 4
+class OptionExtraPop [D07]: D07 4
+class OptionForLoops [D07]: D07 4
+class OptionHideExtensions [D07]: D07 3
+class OptionIgnoreUnimplemented [D07]: D07 4
+class OptionInPlaceOps [D07]: D07 4
+class OptionIndentIncrement [D07]: D07 4
+class OptionInferConstPtr [D07]: D07 4
+class OptionInline [D07]: D07 4
+class OptionIntegerFormat [D07]: D07 4
+class OptionJumpLoad [D07]: D07 4
+class OptionJumpTableMax [D07]: D07 4
+class OptionMaxInstruction [D07]: D07 4
+class OptionMaxLineWidth [D07]: D07 4
+class OptionNamespaceStrategy [D07]: D07 4
+class OptionNanIgnore [D07]: D07 4
+class OptionNoCastPrinting [D07]: D07 4
+class OptionNoReturn [D07]: D07 4
+class OptionNullPrinting [D07]: D07 4
+class OptionProtoEval [D07]: D07 4
+class OptionReadOnly [D07]: D07 4
+class OptionSetAction [D07]: D07 4
+class OptionSetLanguage [D07]: D07 4
+class OptionSplitDatatypes [D07]: D07 6, R7 2
+class OptionToggleRule [D07]: D07 4
+class OptionWarning [D07]: D07 4
+class ParameterSymbol [D07]: D03 3, D07 7
+class PcodeEmitFd [D09]: D07 1, D09 2
+class PcodeInjectLibrary [D07]: D07 12, D09 2, D18 2, console 3
+class PcodeOpNode [D07]: D04 5, D07 15, D11 4, D12 7, D13 15, D14 9
+class ProtoStoreSymbol [D07]: D03 5, D07 5
+class PullExpression [D07]: D07 4, D16b 2
+class Rule [D07]: D02 3, D07 119, D12 4, D17 1, R1-6 573, R7 50, R8 16, R9 32, console 9, notM3 6
+class SegmentOp [D07]: D02 2, D07 32, D11 2, D13 2, R1-6 2
+class SegmentedResolver [D07]: D07 5
+class Statistics [D07]: D07 11
+class TermOrder [D07]: D07 3, R1-6 1
+class TermPatternOp [D07]: D07 4
+class ToOpEdge [D07]: D07 9
+class TransformManager [D07]: D07 10, R7 6
+class TransformOp [D07]: D07 54, R7 51
+class TransformVar [D07]: D07 103, R7 122
+class TraverseNode [D07]: D07 13
+class UnspecializedPcodeOp [D07]: D07 14
+class UserOpManage [D07]: D07 9
+class UserPcodeOp [D07]: D07 82, D08 4, D09 1, D13 5, D16b 4, R9 3
+class VolatileOp [D07]: D07 6
+class VolatileReadOp [D07]: D07 8
+class VolatileWriteOp [D07]: D07 8
