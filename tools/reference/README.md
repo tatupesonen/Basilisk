@@ -549,6 +549,134 @@ captures to be byte-identical (6.5). `bk-oracle compare` classifies the
 differences between two builds' captures by named cause, `bk-oracle check`
 reports drift against `fixtures/decomp-oracle/`.
 
+## The printer log (`patches-instr/`, `decomp_instr`)
+
+The instrumented console of track D16a (`docs/research/decomp-out-spike/`)
+logs what `PrintC` decides and what it asks its `Emit` object to do. It is
+separate from the reference consoles: the reference directory and its
+binaries are never touched.
+
+* `patches-instr/0001-printer-hooks.patch` adds hooks to a **copy** of
+  `prettyprint.*`, `printlanguage.*` and `printc.cc`, plus `bkinstr.hh`. A
+  hook does nothing while its global pointer is null, which is the default,
+  so the console is Ghidra's unless logging is switched on. The pushes are
+  not virtual (`printlanguage.hh:292-296`), hence a patch rather than an
+  `Emit` subclass. `patches-instr/source/make-patch.sh` regenerates the
+  patch from the Ghidra tree (`BASILISK_GHIDRA_DIR`) and reproduces it byte
+  for byte; each edit asserts that its anchor occurs exactly once.
+* `patches-instr/bk_printlog.cc` is the logger, linked only into this
+  console and compiled with `-fno-access-control` to read the printer's
+  private state.
+* `patches-instr/build-instr.sh [--jobs N] OUT` copies the decompiler
+  sources from the Ghidra tree to `OUT/src`, applies `patches/*.patch` and
+  then `patches-instr/*.patch`, and builds `OUT/bin/decomp_instr` with
+  `build-reference.sh`'s compiler flags. Reruns are incremental. `OUT` must
+  be outside the Ghidra tree and the reference directory (the script
+  refuses otherwise).
+
+Run it like `decomp` (`SLEIGHHOME` set to the reference directory), with
+`BK_PRINTLOG=<prefix>` in the environment. Every document the printer
+produces (`docFunction`, `docAllGlobals`, `docSingleGlobal`,
+`docTypeDefinitions`: `print C`, `print C xml`, `print C flat`, `print
+language <lang>`, `print C globals`, `print C types`) is appended to three
+files. Without `BK_PRINTLOG` its output is byte-identical to `decomp`'s
+(checked on 1,014 runs on each machine by the spike's `run_corpus.py`).
+
+The formats follow the conventions above, with these keys: an op is
+`<space>:0x<offset>:0x<time>/<OPNAME>` (its `SeqNum` and opcode), a varnode
+`v<create index hex>`, a block `<type>:<index>` (types `basic`, `graph`,
+`copy`, `goto`, `list`, `condition`, `if`, `ifelse`, `ifnoexit`, `ifgoto`,
+`whiledo`, `dowhile`, `switch`, `infloop`; the logger names them itself
+because `FlowBlock::typeToName` writes `ifelse` for `ifnoexit`,
+`block.cc:696`), a symbol `s<id hex>:<name>`, a data-type `t<id
+hex>:<display name>`, a function `f:<name>`; `-` is a null pointer. Each
+file holds one `F` ... `/F` block per document; documents are numbered from
+1 in each file.
+
+### `<prefix>.tree`, `bkprinttree` version 1
+
+What the printer decided. It is the only input of the spike's tree builder.
+
+```
+H	bkprinttree	1
+F	<n>	<function name, or <docAllGlobals> etc.>
+O	<language>	<mods hex>	<brace func>	<brace ifelse>	<brace loop>	<brace switch>	<comment start>	<comment end>	<line comment indent>	<instr comment types hex>	<header comment types hex>	<unplaced 0|1>	<nocasts 0|1>	<markup 0|1>
+>	<event>	<mods hex>	<facts…>        (entry to a structural method)
+<	<event>[	!]                         (its exit; ! if left by an exception)
+P	<token>	<print1>	<print2>	<op>         (pushOp)
+A	<tag>	<highlight>	<text>	<op>	<second>	<offset>   (pushAtom)
+V	<varnode>	<op>	<mods hex>              (pushVn*; informative)
+M	<pushMod|popMod|setMod|unsetMod>	<mods hex>    (informative)
+M	<pushScope|popScope>	<scope name>     (informative)
+/F	<n>	<ok|error>
+T	<document count>
+```
+
+`P` and `A` records are logged after the push has been placed on the RPN
+stack (after the inner `recurse()`), so they come in pre-order of the
+expression tree and each token takes as many children as its `stage`
+(the token table of `printc.cc:23-77` and `printjava.cc:21`). `<token>` is
+the `OpToken`'s member name in `PrintC` (or `instanceof`); `print1` and
+`print2` are its printed strings, which differ between languages
+(`adjustTypeOperators`). In an `A` record `<tag>` is the `Atom` type
+(`syntax`, `vartoken`, `functoken`, `optoken`, `typetoken`, `fieldtoken`,
+`bitfieldtoken`, `casetoken`, `blanktoken`), `<highlight>` the
+`syntax_highlight` number, `<text>` the final text (names, constants and
+strings already formatted), and only the fields `emitAtom` reads for that
+tag are filled (`printlanguage.cc:376-407`): `<op>` for every tag but
+`syntax`, `typetoken` and `blanktoken`; `<second>` the varnode, function,
+data-type or case value; `<offset>` the field offset. `V` and `M` records
+are not needed to print; they are there to check the tree.
+
+The facts of each `>` record, in order (the names are those of `PrintC`'s
+methods; `printc.cc` lines):
+
+| Event | Facts |
+|-------|-------|
+| `docFunction` (2784) | name, entry address |
+| `lineComment` (`printlanguage.cc:593`) | indent (−1 is the configured one), comment type hex, address, text |
+| `functionDeclaration` (2720) | display name, function, calling-convention name and unknown flag (`-` `-` when not printed) |
+| `symbolScope` (233) | symbol, scope separator, the scope names printed (comma list) |
+| `prototypeOutput` (2275) | the return varnode `beginReturnType` gets |
+| `prototypeInputs` (2303) | parameter count, `...` flag, per parameter `hidden`, `symbol` or `type` |
+| `scopeVarDecls` (2665) | scope name, category |
+| `varDeclStatement`, `varDecl` (2644-2663) | symbol |
+| `blockBasic` (2821) | block, last op, out count, fall-through-is-true, out blocks |
+| `blockGraph`, `blockCopy`, `blockGoto`, `blockLs`, `blockCondition`, `blockIf`, `forLoop`, `blockWhileDo`, `blockDoWhile`, `blockInfLoop`, `blockSwitch` (2889-3508) | block, keyword op (last op of component 0 for if and the loops), components; then per kind: goto (`gotoPrints`, target, goto type), list (per pair: next is the flow successor), condition (opcode), if (kind, goto target, goto type), for/while (initialise op, iterate op, overflow syntax), switch (case count; per case block:goto type:exit:default) |
+| `switchCase` (3281) | case index, first op of the case block, default flag, the default's label value or the label count |
+| `label` (3319) | block, label text, address |
+| `labelStatement`, `anyLabelStatement` (3353-3381) | block, label bumped up, jump target, unstructured target |
+| `gotoStatement` (2385) | source block, its last op, target block, goto type hex |
+| `statement`, `expression`, `inplaceOp`, `constructor`, `bitFieldStore`, `bitFieldExpression`, `commentGroup`, `opBranch`, `opCbranch`, `opBranchind` | op, input count, output varnode |
+| `opReturn` (773) | op, input count, halt type hex |
+| `commentBlockTree` (3402) | block |
+| `commentFuncHeader`, `localVarDecls` | function |
+| `globalVarDeclsRecursive` (2751) | scope name |
+| `typeDefinition` (2451) | data-type |
+| `structDefinition` (2201) | display name, field count |
+| `enumDefinition` (2234) | display name, size, value count, value names (one field each) |
+
+### `<prefix>.emit`, `bkprintemit` version 1
+
+Every call `PrintLanguage` made on its `Emit` object, outermost calls only
+(an `Emit` method calling another, such as `openBraceIndent` calling
+`tagLine`, is one record), as `<method>` and its arguments in declaration
+order: strings escaped, highlight as a number, pointers as keys, spaces as
+`<count>	<bump>`. A call with a result ends in `	=	<result>`
+(`beginFunction`, `beginBlock`, `openParen`, `openGroup`, `startIndent`,
+`startComment`, `openBraceIndent`, `hasPendingPrint`, …). `setPendingPrint`
+and `hasPendingPrint` carry no argument: the `PendPrint` is a stack object
+whose address is reused.
+
+### `<prefix>.diag`, `bkprintdiag` version 1
+
+`D	<n>	<message>` for every place where emission and tree building
+interleave: a structural method entered, or an `Emit` call made outside
+the RPN machinery, while the RPN stack is not empty or varnodes are
+pending. The final `S	direct	<n>	interleaved	<n>	outside	<n>` counts
+the direct calls, the interleaved ones (0 on the whole corpus) and calls
+made outside any document.
+
 ## Measuring
 
 `tools/reference/measure.sh` prints the numbers recorded under "Reference

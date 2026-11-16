@@ -29,3 +29,6 @@ vendor/** -text
 crates/bk-testkit/tests/data/oracle/** text eol=lf
 crates/bk-testkit/tests/data/oracle/*.gz binary
 fixtures/decomp-oracle/** text eol=lf
+
+# Inputs of the printer spike (data-test format, read by the reference consoles).
+docs/research/decomp-out-spike/inputs/** text eol=lf

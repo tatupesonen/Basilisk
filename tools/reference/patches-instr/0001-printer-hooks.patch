@@ -1,0 +1,983 @@
+--- /dev/null
++++ b/cpp/bkinstr.hh
+@@ -0,0 +1,108 @@
++/* Basilisk printer instrumentation (tools/reference/patches-instr in the
++ * Basilisk repository). Not part of Ghidra. Every hook is a no-op while
++ * bk_print_hook is null, which is the default: the console then behaves
++ * exactly as Ghidra's. */
++#ifndef __BKINSTR_HH__
++#define __BKINSTR_HH__
++
++#include "types.h"
++#include <string>
++
++namespace ghidra {
++
++class PrintLanguage;
++class OpToken;
++class PcodeOp;
++class Varnode;
++class Emit;
++
++/// Structural events of the printer: entry to and exit from PrintC's methods
++enum BkPrintEvent {
++  bk_ev_docFunction = 1, bk_ev_commentFuncHeader, bk_ev_lineComment, bk_ev_functionDeclaration,
++  bk_ev_symbolScope, bk_ev_prototypeOutput, bk_ev_prototypeInputs, bk_ev_localVarDecls,
++  bk_ev_scopeVarDecls, bk_ev_varDeclStatement, bk_ev_varDecl, bk_ev_blockBasic, bk_ev_blockGraph,
++  bk_ev_blockCopy, bk_ev_blockGoto, bk_ev_blockLs, bk_ev_blockCondition, bk_ev_blockIf,
++  bk_ev_forLoop, bk_ev_blockWhileDo, bk_ev_blockDoWhile, bk_ev_blockInfLoop, bk_ev_blockSwitch,
++  bk_ev_switchCase, bk_ev_label, bk_ev_labelStatement, bk_ev_anyLabelStatement,
++  bk_ev_gotoStatement, bk_ev_commentGroup, bk_ev_commentBlockTree, bk_ev_statement,
++  bk_ev_expression, bk_ev_inplaceOp, bk_ev_constructor, bk_ev_bitFieldStore,
++  bk_ev_bitFieldExpression, bk_ev_opBranch, bk_ev_opCbranch, bk_ev_opBranchind, bk_ev_opReturn,
++  bk_ev_docAllGlobals, bk_ev_docSingleGlobal, bk_ev_docTypeDefinitions, bk_ev_typeDefinition,
++  bk_ev_structDefinition, bk_ev_enumDefinition, bk_ev_globalVarDeclsRecursive, bk_ev_recurse,
++  bk_ev_count
++};
++
++/// State changes of the printer (modifier and scope stacks)
++enum BkPrintState { bk_st_pushMod = 1, bk_st_popMod, bk_st_setMod, bk_st_unsetMod, bk_st_pushScope, bk_st_popScope };
++
++/// Calls on the Emit object, as PrintLanguage makes them
++enum BkEmitCall {
++  bk_em_beginDocument = 1, bk_em_endDocument, bk_em_beginFunction, bk_em_endFunction,
++  bk_em_beginBlock, bk_em_endBlock, bk_em_tagLine, bk_em_tagLineIndent, bk_em_beginReturnType,
++  bk_em_endReturnType, bk_em_beginVarDecl, bk_em_endVarDecl, bk_em_beginStatement,
++  bk_em_endStatement, bk_em_beginFuncProto, bk_em_endFuncProto, bk_em_tagVariable, bk_em_tagOp,
++  bk_em_tagFuncName, bk_em_tagType, bk_em_tagField, bk_em_tagBitField, bk_em_tagComment,
++  bk_em_tagLabel, bk_em_tagCaseLabel, bk_em_print, bk_em_openParen, bk_em_closeParen,
++  bk_em_openGroup, bk_em_closeGroup, bk_em_clear, bk_em_spaces, bk_em_startIndent,
++  bk_em_stopIndent, bk_em_startComment, bk_em_stopComment, bk_em_flush, bk_em_setPendingPrint,
++  bk_em_cancelPendingPrint, bk_em_hasPendingPrint, bk_em_openBraceIndent, bk_em_openBrace,
++  bk_em_closeBraceIndent, bk_em_setIndentIncrement, bk_em_count
++};
++
++/// The logger interface; the implementation lives outside Ghidra's sources
++class BkPrintHook {
++public:
++  virtual ~BkPrintHook(void) {}
++  virtual void enter(const PrintLanguage *lng,int4 ev,const void *a,const void *b,intb c)=0;
++  virtual void leave(const PrintLanguage *lng,int4 ev,bool unwinding)=0;
++  virtual void pushOp(const PrintLanguage *lng,const OpToken *tok,const PcodeOp *op)=0;
++  virtual void pushAtom(const PrintLanguage *lng,const void *atom)=0;
++  virtual void pushVn(const PrintLanguage *lng,const Varnode *vn,const PcodeOp *op,uint4 m)=0;
++  virtual void state(const PrintLanguage *lng,int4 kind,uint4 val)=0;
++  virtual void emitCall(const Emit *e,int4 call,const std::string *s,intb i1,intb i2,const void *p1,const void *p2)=0;
++  virtual void emitResult(const Emit *e,int4 call,intb val)=0;
++};
++
++extern BkPrintHook *bk_print_hook;	///< The active logger, or null (defined in prettyprint.cc)
++extern int4 bk_emit_depth;		///< Nesting of hooked Emit calls (only the outermost is logged)
++extern int4 bk_rpn_depth;		///< Nesting of the RPN machinery (pushOp, pushAtom, recurse)
++
++/// Logs entry to and exit from a structural printer method
++struct BkScope {
++  const PrintLanguage *lng;
++  int4 ev;
++  bool on;
++  BkScope(const PrintLanguage *l,int4 e,const void *a,const void *b,intb c) {
++    lng = l; ev = e; on = (bk_print_hook != (BkPrintHook *)0);
++    if (on) bk_print_hook->enter(l,e,a,b,c);
++  }
++  ~BkScope(void) { if (on && bk_print_hook != (BkPrintHook *)0) bk_print_hook->leave(lng,ev,std::uncaught_exception()); }
++};
++
++/// Marks a hooked Emit call; only the outermost one is logged
++struct BkEmitGuard {
++  bool top;
++  BkEmitGuard(void) { top = (bk_print_hook != (BkPrintHook *)0) && (bk_emit_depth == 0); bk_emit_depth += 1; }
++  ~BkEmitGuard(void) { bk_emit_depth -= 1; }
++};
++
++/// Marks the RPN machinery (emission from it is not \e direct)
++struct BkRpnGuard {
++  BkRpnGuard(void) { bk_rpn_depth += 1; }
++  ~BkRpnGuard(void) { bk_rpn_depth -= 1; }
++};
++
++/// Logs the result of an outermost Emit call and passes it through
++inline intb bk_emit_ret(const BkEmitGuard &g,const Emit *e,int4 call,intb val) {
++  if (g.top) bk_print_hook->emitResult(e,call,val);
++  return val;
++}
++
++} // End namespace ghidra
++
++#define BK_SCOPE(ev,a,b,c) ghidra::BkScope bk_scope(this,ev,(const void *)(a),(const void *)(b),(intb)(c))
++#define BK_EMIT(call,s,i1,i2,p1,p2) ghidra::BkEmitGuard bk_guard; \
++  if (bk_guard.top) ghidra::bk_print_hook->emitCall(this,call,s,(intb)(i1),(intb)(i2),(const void *)(p1),(const void *)(p2))
++#define BK_RET(call,v) (int4)ghidra::bk_emit_ret(bk_guard,this,call,(intb)(v))
++
++#endif
+--- a/cpp/prettyprint.hh
++++ b/cpp/prettyprint.hh
+@@ -20,6 +20,7 @@
+ #define __PRETTYPRINT_HH__
+ 
+ #include "type.hh"
++#include "bkinstr.hh"
+ 
+ namespace ghidra {
+ 
+@@ -447,25 +448,25 @@
+   /// \brief Set the number of characters indented per level of nesting
+   ///
+   /// \param val is the desired number of characters to indent
+-  void setIndentIncrement(int4 val) { indentincrement = val; }
++  void setIndentIncrement(int4 val) { BK_EMIT(bk_em_setIndentIncrement,0,val,0,0,0); indentincrement = val; }
+ 
+   /// \brief Set a pending print callback
+   ///
+   /// The callback will be issued prior to the next call to tagLine() unless
+   /// a the method cancelPendingPrint() is called first.
+   /// \param pend is the callback to be issued
+-  void setPendingPrint(PendPrint *pend) { pendPrint = pend; }
++  void setPendingPrint(PendPrint *pend) { BK_EMIT(bk_em_setPendingPrint,0,0,0,pend,0); pendPrint = pend; }
+ 
+   /// \brief Cancel any pending print callback
+   ///
+   /// If there is any print callback pending, cancel it
+-  void cancelPendingPrint(void) { pendPrint = (PendPrint *)0; }
++  void cancelPendingPrint(void) { BK_EMIT(bk_em_cancelPendingPrint,0,0,0,0,0); pendPrint = (PendPrint *)0; }
+ 
+   /// \brief Check if the given print callback is still pending
+   ///
+   /// \param pend is the given print callback to check
+   /// \return \b true if the specific print callback is pending
+-  bool hasPendingPrint(PendPrint *pend) const { return (pendPrint == pend); }
++  bool hasPendingPrint(PendPrint *pend) const { BK_EMIT(bk_em_hasPendingPrint,0,0,0,pend,0); return (BK_RET(bk_em_hasPendingPrint,(pendPrint == pend)) != 0); }
+ 
+   /// \brief Emit an opening brace given a specific format and add an indent level
+   ///
+@@ -490,6 +491,7 @@
+   /// \param brace is the string to display as the closing brace
+   /// \param id is nesting id of the indent being removed
+   void closeBraceIndent(const string &brace,int4 id) {
++    BK_EMIT(bk_em_closeBraceIndent,&brace,id,0,0,0);
+     stopIndent(id); tagLine(); print(brace);
+   }
+ };
+--- a/cpp/prettyprint.cc
++++ b/cpp/prettyprint.cc
+@@ -39,6 +39,10 @@
+ 
+ const string Emit::EMPTY_STRING = "";
+ 
++BkPrintHook *bk_print_hook = (BkPrintHook *)0;
++int4 bk_emit_depth = 0;
++int4 bk_rpn_depth = 0;
++
+ /// \brief Emit a sequence of space characters as part of source code
+ ///
+ /// \param num is the number of space characters to emit
+@@ -61,6 +65,7 @@
+ int4 Emit::openBraceIndent(const string &brace,brace_style style)
+ 
+ {
++  BK_EMIT(bk_em_openBraceIndent,&brace,style,0,0,0);
+   if (style == same_line)
+     spaces(1);
+   else if (style == skip_line) {
+@@ -72,12 +77,13 @@
+   }
+   int4 id = startIndent();
+   print(brace);
+-  return id;
++  return BK_RET(bk_em_openBraceIndent,id);
+ }
+ 
+ void Emit::openBrace(const string &brace,brace_style style)
+ 
+ {
++  BK_EMIT(bk_em_openBrace,&brace,style,0,0,0);
+   if (style == same_line)
+     spaces(1);
+   else if (style == skip_line) {
+@@ -883,16 +889,18 @@
+ int4 EmitPrettyPrint::beginDocument(void)
+ 
+ {
++  BK_EMIT(bk_em_beginDocument,0,0,0,0,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginDocument();
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginDocument,id);
+ }
+ 
+ void EmitPrettyPrint::endDocument(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endDocument,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endDocument(id);
+@@ -902,6 +910,7 @@
+ int4 EmitPrettyPrint::beginFunction(const Funcdata *fd)
+ 
+ {
++  BK_EMIT(bk_em_beginFunction,0,0,0,fd,0);
+ #ifdef PRETTY_DEBUG
+   if (!tokqueue.empty())
+     throw LowlevelError("Starting with non-empty token queue");
+@@ -910,12 +919,13 @@
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginFunction(fd);
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginFunction,id);
+ }
+ 
+ void EmitPrettyPrint::endFunction(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endFunction,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endFunction(id);
+@@ -925,15 +935,17 @@
+ int4 EmitPrettyPrint::beginBlock(const FlowBlock *bl)
+ 
+ {
++  BK_EMIT(bk_em_beginBlock,0,0,0,bl,0);
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginBlock(bl);
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginBlock,id);
+ }
+ 
+ void EmitPrettyPrint::endBlock(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endBlock,0,id,0,0,0);
+   TokenSplit &tok( tokqueue.push() );
+   tok.endBlock(id);
+   scan();
+@@ -942,6 +954,7 @@
+ void EmitPrettyPrint::tagLine(void)
+ 
+ {
++  BK_EMIT(bk_em_tagLine,0,0,0,0,0);
+   emitPending();
+   checkbreak();
+   TokenSplit &tok( tokqueue.push() );
+@@ -952,6 +965,7 @@
+ void EmitPrettyPrint::tagLine(int4 indent)
+ 
+ {
++  BK_EMIT(bk_em_tagLineIndent,0,indent,0,0,0);
+   emitPending();
+   checkbreak();
+   TokenSplit &tok( tokqueue.push() );
+@@ -962,16 +976,18 @@
+ int4 EmitPrettyPrint::beginReturnType(const Varnode *vn)
+ 
+ {
++  BK_EMIT(bk_em_beginReturnType,0,0,0,vn,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginReturnType(vn);
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginReturnType,id);
+ }
+ 
+ void EmitPrettyPrint::endReturnType(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endReturnType,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endReturnType(id);
+@@ -981,16 +997,18 @@
+ int4 EmitPrettyPrint::beginVarDecl(const Symbol *sym)
+ 
+ {
++  BK_EMIT(bk_em_beginVarDecl,0,0,0,sym,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginVarDecl(sym);
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginVarDecl,id);
+ }
+ 
+ void EmitPrettyPrint::endVarDecl(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endVarDecl,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endVarDecl(id);
+@@ -1000,16 +1018,18 @@
+ int4 EmitPrettyPrint::beginStatement(const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_beginStatement,0,0,0,op,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginStatement(op);
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginStatement,id);
+ }
+ 
+ void EmitPrettyPrint::endStatement(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endStatement,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endStatement(id);
+@@ -1019,16 +1039,18 @@
+ int4 EmitPrettyPrint::beginFuncProto(void)
+ 
+ {
++  BK_EMIT(bk_em_beginFuncProto,0,0,0,0,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.beginFuncProto();
+   scan();
+-  return id;
++  return BK_RET(bk_em_beginFuncProto,id);
+ }
+ 
+ void EmitPrettyPrint::endFuncProto(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_endFuncProto,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.endFuncProto(id);
+@@ -1038,6 +1060,7 @@
+ void EmitPrettyPrint::tagVariable(const string &name,syntax_highlight hl,const Varnode *vn,const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_tagVariable,&name,hl,0,vn,op);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagVariable(name,hl,vn,op);
+@@ -1047,6 +1070,7 @@
+ void EmitPrettyPrint::tagOp(const string &name,syntax_highlight hl,const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_tagOp,&name,hl,0,op,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagOp(name,hl,op);
+@@ -1056,6 +1080,7 @@
+ void EmitPrettyPrint::tagFuncName(const string &name,syntax_highlight hl,const Funcdata *fd,const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_tagFuncName,&name,hl,0,fd,op);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagFuncName(name,hl,fd,op);
+@@ -1065,6 +1090,7 @@
+ void EmitPrettyPrint::tagType(const string &name,syntax_highlight hl,const Datatype *ct)
+ 
+ {
++  BK_EMIT(bk_em_tagType,&name,hl,0,ct,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagType(name,hl,ct);
+@@ -1074,6 +1100,7 @@
+ void EmitPrettyPrint::tagField(const string &name,syntax_highlight hl,const Datatype *ct,int4 o,const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_tagField,&name,hl,o,ct,op);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagField(name,hl,ct,o,op);
+@@ -1083,6 +1110,7 @@
+ void EmitPrettyPrint::tagBitField(const string &name,syntax_highlight hl,const Datatype *ct,int4 id,const PcodeOp *op)
+ 
+ {
++  BK_EMIT(bk_em_tagBitField,&name,hl,id,ct,op);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagBitField(name,hl,ct,id,op);
+@@ -1092,6 +1120,7 @@
+ void EmitPrettyPrint::tagComment(const string &name,syntax_highlight hl,const AddrSpace *spc,uintb off)
+ 
+ {
++  BK_EMIT(bk_em_tagComment,&name,hl,off,spc,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagComment(name,hl,spc,off);
+@@ -1101,6 +1130,7 @@
+ void EmitPrettyPrint::tagLabel(const string &name,syntax_highlight hl,const AddrSpace *spc,uintb off)
+ 
+ {
++  BK_EMIT(bk_em_tagLabel,&name,hl,off,spc,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagLabel(name,hl,spc,off);
+@@ -1110,6 +1140,7 @@
+ void EmitPrettyPrint::tagCaseLabel(const string &name,syntax_highlight hl,const PcodeOp *op,uintb value)
+ 
+ {
++  BK_EMIT(bk_em_tagCaseLabel,&name,hl,value,op,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.tagCaseLabel(name, hl, op, value);
+@@ -1119,6 +1150,7 @@
+ void EmitPrettyPrint::print(const string &data,syntax_highlight hl)
+ 
+ {
++  BK_EMIT(bk_em_print,&data,hl,0,0,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.print(data,hl);
+@@ -1128,17 +1160,19 @@
+ int4 EmitPrettyPrint::openParen(const string &paren,int4 id)
+ 
+ {
++  BK_EMIT(bk_em_openParen,&paren,id,0,0,0);
+   id = openGroup();	       // Open paren automatically opens group
+   TokenSplit &tok( tokqueue.push() );
+   tok.openParen(paren,id);
+   scan();
+   needbreak = true;
+-  return id;
++  return BK_RET(bk_em_openParen,id);
+ }
+ 
+ void EmitPrettyPrint::closeParen(const string &paren,int4 id)
+ 
+ {
++  BK_EMIT(bk_em_closeParen,&paren,id,0,0,0);
+   checkstring();
+   TokenSplit &tok( tokqueue.push() );
+   tok.closeParen(paren,id);
+@@ -1149,16 +1183,18 @@
+ int4 EmitPrettyPrint::openGroup(void)
+ 
+ {
++  BK_EMIT(bk_em_openGroup,0,0,0,0,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.openGroup();
+   scan();
+-  return id;
++  return BK_RET(bk_em_openGroup,id);
+ }
+ 
+ void EmitPrettyPrint::closeGroup(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_closeGroup,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.closeGroup(id);
+@@ -1168,16 +1204,18 @@
+ int4 EmitPrettyPrint::startComment(void)
+ 
+ {
++  BK_EMIT(bk_em_startComment,0,0,0,0,0);
+   checkstart();
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.startComment();
+   scan();
+-  return id;
++  return BK_RET(bk_em_startComment,id);
+ }
+ 
+ void EmitPrettyPrint::stopComment(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_stopComment,0,id,0,0,0);
+   checkend();
+   TokenSplit &tok( tokqueue.push() );
+   tok.stopComment(id);
+@@ -1187,6 +1225,7 @@
+ void EmitPrettyPrint::clear(void)
+ 
+ {
++  BK_EMIT(bk_em_clear,0,0,0,0,0);
+   Emit::clear();
+   lowlevel->clear();
+   indentstack.clear();
+@@ -1202,6 +1241,7 @@
+ void EmitPrettyPrint::spaces(int4 num,int4 bump)
+ 
+ {
++  BK_EMIT(bk_em_spaces,0,num,bump,0,0);
+   checkbreak();
+   TokenSplit &tok( tokqueue.push() );
+   tok.spaces(num,bump);
+@@ -1211,15 +1251,17 @@
+ int4 EmitPrettyPrint::startIndent(void)
+ 
+ {
++  BK_EMIT(bk_em_startIndent,0,0,0,0,0);
+   TokenSplit &tok( tokqueue.push() );
+   int4 id = tok.startIndent(indentincrement);
+   scan();
+-  return id;
++  return BK_RET(bk_em_startIndent,id);
+ }
+ 
+ void EmitPrettyPrint::stopIndent(int4 id)
+ 
+ {
++  BK_EMIT(bk_em_stopIndent,0,id,0,0,0);
+   TokenSplit &tok( tokqueue.push() );
+   tok.stopIndent(id);
+   scan();
+@@ -1228,6 +1270,7 @@
+ void EmitPrettyPrint::flush(void)
+ 
+ {
++  BK_EMIT(bk_em_flush,0,0,0,0,0);
+   while(!tokqueue.empty()) {
+     TokenSplit &tok( tokqueue.popbottom() );
+     if (tok.getSize() < 0)
+--- a/cpp/printlanguage.hh
++++ b/cpp/printlanguage.hh
+@@ -283,12 +283,12 @@
+ #endif
+   // Routines that are probably consistent across languages
+   bool isSet(uint4 m) const { return ((mods & m)!=0); }				///< Is the given printing modification active
+-  void pushScope(const Scope *sc) { scopestack.push_back(sc); curscope = sc; }	///< Push a new symbol scope
++  void pushScope(const Scope *sc) { scopestack.push_back(sc); curscope = sc; if (bk_print_hook) bk_print_hook->state(this,bk_st_pushScope,0); }	///< Push a new symbol scope
+   void popScope(void);								///< Pop to the previous symbol scope
+-  void pushMod(void) { modstack.push_back(mods); }				///< Push current printing modifications to the stack
+-  void popMod(void) { mods = modstack.back(); modstack.pop_back(); }		///< Pop to the previous printing modifications
+-  void setMod(uint4 m) { mods |= m; }						///< Activate the given printing modification
+-  void unsetMod(uint4 m) { mods &= ~m; }					///< Deactivate the given printing modification
++  void pushMod(void) { modstack.push_back(mods); if (bk_print_hook) bk_print_hook->state(this,bk_st_pushMod,mods); }				///< Push current printing modifications to the stack
++  void popMod(void) { mods = modstack.back(); modstack.pop_back(); if (bk_print_hook) bk_print_hook->state(this,bk_st_popMod,mods); }		///< Pop to the previous printing modifications
++  void setMod(uint4 m) { mods |= m; if (bk_print_hook) bk_print_hook->state(this,bk_st_setMod,m); }						///< Activate the given printing modification
++  void unsetMod(uint4 m) { mods &= ~m; if (bk_print_hook) bk_print_hook->state(this,bk_st_unsetMod,m); }					///< Deactivate the given printing modification
+   void pushOp(const OpToken *tok,const PcodeOp *op);			///< Push an operator token onto the RPN stack
+   void pushAtom(const Atom &atom);					///< Push a variable token onto the RPN stack
+   void pushVn(const Varnode *vn,const PcodeOp *op,uint4 m);	///< Push an expression rooted at a Varnode onto the RPN stack
+--- a/cpp/printlanguage.cc
++++ b/cpp/printlanguage.cc
+@@ -114,6 +114,7 @@
+ 
+ {
+   scopestack.pop_back();
++  if (bk_print_hook) bk_print_hook->state(this,bk_st_popScope,0);
+   if (scopestack.empty())
+     curscope = (Scope *)0;
+   else
+@@ -129,8 +130,10 @@
+ void PrintLanguage::pushOp(const OpToken *tok,const PcodeOp *op)
+ 
+ {
++  BkRpnGuard bk_rpn;
+   if (pending < nodepend.size()) // Pending varnode pushes before op
+     recurse();			// So we must recurse
++  if (bk_print_hook) bk_print_hook->pushOp(this,tok,op);
+ 
+   bool paren;
+   int4 id;
+@@ -162,8 +165,10 @@
+ void PrintLanguage::pushAtom(const Atom &atom)
+ 
+ {
++  BkRpnGuard bk_rpn;
+   if (pending < nodepend.size()) // pending varnodes before atom
+     recurse();			// So we must recurse
++  if (bk_print_hook) bk_print_hook->pushAtom(this,&atom);
+ 
+   if (revpol.empty())
+     emitAtom(atom);
+@@ -207,6 +212,7 @@
+ //   }
+ 
+   // But it is more efficient to just call them in reverse order
++  if (bk_print_hook) bk_print_hook->pushVn(this,vn,op,m);
+   nodepend.emplace_back(vn,op,m);
+ }
+ 
+@@ -518,6 +524,7 @@
+ void PrintLanguage::recurse(void)
+ 
+ {
++  BkRpnGuard bk_rpn;
+   uint4 modsave = mods;
+   int4 lastPending = pending;		// Already claimed
+   pending = nodepend.size();	// Lay claim to the rest
+@@ -593,6 +600,7 @@
+ void PrintLanguage::emitLineComment(int4 indent,const Comment *comm)
+ 
+ {
++  BK_SCOPE(bk_ev_lineComment,comm,0,indent);
+   const string &text( comm->getText() );
+   const AddrSpace *spc = comm->getAddr().getSpace();
+   uintb off = comm->getAddr().getOffset();
+--- a/cpp/printc.cc
++++ b/cpp/printc.cc
+@@ -233,6 +233,7 @@
+ void PrintC::emitSymbolScope(const Symbol *symbol)
+ 
+ {
++  BK_SCOPE(bk_ev_symbolScope,symbol,0,0);
+   int4 scopedepth;
+   if (namespc_strategy == MINIMAL_NAMESPACES)
+     scopedepth = symbol->getResolutionDepth(curscope);
+@@ -539,6 +540,7 @@
+ void PrintC::opBranch(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_opBranch,op,0,0);
+   if (isSet(flat)) {
+     // Assume the BRANCH is a statement
+     emit->tagOp(KEYWORD_GOTO,EmitMarkup::keyword_color,op);
+@@ -555,6 +557,7 @@
+ void PrintC::opCbranch(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_opCbranch,op,0,0);
+   // FIXME:  This routine shouldn't emit directly
+   bool yesif = isSet(flat);
+   bool yesparen = !isSet(comma_separate);
+@@ -601,6 +604,7 @@
+ void PrintC::opBranchind(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_opBranchind,op,0,0);
+   // FIXME:  This routine shouldn't emit directly
+   emit->tagOp(KEYWORD_SWITCH,EmitMarkup::keyword_color,op);	// Print header for switch
+   int4 id = emit->openParen(OPEN_PAREN);
+@@ -773,6 +777,7 @@
+ void PrintC::opReturn(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_opReturn,op,0,0);
+   string nm;
+   switch(op->getHaltType()) {
+   default:			// The most common case, plain return
+@@ -2201,6 +2206,7 @@
+ void PrintC::emitStructDefinition(const TypeStruct *ct)
+ 
+ {
++  BK_SCOPE(bk_ev_structDefinition,ct,0,0);
+   vector<TypeField>::const_iterator iter;
+ 
+   if (ct->getName().size()==0) {
+@@ -2234,6 +2240,7 @@
+ void PrintC::emitEnumDefinition(const TypeEnum *ct)
+ 
+ {
++  BK_SCOPE(bk_ev_enumDefinition,ct,0,0);
+   map<uintb,string>::const_iterator iter;
+ 
+   if (ct->getName().size()==0) {
+@@ -2275,6 +2282,7 @@
+ void PrintC::emitPrototypeOutput(const FuncProto *proto,
+ 				 const Funcdata *fd)
+ {
++  BK_SCOPE(bk_ev_prototypeOutput,proto,fd,0);
+   PcodeOp *op;
+   Varnode *vn;
+ 
+@@ -2303,6 +2311,7 @@
+ void PrintC::emitPrototypeInputs(const FuncProto *proto)
+ 
+ {
++  BK_SCOPE(bk_ev_prototypeInputs,proto,0,0);
+   int4 sz = proto->numParams();
+   
+   if (sz == 0)
+@@ -2341,6 +2350,7 @@
+ void PrintC::emitLocalVarDecls(const Funcdata *fd)
+ 
+ {
++  BK_SCOPE(bk_ev_localVarDecls,fd,0,0);
+   bool notempty = false;
+ 
+   if (emitScopeVarDecls(fd->getScopeLocal(),Symbol::no_category))
+@@ -2367,6 +2377,7 @@
+ void PrintC::emitStatement(const PcodeOp *inst)
+ 
+ {
++  BK_SCOPE(bk_ev_statement,inst,0,0);
+   int4 id = emit->beginStatement(inst);
+   emitExpression(inst);
+   emit->endStatement(id);
+@@ -2386,6 +2397,7 @@
+ 			       uint4 type)
+ 
+ {
++  BK_SCOPE(bk_ev_gotoStatement,bl,exp_bl,type);
+   int4 id = emit->beginStatement(bl->lastOp());
+   switch(type) {
+   case FlowBlock::f_break_goto:
+@@ -2451,6 +2463,7 @@
+ void PrintC::emitTypeDefinition(const Datatype *ct)
+ 
+ {
++  BK_SCOPE(bk_ev_typeDefinition,ct,0,0);
+ #ifdef CPUI_DEBUG
+   if (!isStackEmpty()) {
+     clear();
+@@ -2482,6 +2495,7 @@
+ void PrintC::docTypeDefinitions(const TypeFactory *typegrp)
+ 
+ {
++  BK_SCOPE(bk_ev_docTypeDefinitions,typegrp,0,0);
+   vector<Datatype *> deporder;
+   vector<Datatype *>::iterator iter;
+ 
+@@ -2499,6 +2513,7 @@
+ bool PrintC::emitInplaceOp(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_inplaceOp,op,0,0);
+   OpToken *tok;
+   switch(op->code()) {
+   case CPUI_INT_MULT:
+@@ -2549,6 +2564,7 @@
+ void PrintC::emitExpression(const PcodeOp *op)
+    
+ {
++  BK_SCOPE(bk_ev_expression,op,0,0);
+   if (op->doesSpecialPrinting()) {
+     if (op->isCall()) {
+       emitConstructor(op);
+@@ -2588,6 +2604,7 @@
+ void PrintC::emitConstructor(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_constructor,op,0,0);
+   // Printing of constructor syntax
+   const PcodeOp *newop = op->getIn(1)->getDef();
+   const Varnode *outvn = newop->getOut();
+@@ -2600,6 +2617,7 @@
+ void PrintC::emitBitFieldStore(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_bitFieldStore,op,0,0);
+   InsertStoreExpression expr(op);
+   if (!expr.isValid()) {
+     op->getOpcode()->push(this,op,(PcodeOp *)0);
+@@ -2627,6 +2645,7 @@
+ void PrintC::emitBitFieldExpression(const PcodeOp *op)
+ 
+ {
++  BK_SCOPE(bk_ev_bitFieldExpression,op,0,0);
+   InsertExpression expr(op);
+   if (!expr.isValid()) {
+     opFunc(op);	// If no other way to print it, print as functional operator
+@@ -2644,6 +2663,7 @@
+ void PrintC::emitVarDecl(const Symbol *sym)
+ 
+ {
++  BK_SCOPE(bk_ev_varDecl,sym,0,0);
+   int4 id = emit->beginVarDecl(sym);
+ 
+   pushTypeStart(sym->getType(),false);
+@@ -2657,6 +2677,7 @@
+ void PrintC::emitVarDeclStatement(const Symbol *sym)
+ 
+ {
++  BK_SCOPE(bk_ev_varDeclStatement,sym,0,0);
+   emit->tagLine();
+   emitVarDecl(sym);
+   emit->print(SEMICOLON);
+@@ -2665,6 +2686,7 @@
+ bool PrintC::emitScopeVarDecls(const Scope *symScope,int4 cat)
+ 
+ {
++  BK_SCOPE(bk_ev_scopeVarDecls,symScope,0,cat);
+   bool notempty = false;
+   
+   if (cat >= 0) {		// If a category is specified
+@@ -2719,6 +2741,7 @@
+ 
+ void PrintC::emitFunctionDeclaration(const Funcdata *fd)
+ {
++  BK_SCOPE(bk_ev_functionDeclaration,fd,0,0);
+   const FuncProto *proto = &fd->getFuncProto();
+   int4 id = emit->beginFuncProto();
+   emitPrototypeOutput(proto,fd);
+@@ -2751,6 +2774,7 @@
+ void PrintC::emitGlobalVarDeclsRecursive(Scope *symScope)
+ 
+ {
++  BK_SCOPE(bk_ev_globalVarDeclsRecursive,symScope,0,0);
+   if (!symScope->isGlobal()) return;
+   emitScopeVarDecls(symScope,Symbol::no_category);
+   ScopeMap::const_iterator iter,enditer;
+@@ -2764,6 +2788,7 @@
+ void PrintC::docAllGlobals(void)
+ 
+ {
++  BK_SCOPE(bk_ev_docAllGlobals,0,0,0);
+   int4 id = emit->beginDocument();
+   emitGlobalVarDeclsRecursive(glb->symboltab->getGlobalScope());
+   emit->tagLine();
+@@ -2774,6 +2799,7 @@
+ void PrintC::docSingleGlobal(const Symbol *sym)
+ 
+ {
++  BK_SCOPE(bk_ev_docSingleGlobal,sym,0,0);
+   int4 id = emit->beginDocument();
+   emitVarDeclStatement(sym);
+   emit->tagLine();		// Extra line
+@@ -2784,6 +2810,7 @@
+ void PrintC::docFunction(const Funcdata *fd)
+ 
+ {
++  BK_SCOPE(bk_ev_docFunction,fd,0,0);
+   uint4 modsave = mods;
+   if (!fd->isProcStarted())
+     throw RecovError("Function not decompiled");
+@@ -2821,6 +2848,7 @@
+ void PrintC::emitBlockBasic(const BlockBasic *bb)
+ 
+ {
++  BK_SCOPE(bk_ev_blockBasic,bb,0,0);
+   const PcodeOp *inst;
+   bool separator;
+ 
+@@ -2889,6 +2917,7 @@
+ void PrintC::emitBlockGraph(const BlockGraph *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockGraph,bl,0,0);
+   const vector<FlowBlock *> &list(bl->getList());
+   vector<FlowBlock *>::const_iterator iter;
+ 
+@@ -2902,6 +2931,7 @@
+ void PrintC::emitBlockCopy(const BlockCopy *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockCopy,bl,0,0);
+   emitAnyLabelStatement(bl);
+   bl->subBlock(0)->emit(this);
+ }
+@@ -2909,6 +2939,7 @@
+ void PrintC::emitBlockGoto(const BlockGoto *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockGoto,bl,0,0);
+   pushMod();
+   setMod(no_branch);
+   bl->getBlock(0)->emit(this);
+@@ -2924,6 +2955,7 @@
+ void PrintC::emitBlockLs(const BlockList *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockLs,bl,0,0);
+   int4 i;
+   FlowBlock *subbl;
+ 
+@@ -2979,6 +3011,7 @@
+ void PrintC::emitBlockCondition(const BlockCondition *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockCondition,bl,0,0);
+   // FIXME: get rid of parens and properly emit && and ||
+   if (isSet(no_branch)) {
+     int4 id = emit->beginBlock(bl->getBlock(0));
+@@ -3021,6 +3054,7 @@
+ void PrintC::emitBlockIf(const BlockIf *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockIf,bl,0,0);
+   const PcodeOp *op;
+   PendingBrace pendingBrace(option_brace_ifelse);
+ 
+@@ -3109,6 +3143,7 @@
+ void PrintC::emitForLoop(const BlockWhileDo *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_forLoop,bl,0,0);
+   const PcodeOp *op;
+   int4 indent;
+ 
+@@ -3153,6 +3188,7 @@
+ void PrintC::emitBlockWhileDo(const BlockWhileDo *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockWhileDo,bl,0,0);
+   const PcodeOp *op;
+   int4 indent;
+ 
+@@ -3220,6 +3256,7 @@
+ void PrintC::emitBlockDoWhile(const BlockDoWhile *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockDoWhile,bl,0,0);
+   const PcodeOp *op;
+ 
+ 				// dowhile block NEVER prints final branch
+@@ -3249,6 +3286,7 @@
+ void PrintC::emitBlockInfLoop(const BlockInfLoop *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockInfLoop,bl,0,0);
+   const PcodeOp *op;
+ 
+   pushMod();
+@@ -3281,6 +3319,7 @@
+ void PrintC::emitSwitchCase(int4 casenum,const BlockSwitch *switchbl)
+ 
+ {
++  BK_SCOPE(bk_ev_switchCase,switchbl,0,casenum);
+   int4 i,num;
+   uintb val;
+   const Datatype *ct;
+@@ -3319,6 +3358,7 @@
+ void PrintC::emitLabel(const FlowBlock *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_label,bl,0,0);
+   bl = bl->getFrontLeaf();
+   if (bl == (FlowBlock *)0) return;
+   BlockBasic *bb = (BlockBasic *)bl->subBlock(0);
+@@ -3353,6 +3393,7 @@
+ void PrintC::emitLabelStatement(const FlowBlock *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_labelStatement,bl,0,0);
+   if (isSet(only_branch)) return;
+ 
+   if (isSet(flat)) { // Printing flat version
+@@ -3374,6 +3415,7 @@
+ void PrintC::emitAnyLabelStatement(const FlowBlock *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_anyLabelStatement,bl,0,0);
+   if (bl->isLabelBumpUp()) return; // Label printed by someone else
+   bl = bl->getFrontLeaf();
+   if (bl == (FlowBlock *)0) return;
+@@ -3386,6 +3428,7 @@
+ void PrintC::emitCommentGroup(const PcodeOp *inst)
+ 
+ {
++  BK_SCOPE(bk_ev_commentGroup,inst,0,0);
+   commsorter.setupOpList(inst);
+   while(commsorter.hasNext()) {
+     Comment *comm = commsorter.getNext();
+@@ -3402,6 +3445,7 @@
+ void PrintC::emitCommentBlockTree(const FlowBlock *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_commentBlockTree,bl,0,0);
+   if (bl == (const FlowBlock *)0) return;
+   FlowBlock::block_type btype = bl->getType();
+   if (btype == FlowBlock::t_copy) {
+@@ -3427,6 +3471,7 @@
+ void PrintC::emitCommentFuncHeader(const Funcdata *fd)
+ 
+ {
++  BK_SCOPE(bk_ev_commentFuncHeader,fd,0,0);
+   bool extralinebreak = false;
+   commsorter.setupHeader(CommentSorter::header_basic);
+   while(commsorter.hasNext()) {
+@@ -3468,6 +3513,7 @@
+ void PrintC::emitBlockSwitch(const BlockSwitch *bl)
+ 
+ {
++  BK_SCOPE(bk_ev_blockSwitch,bl,0,0);
+   FlowBlock *bl2;
+ 
+   pushMod();
