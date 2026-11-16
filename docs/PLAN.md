@@ -40,7 +40,7 @@ every module. The largest parts:
 
 ## Architecture
 
-Planned crates (those marked ● exist or are in the current wave):
+Planned crates (● exists on `master`; ◐ is being written; checked 2026-11-16):
 
 ```
  basilisk ● (bin: CLI now; GUI from M7)
@@ -53,7 +53,7 @@ Planned crates (those marked ● exist or are in the current wave):
    │
    ├── decompiler      bk-decomp (pipeline, API, parallel driver)   bk-decomp-out, bk-decomp-print (two-stage printer)
    │                   passes: bk-decomp-{flow,heritage,actions,jumptable,merge,struct,typeop}, bk-decomp-rules-* (nine families)
-   │                   state: bk-decomp-core, -symbols, -ir, -cfg, -types, -range   bk-cspec (.cspec, prototype models)   (ADR-026)
+   │                   state: bk-decomp-core, -symbols ◐, -ir ◐, -cfg ●, -types ●, -range ●   bk-cspec ● (.cspec, prototype models)   (ADR-026)
    │
    ├── program         bk-program (memory, listing, symbols, references, functions, …)
    │                   bk-datatypes (types, archives, C parser)     bk-store (program database, ADR-003)
@@ -62,8 +62,8 @@ Planned crates (those marked ● exist or are in the current wave):
    │                   bk-elf ●  bk-pe  bk-macho  bk-coff  bk-dwarf  bk-pdb  …   (pure format parsers)
    │                   bk-bin ● (byte providers, binary reader)
    │
-   ├── language        bk-sleigh (runtime: decode, disassemble, lift)   bk-sleigh-compiler (.slaspec → .sla)
-   │                   bk-sla ● (compiled-language model, reader, writer; ADR-023)   bk-sleigh-snippet (p-code snippets)
+   ├── language        bk-sleigh ● (runtime: decode, disassemble, lift)   bk-sleigh-compiler ● (.slaspec → .sla)
+   │                   bk-sla ● (compiled-language model, reader, writer; ADR-023)   bk-sleigh-snippet ● (p-code snippets)
    │                   bk-language (registers, flow and operand types, overrides; later wave)
    │                   bk-sleigh-syntax ● (preprocessor, lexer, parser)  bk-lang ● (.ldefs, .pspec, .opinion, registry)
    │                   bk-emu (p-code emulator)   bk-asm (assembler)
@@ -149,6 +149,7 @@ this list follows its waves.
 - [ ] `basilisk decompile` on a data-test file; per-function benchmark against Ghidra
 
 ### M4 — Program model, storage, loaders
+- [ ] `ref-headless`: Ghidra itself built and run headless on the build host as the oracle for everything that is Java in Ghidra — per imported file an export of memory blocks, symbols, relocations, functions, references and data types in a comparable form; readers in `bk-testkit` (the M4 counterpart of D00; without it loaders and the program model could only be checked by ported unit tests)
 - [ ] Storage engine spike and decision (ADR-003), then `bk-store`
 - [ ] `bk-program`: memory blocks, address map, code units, symbols and namespaces, references, functions and variables, equates, comments, bookmarks, properties, relocations, register values
 - [ ] `bk-datatypes`: built-in types, composites, archives, data organisation from `.cspec`
@@ -190,12 +191,68 @@ spread over the milestones its parts depend on rather than left to the end.
 - [ ] Debugger and trace model, Version Tracking, BSim, file-system browser and container formats, remaining loaders and processors' Java extensions, everything left in `PARITY.md`
 - [ ] Ghidra's remaining GPL modules: DMG; the GNU disassembler over binutils built from source (`bk-binutils-sys`, `bk-gnu-disasm`, ADR-019)
 
+## Order of work (set 2026-11-16; the goal is the full port)
+
+The milestones above are a dependency order, not a queue: several can be
+worked on at once. What limits the full port is not the decompiler but
+the Java side of Ghidra — the program model, the loaders, analysis and
+everything built on them (about 2.4 million of Ghidra's 3.1 million
+lines) — and none of that depends on M3. So M4 starts now, beside M3.
+
+**The chains.**
+* *Decompiler* (M3): D05 → D07 → D11 → D14 → D16b → D17. Five tracks in
+  a row remain; more agents do not shorten it, they only take the side
+  tracks (D08, D09, D10, D12, D13, D15, D16c, D18, D19, the nine rule
+  families).
+* *Programs* (M4 → M5 → M7 on real binaries): `ref-headless` and the
+  storage decision (ADR-003) → program-model plan and specs →
+  `bk-store`, `bk-program`, `bk-datatypes` → loaders → flow-following
+  disassembly and auto-analysis → the decompiler wired to a program →
+  the interface on real programs. This is the longest chain in the
+  project and the one every later milestone hangs from.
+* *Independent of both*, usable to fill a slot at any time:
+  `sleigh-language` (M1's open item; M5 needs it), the emulator and the
+  assembler (M6; they need only M1 and M2), PE and Mach-O parsers, the
+  demanglers, the plugin tracks P0, P1 and P3, DWARF and PDB parsers
+  (format parsing needs only `bk-bin`).
+
+**Slots** (three agents; a fourth and fifth would go to the programs
+chain and to the independent work, which is where the width is):
+1. the decompiler's chain, never idle;
+2. the specification one step ahead of the chain (Fable 5.2), else a
+   decompiler side track;
+3. the programs chain, from now on.
+When a slot has nothing unblocked on its line it takes independent work
+or the follow-ups list.
+
+**Accuracy.** No implementation track starts before its oracle exists:
+D00 for the decompiler, `ref-headless` for the Java side. Every track is
+accepted against Ghidra's own results on the same input, with named
+exceptions only. Where no oracle can exist (the interface), the ported
+tests and screenshot tests stand in.
+
+**Code quality.** A track's every step ends with clippy clean and a
+green gate on its crate, so no debt is carried to the end of a track
+(D05 and D06 were stopped on 2026-11-15 with 97 clippy findings between
+them). After each wave one slot takes the follow-ups its tracks left
+before the next wave starts. Large tracks that define a data model
+others build on (D05, D07, the program model) get an independent review
+by a second agent before the merge, in addition to the coordinator's.
+
+**Honest scale.** By 2026-11-16, four and a half days in, `master` holds
+about 190,000 lines of Rust: M0, M1, M2 and the first five decompiler
+crates. The full port is perhaps eight to ten times that. At this
+rate, which usage limits rather than the plan set, that is months, not
+weeks.
+
 ## Working in waves
 
 Per ADR-015 each wave has one spec and one agent per track, with disjoint
-crate ownership. Wave 1 was the six M0 tracks (complete). Wave 2 is being
-specified by research agents (see `PROGRESS.md`, `## Now`): the SLEIGH
-runtime and compiler (M1, M2), the decompiler port plan and its first
-tracks (M3), PE and Mach-O parsers and the program model (M4), with a
-storage-engine study deciding ADR-003. The UI (M7) and the GNU
-disassembler (M10) were started early at the owner's request.
+crate ownership. Wave 1 was the six M0 tracks. The SLEIGH runtime and
+compiler (M1, M2) followed and are on `master` apart from one open item
+each. The decompiler (M3) is specified and ordered in
+`features/decomp-plan.md`; its wave 1 is complete and wave 2 is being
+finished. The UI (M7) and the GNU disassembler (M10) were started early
+at the owner's request. M4 has a paused PE specification and a paused
+storage-engine study; its plan and the other specifications are not
+written yet.

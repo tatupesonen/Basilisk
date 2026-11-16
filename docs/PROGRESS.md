@@ -740,6 +740,48 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (three agents at a time; in this order)
 
+**Order from 2026-11-16** (`PLAN.md`, "Order of work"; the numbered
+items below are the older queue and are referred to by number). Three
+lines, one slot each:
+
+*Line 1 — the decompiler's chain:* D05 `decomp-ir` and D06
+`decomp-symbols` (running) → the `bkstate` join-record addition D05
+asks for (small, oracle tooling) → **D07** `decomp-core` → D11 → D14 →
+D16b → D17.
+
+*Line 2 — specifications one step ahead, else a decompiler side track:*
+wave 3 specs D07, D08 (running, Fable 5.2) → D16c and D16b specs (from
+ADR-048 and the spike's report) → implement D08, D16c → wave 4 specs
+(D09, D10, D11, the rule families in the order R1, R4, R6, R3, R2, R7,
+R5, R8, R9) → D09 with the data-test runner (the first end-to-end
+decompilation of a Ghidra test file) → D10, the rules, D12, D13, D15.
+D18 (injection) and D19 (corpus; 32 rules apply in no corpus yet) are
+unblocked today and fill gaps.
+
+*Line 3 — programs (M4), starting as soon as the slot is free:*
+resume `store-spike` (ADR-003's engine; item 9) → **`ref-headless`**
+(new: Ghidra headless on the build host as the oracle for the Java
+side; needs JDK 21 and about 10 GB there) → the program-model plan and
+specification (Fable 5.2; reads the spike's result) → resume `spec-pe`,
+then `spec-macho` → `bk-store`, `bk-program`, `bk-datatypes`, the
+loaders.
+
+*Fill-ins when a line is blocked,* in this order: the follow-ups list
+(item 12) plus the `bk-ui` flaky test and the monitor type (item 7);
+`sleigh-language` (item 14; M5 needs it); compiled p-code templates
+(speed margin on x86-64); the site and brand corrections waiting on the
+owner (below); plugin tracks P0, P1, P3 (item 10); the emulator and the
+assembler (M6, need only M1 and M2).
+
+*Waiting on the owner:* whether the site's redesign of 2026-11-15 is
+brought back within the written design rules (it breaks five of them:
+`features/site.md` 5, `assets/brand/README.md`), and what happens to
+the brand now that the pupil is removed from the mark (PNG renders,
+favicon, the program's icons and the brand guide still have it). The
+owner answered the first with "I was talking about the software
+design" and the second with "Something else"; nothing was changed.
+
+
 1. **`cspec-host` (merged 21:16; the text below is the brief it had)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows

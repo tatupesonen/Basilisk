@@ -111,6 +111,11 @@ rules so merges are clean and the result is shippable.
   start them yourself unless your brief says so.
 - While developing, build and test only your crates
   (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
+- **Every commit of product code is clippy clean for its crate**
+  (`cargo clippy -p <crate> --all-targets -- -D warnings`), and every
+  step of a track ends with a green gate. Lint findings are fixed when
+  they appear, not collected for the end of the track: a track that is
+  stopped early must leave a branch that passes the gate.
 - Before your final commit run the full gate exactly as
   `scripts/gate.sh > gate.log 2>&1; echo $?` — never
   pipe it — and fix everything it reports. `gate.log` is git-ignored.
