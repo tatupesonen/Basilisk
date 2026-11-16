@@ -12,8 +12,8 @@
 //! `<volatile>` ranges set while the `.pspec` is read
 //! (architecture.cc:883–894, `parseProcessorConfig` 1189–1190), the default
 //! symbols' `volatile` attribute set or cleared afterwards, in
-//! `buildSymbols` (sleigh_arch.cc:265–318; the Ghidra-hosted variant,
-//! ghidra_arch.cc:375–425, applies the same property change and adds no
+//! `buildSymbols` (`sleigh_arch.cc:265–318`; the Ghidra-hosted variant,
+//! `ghidra_arch.cc:375–425`, applies the same property change and adds no
 //! symbol) — so the file order of the two elements never matters.
 //!
 //! The whole decompilation (the `DAT_mem_0031 = DAT_mem_0031` text) is
@@ -29,6 +29,7 @@
     reason = "test code"
 )]
 
+use std::fmt::Write as _;
 use std::sync::Arc;
 
 use bk_core::{Address, Space, SpaceId, SpaceManager};
@@ -55,10 +56,10 @@ fn pspec(
          \x20   <symbol name=\"PORTF\" address=\"mem:0x31\"",
     );
     if let Some(v) = symbol_volatile {
-        symbols.push_str(&format!(" volatile=\"{v}\""));
+        let _ = write!(symbols, " volatile=\"{v}\"");
     }
     if let Some(s) = symbol_size {
-        symbols.push_str(&format!(" size=\"{s}\""));
+        let _ = write!(symbols, " size=\"{s}\"");
     }
     symbols.push_str(
         " />\r\n\
