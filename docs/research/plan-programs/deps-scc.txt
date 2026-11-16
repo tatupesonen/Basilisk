@@ -1,0 +1,102 @@
+# Cycles (strongly connected components with more than one group)
+cycle of 2 groups, 102778 lines: FileSystem:other, Project:other
+cycle of 41 groups, 320985 lines: SoftwareModeling:other, assembler, model.address, model.block, model.data, model.dtarchive, model.gclass, model.lang, model.listing, model.mem, model.pcode, model.reloc, model.sourcemap, model.symbol, model.util, pcode.float, pdb.bookmark, pdb.code, pdb.data, pdb.dtarchive, pdb.external, pdb.function, pdb.map, pdb.mem, pdb.module, pdb.oldfunction, pdb.properties, pdb.references, pdb.register, pdb.reloc, pdb.root, pdb.sourcemap, pdb.symbol, pdb.util, sleigh.compiler, sleigh.java, sm.app.util, sm.disassemble, sm.languages, sm.program.util, sm.util
+cycle of 50 groups, 688511 lines: Base:other, analysis.core, analysis.services, base.app.util, base.program.db, base.program.model, base.program.util, base.test, base.util.state, bin, bytesearch, cmd, cmd.disassemble, cmd.formats, cmd.function, cparser, datatype.util, demangler, exporter, flatapi, fmt.aout, fmt.coff, fmt.dwarf, fmt.elf, fmt.elf.ext, fmt.elf.reloc, fmt.golang, fmt.macho, fmt.macos, fmt.mz, fmt.ne, fmt.omf, fmt.pdbinfo, fmt.pe, fmt.pef, fmt.som, fmt.ubi, gfilesystem, headless, importer, importer.ui, memsearch, merge, opinion, script, ui.main, ui.plugins, ui.table, ui.viewer, xml
+
+# Condensation in dependency order (a component depends only on earlier ones)
+   12940  Utility:other
+   76199  fw.Generic
+   26179  Gui:other
+   11267  Help:other
+  157152  Docking:other
+   31606  fw.DB
+  102778  FileSystem:other + Project:other
+   28644  Graph:other
+     348  model.scalar
+  320985  SoftwareModeling:other + assembler + model.address + model.block + model.data + model.dtarchive + model.gclass + model.lang + model.listing + model.mem + model.pcode + model.reloc + model.sourcemap + model.symbol + model.util + pcode.float + pdb.bookmark + pdb.code + pdb.data + pdb.dtarchive + pdb.external + pdb.function + pdb.map + pdb.mem + pdb.module + pdb.oldfunction + pdb.properties + pdb.references + pdb.register + pdb.reloc + pdb.root + pdb.sourcemap + pdb.symbol + pdb.util + sleigh.compiler + sleigh.java + sm.app.util + sm.disassemble + sm.languages + sm.program.util + sm.util
+   71882  Emulation:other
+     576  sm.graphservice
+    1603  model.correlate
+  688511  Base:other + analysis.core + analysis.services + base.app.util + base.program.db + base.program.model + base.program.util + base.test + base.util.state + bin + bytesearch + cmd + cmd.disassemble + cmd.formats + cmd.function + cparser + datatype.util + demangler + exporter + flatapi + fmt.aout + fmt.coff + fmt.dwarf + fmt.elf + fmt.elf.ext + fmt.elf.reloc + fmt.golang + fmt.macho + fmt.macos + fmt.mz + fmt.ne + fmt.omf + fmt.pdbinfo + fmt.pe + fmt.pef + fmt.som + fmt.ubi + gfilesystem + headless + importer + importer.ui + memsearch + merge + opinion + script + ui.main + ui.plugins + ui.table + ui.viewer + xml
+     613  68000:other
+    3447  AARCH64:other
+    3139  ARM:other
+   20289  ProposedUtils:other
+    1289  AnnotationValidator:other
+    1083  Atmel:other
+   34798  Decompiler:other
+   20238  FunctionGraph:other
+    8119  CodeCompare:other
+   45782  BSim:other
+    2285  BSimFeatureVisualizer:other
+   12230  BytePatterns:other
+   10165  ByteViewer:other
+      48  DATA:other
+   16436  MicrosoftDmang:other
+    2308  MicrosoftDemangler:other
+   91637  PDB:other
+    4272  fsbrowser.ui
+   79066  FileFormats:other
+     573  Dalvik:other
+    5117  DataGraph:other
+     255  DebugUtils:other
+   69835  Framework-TraceModeling:other
+   13071  Debugger-api:other
+    2879  Debugger-isf:other
+   13673  Sarif:other
+   15586  DecompilerDependent:other
+   85801  Debugger:other
+    8828  Pty:other
+   11281  Debugger-rmi-trace:other
+    1432  Debugger-dap:other
+    1139  Debugger-importers:other
+    7554  Debugger-jpda:other
+    2010  FunctionGraphDecompilerExtension:other
+    9633  FunctionID:other
+    1324  GhidraGo:other
+   10416  GhidraServer:other
+    3869  GnuDemangler:other
+    4546  GraphFunctionCalls:other
+    5940  GraphServices:other
+     328  HCS12:other
+    3063  Hexagon:other
+   11619  JVM:other
+    1936  Jython:other
+   10293  Lisa:other
+     732  Loongarch:other
+    4623  MIPS:other
+    4833  MachineLearning:other
+    9977  MicrosoftCodeAnalyzer:other
+     463  NDS32:other
+    6925  Objective-C:other
+    3810  PIC:other
+    3448  PowerPC:other
+    6021  ProgramDiff:other
+    1594  ProgramGraph:other
+    1928  PyGhidra:other
+     960  RISCV:other
+    1784  Recognizers:other
+    2966  Rust:other
+    1055  SampleTablePlugin:other
+    1197  SleighDevTools:other
+     252  SourceCodeLookup:other
+     912  Sparc:other
+     675  SuperH4:other
+   10905  Swift:other
+    9194  SystemEmulation:other
+    5625  SymbolicSummaryZ3:other
+     509  TI_MSP430:other
+    3083  TaintAnalysis:other
+      57  Toy:other
+   55169  VersionTracking:other
+    2319  VersionTrackingBSim:other
+    1870  WildcardAssembler:other
+     656  Xtensa:other
+     489  analysis.fmt
+     754  eBPF:other
+    6751  eh.gcc
+      36  fmt.lx
+    1166  fmt.xcoff
+    2298  sample:other
+     950  tricore:other
+    2254  x86:other

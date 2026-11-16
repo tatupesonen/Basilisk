@@ -1,0 +1,26 @@
+195	141	ghidra.util.exception.VersionException
+96	44	ghidra.framework.data.OpenMode
+80	157	ghidra.util.Lock
+8	24	ghidra.framework.model.ChangeSet
+7	101	ghidra.framework.model.DomainObjectChangeRecord
+6	631	ghidra.framework.model.DomainObject
+5	647	ghidra.framework.data.DomainObjectAdapterDB
+5	732	ghidra.framework.model.DomainFile
+5	42	ghidra.framework.model.RuntimeIOException
+4	77	ghidra.framework.data.DomainObjectMergeManager
+4	37	ghidra.framework.model.DomainObjectEvent
+3	39	ghidra.framework.model.EventType
+2	62	ghidra.framework.data.DomainObjectDBChangeSet
+2	73	ghidra.framework.data.DomainObjectDbModule
+2	568	ghidra.framework.data.LinkHandler
+2	382	ghidra.framework.model.DomainFolder
+2	27	ghidra.framework.model.DomainObjectEventIdGenerator
+2	54	ghidra.util.exception.RollbackException
+1	95	ghidra.framework.data.DBContentHandler
+1	144	ghidra.framework.data.DBWithUserDataContentHandler
+1	594	ghidra.framework.data.DomainFileProxy
+1	21	ghidra.framework.model.AbortedTransactionListener
+1	28	ghidra.framework.model.DomainObjectClosedListener
+1	38	ghidra.framework.model.DomainObjectListener
+1	26	ghidra.framework.model.UserData
+# 25 classes of 408, 4784 lines of 80984
