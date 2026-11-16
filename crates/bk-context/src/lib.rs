@@ -1,17 +1,23 @@
-//! The decoding context: words of context bits per address (inventory
-//! section 4).
+//! The context store: words of context bits per address and tracked
+//! register values (`docs/inventory/01-sleigh.md` section 4; ADR-043).
 //!
-//! [`ContextDb`] is a port of Ghidra's `ContextInternal`. The decoder reads
-//! context through [`ContextSource`] and writes committed changes through
-//! [`ContextSink`], so the program model's own store can stand in for it.
+//! [`ContextDb`] is a port of Ghidra's `ContextInternal`
+//! (`CPP/globalcontext.cc`). The SLEIGH decoder (`bk-sleigh`, which
+//! re-exports this crate as `bk_sleigh::context`) reads context through
+//! [`ContextSource`] and writes committed changes through [`ContextSink`],
+//! so the program model's own store can stand in for it; the decompiler's
+//! symbol crate adds variable names and the XML forms on top of it.
+//! [`PartMap`] is the partition map underneath (Ghidra `partmap`,
+//! `CPP/partmap.hh`).
 
 mod db;
-mod partmap;
+pub mod partmap;
 mod tracked;
 
 use bk_core::Address;
 
 pub use db::ContextDb;
+pub use partmap::{Bounds, PartMap};
 pub use tracked::TrackedValue;
 
 /// The offsets around an address over which its context is constant.

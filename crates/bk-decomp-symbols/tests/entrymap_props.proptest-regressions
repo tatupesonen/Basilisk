@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc d37fb755df7c50752fd1cd8f323426f40aeb6edb96fb3a3ad62aada2f424dfa9 # shrinks to ops = [Insert(0, 0, (0, 0)), Insert(5, 5, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(15, 15, (1, 1)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(16, 16, (0, 0)), Insert(9, 9, (0, 0)), Insert(0, 0, (0, 0)), Insert(11, 14, (0, 0)), Erase(239565866425470), Insert(0, 0, (0, 0)), Insert(10, 10, (0, 0)), Insert(10, 10, (0, 0)), Insert(4, 15, (0, 0)), Insert(11, 11, (0, 0)), Insert(5, 5, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Erase(11467373680420677211)]
+cc 2e802a5aea53982d27a09118879606f4e911a862431a78724e43a9b30a572144 # shrinks to ops = [Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Erase(0), Insert(0, 0, (0, 0)), Erase(0), Erase(0), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(26, 33, (0, 0)), Erase(462554449755588757), Insert(0, 0, (0, 0)), Erase(6253580357865957283), Insert(31, 32, (0, 0)), Insert(33, 33, (1, 0)), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Erase(12084509669092360880), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Erase(756378967596917335), Erase(1442783028104395694), Insert(0, 0, (0, 0)), Insert(0, 0, (0, 0)), Insert(22, 26, (0, 0)), Erase(7411057458861298732), Insert(0, 0, (0, 0))]

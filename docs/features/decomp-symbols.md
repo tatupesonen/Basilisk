@@ -1584,9 +1584,76 @@ From plan 6 (D06), made concrete:
 
 (The implementing agent appends further differences here.)
 
+Appended by the implementing track (D06):
+
+- **Checks before changes** (ADR-045, 4.21 row 1): `addMap`, `addMapSym`
+  and `retypeSymbol`'s re-add check that the entry ends inside its space
+  (and resolve join pieces) before touching the symbol or the scope; a
+  refused entry leaves the scope exactly as it was (`tests/entries.rs`).
+- **`rangemap` defects** (confirmed against Ghidra's own `rangemap.hh`
+  with `tests/oracle/rangemap_defects.cc`): `insert` gives a record that
+  ends at an existing piece end its last fragment twice — reproduced
+  (harmless); `erase` re-sews only with the first following fragment, so
+  a record starting at `b + 1` that is not first in its piece is
+  stretched left — reproduced (it changes `findContainer` answers);
+  erasing such a stretched record leaves fragments pointing at the freed
+  record (use after free in Ghidra) — Basilisk removes them.
+- **Empty category slots** are skipped by `clearCategory` /
+  `clearUnlockedCategory` (Ghidra dereferences them, row 5).
+- **Comments**: the comment after uniq 65535 at one address is an error
+  (`SymbolError::CommentKey`); Ghidra's set refuses it silently and leaks
+  it (row 17).
+- **Provenance** of pspec default symbols is `Imported` (not `Model`,
+  which is the AI provenance of ADR-025).
+- **Restoring a scope** (`restore::ScopeImage`, `Database::restore_scope`
+  / `scope_image`, `EntryMap::from_parts`) has no Ghidra counterpart: it
+  rebuilds a function scope with every insertion-history order from a
+  `bkstate 2` dump (6.4), for D11 and the oracle tests.
+- **Decoding keeps Ghidra's lossy points**, documented by the property
+  tests rather than changed: internal symbol ids (top byte `0x40`) are
+  dropped and given anew (database.cc:500–503); a read-only or volatile
+  symbol sets the property over its storage, which address-tied symbols
+  decoded after it pick up (database.cc:2952–2960), so a `<db>` round trip
+  is stable from the second round; XML character data that is only white
+  space between markup or entity references is dropped by the reader
+  (xml.y:451–466, also in `bk-marshal`); an XML image gains one more pad
+  chunk per round trip (`LoadImageXml::pad`).
+
 ## 9. Status
 
-Not started.
+Implemented by track D06 (`decomp-symbols`); `docs/agents/decomp-symbols.md`
+has the commit-by-commit account.
+
+- **Built**: `crates/bk-context` (step 0, ADR-043); `crates/bk-decomp-symbols`
+  — the entry map (4.2), database, scopes, symbols, entries, queries,
+  names, mutations, categories (4.1, 4.4–4.10), printing and codecs
+  (4.11), comments, strings, constant pool, load images, context names,
+  overrides (4.12–4.17), the architecture steps (4.18), the host trait
+  with its cache layer and `ScriptedHost` (4.19, 5.4), spacebase scopes for
+  `bk-decomp-types` (5.5), per-function overlays (5.7), scope images for
+  state dumps (6.4); `TypeFactory::type_spacebase` in `bk-decomp-types`.
+- **Tests**: oracle replays equal row for row — scope 205,104, context
+  85,713, image 8,435 (G, 93 data tests; the replay prints `image table:
+  93 data tests replayed, 8435 rows equal` and fails on another count).
+  6.3 (L): `print map` equal to the reference console for 93 of 93 data
+  tests (`image_oracle.rs`, `print_map_equals_the_reference_console`).
+  6.4: every version-2 `bkstate` sample rebuilt and written back
+  byte-equal (S); over a full capture (L, `state_dump.rs`,
+  `all_captured_dumps_rebuild_their_scope_exactly`) 3,642 of 3,642 dumps
+  rebuilt equal. 6.5: the property part of
+  `DecompilerPspecVolatilityTest` (12 assertions; the checklist line stays
+  open for D17). 6.1: unit tables for names, entries, categories,
+  `isValueClose`, every query row of 4.6 (`queries.rs`), codecs
+  (constructor/destructor constant-pool records included), strings,
+  comments, overrides, the host cache. 6.6: properties (entry map against
+  a model of `rangemap.hh`, codec round trips, provenance), all passing at
+  1,000,000 cases on the build host; seven fuzz targets, 300 s each with
+  no finding, and a regression replay test. 5.8: benchmarks in
+  `docs/PERF.md`; the 93 images load in 0.36 of the reference console's
+  time.
+- **Open**: `<protooverride>` round trips need `bk-cspec`'s prototype
+  codec (D07); the `DecompilerPspecVolatilityTest` checklist line waits for
+  the whole decompilation (D17).
 
 ## 10. Open items
 

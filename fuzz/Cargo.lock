@@ -30,6 +30,7 @@ dependencies = [
  "bk-cspec",
  "bk-decomp-cfg",
  "bk-decomp-range",
+ "bk-decomp-symbols",
  "bk-decomp-types",
  "bk-elf",
  "bk-lang",
@@ -79,6 +80,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bk-context"
+version = "0.0.1"
+dependencies = [
+ "bk-core",
+]
+
+[[package]]
 name = "bk-core"
 version = "0.0.1"
 dependencies = [
@@ -114,6 +122,20 @@ version = "0.0.1"
 dependencies = [
  "bk-core",
  "bk-pcode",
+]
+
+[[package]]
+name = "bk-decomp-symbols"
+version = "0.0.1"
+dependencies = [
+ "bitflags",
+ "bk-context",
+ "bk-core",
+ "bk-cspec",
+ "bk-decomp-types",
+ "bk-marshal",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -181,6 +203,7 @@ dependencies = [
 name = "bk-sleigh"
 version = "0.0.1"
 dependencies = [
+ "bk-context",
  "bk-core",
  "bk-lang",
  "bk-pcode",
