@@ -105,3 +105,26 @@ fn structural_bits_are_refused() {
     );
     fix.ok();
 }
+
+#[test]
+fn refusals_say_what_happened() {
+    use crate::error::IrError;
+    let mut fix = fx(1);
+    let vn = fix.regvn(0, 4);
+    assert!(matches!(
+        fix.ssa
+            .varnode_set_flags(vn, vflags::WRITTEN | vflags::MARK),
+        Err(IrError::StructuralFlags {
+            bits: vflags::WRITTEN,
+            ..
+        })
+    ));
+    assert!(matches!(
+        fix.ssa.def_class_at(crate::VnClass::Written, fix.reg(0)),
+        Err(IrError::WrittenByAddress)
+    ));
+    assert!(matches!(
+        fix.ssa.new_op(0x1_0000, fix.ram(0)),
+        Err(IrError::TooManyInputs(0x1_0000))
+    ));
+}

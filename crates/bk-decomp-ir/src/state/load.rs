@@ -404,12 +404,20 @@ impl Loader<'_> {
                 }
             }
         }
+        // Every op that names a parent must be in that block's list. A
+        // listed op was checked to name the block it is listed in, so it
+        // suffices that it is in some block list: linked to a neighbour, or
+        // the first op of its parent (O(1) per op).
         for (i, d) in self.ssa.ops.iter().enumerate() {
-            if d.parent != NONE {
-                let n = NodeId::new(d.parent);
-                if !self.ssa.block_ops(n).contains(&OpId::new(i as u32)) {
-                    return Err(inconsistent("op's parent block does not list it", i));
-                }
+            if d.parent == NONE {
+                continue;
+            }
+            let op = OpId::new(i as u32);
+            let linked = self.ssa.links.get(i).is_some_and(|l| {
+                l.prev(Thread::Block).is_some() || l.next(Thread::Block).is_some()
+            });
+            if !linked && self.ssa.first_op(NodeId::new(d.parent)) != Some(op) {
+                return Err(inconsistent("op's parent block does not list it", i));
             }
         }
         Ok(())

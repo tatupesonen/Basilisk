@@ -21,7 +21,10 @@ pub const MAX_OPS: usize = 0x7fff_ffff;
 
 impl Ssa {
     fn alloc_op(&mut self, inputs: usize, pc: Address, time: u32, tree: Tree) -> IrResult<OpId> {
-        if self.ops.len() >= MAX_OPS || inputs > 0xffff {
+        if inputs > 0xffff {
+            return Err(IrError::TooManyInputs(inputs));
+        }
+        if self.ops.len() >= MAX_OPS {
             return Err(IrError::Limit {
                 what: "op",
                 limit: MAX_OPS as u64,

@@ -163,6 +163,24 @@ pub enum IrError {
     /// The function has no basic block 0 where one is needed.
     #[error("{0}: the function has no basic blocks")]
     NoBlocks(&'static str),
+    /// A flag bit that only the mutation methods may change (`input`,
+    /// `written`, `insert`, `constant`, `annotation`).
+    #[error("{method}: bits {bits:#x} of varnode {vn} change only through the mutation methods")]
+    StructuralFlags {
+        /// The method.
+        method: &'static str,
+        /// The varnode.
+        vn: VarnodeId,
+        /// The refused bits.
+        bits: u32,
+    },
+    /// Ghidra `beginDef`/`endDef(written, addr)`: written varnodes are not
+    /// contiguous by address in def order.
+    #[error("Cannot get contiguous written AND addressed")]
+    WrittenByAddress,
+    /// An op with more input slots than the IR stores (65,535).
+    #[error("an op may have at most 65535 inputs, not {0}")]
+    TooManyInputs(usize),
     /// A count or size beyond the IR's limits.
     #[error("{what} limit of {limit} reached")]
     Limit {

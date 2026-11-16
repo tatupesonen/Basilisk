@@ -127,3 +127,77 @@ fn an_iop_offset_that_names_no_op_is_refused() {
     let err = load(&dump, spaces).unwrap_err();
     assert!(err.to_string().contains("offset kind"), "{err}");
 }
+
+#[test]
+fn a_dump_with_one_large_block_loads_in_linear_time() {
+    // Review finding: checking each op's parent by scanning the parent's op
+    // list made loading quadratic in the block size.
+    use bk_decomp_ir::TableEnv;
+    use bk_pcode::OpCode;
+    const N: usize = 80_000;
+    let text = read_text(&sample_dir().join("switchind.end.state.gz")).unwrap();
+    let dump = StateDump::parse(&text).unwrap();
+    let spaces = Arc::new(spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap());
+    let mut ssa = load(&dump, Arc::clone(&spaces)).unwrap();
+    let mut env = TableEnv::default();
+    let b = ssa.blocks().next().unwrap();
+    let pc = ssa.block_start(b);
+    for i in 0..N {
+        let op = ssa.new_op(1, pc).unwrap();
+        ssa.op_set_opcode(op, OpCode::Copy).unwrap();
+        let c = ssa.new_constant(&mut env, 4, i as u64).unwrap();
+        ssa.op_set_input(&mut env, op, c, 0).unwrap();
+        ssa.op_insert_begin(op, b).unwrap();
+    }
+    let names = DumpNames::from_dump(&dump, &spaces);
+    let big = write(&ssa, &dump, &names, &CanonicalCalls::Identity).unwrap();
+    let parsed = StateDump::parse(&big).unwrap();
+    let t = std::time::Instant::now();
+    let again = load(&parsed, spaces).unwrap();
+    let took = t.elapsed();
+    assert!(again.block_len(b) > N);
+    assert!(
+        took < std::time::Duration::from_secs(10),
+        "load took {took:?}"
+    );
+}
+
+#[test]
+fn dumps_with_flags_ghidra_cannot_produce_are_refused() {
+    // Review finding: a constant flag outside the constant space, a
+    // constant that is input, an iop varnode without annotation loaded.
+    let text = read_text(&sample_dir().join("switchind.end.state.gz")).unwrap();
+    let load_text = |t: &str| {
+        let dump = StateDump::parse(t).unwrap();
+        let spaces = Arc::new(spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap());
+        load(&dump, spaces).map(drop)
+    };
+    load_text(&text).unwrap();
+    // The iop varnode v35f: flags 0x1000004 (annotation | coverdirty).
+    let line = text
+        .lines()
+        .find(|l| l.starts_with("V\tv35f\tiop\t"))
+        .unwrap();
+    for bad_flags in ["0x1000000", "0x1000006"] {
+        let edited = text.replacen(
+            line,
+            &line.replacen("\t0x1000004\t", &format!("\t{bad_flags}\t"), 1),
+            1,
+        );
+        assert_ne!(edited, text);
+        assert!(load_text(&edited).is_err(), "{bad_flags}");
+    }
+    // A constant made input: flags 0x2 → 0xa.
+    let cline = text
+        .lines()
+        .find(|l| l.starts_with('V') && l.split('\t').nth(2) == Some("const"))
+        .unwrap();
+    let f = cline.split('\t').nth(5).unwrap();
+    let v = u32::from_str_radix(f.trim_start_matches("0x"), 16).unwrap() | 8;
+    let edited = text.replacen(
+        cline,
+        &cline.replacen(&format!("\t{f}\t"), &format!("\t{v:#x}\t"), 1),
+        1,
+    );
+    assert!(load_text(&edited).is_err());
+}

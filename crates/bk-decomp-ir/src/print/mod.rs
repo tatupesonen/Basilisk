@@ -2,6 +2,7 @@
 //! the op texts of the state dump, and `print tree varnode`
 //! (`Funcdata::printVarnodeTree`, `Varnode::printInfo`).
 
+mod op;
 mod raw;
 
 pub use raw::{CallName, NoNames, RawNames, RawOut};

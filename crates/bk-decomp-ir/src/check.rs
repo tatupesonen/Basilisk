@@ -19,7 +19,9 @@ impl Ssa {
     /// consistent:
     ///
     /// * the loc and def orders hold exactly the live varnodes, under the
-    ///   keys their fields give; an `iop` offset names an op;
+    ///   keys their fields give; an `iop` offset names an op; `constant`
+    ///   is set exactly in the constant space and never with input or
+    ///   written; `iop`/`fspec` varnodes are annotations;
     /// * a varnode is `written` exactly when it has a defining op, and that
     ///   op has it as output (and conversely);
     /// * each varnode's reader list is, as a multiset, the slots of live
@@ -92,6 +94,27 @@ impl Ssa {
                     "{vn}: iop offset {:#x} names no op",
                     d.loc.offset()
                 ));
+            }
+            // Flags against space, as `Varnode::Varnode` (`varnode.cc:610`–
+            // `638`) sets them and nothing clears them: `constant` exactly in
+            // the constant space, never input or written (`setInput`,
+            // `varnode.cc:1364`; `setDef`, 427); `annotation` on every
+            // `iop`/`fspec` varnode.
+            let constant = d.flags & vflags::CONSTANT != 0;
+            if constant != d.loc.is_constant() {
+                bad.push(format!(
+                    "{vn}: constant flag {constant} in space {:?}",
+                    d.loc.space()
+                ));
+            }
+            if constant && d.flags & (vflags::INPUT | vflags::WRITTEN) != 0 {
+                bad.push(format!("{vn}: a constant that is input or written"));
+            }
+            if (self.is_space(d.loc, crate::ssa::SpecialSpace::Iop)
+                || self.is_space(d.loc, crate::ssa::SpecialSpace::Fspec))
+                && d.flags & vflags::ANNOTATION == 0
+            {
+                bad.push(format!("{vn}: iop/fspec varnode without annotation"));
             }
             if d.flags & vflags::INPUT != 0 && written {
                 bad.push(format!("{vn}: both input and written"));

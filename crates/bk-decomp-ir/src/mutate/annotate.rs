@@ -112,9 +112,10 @@ impl Ssa {
     /// refused.
     pub fn varnode_set_flags(&mut self, vn: VarnodeId, bits: u32) -> IrResult<()> {
         if bits & STRUCTURAL_VFLAGS != 0 {
-            return Err(IrError::NotWritten {
-                method: "setFlags (structural bit)",
+            return Err(IrError::StructuralFlags {
+                method: "setFlags",
                 vn,
+                bits: bits & STRUCTURAL_VFLAGS,
             });
         }
         self.vnd_mut(vn)?.flags |= bits;
@@ -124,9 +125,10 @@ impl Ssa {
     /// `Varnode::clearFlags`; structural bits are refused.
     pub fn varnode_clear_flags(&mut self, vn: VarnodeId, bits: u32) -> IrResult<()> {
         if bits & STRUCTURAL_VFLAGS != 0 {
-            return Err(IrError::NotWritten {
-                method: "clearFlags (structural bit)",
+            return Err(IrError::StructuralFlags {
+                method: "clearFlags",
                 vn,
+                bits: bits & STRUCTURAL_VFLAGS,
             });
         }
         self.vnd_mut(vn)?.flags &= !bits;

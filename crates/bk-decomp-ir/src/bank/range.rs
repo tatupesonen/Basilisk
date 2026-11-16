@@ -199,11 +199,7 @@ impl Ssa {
         addr: Address,
     ) -> IrResult<(Bound<DefKey>, Bound<DefKey>)> {
         match class {
-            VnClass::Written => Err(IrError::WrongOp {
-                method: "beginDef",
-                op: crate::ids::OpId(u32::MAX),
-                what: "Cannot get contiguous written AND addressed",
-            }),
+            VnClass::Written => Err(IrError::WrittenByAddress),
             VnClass::Input => Ok((
                 lower(dk(INPUT_CLASS, SEQ_MIN, addr, 0)),
                 before(dk(INPUT_CLASS, SEQ_MIN, addr, 1_000_000)),
