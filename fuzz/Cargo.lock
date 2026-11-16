@@ -30,6 +30,7 @@ dependencies = [
  "bk-cspec",
  "bk-decomp-cfg",
  "bk-decomp-range",
+ "bk-decomp-symbols",
  "bk-decomp-types",
  "bk-elf",
  "bk-lang",
@@ -121,6 +122,20 @@ version = "0.0.1"
 dependencies = [
  "bk-core",
  "bk-pcode",
+]
+
+[[package]]
+name = "bk-decomp-symbols"
+version = "0.0.1"
+dependencies = [
+ "bitflags",
+ "bk-context",
+ "bk-core",
+ "bk-cspec",
+ "bk-decomp-types",
+ "bk-marshal",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
