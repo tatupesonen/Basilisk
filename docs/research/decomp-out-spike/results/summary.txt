@@ -1,5 +1,5 @@
-orig	functions	405	match	405	errors	0	emit_calls	77203	emit_calls_match	77203	push_op	8168	push_atom	11341	push_vn	8419	structural	25855	state	12553	mods_differ	0
-xml	functions	807	match	807	errors	0	emit_calls	154300	emit_calls_match	154300	push_op	16328	push_atom	22663	push_vn	16838	structural	51691	state	25080	mods_differ	0
-flat	functions	807	match	807	errors	0	emit_calls	154156	emit_calls_match	154156	push_op	16255	push_atom	22925	push_vn	17224	structural	44613	state	20101	mods_differ	0
-java	functions	807	match	807	errors	0	emit_calls	153770	emit_calls_match	153770	push_op	15893	push_atom	22989	push_vn	16841	structural	51687	state	18546	mods_differ	0
-options	functions	405	match	405	errors	0	emit_calls	78576	emit_calls_match	78576	push_op	6722	push_atom	10099	push_vn	8281	structural	27255	state	10843	mods_differ	0
+orig	functions	405	match	405	errors	0	emit_calls	77262	emit_calls_match	77262	push_op	8178	push_atom	11351	push_vn	8419	structural	25859	state	12565	mods_differ	0
+xml	functions	807	match	807	errors	0	emit_calls	154359	emit_calls_match	154359	push_op	16338	push_atom	22673	push_vn	16838	structural	51695	state	25092	mods_differ	0
+flat	functions	807	match	807	errors	0	emit_calls	154215	emit_calls_match	154215	push_op	16265	push_atom	22935	push_vn	17224	structural	44617	state	20113	mods_differ	0
+java	functions	807	match	807	errors	0	emit_calls	153829	emit_calls_match	153829	push_op	15903	push_atom	22999	push_vn	16841	structural	51691	state	18558	mods_differ	0
+options	functions	405	match	405	errors	0	emit_calls	78635	emit_calls_match	78635	push_op	6732	push_atom	10109	push_vn	8281	structural	27259	state	10855	mods_differ	0
