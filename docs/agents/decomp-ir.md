@@ -118,7 +118,9 @@ exception list.
 - `scripts/remote.sh arm64 -- -p bk-decomp-ir`: 66 passed, 0 failed, 4 ignored.
 - Windows cross-check: `cargo clippy -p bk-decomp-ir --all-targets
   --target x86_64-pc-windows-msvc` clean on the Mac.
-- Gates: see the final commit's report (both remote runs).
+- `scripts/remote.sh gate`: `tests: 2489 passed, 0 failed`, `remote: gate exit 0`.
+- `scripts/remote.sh gate --no-ref`: `tests: 2489 passed, 0 failed`, `remote: gate exit 0`.
+- `scripts/check-dep-age.py master`: 0 new registry packages; 0 younger than 14 days.
 
 ### (f) Open questions, ADRs, Ghidra defects
 
