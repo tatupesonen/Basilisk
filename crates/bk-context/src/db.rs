@@ -265,7 +265,9 @@ impl ContextDb {
 
     /// The tracked split points and their sets, in order.
     pub fn tracked_points(&self) -> impl Iterator<Item = (Address, &[TrackedValue])> {
-        self.tracked.iter().map(|(addr, set)| (*addr, set.as_slice()))
+        self.tracked
+            .iter()
+            .map(|(addr, set)| (*addr, set.as_slice()))
     }
 
     /// The tracked set before the first split point.
@@ -444,7 +446,10 @@ mod tests {
         };
         db.set_tracked_at(at(0x10), vec![reg]);
         db.set_tracked_at(at(0x10), vec![reg, reg]);
-        let points: Vec<(u64, usize)> = db.tracked_points().map(|(a, s)| (a.offset(), s.len())).collect();
+        let points: Vec<(u64, usize)> = db
+            .tracked_points()
+            .map(|(a, s)| (a.offset(), s.len()))
+            .collect();
         assert_eq!(points, [(0x10, 2)]);
         assert_eq!(db.tracked_default().len(), 0);
     }
