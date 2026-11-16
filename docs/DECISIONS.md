@@ -1572,6 +1572,14 @@ to run, GHIDRA-BUGS 43).
   have no caller or are never set in Ghidra; `nofallthru` in flat mode
   (dead code).
 
+**The prototype's removal point.** The Python prototype under
+`docs/research/decomp-out-spike/prototype/` is evidence, not product. It
+stays until D16c (`bk-decomp-print`) is merged and accepted on the logged
+trees, because until then it is the most exact statement of the node
+kinds; then it is deleted from `master` and this ADR is given the commit
+where it last existed. The instrumentation under
+`tools/reference/patches-instr/` stays.
+
 **Consequences.** `decomp-plan.md` 8.1's fall-back ("if the spike's answer
 is no") is not needed. The specifications of D16b and D16c are written
 from the spike's report and Ghidra's printer source. Ghidra's flat mode

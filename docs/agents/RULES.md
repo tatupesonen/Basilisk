@@ -111,6 +111,15 @@ rules so merges are clean and the result is shippable.
   start them yourself unless your brief says so.
 - While developing, build and test only your crates
   (`cargo test -p <crate>`, `cargo clippy -p <crate> --all-targets`).
+- **Throw-away prototypes** (owner, 2026-11-16) are committed only as
+  evidence: under `docs/research/<track>/`, outside the Cargo workspace,
+  with no dependency added, and with a README that says they are
+  throw-away and how to rerun them. The report or ADR that relies on a
+  prototype names its removal point (normally the merge of the track
+  that replaces it); at that point the coordinator deletes it from
+  `master` and the ADR cites the commit where it last existed. Tooling
+  that later tracks are tested against (oracle programs, instrumentation
+  patches) is not throw-away and lives under `tools/`.
 - **Every commit of product code is clippy clean for its crate**
   (`cargo clippy -p <crate> --all-targets -- -D warnings`), and every
   step of a track ends with a green gate. Lint findings are fixed when
