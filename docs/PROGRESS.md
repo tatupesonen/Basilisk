@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 03:43) — STOPPED, machine shut down; see "Running"
+## Now — RESUME HERE (2026-11-16 19:33) — three agents running; see "Running"
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -105,6 +105,35 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
+
+**RESUMED 2026-11-16 19:25 (owner: "Continue with two agents", then
+"Or rather, with 3 agents"). The cap is three.** Checked first: CI run
+43663964511 (the rename) ended green on all 8 jobs; `master` `b3c921e`
+is green; the nightly of 2026-11-16 passed (gate 2,423 tests, wine,
+oracle, differential). The build host now reports 15 GB of memory (it
+had 32): agents are told not to run several heavy jobs at once.
+**Three fresh agents continue the three unfinished tracks** (started
+19:32; each was pointed at "Status and how to continue" in its track
+report):
+
+| Branch | Agent id | Task |
+|---|---|---|
+| `decomp-symbols` (D06) | `adc10fb4fccb83e94` | clippy clean and a green gate first; the `@scope` dump test on `bkstate` 2; the remaining tests, fuzz targets, benchmarks, spec appends; testbed, both gates, report |
+| `decomp-ir` (D05) | `aebffc71c4b0d4ebb` | clippy clean, re-run the corpus, green gate; the 76 dumps with join-space varnodes: it specifies the join records it needs from the state dump (a `bkstate` addition the coordinator schedules; it must not touch the console extension or the shared references) and pins those 76 by name meanwhile; the remaining tests; testbed, both gates, report |
+| `decomp-out-spike` (D16a) | `abc4c6c4bf243d8c0` | rerun to confirm the numbers, the Mac run, `report.md`, the README section, a log sample, gate; **then a second small task on a new branch `range-proptest`** (below) |
+
+**A property test on `master` fails rarely**: `bk-decomp-range`
+`intersect_is_exact_when_it_succeeds` (CI run 43661252298, on a
+site-only commit): the generator intersects ranges of different sizes
+(the full 1-byte range with a 2-byte range). Given to the spike agent
+as its second task (branch `range-proptest`, tests only).
+
+When one reports → review, record ADRs (next ADR-048) and Ghidra
+defects (next entry 40; eight are waiting, listed below), merge
+through `integration`, `scripts/remote.sh publish`. When `decomp-ir`
+names its join records → schedule the `bkstate` addition (the D00
+tooling; its own small track, after `decomp-symbols` has run its dump
+test or coordinated with it). Then the queue: D07 needs a spec.
 
 **MACHINE SHUT DOWN at the owner's request (2026-11-15, 03:43), after
 everything was pushed.** `master` is `a7b7540` plus this note, the same
