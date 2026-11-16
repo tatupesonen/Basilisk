@@ -173,7 +173,7 @@ fn block_facts_equal_the_consoles_at_blockstructure() {
         }
     }
     eprintln!(
-        "block facts: {compared} stops, {blocks} blocks compared, {} differ",
+        "block facts: {compared} stops, {blocks} blocks compared, {} differ; {unreadable} dumps with empty input slots unreadable",
         bad.len()
     );
     assert!(compared > 0, "no stops captured in {}", out.display());
