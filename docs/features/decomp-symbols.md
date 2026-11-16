@@ -1633,20 +1633,27 @@ has the commit-by-commit account.
   `bk-decomp-types` (5.5), per-function overlays (5.7), scope images for
   state dumps (6.4); `TypeFactory::type_spacebase` in `bk-decomp-types`.
 - **Tests**: oracle replays equal row for row — scope 205,104, context
-  85,713, image 8,435 (G, 93 data tests); `@scope` of every version-2
-  `bkstate` sample rebuilt and written back byte-equal; the property part
-  of `DecompilerPspecVolatilityTest` (12 assertions; the checklist line
-  stays open for D17); unit tables for names, entries, categories,
-  `isValueClose`, codecs, strings, comments, overrides, the host cache;
-  properties (entry map against a model of `rangemap.hh`, codec round
-  trips, provenance); seven fuzz targets with a regression replay test.
-- **Gaps**: 6.1's query table is covered by the scope oracle's answer
-  rows, not by one hand-written unit test per row of 4.6; 6.3's L check
-  (`print map` against the live console) and 6.4's L run over all 607
-  captures were not run; the 5.8 budget against the reference console's
-  `load test file` was not measured (only Basilisk's look-ups, printing
-  and context were benchmarked); `<protooverride>` round trips need
-  `bk-cspec`'s prototype codec (D07).
+  85,713, image 8,435 (G, 93 data tests; the replay prints `image table:
+  93 data tests replayed, 8435 rows equal` and fails on another count).
+  6.3 (L): `print map` equal to the reference console for 93 of 93 data
+  tests (`image_oracle.rs`, `print_map_equals_the_reference_console`).
+  6.4: every version-2 `bkstate` sample rebuilt and written back
+  byte-equal (S); over a full capture (L, `state_dump.rs`,
+  `all_captured_dumps_rebuild_their_scope_exactly`) 3,642 of 3,642 dumps
+  rebuilt equal. 6.5: the property part of
+  `DecompilerPspecVolatilityTest` (12 assertions; the checklist line stays
+  open for D17). 6.1: unit tables for names, entries, categories,
+  `isValueClose`, every query row of 4.6 (`queries.rs`), codecs
+  (constructor/destructor constant-pool records included), strings,
+  comments, overrides, the host cache. 6.6: properties (entry map against
+  a model of `rangemap.hh`, codec round trips, provenance), all passing at
+  1,000,000 cases on the build host; seven fuzz targets, 300 s each with
+  no finding, and a regression replay test. 5.8: benchmarks in
+  `docs/PERF.md`; the 93 images load in 0.36 of the reference console's
+  time.
+- **Open**: `<protooverride>` round trips need `bk-cspec`'s prototype
+  codec (D07); the `DecompilerPspecVolatilityTest` checklist line waits for
+  the whole decompilation (D17).
 
 ## 10. Open items
 

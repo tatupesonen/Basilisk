@@ -29,6 +29,7 @@ Spec: `docs/features/decomp-symbols.md` (D06). Crates: `crates/bk-context`
 | 6.6 fuzz | seven targets `fuzz/fuzz_targets/bk_decomp_symbols_{scope,binaryimage,commentdb,stringmanage,constantpool,context_points,override}.rs` over `bk_decomp_symbols_shared` (built-in sample + edits, as `bk_testkit_shared`); `tests/fuzz_regressions.rs` replays `fuzz/regressions/bk_decomp_symbols_*` and 65 sample edits per target through the same code | fuzz commit |
 | 5.8 | `tests/bench.rs` (`#[ignore]`); numbers in `docs/PERF.md` | bench commit |
 | 8, 9 | spec "Differences" appended, "Status" filled | spec commit |
+| acceptance follow-ups | image replay prints `image table: 93 data tests replayed, 8435 rows equal` and asserts 93 files; `print_map_equals_the_reference_console` (6.3 L, `#[ignore]`): 93 of 93 equal on the host and the Mac; `all_captured_dumps_rebuild_their_scope_exactly` (6.4 L, `#[ignore]`, `BK_STATE_CAPTURES=<bk-oracle capture all dir>`): 3,642 of 3,642 (harness fixes: parent namespace by id, a stack based on a non-`ram` space, as in 8051's `boolless`); `tests/queries.rs` (7, every row of 4.6 with its database.cc lines; it confirmed the hinted-insert order of equal fragments); constructor/destructor cpool records; properties at 1,000,000 cases; `image_load_budget` (5.8) | follow-up commits |
 | 4.19, 5.4 | `src/host/{mod,cache,services,test}.rs`: `ProgramHost` (with `function_summary`, `call_returns` defaulting to `None`, `data_type`), `HostTypes` (TypeSource adapter), `HostDatabase` (ScopeGhidra rules), `HostComments/Strings/ConstantPool/Image/Tracked`, `ScriptedHost`; `tests/host_cache.rs` (6 tests: unasked spaces, holes, clear restores properties, namespace path + hole + ownership, FUN_/DAT_, labels, one comment fill per clear, string/cpool caches, 3d defaults) | `aafa1a6`, tests in the next commit |
 
 All three oracle tables were generated twice on each reference build
@@ -47,8 +48,8 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
   `indexing_slicing` on the const CRC table (compile-time evaluation);
   `many_single_char_names` on three oracle generator functions (they
   follow the C++ generators line by line).
-- All tests pass: `cargo test -p bk-decomp-symbols` (state dump 2, pspec volatility 2, names 3, entries 6, codecs 11, properties 6, fuzz regressions 1, bench 3 ignored, unit 7, entrymap props
-  5, scope oracle 1, context oracle 1, image oracle 1 (skips without
+- All tests pass: `cargo test -p bk-decomp-symbols` (state dump 2 + 1 ignored, queries 7, pspec volatility 2, names 3, entries 6, codecs 12, properties 6, fuzz regressions 1, bench 3 ignored, unit 7, entrymap props
+  5, scope oracle 1, context oracle 1, image oracle 1 + 2 ignored (skips without
   reference), host cache 6, overlay 3, spacebase 1), `-p bk-context` 10.
 
 ### (c) Testbed results, and what is left
@@ -63,11 +64,22 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
 - Mac: clippy for `x86_64-pc-windows-msvc` clean; 25 s per fuzz target, no
   finding; `scripts/check-dep-age.py master`: `0 new registry packages
   against master; 0 younger than 14 days; 0 lookups failed`, exit 0.
-- Gates at `1a352a9`: `scripts/remote.sh gate` first run exit 1,
-  `tests: 681 passed, 1 failed` — `bk-decomp-range`
-  `tests/no_allocation.rs` `methods_do_not_allocate` (outside this track,
-  unchanged by it); rerun: exit 0, `tests: 2482 passed, 0 failed`.
-  `scripts/remote.sh gate --no-ref`: exit 0, `tests: 2482 passed, 0 failed`.
+- Acceptance follow-ups (on the build host):
+  - `cargo test -p bk-decomp-symbols --test image_oracle -- --nocapture`:
+    `image table: 93 data tests replayed, 8435 rows equal`.
+  - `cargo test -p bk-decomp-symbols --test image_oracle -- --ignored --nocapture print_map`:
+    `print map: 93 of 93 data tests equal to the reference console`.
+  - `cargo run --release -p bk-testkit --bin bk-oracle -- capture all target/oracle-captures --runs 1`
+    (`run 1: 167 scripts, 8536 files, 0 errors`), then
+    `BK_STATE_CAPTURES=$PWD/target/oracle-captures cargo test -p bk-decomp-symbols --release --test state_dump -- --ignored --nocapture all_captured`:
+    `state dumps: 3642 rebuilt equal, 0 differ, 0 without a local scope, of 3642`.
+  - Properties at `PROPTEST_CASES=1000000` (release, debug assertions and
+    overflow checks on, as `tools/testbed/proptest.sh`): `entrymap_props`
+    exit 0 in 83 s, `properties` (6) exit 0 in 213 s. `bk-context` has no
+    property suite.
+  - `image_load_budget`: `load 93 data-test images: basilisk 1827 ms,
+    reference console 5056 ms (ratio 0.36)`.
+- Final gates: see the final report (rerun at the last commit).
 
 ### (d) Decisions and traps
 

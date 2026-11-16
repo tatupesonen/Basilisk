@@ -668,5 +668,17 @@ so the spread is load). Command:
 A query resolves the address's scope, then searches one space's fragment
 tree (`O(log n)`) and walks the overlapping fragments of one piece; it
 allocates nothing. The random probes miss the caches on most calls over a
-1.6 MB address range. Not measured: loading the 93 data-test images against
-the reference console's `load test file` (spec 5.8's budget).
+1.6 MB address range.
+
+Spec 5.8's budget, loading the 93 data-test images (`<binaryimage>`, the
+language's `.sla`/`.pspec`/`.cspec`, 4.18's steps, loader symbols)
+against the reference console's `load test file` of the same files (one
+console process per file, as `bk-oracle` runs it, so its time includes
+process start), best of three, the same day and host:
+
+    cargo test -p bk-decomp-symbols --release --test image_oracle -- --ignored --nocapture budget
+
+| | Basilisk | Reference console | Ratio |
+|---|---:|---:|---:|
+| build host | 1,827 ms | 5,056 ms | 0.36 |
+| Mac (M1 Pro) | 1,711 ms | 4,831 ms | 0.35 |
