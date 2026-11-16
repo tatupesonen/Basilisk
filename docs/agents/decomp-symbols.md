@@ -79,7 +79,7 @@ copy of each is checked in; the replays pin an FNV-1a of the text.
     property suite.
   - `image_load_budget`: `load 93 data-test images: basilisk 1827 ms,
     reference console 5056 ms (ratio 0.36)`.
-- Final gates: see the final report (rerun at the last commit).
+- Final gates at `2a862d8`: `scripts/remote.sh gate` exit 0, `tests: 2490 passed, 0 failed`; `scripts/remote.sh gate --no-ref` exit 0, `tests: 2490 passed, 0 failed`.
 
 ### (d) Decisions and traps
 
