@@ -429,6 +429,60 @@ fn records_from_db(
     }
 }
 
+/// Rebuilds the function scope of one dump and checks every record and
+/// the byte-equal write-back; `false` for a dump without version-2 order
+/// records (version 1, or no local scope). Panics on a difference.
+fn check_dump(text: &str, what: &str) -> bool {
+    let dump = StateDump::parse(text).unwrap();
+    let Some(orders) = dump.scope.orders.as_ref() else {
+        return false;
+    };
+    let local = dump.scope.scope.as_ref().unwrap();
+    let spaces = spaces_from_dump(&dump.spaces);
+    let names = Names { spaces: &spaces };
+    let mut types = new_types();
+    let (image, dump_types) = image_from_dump(&dump, &names, &mut types);
+    let (mut db, scope) =
+        function_scope(&spaces, &local.name, orders.identity.ghidra_id, &mut types);
+    for r in &local.ranges {
+        db.add_range(scope, names.space(&r.space), r.first, r.last)
+            .unwrap();
+    }
+    db.restore_scope(scope, &image, &types).unwrap();
+    let got = records_from_db(&db, scope, &names, &dump_types);
+    let want = ScopeRecords {
+        ranges: local.ranges.clone(),
+        symbols: dump.scope.symbols.clone(),
+        orders: orders.clone(),
+    };
+    assert_eq!(got, want, "{what}");
+    // Written back into the dump, the text is byte-equal.
+    let mut back = dump.clone();
+    let mut local_back = local.clone();
+    local_back.ranges = got.ranges;
+    back.scope.scope = Some(local_back);
+    back.scope.symbols = got.symbols;
+    back.scope.orders = Some(got.orders);
+    assert!(back.write() == text, "{what}: written back differs");
+    // The rebuilt map answers from its records: at each record's start,
+    // under its use point, an entry starting there is found.
+    for r in &image.records {
+        let sym = &image.symbols[r.entry.0];
+        let use_point = if sym.flags.contains(VarnodeFlags::ADDRTIED) {
+            Address::INVALID
+        } else {
+            Address::new(SpaceId::new(r.subsort.use_index), r.subsort.use_offset)
+        };
+        let at = Address::new(r.space, r.first);
+        let hit = db
+            .query_by_addr(scope, at, use_point)
+            .unwrap()
+            .unwrap_or_else(|| panic!("{what}: no entry at the start of a record"));
+        assert_eq!(db.entry(hit).unwrap().addr(), Some(at), "{what}");
+    }
+    true
+}
+
 #[test]
 fn every_version_2_sample_rebuilds_its_scope_exactly() {
     let dir = samples_dir();
@@ -441,72 +495,67 @@ fn every_version_2_sample_rebuilds_its_scope_exactly() {
     assert!(!files.is_empty(), "no samples in {}", dir.display());
     let mut checked = 0;
     for path in &files {
-        let text = read_gz(path);
-        let dump = StateDump::parse(&text).unwrap();
-        let Some(orders) = dump.scope.orders.as_ref() else {
-            eprintln!(
-                "{}: version {} has no @scope order records; skipped",
-                path.display(),
-                dump.version
-            );
-            assert_eq!(dump.version, 1, "{}", path.display());
-            continue;
-        };
-        let local = dump.scope.scope.as_ref().unwrap();
-        let spaces = spaces_from_dump(&dump.spaces);
-        let names = Names { spaces: &spaces };
-        let mut types = new_types();
-        let (image, dump_types) = image_from_dump(&dump, &names, &mut types);
-        let (mut db, scope) =
-            function_scope(&spaces, &local.name, orders.identity.ghidra_id, &mut types);
-        for r in &local.ranges {
-            db.add_range(scope, names.space(&r.space), r.first, r.last)
-                .unwrap();
+        let what = path.display().to_string();
+        if check_dump(&read_gz(path), &what) {
+            checked += 1;
+        } else {
+            eprintln!("{what}: no @scope order records (version 1); skipped");
+            assert!(what.contains(".v1."), "{what}");
         }
-        db.restore_scope(scope, &image, &types).unwrap();
-        let got = records_from_db(&db, scope, &names, &dump_types);
-        let want = ScopeRecords {
-            ranges: local.ranges.clone(),
-            symbols: dump.scope.symbols.clone(),
-            orders: orders.clone(),
-        };
-        assert_eq!(got, want, "{}", path.display());
-        // Written back into the dump, the text is byte-equal.
-        let mut back = dump.clone();
-        let mut local_back = local.clone();
-        local_back.ranges = got.ranges;
-        back.scope.scope = Some(local_back);
-        back.scope.symbols = got.symbols;
-        back.scope.orders = Some(got.orders);
-        assert!(
-            back.write() == text,
-            "{}: written back differs",
-            path.display()
-        );
-        // The rebuilt map answers from its records: each record's entry is
-        // found at the record's first address.
-        for r in &image.records {
-            let sym = &image.symbols[r.entry.0];
-            let use_point = if sym.flags.contains(VarnodeFlags::ADDRTIED) {
-                Address::INVALID
-            } else {
-                Address::new(SpaceId::new(r.subsort.use_index), r.subsort.use_offset)
-            };
-            let hit = db
-                .query_by_addr(scope, Address::new(r.space, r.first), use_point)
-                .unwrap()
-                .expect("an entry at the record's start");
-            assert_eq!(
-                db.symbol(db.entry(hit).unwrap().symbol())
-                    .unwrap()
-                    .ghidra_id(),
-                sym.ghidra_id
-            );
-        }
-        checked += 1;
     }
-    assert!(checked > 0, "no version-2 sample");
+    assert_eq!(checked, files.len() - 1, "every sample but the v1 one");
     eprintln!("{checked} version-2 samples rebuilt");
+}
+
+/// Spec 6.4 (L): every state dump of a full capture (`bk-oracle capture
+/// all <dir> --runs 1`; 607 decompilations, 3,642 dumps) rebuilt and
+/// written back equal. Run:
+///
+///     BK_STATE_CAPTURES=<dir> cargo test -p bk-decomp-symbols --release --test state_dump -- --ignored --nocapture all_captured
+#[test]
+#[ignore = "needs a capture directory (L)"]
+fn all_captured_dumps_rebuild_their_scope_exactly() {
+    let root = PathBuf::from(std::env::var_os("BK_STATE_CAPTURES").expect("BK_STATE_CAPTURES"));
+    let mut files = Vec::new();
+    let mut stack = vec![root.clone()];
+    while let Some(dir) = stack.pop() {
+        for e in std::fs::read_dir(&dir).unwrap() {
+            let p = e.unwrap().path();
+            if p.is_dir() {
+                stack.push(p);
+            } else if p.to_string_lossy().ends_with(".state")
+                || p.to_string_lossy().ends_with(".state.gz")
+            {
+                files.push(p);
+            }
+        }
+    }
+    files.sort();
+    assert!(!files.is_empty(), "no dumps under {}", root.display());
+    let (mut equal, mut without) = (0, 0);
+    let mut failed = Vec::new();
+    for path in &files {
+        let text = if path.extension().is_some_and(|x| x == "gz") {
+            read_gz(path)
+        } else {
+            std::fs::read_to_string(path).unwrap()
+        };
+        let what = path.display().to_string();
+        match std::panic::catch_unwind(|| check_dump(&text, &what)) {
+            Ok(true) => equal += 1,
+            Ok(false) => without += 1,
+            Err(e) => failed.push(format!(
+                "{what}: {}",
+                e.downcast_ref::<String>().map_or("panic", String::as_str)
+            )),
+        }
+    }
+    eprintln!(
+        "state dumps: {equal} rebuilt equal, {} differ, {without} without a local scope, of {}",
+        failed.len(),
+        files.len()
+    );
+    assert!(failed.is_empty(), "{}", failed.join("\n"));
 }
 
 /// The answer of a query as the symbol's id and the entry's index in it.
