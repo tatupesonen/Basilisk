@@ -2,7 +2,9 @@
 //! `collapseConstantSymbol` (op.cc:467–801): the parts of op evaluation that
 //! need only the op, its inputs and `bk-pcode`'s arithmetic.
 
-use bk_core::bits::{coveringmask, leastsigbit_set, mostsigbit_set, pcode_left, pcode_right, popcount};
+use bk_core::bits::{
+    coveringmask, leastsigbit_set, mostsigbit_set, pcode_left, pcode_right, popcount,
+};
 use bk_pcode::mask::{calc_mask, sign_extend};
 use bk_pcode::{FloatFormats, OpCode};
 
@@ -15,7 +17,8 @@ use crate::ssa::Ssa;
 
 impl Ssa {
     fn nzm_in(&self, op: OpId, slot: usize) -> u64 {
-        self.op_input(op, slot).map_or(u64::MAX, |v| self.varnode_nzm(v))
+        self.op_input(op, slot)
+            .map_or(u64::MAX, |v| self.varnode_nzm(v))
     }
 
     fn size_in(&self, op: OpId, slot: usize) -> i32 {
@@ -60,11 +63,9 @@ impl Ssa {
             | OpCode::FloatLessEqual
             | OpCode::FloatNan => 1,
             OpCode::Copy | OpCode::IntZExt => self.nzm_in(op, 0),
-            OpCode::IntSExt => sign_extend(
-                self.nzm_in(op, 0),
-                self.size_in(op, 0).max(0) as u32,
-                size,
-            ),
+            OpCode::IntSExt => {
+                sign_extend(self.nzm_in(op, 0), self.size_in(op, 0).max(0) as u32, size)
+            }
             OpCode::IntXor | OpCode::IntOr => {
                 let r = self.nzm_in(op, 0);
                 if r == full { r } else { r | self.nzm_in(op, 1) }
@@ -137,7 +138,11 @@ impl Ssa {
             }
             OpCode::Piece => {
                 let sa = self.size_in(op, 1).max(0) as u32;
-                let r = if sa < 8 { self.nzm_in(op, 0) << (8 * sa) } else { 0 };
+                let r = if sa < 8 {
+                    self.nzm_in(op, 0) << (8 * sa)
+                } else {
+                    0
+                };
                 r | self.nzm_in(op, 1)
             }
             OpCode::IntMult => {
@@ -201,7 +206,11 @@ impl Ssa {
                 r
             }
             OpCode::Call | OpCode::CallInd | OpCode::CPoolRef => {
-                if self.op_is_calculated_bool(op) { 1 } else { full }
+                if self.op_is_calculated_bool(op) {
+                    1
+                } else {
+                    full
+                }
             }
             _ => full,
         }
@@ -248,13 +257,23 @@ impl Ssa {
 
     /// `executeSimple`: the op (unary, binary or ternary) on the given input
     /// values; `None` on an evaluation error.
-    pub fn op_execute_simple(&self, op: OpId, inputs: &[u64], formats: &FloatFormats) -> Option<u64> {
+    pub fn op_execute_simple(
+        &self,
+        op: OpId,
+        inputs: &[u64],
+        formats: &FloatFormats,
+    ) -> Option<u64> {
         let opc = self.op_opcode(op)?;
-        let out_size = self.op_output(op).map_or(0, |o| self.varnode_size(o)).max(0) as u32;
+        let out_size = self
+            .op_output(op)
+            .map_or(0, |o| self.varnode_size(o))
+            .max(0) as u32;
         let in_size = self.size_in(op, 0).max(0) as u32;
         let v = |i: usize| inputs.get(i).copied().unwrap_or(0);
         let r = match self.op_eval_type(op) {
-            oflags::UNARY => bk_pcode::behavior::evaluate_unary(opc, out_size, in_size, v(0), formats),
+            oflags::UNARY => {
+                bk_pcode::behavior::evaluate_unary(opc, out_size, in_size, v(0), formats)
+            }
             oflags::BINARY => {
                 bk_pcode::behavior::evaluate_binary(opc, out_size, in_size, v(0), v(1), formats)
             }

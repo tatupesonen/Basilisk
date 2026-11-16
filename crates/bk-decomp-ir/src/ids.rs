@@ -32,10 +32,6 @@ macro_rules! id_type {
                 self.0
             }
 
-            /// The id stored in a packed field, `None` for [`NONE`].
-            pub(crate) const fn from_packed(raw: u32) -> Option<Self> {
-                if raw == NONE { None } else { Some(Self(raw)) }
-            }
         }
 
         impl fmt::Debug for $name {
@@ -84,6 +80,19 @@ id_type!(
     UnitId,
     "unit#"
 );
+
+macro_rules! packed_id {
+    ($($name:ident),*) => {$(
+        impl $name {
+            /// The id stored in a packed field, `None` for [`NONE`].
+            pub(crate) const fn from_packed(raw: u32) -> Option<Self> {
+                if raw == NONE { None } else { Some(Self(raw)) }
+            }
+        }
+    )*};
+}
+
+packed_id!(VarnodeId, OpId, HighId);
 
 impl CallSpecId {
     /// A call spec that no longer exists (the dump's `call:-`). It sorts

@@ -4,6 +4,7 @@
 //! without the spec root.
 
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use bk_core::{RegisterLookup, SpaceId, SpaceManager, VarnodeData};
@@ -14,7 +15,10 @@ struct Key(u32, u64, u32);
 
 impl Ord for Key {
     fn cmp(&self, o: &Self) -> std::cmp::Ordering {
-        self.0.cmp(&o.0).then(self.1.cmp(&o.1)).then(o.2.cmp(&self.2))
+        self.0
+            .cmp(&o.0)
+            .then(self.1.cmp(&o.1))
+            .then(o.2.cmp(&self.2))
     }
 }
 impl PartialOrd for Key {
@@ -26,7 +30,7 @@ impl PartialOrd for Key {
 /// A language's registers (`SleighBase::varnode_xref`) with Ghidra's
 /// `getRegisterName`.
 #[derive(Debug, Default)]
-pub struct RegTable {
+pub(crate) struct RegTable {
     by_loc: BTreeMap<Key, String>,
     by_name: std::collections::HashMap<String, VarnodeData>,
 }
@@ -58,29 +62,31 @@ impl RegisterLookup for RegTable {
         None
     }
     fn exact_register_name(&self, space: SpaceId, offset: u64, size: u32) -> Option<&str> {
-        self.by_loc.get(&Key(space.index(), offset, size)).map(String::as_str)
+        self.by_loc
+            .get(&Key(space.index(), offset, size))
+            .map(String::as_str)
     }
 }
 
 /// A language's tables as read from `tests/data/lang`.
 #[derive(Debug, Default)]
-pub struct LangTables {
+pub(crate) struct LangTables {
     /// `(name, space name, offset, size)`.
-    pub registers: Vec<(String, String, u64, u32)>,
+    pub(crate) registers: Vec<(String, String, u64, u32)>,
     /// User-op names by index.
-    pub userops: Vec<Option<String>>,
+    pub(crate) userops: Vec<Option<String>>,
 }
 
 impl LangTables {
     /// The file for a language id (`x86:LE:64:default`).
-    pub fn path(language: &str) -> PathBuf {
+    pub(crate) fn path(language: &str) -> PathBuf {
         bk_testkit::workspace_root()
             .join("crates/bk-decomp-ir/tests/data/lang")
             .join(format!("{}.txt.gz", language.replace(':', "_")))
     }
 
     /// Parses the table text.
-    pub fn parse(text: &str) -> Self {
+    pub(crate) fn parse(text: &str) -> Self {
         let mut t = Self::default();
         for l in text.lines() {
             let f: Vec<&str> = l.split('\t').collect();
@@ -105,38 +111,43 @@ impl LangTables {
     }
 
     /// The table text.
-    pub fn write(&self) -> String {
+    pub(crate) fn write(&self) -> String {
         let mut s = String::new();
         for (n, sp, off, size) in &self.registers {
-            s.push_str(&format!("R\t{n}\t{sp}\t{off:#x}\t{size}\n"));
+            let _ = writeln!(s, "R\t{n}\t{sp}\t{off:#x}\t{size}");
         }
         for (i, n) in self.userops.iter().enumerate() {
             if let Some(n) = n {
-                s.push_str(&format!("U\t{i}\t{n}\n"));
+                let _ = writeln!(s, "U\t{i}\t{n}");
             }
         }
         s
     }
 
     /// Reads the table of `language`, if checked in.
-    pub fn load(language: &str) -> Option<Self> {
+    pub(crate) fn load(language: &str) -> Option<Self> {
         let text = bk_testkit::oracle::read_text(&Self::path(language)).ok()?;
         Some(Self::parse(&text))
     }
 
     /// The registers resolved against a space manager.
-    pub fn reg_table(&self, spaces: &SpaceManager) -> RegTable {
+    pub(crate) fn reg_table(&self, spaces: &SpaceManager) -> RegTable {
         let mut t = RegTable::default();
         for (n, sp, off, size) in &self.registers {
-            let Some(s) = spaces.space_by_name(sp) else { continue };
-            t.by_loc.entry(Key(s.id().index(), *off, *size)).or_insert_with(|| n.clone());
-            t.by_name.insert(n.clone(), VarnodeData::new(s.id(), *off, *size));
+            let Some(s) = spaces.space_by_name(sp) else {
+                continue;
+            };
+            t.by_loc
+                .entry(Key(s.id().index(), *off, *size))
+                .or_insert_with(|| n.clone());
+            t.by_name
+                .insert(n.clone(), VarnodeData::new(s.id(), *off, *size));
         }
         t
     }
 }
 
 /// The language id of a dump's architecture id (`x86:LE:64:default:gcc`).
-pub fn language_of(arch: &str) -> String {
+pub(crate) fn language_of(arch: &str) -> String {
     arch.rsplit_once(':').map_or(arch, |(l, _)| l).to_owned()
 }

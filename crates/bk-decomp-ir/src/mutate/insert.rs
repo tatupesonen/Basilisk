@@ -1,4 +1,4 @@
-//! Placing ops relative to others (funcdata_op.cc:352–460): `MULTIEQUAL`s
+//! Placing ops relative to others (`funcdata_op.cc:352–460`): `MULTIEQUAL`s
 //! stay first in a block, `INDIRECT`s stay right before the op they are
 //! for, and a branch stays last.
 

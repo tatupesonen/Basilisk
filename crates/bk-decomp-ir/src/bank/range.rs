@@ -54,11 +54,7 @@ const fn dk(class: u32, seq: SeqKey, addr: Address, size: i32) -> DefKey {
 }
 
 /// A range of a map that never panics on crossed bounds.
-fn safe_range<K: Ord + Copy, V: Copy>(
-    map: &BTreeMap<K, V>,
-    lo: Bound<K>,
-    hi: Bound<K>,
-) -> Vec<V> {
+fn safe_range<K: Ord + Copy, V: Copy>(map: &BTreeMap<K, V>, lo: Bound<K>, hi: Bound<K>) -> Vec<V> {
     let empty = match (&lo, &hi) {
         (Bound::Included(a), Bound::Included(b)) => a > b,
         (Bound::Included(a) | Bound::Excluded(a), Bound::Excluded(b))
@@ -105,10 +101,6 @@ impl Ssa {
         self.def.values().copied()
     }
 
-    fn space_start(&self, space: SpaceId) -> Address {
-        Address::new(space, 0)
-    }
-
     fn next_space_start(&self, space: SpaceId) -> Address {
         self.spaces
             .next_space_after(space)
@@ -117,7 +109,7 @@ impl Ssa {
 
     /// The varnodes of one space in loc order (`beginLoc(spc)`..`endLoc(spc)`).
     pub fn loc_in_space(&self, space: SpaceId) -> Vec<VarnodeId> {
-        let lo = lk(self.space_start(space), 0, INPUT_CLASS, SEQ_MIN);
+        let lo = lk(Address::new(space, 0), 0, INPUT_CLASS, SEQ_MIN);
         let hi = lk(self.next_space_start(space), 0, INPUT_CLASS, SEQ_MIN);
         safe_range(&self.loc, lower(lo), before(hi))
     }
@@ -137,7 +129,11 @@ impl Ssa {
             Some(space) => Address::new(space, addr.offset().wrapping_add(1)),
             None => Address::MAXIMAL,
         };
-        safe_range(&self.loc, lower(lo), before(lk(end, 0, INPUT_CLASS, SEQ_MIN)))
+        safe_range(
+            &self.loc,
+            lower(lo),
+            before(lk(end, 0, INPUT_CLASS, SEQ_MIN)),
+        )
     }
 
     /// The varnodes of size `size` at `addr` (`beginLoc(s,addr)`..`endLoc(s,addr)`).
@@ -148,7 +144,6 @@ impl Ssa {
     }
 
     fn loc_class_bounds(
-        &self,
         size: i32,
         addr: Address,
         class: VnClass,
@@ -169,7 +164,7 @@ impl Ssa {
     /// The varnodes of one class, size and address
     /// (`beginLoc(s,addr,fl)`..`endLoc(s,addr,fl)`).
     pub fn loc_class(&self, size: i32, addr: Address, class: VnClass) -> Vec<VarnodeId> {
-        let (lo, hi) = self.loc_class_bounds(size, addr, class);
+        let (lo, hi) = Self::loc_class_bounds(size, addr, class);
         safe_range(&self.loc, lo, hi)
     }
 
@@ -268,19 +263,20 @@ impl Ssa {
         let end = addr.offset().wrapping_add(size as u64).wrapping_sub(1);
         let lo = lower(dk(INPUT_CLASS, SEQ_MIN, addr, 0));
         let hi = if end == highest {
-            before(dk(INPUT_CLASS, SEQ_MIN, Address::new(space.id(), highest), 1_000_000))
+            before(dk(
+                INPUT_CLASS,
+                SEQ_MIN,
+                Address::new(space.id(), highest),
+                1_000_000,
+            ))
         } else {
             let next = Address::new(space.id(), addr.offset().wrapping_add(size as u64));
             before(dk(INPUT_CLASS, SEQ_MIN, next, 0))
         };
         safe_range(&self.def, lo, hi).into_iter().find(|&vn| {
-            self.vns.get(vn.index()).is_some_and(|d| {
-                d.loc
-                    .offset()
-                    .wrapping_add(d.size as u64)
-                    .wrapping_sub(1)
-                    <= end
-            })
+            self.vns
+                .get(vn.index())
+                .is_some_and(|d| d.loc.offset().wrapping_add(d.size as u64).wrapping_sub(1) <= end)
         })
     }
 
@@ -309,7 +305,7 @@ impl Ssa {
         let k = dk(INPUT_CLASS, SEQ_MIN, addr, 0);
         let check = |vn: VarnodeId| {
             self.vns.get(vn.index()).is_some_and(|d| {
-                d.flags & vflags::INPUT != 0 && self.intersects_range(d, addr, size)
+                d.flags & vflags::INPUT != 0 && Self::intersects_range(d, addr, size)
             })
         };
         if let Some((_, &vn)) = self.def.range(k..).next()
@@ -361,7 +357,10 @@ impl Ssa {
                 cur = Some(lk(gd.loc, gd.size.saturating_add(1), INPUT_CLASS, SEQ_MIN));
                 continue;
             }
-            let end_off = gd.loc.offset().wrapping_add((gd.size as u64).wrapping_sub(1));
+            let end_off = gd
+                .loc
+                .offset()
+                .wrapping_add((gd.size as u64).wrapping_sub(1));
             if end_off > max_off {
                 max_off = end_off;
             }
@@ -392,7 +391,7 @@ impl Ssa {
 /// Steps through loc order as Ghidra's `vn = *iter++` loops do: each step
 /// returns the current varnode and remembers its successor *at that time*,
 /// so the body may create or destroy varnodes (`clearDeadVarnodes`,
-/// funcdata_varnode.cc:860). If the remembered successor is gone, the walk
+/// `funcdata_varnode.cc:860`). If the remembered successor is gone, the walk
 /// goes on from the first key after it.
 #[derive(Clone, Copy, Debug)]
 pub struct LocCursor {

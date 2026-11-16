@@ -1,4 +1,13 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 //! The checked-in register and user-op tables (`tests/data/lang`) equal
 //! what the reference build's languages give (L). `BK_UPDATE_TABLES=1`
 //! regenerates them.
@@ -10,14 +19,19 @@ use bk_sleigh::Language;
 use support::lang::LangTables;
 
 /// The languages the checked-in dumps use.
-pub const LANGUAGES: &[&str] = &["x86:LE:64:default", "AARCH64:LE:64:v8A", "x86:LE:32:default"];
+pub const LANGUAGES: &[&str] = &[
+    "x86:LE:64:default",
+    "AARCH64:LE:64:v8A",
+    "x86:LE:32:default",
+];
 
 fn generate(registry: &LanguageRegistry, id: &str) -> LangTables {
     let lang = Language::load(registry, &LanguageId::new(id).unwrap()).unwrap();
     let mut t = LangTables::default();
     for (vd, name) in lang.registers().all() {
         let space = vd.space().and_then(|s| lang.spaces().space(s)).unwrap();
-        t.registers.push((name.to_owned(), space.name().to_owned(), vd.offset, vd.size));
+        t.registers
+            .push((name.to_owned(), space.name().to_owned(), vd.offset, vd.size));
     }
     t.userops = (0..lang.num_user_ops())
         .map(|i| lang.user_op_name(i).map(str::to_owned))
@@ -44,6 +58,9 @@ fn language_tables_are_current() {
             continue;
         }
         let have = bk_testkit::oracle::read_text(&path).unwrap_or_default();
-        assert!(have == text, "{id}: table stale (BK_UPDATE_TABLES=1 regenerates)");
+        assert!(
+            have == text,
+            "{id}: table stale (BK_UPDATE_TABLES=1 regenerates)"
+        );
     }
 }

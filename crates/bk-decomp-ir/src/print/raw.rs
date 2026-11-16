@@ -269,7 +269,7 @@ impl Ssa {
         };
         let outs = self.outs(bs);
         let target = if outs.len() == 2 {
-            outs.get(if self.op_is_fallthru_true(op) { 0 } else { 1 })
+            outs.get(usize::from(!self.op_is_fallthru_true(op)))
         } else {
             outs.first()
         };
@@ -378,9 +378,8 @@ impl Ssa {
             OpCode::Piece => format!("{}{}{}", p.name, size(in0), size(in1)),
             OpCode::CallOther => {
                 if self.op_parent(op).is_some()
-                    && let Some(name) = in0.and_then(|v| {
-                        names.userop_name(self, op, self.varnode_offset(v))
-                    })
+                    && let Some(name) =
+                        in0.and_then(|v| names.userop_name(self, op, self.varnode_offset(v)))
                 {
                     return name;
                 }
@@ -416,73 +415,81 @@ impl Ssa {
         let Some(opc) = self.op_opcode(op) else {
             return;
         };
-        let p = props(opc);
-        let o = self.op_output(op);
-        let i = |slot| self.op_input(op, slot);
-        let n = self.op_num_inputs(op);
-        match p.form {
+        let prop = props(opc);
+        let output = self.op_output(op);
+        let input = |slot| self.op_input(op, slot);
+        let count = self.op_num_inputs(op);
+        match prop.form {
             RawForm::Binary(sym) => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
                 out.c(' ');
-                let s = if sym == p.name { self.operator_name(op, names) } else { sym.to_owned() };
+                let s = if sym == prop.name {
+                    self.operator_name(op, names)
+                } else {
+                    sym.to_owned()
+                };
                 out.s(&s);
                 out.c(' ');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
             }
             RawForm::Unary(sym) => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                let s = if sym == p.name { self.operator_name(op, names) } else { sym.to_owned() };
+                let s = if sym == prop.name {
+                    self.operator_name(op, names)
+                } else {
+                    sym.to_owned()
+                };
                 out.s(&s);
                 out.c(' ');
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
             }
             RawForm::Func => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
                 out.s(&self.operator_name(op, names));
                 out.c('(');
-                self.vn_raw(out, i(0), names);
-                for k in 1..n {
+                self.vn_raw(out, input(0), names);
+                for k in 1..count {
                     out.c(',');
-                    self.vn_raw(out, i(k), names);
+                    self.vn_raw(out, input(k), names);
                 }
                 out.c(')');
             }
             RawForm::Copy => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
             }
             RawForm::Load => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = *(");
-                out.s(&self.space_name_of_const(i(0)));
+                out.s(&self.space_name_of_const(input(0)));
                 out.c(',');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
                 out.c(')');
             }
             RawForm::Store => {
                 out.s("*(");
-                out.s(&self.space_name_of_const(i(0)));
+                out.s(&self.space_name_of_const(input(0)));
                 out.c(',');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
                 out.s(") = ");
-                self.vn_raw(out, i(2), names);
+                self.vn_raw(out, input(2), names);
             }
             RawForm::Branch => {
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
                 let outs = self.op_parent(op).map(|b| self.outs(b));
                 match outs.as_deref() {
                     Some([only]) => self.short_header(out, only.node),
-                    _ => self.vn_raw(out, i(0), names),
+                    _ => self.vn_raw(out, input(0), names),
                 }
             }
             RawForm::Cbranch => {
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
                 let outs = self.op_parent(op).map(|b| self.outs(b));
                 let mut false_out = None;
@@ -491,29 +498,33 @@ impl Ssa {
                         false_out = Some(f.node);
                         self.short_header(out, t.node);
                     }
-                    _ => self.vn_raw(out, i(0), names),
+                    _ => self.vn_raw(out, input(0), names),
                 }
                 out.s(" if (");
-                self.vn_raw(out, i(1), names);
-                out.s(if self.op_is_boolean_flip(op) { " == 0)" } else { " != 0)" });
+                self.vn_raw(out, input(1), names);
+                out.s(if self.op_is_boolean_flip(op) {
+                    " == 0)"
+                } else {
+                    " != 0)"
+                });
                 if let Some(f) = false_out {
                     out.s(" else ");
                     self.short_header(out, f);
                 }
             }
             RawForm::Branchind => {
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
             }
             RawForm::Call | RawForm::Callind => {
                 self.out_assign(out, op, names);
-                out.s(p.name);
-                if p.form == RawForm::Call {
+                out.s(prop.name);
+                if prop.form == RawForm::Call {
                     out.c(' ');
                 }
-                self.vn_raw(out, i(0), names);
-                if n > 1 {
+                self.vn_raw(out, input(0), names);
+                if count > 1 {
                     out.c('(');
                     self.list_raw(out, op, 1, names);
                     out.c(')');
@@ -522,117 +533,117 @@ impl Ssa {
             RawForm::Callother => {
                 self.out_assign(out, op, names);
                 out.s(&self.operator_name(op, names));
-                if n > 1 {
+                if count > 1 {
                     out.c('(');
                     self.list_raw(out, op, 1, names);
                     out.c(')');
                 }
             }
             RawForm::Return => {
-                out.s(p.name);
-                if n >= 1 {
+                out.s(prop.name);
+                if count >= 1 {
                     out.c('(');
-                    self.vn_raw(out, i(0), names);
+                    self.vn_raw(out, input(0), names);
                     out.c(')');
                 }
-                if n > 1 {
+                if count > 1 {
                     out.c(' ');
                     self.list_raw(out, op, 1, names);
                 }
             }
             RawForm::Multi => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                self.vn_raw(out, i(0), names);
-                if n == 1 {
+                self.vn_raw(out, input(0), names);
+                if count == 1 {
                     out.c(' ');
-                    out.s(p.name);
+                    out.s(prop.name);
                 }
-                for k in 1..n {
+                for k in 1..count {
                     out.c(' ');
-                    out.s(p.name);
+                    out.s(prop.name);
                     out.c(' ');
-                    self.vn_raw(out, i(k), names);
+                    self.vn_raw(out, input(k), names);
                 }
             }
             RawForm::Indirect => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
                 if self.op_is_indirect_creation(op) {
                     out.s("[create] ");
                 } else {
-                    self.vn_raw(out, i(0), names);
+                    self.vn_raw(out, input(0), names);
                     out.c(' ');
-                    out.s(p.name);
+                    out.s(prop.name);
                     out.c(' ');
                 }
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
             }
             RawForm::Cast => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
             }
             RawForm::Ptradd => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
                 out.c(' ');
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
                 out.s("(*");
-                self.vn_raw(out, i(2), names);
+                self.vn_raw(out, input(2), names);
                 out.c(')');
             }
             RawForm::Ptrsub => {
-                self.vn_raw(out, o, names);
+                self.vn_raw(out, output, names);
                 out.s(" = ");
-                self.vn_raw(out, i(0), names);
+                self.vn_raw(out, input(0), names);
                 out.c(' ');
-                out.s(p.name);
+                out.s(prop.name);
                 out.c(' ');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
             }
             RawForm::Segment => {
                 self.out_assign(out, op, names);
-                out.s(p.name);
+                out.s(prop.name);
                 out.c('(');
-                out.s(&self.space_name_of_const(i(0)));
+                out.s(&self.space_name_of_const(input(0)));
                 out.c(',');
-                self.vn_raw(out, i(1), names);
+                self.vn_raw(out, input(1), names);
                 out.c(',');
-                self.vn_raw(out, i(2), names);
+                self.vn_raw(out, input(2), names);
                 out.c(')');
             }
             RawForm::Cpoolref => {
                 self.out_assign(out, op, names);
-                out.s(p.name);
-                let refs: Vec<u64> = (1..n)
-                    .map(|k| i(k).map_or(0, |v| self.varnode_offset(v)))
+                out.s(prop.name);
+                let refs: Vec<u64> = (1..count)
+                    .map(|k| input(k).map_or(0, |v| self.varnode_offset(v)))
                     .collect();
                 if let Some(tok) = names.cpool_token(&refs) {
                     out.c('_');
                     out.s(&tok);
                 }
                 out.c('(');
-                self.vn_raw(out, i(0), names);
-                for k in 2..n {
+                self.vn_raw(out, input(0), names);
+                for k in 2..count {
                     out.c(',');
-                    self.vn_raw(out, i(k), names);
+                    self.vn_raw(out, input(k), names);
                 }
                 out.c(')');
             }
             RawForm::New => {
                 self.out_assign(out, op, names);
-                out.s(p.name);
+                out.s(prop.name);
                 out.c('(');
-                self.vn_raw(out, i(0), names);
-                for k in 1..n {
+                self.vn_raw(out, input(0), names);
+                for k in 1..count {
                     out.c(',');
-                    self.vn_raw(out, i(k), names);
+                    self.vn_raw(out, input(k), names);
                 }
                 out.c(')');
             }

@@ -98,7 +98,10 @@ impl Cover {
 
     /// `getCoverBlock`.
     pub fn block(&self, index: i32) -> CoverBlock {
-        self.blocks.get(&index).copied().unwrap_or(CoverBlock::EMPTY)
+        self.blocks
+            .get(&index)
+            .copied()
+            .unwrap_or(CoverBlock::EMPTY)
     }
 
     fn entry(&mut self, index: i32) -> &mut CoverBlock {
@@ -181,7 +184,11 @@ impl Ssa {
         }
         let p = self.cover_index(point);
         let (s, e) = (self.cover_index(b.start), self.cover_index(b.stop));
-        if s <= e { p >= s && p <= e } else { p <= e || p >= s }
+        if s <= e {
+            p >= s && p <= e
+        } else {
+            p <= e || p >= s
+        }
     }
 
     /// `CoverBlock::boundary`: 0 not on a boundary, 1 the tail, 2 the
@@ -257,7 +264,7 @@ impl Ssa {
     /// predecessors depth first in in-edge order as Ghidra's recursion does.
     fn cover_add_ref_recurse(&self, cover: &mut Cover, start: bk_decomp_cfg::NodeId) {
         let mut stack: Vec<(bk_decomp_cfg::NodeId, usize)> = Vec::new();
-        let mut visit = |cover: &mut Cover, bl: bk_decomp_cfg::NodeId| -> bool {
+        let visit = |cover: &mut Cover, bl: bk_decomp_cfg::NodeId| -> bool {
             let Some(ix) = self.cfg.index(bl) else {
                 return false;
             };

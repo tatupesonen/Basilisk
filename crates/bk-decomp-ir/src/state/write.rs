@@ -74,13 +74,18 @@ fn block_ref(ssa: &Ssa, n: crate::NodeId) -> Result<BlockRef, StateError> {
     let i = ssa.cfg.index(n).ok_or_else(|| dangling("block", n))?;
     u32::try_from(i)
         .map(BlockRef)
-        .map_err(|_| StateError::Range {
+        .map_err(|source| StateError::Convert {
+            source,
             what: "block index",
             value: i.to_string(),
         })
 }
 
-fn varnode_record(ssa: &Ssa, vn: VarnodeId, calls: &CanonicalCalls) -> Result<VarnodeRecord, StateError> {
+fn varnode_record(
+    ssa: &Ssa,
+    vn: VarnodeId,
+    calls: &CanonicalCalls,
+) -> Result<VarnodeRecord, StateError> {
     let addr = ssa.varnode_addr(vn);
     let space = ssa
         .spaces
@@ -203,9 +208,18 @@ pub fn write(
                 output: ssa.op_output(op).map(|v| vname(ssa, v)),
                 inputs,
                 parent: ssa.op_parent(op).map(|b| block_ref(ssa, b)).transpose()?,
-                liveness: if ssa.op_flags(op) & oflags::DEAD != 0 { "dead" } else { "alive" }
-                    .to_owned(),
-                tree: if ssa.op_in_alt_tree(op) { "alt" } else { "main" }.to_owned(),
+                liveness: if ssa.op_flags(op) & oflags::DEAD != 0 {
+                    "dead"
+                } else {
+                    "alive"
+                }
+                .to_owned(),
+                tree: if ssa.op_in_alt_tree(op) {
+                    "alt"
+                } else {
+                    "main"
+                }
+                .to_owned(),
                 text: ssa.op_text(op, names),
             })
         })
@@ -214,7 +228,10 @@ pub fn write(
     let list = |name: &str, ops: Vec<OpId>| -> Result<OpListRecord, StateError> {
         Ok(OpListRecord {
             name: name.to_owned(),
-            ops: ops.into_iter().map(|o| seq(ssa, o)).collect::<Result<_, _>>()?,
+            ops: ops
+                .into_iter()
+                .map(|o| seq(ssa, o))
+                .collect::<Result<_, _>>()?,
         })
     };
     d.op_lists = vec![

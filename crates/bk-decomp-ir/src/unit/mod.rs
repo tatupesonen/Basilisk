@@ -108,7 +108,7 @@ pub enum UnitError {
     },
     /// More units than a `UnitId` can name.
     #[error("too many units")]
-    TooMany,
+    TooMany(#[source] std::num::TryFromIntError),
     /// A name the table was checked against is missing.
     #[error("unit {0:?} is not in the table")]
     Unknown(String),
@@ -146,7 +146,7 @@ impl UnitTable {
                         origin: u.origin,
                     });
                 }
-                let id = u16::try_from(t.units.len()).map_err(|_| UnitError::TooMany)?;
+                let id = u16::try_from(t.units.len()).map_err(UnitError::TooMany)?;
                 t.by_name.insert(key, UnitId::new(u32::from(id)));
                 t.units.push(*u);
             }

@@ -9,7 +9,7 @@ use bk_decomp_types::TypeId;
 use crate::data::VarnodeData;
 use crate::flags::{vaddl, vflags};
 use crate::ids::{CallSpecId, EntryRef, HighId, NONE, OpId, VarnodeId};
-use crate::ssa::{Ssa, SpecialSpace};
+use crate::ssa::{SpecialSpace, Ssa};
 
 /// What a varnode's offset denotes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -211,7 +211,9 @@ impl Ssa {
 
     /// The high variable (`high`; `getHigh` throws where this is `None`).
     pub fn varnode_high(&self, vn: VarnodeId) -> Option<HighId> {
-        self.vns.get(vn.index()).and_then(|d| HighId::from_packed(d.high))
+        self.vns
+            .get(vn.index())
+            .and_then(|d| HighId::from_packed(d.high))
     }
 
     /// `getSymbolEntry`.
@@ -290,12 +292,12 @@ impl Ssa {
     /// `intersects(Varnode)`.
     pub fn intersects(&self, a: VarnodeId, b: VarnodeId) -> bool {
         match (self.vns.get(a.index()), self.vns.get(b.index())) {
-            (Some(da), Some(db)) => self.intersects_range(da, db.loc, db.size),
+            (Some(da), Some(db)) => Self::intersects_range(da, db.loc, db.size),
             _ => false,
         }
     }
 
-    pub(crate) fn intersects_range(&self, d: &VarnodeData, addr: Address, size: i32) -> bool {
+    pub(crate) fn intersects_range(d: &VarnodeData, addr: Address, size: i32) -> bool {
         if d.loc.space() != addr.space() || d.loc.is_constant() {
             return false;
         }
@@ -311,7 +313,7 @@ impl Ssa {
     pub fn intersects_addr(&self, vn: VarnodeId, addr: Address, size: i32) -> bool {
         self.vns
             .get(vn.index())
-            .is_some_and(|d| self.intersects_range(d, addr, size))
+            .is_some_and(|d| Self::intersects_range(d, addr, size))
     }
 
     /// `contains`: -1 if `op` starts before `this`, 0 if contained, 1 if

@@ -30,16 +30,18 @@ impl Ssa {
             return Address::INVALID;
         };
         if cover.len() == 1 {
-            return cover.first_range().map_or(Address::INVALID, |r| r.first_addr());
+            return cover
+                .first_range()
+                .map_or(Address::INVALID, |r| r.first_addr());
         }
         let Some(first) = self.first_op(b) else {
             return Address::INVALID;
         };
-        let addr = self.ops.get(first.index()).map_or(Address::INVALID, |d| d.pc);
-        match addr
-            .space()
-            .and_then(|s| cover.get_range(s, addr.offset()))
-        {
+        let addr = self
+            .ops
+            .get(first.index())
+            .map_or(Address::INVALID, |d| d.pc);
+        match addr.space().and_then(|s| cover.get_range(s, addr.offset())) {
             Some(r) => r.first_addr(),
             None => addr,
         }
@@ -82,7 +84,10 @@ impl Ssa {
             }
         }
         if let Some(last) = self.last_op(b)
-            && self.ops.get(last.index()).and_then(crate::data::OpData::opcode)
+            && self
+                .ops
+                .get(last.index())
+                .and_then(crate::data::OpData::opcode)
                 == Some(OpCode::BranchInd)
         {
             return false;
@@ -212,12 +217,8 @@ impl Ssa {
             self.op_opcode(op) == Some(OpCode::MultiEqual) && self.op_parent(op) == Some(b)
         })?;
         let ins = self.op_inputs(op);
-        (ins.len() >= vars.len()
-            && vars
-                .iter()
-                .zip(&ins)
-                .all(|(v, i)| Some(*v) == *i))
-        .then_some(op)
+        (ins.len() >= vars.len() && vars.iter().zip(&ins).all(|(v, i)| Some(*v) == *i))
+            .then_some(op)
     }
 
     /// `BlockBasic::earliestUse`.
@@ -349,7 +350,11 @@ impl Ssa {
     pub fn compare_order(&self, a: OpId, b: OpId) -> i32 {
         let (pa, pb) = (self.op_parent(a), self.op_parent(b));
         if pa == pb {
-            return if self.op_order(a) < self.op_order(b) { -1 } else { 1 };
+            return if self.op_order(a) < self.op_order(b) {
+                -1
+            } else {
+                1
+            };
         }
         let (Some(pa), Some(pb)) = (pa, pb) else {
             return 0;

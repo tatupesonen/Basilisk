@@ -231,8 +231,12 @@ impl Ssa {
             return Err(IrError::DeadMove(op));
         }
         self.dead.remove(&mut self.links, Thread::Life, op);
-        let next = self.links.get(prev.index()).and_then(|l| l.next(Thread::Life));
-        self.dead.insert_before(&mut self.links, Thread::Life, op, next);
+        let next = self
+            .links
+            .get(prev.index())
+            .and_then(|l| l.next(Thread::Life));
+        self.dead
+            .insert_before(&mut self.links, Thread::Life, op, next);
         Ok(())
     }
 
@@ -243,7 +247,10 @@ impl Ssa {
         if run.contains(&prev) || self.opd(prev)?.flags & oflags::DEAD == 0 {
             return Err(IrError::DeadMove(prev));
         }
-        let after_prev = self.links.get(prev.index()).and_then(|l| l.next(Thread::Life));
+        let after_prev = self
+            .links
+            .get(prev.index())
+            .and_then(|l| l.next(Thread::Life));
         if after_prev == Some(first) {
             return Ok(());
         }
@@ -274,7 +281,10 @@ impl Ssa {
             if run.len() > self.dead.len() {
                 break;
             }
-            cur = self.links.get(op.index()).and_then(|l| l.next(Thread::Life));
+            cur = self
+                .links
+                .get(op.index())
+                .and_then(|l| l.next(Thread::Life));
         }
         Err(IrError::DeadMove(last))
     }
@@ -397,7 +407,10 @@ impl Ssa {
         if d.flags & oflags::DEAD == 0 {
             return self.next_op(op);
         }
-        if let Some(n) = self.links.get(op.index()).and_then(|l| l.next(Thread::Life))
+        if let Some(n) = self
+            .links
+            .get(op.index())
+            .and_then(|l| l.next(Thread::Life))
             && self.opd_any(n)?.flags & oflags::STARTMARK == 0
         {
             return Ok(Some(n));

@@ -83,12 +83,13 @@ impl RawNames for DumpNames {
             }
         };
         match base.as_str() {
-            "read_volatile" => Some(ssa.op_output(op).map_or(base.clone(), |o| {
-                sized(ssa.varnode_size(o))
-            })),
-            "write_volatile" if ssa.op_num_inputs(op) >= 3 => {
-                Some(sized(ssa.op_input(op, 2).map_or(0, |v| ssa.varnode_size(v))))
-            }
+            "read_volatile" => Some(
+                ssa.op_output(op)
+                    .map_or_else(|| base.clone(), |o| sized(ssa.varnode_size(o))),
+            ),
+            "write_volatile" if ssa.op_num_inputs(op) >= 3 => Some(sized(
+                ssa.op_input(op, 2).map_or(0, |v| ssa.varnode_size(v)),
+            )),
             _ => Some(base),
         }
     }

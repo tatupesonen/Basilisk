@@ -1,4 +1,13 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic, clippy::print_stderr, clippy::allow_attributes, clippy::tests_outside_test_module, reason = "test code")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic,
+    clippy::print_stderr,
+    clippy::allow_attributes,
+    clippy::tests_outside_test_module,
+    reason = "test code"
+)]
 //! Spec tests 1 and 2 over the whole corpus (L): every state dump D00's
 //! capture driver writes for the data tests and the research corpus (the
 //! four standard points and the end) loads and writes back byte for byte —
@@ -48,7 +57,9 @@ fn lang<'a>(reg: &LanguageRegistry, cache: &'a mut HashMap<String, Lang>, arch: 
 }
 
 fn files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     let mut entries: Vec<_> = rd.map(|e| e.unwrap().path()).collect();
     entries.sort();
     for p in entries {
@@ -66,8 +77,7 @@ fn first_diff(a: &str, b: &str) -> Option<(usize, String, String)> {
             return Some((i + 1, x.to_owned(), y.to_owned()));
         }
     }
-    (a.lines().count() != b.lines().count())
-        .then(|| (0, "line count".to_owned(), String::new()))
+    (a.lines().count() != b.lines().count()).then(|| (0, "line count".to_owned(), String::new()))
 }
 
 /// The cause of a difference, by what our line shows.
@@ -88,13 +98,13 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         return;
     };
     let out_dir = workspace_root().join("target/decomp-ir");
-    let cap = std::env::var_os("BK_IR_CAPTURE")
-        .map_or_else(|| out_dir.join("capture"), PathBuf::from);
+    let cap =
+        std::env::var_os("BK_IR_CAPTURE").map_or_else(|| out_dir.join("capture"), PathBuf::from);
     if !cap.join("datatests").is_dir() {
         let positions = capture::find_positions(&reference, &ghidra).unwrap();
         let mut scripts = capture::data_tests(&ghidra).unwrap();
         scripts.extend(capture::research(&workspace_root()).unwrap());
-        let jobs = std::thread::available_parallelism().map_or(4, |n| n.get());
+        let jobs = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
         let report = capture::capture_corpus(&reference, &scripts, &positions, &cap, jobs);
         eprintln!("capture: {}", report.summary().lines().last().unwrap_or(""));
     }
@@ -105,7 +115,10 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     let (mut loaded, mut equal, mut raw_eq, mut raw_n) = (0, 0, 0, 0);
     let mut causes: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut report = String::new();
-    for path in all.iter().filter(|p| p.extension().is_some_and(|e| e == "state")) {
+    for path in all
+        .iter()
+        .filter(|p| p.extension().is_some_and(|e| e == "state"))
+    {
         let name = path.strip_prefix(&cap).unwrap().display().to_string();
         let text = read_text(path).unwrap();
         let dump = StateDump::parse(&text).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -155,5 +168,10 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     let other = causes.get("other").copied().unwrap_or(0)
         + causes.get("load-error").copied().unwrap_or(0)
         + causes.get("print-raw").copied().unwrap_or(0);
-    assert_eq!(other, 0, "see target/decomp-ir/corpus.txt\n{}", report.lines().take(40).collect::<Vec<_>>().join("\n"));
+    assert_eq!(
+        other,
+        0,
+        "see target/decomp-ir/corpus.txt\n{}",
+        report.lines().take(40).collect::<Vec<_>>().join("\n")
+    );
 }

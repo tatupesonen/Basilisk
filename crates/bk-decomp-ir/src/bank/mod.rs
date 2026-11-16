@@ -177,10 +177,7 @@ impl Ssa {
     pub(crate) fn replace(&mut self, old: VarnodeId, new: VarnodeId) -> IrResult<()> {
         self.check_replace(old, new)?;
         let mut idx = 0;
-        loop {
-            let Some(op_raw) = self.vnd(old)?.readers.get(&self.pool, idx) else {
-                break;
-            };
+        while let Some(op_raw) = self.vnd(old)?.readers.get(&self.pool, idx) {
             let op = OpId(op_raw);
             if self.opd_any(op)?.output == new.0 {
                 idx += 1;

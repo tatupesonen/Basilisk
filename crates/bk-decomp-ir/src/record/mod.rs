@@ -32,7 +32,10 @@ pub trait Recorder: Send {
 
 impl Ssa {
     /// Attaches a recorder, returning the previous one.
-    pub fn set_recorder(&mut self, recorder: Option<Box<dyn Recorder>>) -> Option<Box<dyn Recorder>> {
+    pub fn set_recorder(
+        &mut self,
+        recorder: Option<Box<dyn Recorder>>,
+    ) -> Option<Box<dyn Recorder>> {
         std::mem::replace(&mut self.recorder, recorder)
     }
 

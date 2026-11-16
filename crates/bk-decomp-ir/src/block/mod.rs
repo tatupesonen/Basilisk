@@ -44,14 +44,14 @@ impl Ssa {
         self.blocks
             .get(b.index())
             .filter(|d| d.present)
-            .ok_or(IrError::NoSuchBlock(b.get()))
+            .ok_or_else(|| IrError::NoSuchBlock(b.get()))
     }
 
     fn bdata_mut(&mut self, b: NodeId) -> IrResult<&mut BasicData> {
         self.blocks
             .get_mut(b.index())
             .filter(|d| d.present)
-            .ok_or(IrError::NoSuchBlock(b.get()))
+            .ok_or_else(|| IrError::NoSuchBlock(b.get()))
     }
 
     /// Whether `b` is a basic block of this function.
@@ -123,13 +123,15 @@ impl Ssa {
             .blocks
             .get_mut(b.index())
             .filter(|d| d.present)
-            .ok_or(IrError::NoSuchBlock(b.get()))?;
+            .ok_or_else(|| IrError::NoSuchBlock(b.get()))?;
         data.ops.insert_before(links, Thread::Block, op, before);
         if let Some(d) = self.ops.get_mut(op.index()) {
             d.parent = b.get();
         }
         let prev = self.op_prev_in_block(op);
-        let ordbefore = prev.and_then(|p| self.ops.get(p.index())).map_or(2, |d| d.order);
+        let ordbefore = prev
+            .and_then(|p| self.ops.get(p.index()))
+            .map_or(2, |d| d.order);
         let ordafter = match before {
             None => {
                 let a = ordbefore.wrapping_add(0x100_0000);
@@ -138,7 +140,7 @@ impl Ssa {
             Some(bf) => self.ops.get(bf.index()).map_or(0, |d| d.order),
         };
         if ordafter.wrapping_sub(ordbefore) <= 1 {
-            self.set_order(b)?;
+            self.set_order(b);
         } else if let Some(d) = self.ops.get_mut(op.index()) {
             d.order = ordafter / 2 + ordbefore / 2;
         }
@@ -170,8 +172,9 @@ impl Ssa {
     }
 
     /// `BlockBasic::setOrder`: renumbers the block's ops `step, 2*step, …`
-    /// with `step = 0xffffffff / n - 1`.
-    pub fn set_order(&mut self, b: NodeId) -> IrResult<()> {
+    /// with `step = 0xffffffff / n - 1` (block.cc:2700). Ghidra divides by
+    /// zero for an empty block; here an empty block has nothing to number.
+    pub fn set_order(&mut self, b: NodeId) {
         let ops = self.block_ops(b);
         let n = ops.len().max(1) as u32;
         let step = (u32::MAX / n).wrapping_sub(1);
@@ -182,7 +185,6 @@ impl Ssa {
                 d.order = count;
             }
         }
-        Ok(())
     }
 
     /// `BlockBasic::setInitialRange`.
@@ -222,7 +224,11 @@ impl Ssa {
 
     /// The basic blocks in graph list order.
     pub fn blocks(&self) -> impl Iterator<Item = NodeId> + '_ {
-        self.cfg.nodes().iter().copied().filter(|&n| self.is_block(n))
+        self.cfg
+            .nodes()
+            .iter()
+            .copied()
+            .filter(|&n| self.is_block(n))
     }
 
     /// The block with Ghidra index `index` (`getBlock(i)` after

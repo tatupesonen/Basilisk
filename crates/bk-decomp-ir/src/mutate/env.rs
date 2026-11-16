@@ -73,8 +73,12 @@ pub trait FunctionEnv {
     fn code_type(&self) -> TypeId;
     /// `localmap->queryProperties(addr, size, usepoint)`; `use_point` is
     /// `None` for Ghidra's invalid `Address()`.
-    fn symbol_properties(&self, addr: Address, size: i32, use_point: Option<Address>)
-    -> PropertiesAnswer;
+    fn symbol_properties(
+        &self,
+        addr: Address,
+        size: i32,
+        use_point: Option<Address>,
+    ) -> PropertiesAnswer;
     /// `Funcdata::assignHigh` (when `highlevel_on`: computes the cover
     /// through [`Ssa::calc_cover`], issues a data-type warning, gives a
     /// non-annotation varnode its own high variable through
@@ -120,7 +124,7 @@ impl FunctionEnv for TableEnv {
         self.default_types
             .get(&size)
             .copied()
-            .unwrap_or(TypeId::from_raw(size as u32))
+            .unwrap_or_else(|| TypeId::from_raw(size as u32))
     }
 
     fn code_type(&self) -> TypeId {
@@ -140,7 +144,8 @@ impl FunctionEnv for TableEnv {
     }
 
     fn assign_high(&mut self, ssa: &mut Ssa, vn: VarnodeId) {
-        self.log.push(format!("assign_high {}", ssa.varnode_create_index(vn)));
+        self.log
+            .push(format!("assign_high {}", ssa.varnode_create_index(vn)));
         if self.high_on {
             if ssa.has_cover(vn) {
                 let _ = ssa.calc_cover(vn);

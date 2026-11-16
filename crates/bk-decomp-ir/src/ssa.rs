@@ -348,7 +348,6 @@ impl Ssa {
         let id = match which {
             SpecialSpace::Iop => self.spaces.iop_space(),
             SpecialSpace::Fspec => self.spaces.fspec_space(),
-            SpecialSpace::Join => self.spaces.join_space(),
         }
         .map(bk_core::Space::id);
         id.is_some() && addr.space() == id
@@ -369,12 +368,64 @@ impl Ssa {
     }
 }
 
+/// What an [`Ssa`] holds in memory (spec 6, test 12: bytes per op and per
+/// varnode). Arena figures count allocated capacity; the ordered indexes
+/// are counted by their payload (key and value) only, without the B-tree
+/// node overhead, which the standard library does not expose.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct MemoryUse {
+    /// Varnode slots (live and destroyed).
+    pub varnodes: usize,
+    /// Op slots (live and retired).
+    pub ops: usize,
+    /// Bytes of the varnode arenas (record and side state).
+    pub varnode_bytes: usize,
+    /// Bytes of the op arenas (record and list links).
+    pub op_bytes: usize,
+    /// Bytes of input and reader lists spilled out of line.
+    pub spill_bytes: usize,
+    /// Payload bytes of the loc, def and op trees.
+    pub index_bytes: usize,
+}
+
+impl MemoryUse {
+    /// Bytes of one varnode slot in the arenas.
+    pub const VARNODE_SLOT: usize = size_of::<VarnodeData>() + size_of::<VState>();
+    /// Bytes of one op slot in the arenas.
+    pub const OP_SLOT: usize = size_of::<OpData>() + size_of::<OpLinks>();
+
+    /// The total of the byte figures.
+    pub const fn total_bytes(&self) -> usize {
+        self.varnode_bytes + self.op_bytes + self.spill_bytes + self.index_bytes
+    }
+}
+
+impl Ssa {
+    /// The memory this function's IR holds ([`MemoryUse`]).
+    pub fn memory_use(&self) -> MemoryUse {
+        let loc = size_of::<LocKey>() + size_of::<VarnodeId>();
+        let def = size_of::<DefKey>() + size_of::<VarnodeId>();
+        let seq = size_of::<SeqKey>() + size_of::<OpId>();
+        MemoryUse {
+            varnodes: self.vns.len(),
+            ops: self.ops.len(),
+            varnode_bytes: self.vns.capacity() * size_of::<VarnodeData>()
+                + self.vstate.capacity() * size_of::<VState>(),
+            op_bytes: self.ops.capacity() * size_of::<OpData>()
+                + self.links.capacity() * size_of::<OpLinks>(),
+            spill_bytes: self.pool.heap_bytes(),
+            index_bytes: self.loc.len() * loc
+                + self.def.len() * def
+                + (self.optree.len() + self.alttree.len()) * seq,
+        }
+    }
+}
+
 /// The special spaces whose offsets are not addresses.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SpecialSpace {
     Iop,
     Fspec,
-    Join,
 }
 
 #[cfg(test)]

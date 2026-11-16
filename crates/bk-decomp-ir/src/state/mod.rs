@@ -37,6 +37,17 @@ pub enum StateError {
         /// The value.
         value: String,
     },
+    /// A value does not fit the integer type the IR stores it in.
+    #[error("{what} {value} is out of range")]
+    Convert {
+        /// The field.
+        what: &'static str,
+        /// The value.
+        value: String,
+        /// The failed conversion.
+        #[source]
+        source: std::num::TryFromIntError,
+    },
     /// The dump contradicts itself.
     #[error("inconsistent dump: {what} ({detail})")]
     Inconsistent {

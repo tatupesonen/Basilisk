@@ -28,7 +28,8 @@ pub fn spaces_from_dump(
     records.sort_by_key(|r| r.index);
     let mut base_for_spacebase: Option<Space> = None;
     for r in records {
-        let index = u32::try_from(r.index).map_err(|_| StateError::Range {
+        let index = u32::try_from(r.index).map_err(|source| StateError::Convert {
+            source,
             what: "space index",
             value: r.index.to_string(),
         })?;

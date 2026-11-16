@@ -116,12 +116,16 @@ impl Ssa {
 
     /// Whether `op` was retired.
     pub fn op_is_retired(&self, op: OpId) -> bool {
-        self.ops.get(op.index()).is_some_and(|d| d.tree == Tree::Retired)
+        self.ops
+            .get(op.index())
+            .is_some_and(|d| d.tree == Tree::Retired)
     }
 
     /// Whether the op is in `alttree`.
     pub fn op_in_alt_tree(&self, op: OpId) -> bool {
-        self.ops.get(op.index()).is_some_and(|d| d.tree == Tree::Alt)
+        self.ops
+            .get(op.index())
+            .is_some_and(|d| d.tree == Tree::Alt)
     }
 
     /// `code()`; `None` before the first `op_set_opcode`.
@@ -203,7 +207,9 @@ impl Ssa {
     /// `getSlot`: the first slot holding `vn` (`numInput` if none).
     pub fn op_slot(&self, op: OpId, vn: VarnodeId) -> usize {
         self.ops.get(op.index()).map_or(0, |d| {
-            d.inputs.position(&self.pool, vn.0).unwrap_or(d.inputs.len())
+            d.inputs
+                .position(&self.pool, vn.0)
+                .unwrap_or(d.inputs.len())
         })
     }
 
@@ -230,7 +236,8 @@ impl Ssa {
 
     /// `getOpName`: the `TypeOp` name `print raw` uses.
     pub fn op_name(&self, op: OpId) -> &'static str {
-        self.op_opcode(op).map_or("", |o| crate::props::props(o).name)
+        self.op_opcode(op)
+            .map_or("", |o| crate::props::props(o).name)
     }
 
     /// `isCollapsible`: an assignment whose inputs are all constants and
@@ -259,7 +266,9 @@ impl Ssa {
         if self.op_eval_type(op) & (oflags::UNARY | oflags::BINARY) == 0 {
             return 0;
         }
-        let Some(opc) = self.op_opcode(op) else { return 0 };
+        let Some(opc) = self.op_opcode(op) else {
+            return 0;
+        };
         if opc == OpCode::Copy {
             return 0;
         }
@@ -365,7 +374,9 @@ impl Ssa {
             && let Some(out) = out
             && !self.is_addr_tied(out)
             && !self.is_persist(out)
-            && !ins.iter().any(|&v| self.is_addr_tied(v) || self.is_persist(v))
+            && !ins
+                .iter()
+                .any(|&v| self.is_addr_tied(v) || self.is_persist(v))
         {
             cross_calls = true;
         }

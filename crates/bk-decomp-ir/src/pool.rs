@@ -101,20 +101,24 @@ impl IdList {
     /// Appends `v`.
     pub(crate) fn push(&mut self, pool: &mut Pool, v: u32) {
         let n = self.len as usize;
-        if n < INLINE {
-            if let Some(slot) = self.data.get_mut(n) {
-                *slot = v;
+        match n.cmp(&INLINE) {
+            std::cmp::Ordering::Less => {
+                if let Some(slot) = self.data.get_mut(n) {
+                    *slot = v;
+                }
+                self.len += 1;
             }
-            self.len += 1;
-        } else if n == INLINE {
-            let mut ids = self.data.to_vec();
-            ids.push(v);
-            self.rebuild(pool, &ids);
-        } else {
-            if let Some(list) = pool.get_mut(self.data[0]) {
-                list.push(v);
+            std::cmp::Ordering::Equal => {
+                let mut ids = self.data.to_vec();
+                ids.push(v);
+                self.rebuild(pool, &ids);
             }
-            self.len += 1;
+            std::cmp::Ordering::Greater => {
+                if let Some(list) = pool.get_mut(self.data[0]) {
+                    list.push(v);
+                }
+                self.len += 1;
+            }
         }
     }
 

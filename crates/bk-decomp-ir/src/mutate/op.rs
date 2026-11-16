@@ -1,4 +1,4 @@
-//! The op half of the mutation interface (funcdata_op.cc:25–350,
+//! The op half of the mutation interface (`funcdata_op.cc:25–350`,
 //! 625–758). Each method that Ghidra instruments with `debugModCheck` tells
 //! the recorder before it changes the op. Checks come first; a method that
 //! returns an error has changed nothing (except where noted).
@@ -35,7 +35,9 @@ impl Ssa {
     /// input 1 naming `target`.
     pub fn new_indirect(&mut self, env: &mut dyn FunctionEnv, target: OpId) -> IrResult<OpId> {
         let pc = self.opd(target)?.pc;
-        self.spaces.iop_space().ok_or(IrError::MissingSpace("iop"))?;
+        self.spaces
+            .iop_space()
+            .ok_or(IrError::MissingSpace("iop"))?;
         let op = self.bank_create_indirect(pc)?;
         self.bank_change_opcode(op, OpCode::Indirect)?;
         let iop = self.new_varnode_iop(env, target)?;

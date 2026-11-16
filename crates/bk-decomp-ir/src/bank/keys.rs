@@ -33,6 +33,9 @@ pub(crate) const WRITTEN_CLASS: u32 = class(vflags::WRITTEN);
 /// The class value of free varnodes.
 pub(crate) const FREE_CLASS: u32 = class(0);
 
+// The loc order sorts input, then written, then free varnodes.
+const _: () = assert!(INPUT_CLASS < WRITTEN_CLASS && WRITTEN_CLASS < FREE_CLASS);
+
 /// Location then definition.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct LocKey {
@@ -104,8 +107,6 @@ mod tests {
 
     #[test]
     fn classes_order_input_written_free() {
-        assert!(INPUT_CLASS < WRITTEN_CLASS);
-        assert!(WRITTEN_CLASS < FREE_CLASS);
         let a = Address::new(SpaceId::new(3), 0x10);
         let parts = |flags, create| KeyParts {
             addr: a,

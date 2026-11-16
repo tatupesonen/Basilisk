@@ -46,12 +46,16 @@ const fn t(thread: Thread) -> usize {
 impl OpLinks {
     /// The previous op on `thread`.
     pub(crate) fn prev(&self, thread: Thread) -> Option<OpId> {
-        self.links.get(t(thread)).and_then(|l| OpId::from_packed(l[0]))
+        self.links
+            .get(t(thread))
+            .and_then(|l| OpId::from_packed(l[0]))
     }
 
     /// The next op on `thread`.
     pub(crate) fn next(&self, thread: Thread) -> Option<OpId> {
-        self.links.get(t(thread)).and_then(|l| OpId::from_packed(l[1]))
+        self.links
+            .get(t(thread))
+            .and_then(|l| OpId::from_packed(l[1]))
     }
 
     fn set(&mut self, thread: Thread, prev: u32, next: u32) {
@@ -105,11 +109,6 @@ impl ListHead {
     /// The number of ops.
     pub(crate) fn len(&self) -> usize {
         self.len as usize
-    }
-
-    /// Whether the list is empty.
-    pub(crate) fn is_empty(&self) -> bool {
-        self.len == 0
     }
 
     /// Inserts `op` before `before` (`None`: at the end). The caller

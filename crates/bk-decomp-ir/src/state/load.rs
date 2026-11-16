@@ -20,8 +20,12 @@ use crate::list::Thread;
 use crate::pool::IdList;
 use crate::ssa::{CodeList, Ssa};
 
-fn range<T: TryFrom<u64>>(what: &'static str, v: u64) -> Result<T, StateError> {
-    T::try_from(v).map_err(|_| StateError::Range {
+fn range<T: TryFrom<u64, Error = std::num::TryFromIntError>>(
+    what: &'static str,
+    v: u64,
+) -> Result<T, StateError> {
+    T::try_from(v).map_err(|source| StateError::Convert {
+        source,
         what,
         value: format!("{v:#x}"),
     })
@@ -79,7 +83,8 @@ impl Loader<'_> {
         for e in &self.dump.blocks {
             let b = &e.block;
             let n = self.ssa.add_block(b.flags)?;
-            let index = i32::try_from(b.block.0).map_err(|_| StateError::Range {
+            let index = i32::try_from(b.block.0).map_err(|source| StateError::Convert {
+                source,
                 what: "block index",
                 value: b.block.to_string(),
             })?;
@@ -93,7 +98,8 @@ impl Loader<'_> {
             let n = self.block(e.block.block)?;
             for edge in &e.in_edges {
                 let src = self.block(edge.source)?;
-                let slot = usize::try_from(edge.slot).map_err(|_| StateError::Range {
+                let slot = usize::try_from(edge.slot).map_err(|source| StateError::Convert {
+                    source,
                     what: "edge slot",
                     value: edge.slot.to_string(),
                 })?;
@@ -127,7 +133,8 @@ impl Loader<'_> {
     fn load_ops(&mut self) -> Result<(), StateError> {
         for r in &self.dump.ops {
             let (pc, time) = self.seq_key(&r.seq)?;
-            let opcode = OpCode::from_name(&r.opcode).ok_or_else(|| dangling("opcode", &r.opcode))?;
+            let opcode =
+                OpCode::from_name(&r.opcode).ok_or_else(|| dangling("opcode", &r.opcode))?;
             let tree = match r.tree.as_str() {
                 "main" => Tree::Main,
                 "alt" => Tree::Alt,
@@ -223,9 +230,12 @@ impl Loader<'_> {
             self.ssa.vns.push(VarnodeData {
                 flags: r.flags,
                 addl: range("varnode addlflags", u64::from(r.addl_flags))?,
-                merge_group: i16::try_from(r.merge_group).map_err(|_| StateError::Range {
-                    what: "merge group",
-                    value: r.merge_group.to_string(),
+                merge_group: i16::try_from(r.merge_group).map_err(|source| {
+                    StateError::Convert {
+                        source,
+                        what: "merge group",
+                        value: r.merge_group.to_string(),
+                    }
                 })?,
                 size: r.size,
                 create_index: r.id.0,
@@ -277,10 +287,12 @@ impl Loader<'_> {
             for &op in d.readers.as_slice(&self.ssa.pool) {
                 *seen.entry((i as u32, op)).or_default() += 1;
             }
-            if d.def != NONE
-                && self.ssa.ops.get(d.def as usize).map(|o| o.output) != Some(i as u32)
+            if d.def != NONE && self.ssa.ops.get(d.def as usize).map(|o| o.output) != Some(i as u32)
             {
-                return Err(inconsistent("varnode def without matching op output", d.create_index));
+                return Err(inconsistent(
+                    "varnode def without matching op output",
+                    d.create_index,
+                ));
             }
         }
         if seen != uses {
@@ -316,12 +328,22 @@ impl Loader<'_> {
                         if dead != (flags & oflags::DEAD != 0) {
                             return Err(inconsistent("op in the wrong life list", s));
                         }
-                        let head = if dead { &mut self.ssa.dead } else { &mut self.ssa.alive };
+                        let head = if dead {
+                            &mut self.ssa.dead
+                        } else {
+                            &mut self.ssa.alive
+                        };
                         head.push_back(links, thread, op);
                     }
                     (_, Some(c)) => {
                         if links.get(op.index()).is_some_and(|x| x.code_list != 0)
-                            || CodeList::of(self.ssa.ops.get(op.index()).and_then(OpData::opcode).unwrap_or(OpCode::Copy)) != Some(c)
+                            || CodeList::of(
+                                self.ssa
+                                    .ops
+                                    .get(op.index())
+                                    .and_then(OpData::opcode)
+                                    .unwrap_or(OpCode::Copy),
+                            ) != Some(c)
                         {
                             return Err(inconsistent("op in a wrong opcode list", s));
                         }
@@ -348,7 +370,10 @@ impl Loader<'_> {
             for s in &e.block.ops {
                 let op = self.op(s)?;
                 if self.ssa.opd_any(op)?.parent != n.get() {
-                    return Err(inconsistent("op listed in a block that is not its parent", s));
+                    return Err(inconsistent(
+                        "op listed in a block that is not its parent",
+                        s,
+                    ));
                 }
                 if self.ssa.links.get(op.index()).is_some_and(|l| {
                     l.prev(Thread::Block).is_some() || l.next(Thread::Block).is_some()
@@ -380,7 +405,8 @@ impl Loader<'_> {
                 .ssa
                 .key_parts(vn)
                 .ok_or_else(|| inconsistent("varnode key", i))?;
-            if self.ssa.loc.insert(k.loc(), vn).is_some() || self.ssa.def.insert(k.def(), vn).is_some()
+            if self.ssa.loc.insert(k.loc(), vn).is_some()
+                || self.ssa.def.insert(k.def(), vn).is_some()
             {
                 return Err(inconsistent(
                     "two varnodes equal in the bank order",

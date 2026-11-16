@@ -216,7 +216,11 @@ impl Ssa {
     /// `copySymbol`: type, entry and the type/name locks of `from`.
     pub fn copy_symbol(&mut self, vn: VarnodeId, from: VarnodeId) -> IrResult<()> {
         let f = self.vnd(from)?;
-        let (ty, entry, locks) = (f.ty, f.entry, f.flags & (vflags::TYPELOCK | vflags::NAMELOCK));
+        let (ty, entry, locks) = (
+            f.ty,
+            f.entry,
+            f.flags & (vflags::TYPELOCK | vflags::NAMELOCK),
+        );
         let d = self.vnd_mut(vn)?;
         d.ty = ty;
         d.entry = entry;

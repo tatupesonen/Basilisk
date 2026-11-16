@@ -1,4 +1,4 @@
-//! The varnode half of the mutation interface (funcdata_varnode.cc:25–310,
+//! The varnode half of the mutation interface (`funcdata_varnode.cc:25–310`,
 //! 354–394, 860–883, 1544–1609).
 
 use bk_core::{Address, SpaceId};
@@ -10,7 +10,7 @@ use crate::flags::{vaddl, vflags};
 use crate::ids::{CallSpecId, NONE, OpId, VarnodeId};
 use crate::ssa::Ssa;
 
-/// The varnode flags `cloneVarnode` copies (funcdata_varnode.cc:274).
+/// The varnode flags `cloneVarnode` copies (`funcdata_varnode.cc:274`).
 pub const CLONE_FLAGS: u32 = vflags::ANNOTATION
     | vflags::EXTERNREF
     | vflags::READONLY
@@ -338,34 +338,33 @@ impl Ssa {
         for op in self.readers(vn) {
             let slot = self.op_slot(op, vn);
             let rep = if self.op_is_marker(op) {
-                match copy_out {
-                    Some(r) => r,
-                    None => {
-                        let r = if let Some(def) = self.varnode_def(vn) {
-                            let copy = self.new_op(1, self.op_addr(def))?;
-                            self.op_set_opcode(copy, bk_pcode::OpCode::Copy)?;
-                            let r = self.new_unique_out(env, size, copy)?;
-                            let c = self.new_constant(env, size, val)?;
-                            self.op_set_input(env, copy, c, 0)?;
-                            self.op_insert_after(copy, def)?;
-                            r
-                        } else {
-                            let bb = *self
-                                .cfg
-                                .nodes()
-                                .first()
-                                .ok_or(IrError::NoBlocks("totalReplaceConstant"))?;
-                            let copy = self.new_op(1, self.block_start(bb))?;
-                            self.op_set_opcode(copy, bk_pcode::OpCode::Copy)?;
-                            let r = self.new_unique_out(env, size, copy)?;
-                            let c = self.new_constant(env, size, val)?;
-                            self.op_set_input(env, copy, c, 0)?;
-                            self.op_insert_begin(copy, bb)?;
-                            r
-                        };
-                        copy_out = Some(r);
+                if let Some(r) = copy_out {
+                    r
+                } else {
+                    let r = if let Some(def) = self.varnode_def(vn) {
+                        let copy = self.new_op(1, self.op_addr(def))?;
+                        self.op_set_opcode(copy, bk_pcode::OpCode::Copy)?;
+                        let r = self.new_unique_out(env, size, copy)?;
+                        let c = self.new_constant(env, size, val)?;
+                        self.op_set_input(env, copy, c, 0)?;
+                        self.op_insert_after(copy, def)?;
                         r
-                    }
+                    } else {
+                        let bb = *self
+                            .cfg
+                            .nodes()
+                            .first()
+                            .ok_or(IrError::NoBlocks("totalReplaceConstant"))?;
+                        let copy = self.new_op(1, self.block_start(bb))?;
+                        self.op_set_opcode(copy, bk_pcode::OpCode::Copy)?;
+                        let r = self.new_unique_out(env, size, copy)?;
+                        let c = self.new_constant(env, size, val)?;
+                        self.op_set_input(env, copy, c, 0)?;
+                        self.op_insert_begin(copy, bb)?;
+                        r
+                    };
+                    copy_out = Some(r);
+                    r
                 }
             } else {
                 self.new_constant(env, size, val)?
