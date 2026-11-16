@@ -7,3 +7,6 @@ pub mod env;
 mod insert;
 mod op;
 pub mod varnode;
+
+#[cfg(test)]
+mod tests;

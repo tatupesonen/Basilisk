@@ -197,6 +197,11 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
             }
         };
         loaded += 1;
+        let violations = ssa.invariant_violations();
+        if !violations.is_empty() {
+            *causes.entry("invariant").or_default() += 1;
+            let _ = writeln!(report, "INVARIANT {name}: {}", violations.join("; "));
+        }
         let names = DumpNames::from_dump(&dump, &spaces).with_userops(l.userops.clone());
         let out = write(&ssa, &dump, &names, &CanonicalCalls::Identity).unwrap();
         match first_diff(&text, &out) {
@@ -246,6 +251,7 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     );
     assert_eq!(equal + pinned.len(), loaded, "every other dump is exact");
     let other = causes.get("other").copied().unwrap_or(0)
+        + causes.get("invariant").copied().unwrap_or(0)
         + causes.get("load-error").copied().unwrap_or(0)
         + causes.get("print-raw").copied().unwrap_or(0);
     assert_eq!(

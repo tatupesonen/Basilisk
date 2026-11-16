@@ -53,6 +53,7 @@ fn switchind_samples_round_trip_without_registers() {
         let dump = StateDump::parse(&text).unwrap();
         let spaces = Arc::new(spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap());
         let ssa = load(&dump, Arc::clone(&spaces)).unwrap();
+        assert_eq!(ssa.invariant_violations(), Vec::<String>::new(), "{point}");
         let names = DumpNames::from_dump(&dump, &spaces);
         let out = write(&ssa, &dump, &names, &CanonicalCalls::Identity).unwrap();
         if let Some((line, a, b)) = first_diff(&without_texts(&text), &without_texts(&out)) {

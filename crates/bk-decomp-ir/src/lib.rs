@@ -31,6 +31,7 @@
 
 pub mod bank;
 mod block;
+mod check;
 pub mod cover;
 mod data;
 pub mod error;
@@ -50,6 +51,9 @@ mod ssa;
 pub mod state;
 pub mod unit;
 pub mod varnode;
+
+#[cfg(test)]
+mod testing;
 
 pub use bank::range::{DefCursor, LocCursor, VnClass};
 pub use bk_decomp_cfg::NodeId;

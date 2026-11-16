@@ -231,6 +231,9 @@ impl Ssa {
                 o.inputs.set(pool, slot, NONE);
             }
         }
+        // Out of the orders while the key still names the def (Ghidra
+        // erases through the stored iterators, `VarnodeBank::destroy`).
+        self.bank_remove(vn);
         if let Some(def) = self.varnode_def(vn)
             && let Some(o) = self.ops.get_mut(def.index())
         {
