@@ -188,6 +188,34 @@ impl SymbolData {
         self.category == category::EQUATE
     }
 
+    /// Ghidra `EquateSymbol::isValueClose` (database.cc:726–743): whether
+    /// `op2` at `size` bytes looks like this equate's value itself or
+    /// negated, complemented, plus or minus one. A value with bits above
+    /// `size` must be the sign extension of its low bytes, else nothing is
+    /// close. Always false for a symbol that is not an equate.
+    pub fn is_value_close(&self, op2: u64, size: u32) -> bool {
+        let SymbolKind::Equate { value } = self.kind else {
+            return false;
+        };
+        if value == op2 {
+            return true;
+        }
+        let mask = bk_core::bits::calc_mask(size);
+        let masked = value & mask;
+        if masked != value && value != bk_core::bits::sign_extend(masked, size, 8) {
+            return false;
+        }
+        [
+            op2,
+            !op2,
+            op2.wrapping_neg(),
+            op2.wrapping_add(1),
+            op2.wrapping_sub(1),
+        ]
+        .iter()
+        .any(|v| v & mask == masked)
+    }
+
     /// Ghidra `checkSizeTypeLock`.
     pub(crate) fn check_size_type_lock(&mut self) {
         self.disp &= !disp::SIZE_TYPELOCK;
