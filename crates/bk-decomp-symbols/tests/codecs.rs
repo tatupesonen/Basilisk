@@ -584,3 +584,37 @@ fn binary_image_round_trip_and_reads() {
         "{got:?}"
     );
 }
+
+#[test]
+fn constant_pool_constructor_and_destructor_records() {
+    // CPoolRecord::decode (cpool.cc): with `constructor` or `destructor`
+    // set, the type is read by TypeFactory::decodeTypeWithCodeFlags
+    // (type.cc:4745–4764), which wants a pointer to a code type, not a
+    // `<typeref>`. Basilisk's encoding writes the anonymous pointer whole
+    // (encodeRef of a type without a name), so the record round-trips.
+    let m = small::spaces(false);
+    let mut types = small::types(&m);
+    let sp = Arc::new(m);
+    for (attr, flag) in [
+        ("constructor", bk_decomp_symbols::cpool::IS_CONSTRUCTOR),
+        ("destructor", bk_decomp_symbols::cpool::IS_DESTRUCTOR),
+    ] {
+        let text = format!(
+            r#"<cpoolrec tag="method" {attr}="true"><token>m</token><type name="" size="8" metatype="ptr"><type name="" size="1" metatype="code"/></type></cpoolrec>"#
+        );
+        let rec = decoded(&text, &sp, |d| CPoolRecord::decode(d, &mut types)).unwrap();
+        assert_eq!(
+            (rec.tag, rec.flags, rec.token.as_str()),
+            (CPoolTag::PointerMethod, flag, "m")
+        );
+        let ty = types.get(rec.ty).unwrap();
+        assert_eq!((ty.metatype(), ty.size()), (Metatype::Ptr, 8), "{attr}");
+        let again = encoded(|e| rec.encode(e, &types).unwrap());
+        assert!(again.contains(&format!("{attr}=\"true\"")), "{again}");
+        let back = decoded(&again, &sp, |d| CPoolRecord::decode(d, &mut types)).unwrap();
+        assert_eq!(back, rec, "{attr}");
+    }
+    // A `<typeref>` there is refused: the special decode needs a pointer.
+    let bad = r#"<cpoolrec tag="method" constructor="true"><token>m</token><typeref name="int4"/></cpoolrec>"#;
+    assert!(decoded(bad, &sp, |d| CPoolRecord::decode(d, &mut types)).is_err());
+}
