@@ -17,12 +17,14 @@
 //! The capture is made into `target/decomp-ir/capture` (or read from
 //! `BK_IR_CAPTURE` if set). A summary goes to `target/decomp-ir/corpus.txt`.
 
-use std::collections::{BTreeMap, HashMap};
+mod support;
+
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use bk_core::{NoRegisters, RegisterLookup};
+use bk_core::RegisterLookup;
 use bk_decomp_ir::state::{CanonicalCalls, DumpNames, load, spaces_from_dump, write};
 use bk_lang::{LanguageId, LanguageRegistry};
 use bk_sleigh::Language;
@@ -80,13 +82,55 @@ fn first_diff(a: &str, b: &str) -> Option<(usize, String, String)> {
     (a.lines().count() != b.lines().count()).then(|| (0, "line count".to_owned(), String::new()))
 }
 
-/// The cause of a difference, by what our line shows.
-fn cause(ours: &str) -> &'static str {
-    if ours.contains("{unlinked:") {
-        "join-record-missing"
-    } else {
-        "other"
+/// The text with every join address (`j{…}`, Ghidra's pieces or our
+/// `{unlinked:…}`) replaced by `j{}`.
+fn without_joins(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut rest = line;
+    while let Some(at) = rest.find("j{") {
+        let (head, tail) = rest.split_at(at + 2);
+        out.push_str(head);
+        rest = tail;
+        let mut depth = 1;
+        let mut end = rest.len();
+        for (i, c) in rest.char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = i;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        rest = rest.split_at(end).1;
     }
+    out.push_str(rest);
+    out
+}
+
+/// Whether the two texts are equal except for the join addresses, and
+/// differ at least there only in lines that print one.
+fn equal_but_joins(dump: &str, ours: &str) -> bool {
+    dump.lines().count() == ours.lines().count()
+        && dump.lines().zip(ours.lines()).all(|(a, b)| {
+            a == b
+                || (a.contains("j{")
+                    && b.contains("j{unlinked:")
+                    && without_joins(a) == without_joins(b))
+        })
+}
+
+/// The name of a dump under the capture directory, `/`-separated.
+fn dump_name(cap: &Path, path: &Path) -> String {
+    let rel = path.strip_prefix(cap).unwrap();
+    rel.components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 #[test]
@@ -114,16 +158,25 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     files(&cap, &mut all);
     let (mut loaded, mut equal, mut raw_eq, mut raw_n) = (0, 0, 0, 0);
     let mut causes: BTreeMap<&'static str, usize> = BTreeMap::new();
+    let mut with_joins = BTreeSet::new();
     let mut report = String::new();
     for path in all
         .iter()
         .filter(|p| p.extension().is_some_and(|e| e == "state"))
     {
-        let name = path.strip_prefix(&cap).unwrap().display().to_string();
+        let name = dump_name(&cap, path);
         let text = read_text(path).unwrap();
         let dump = StateDump::parse(&text).unwrap_or_else(|e| panic!("{name}: {e}"));
         let l = lang(&reg, &mut cache, &dump.arch_id);
         let spaces = Arc::new(spaces_from_dump(&dump, Arc::clone(&l.regs)).unwrap());
+        let join_name = spaces.join_space().map(|s| s.name().to_owned());
+        let has_join = dump
+            .varnodes
+            .iter()
+            .any(|v| Some(&v.space) == join_name.as_ref());
+        if has_join {
+            with_joins.insert(name.clone());
+        }
         let ssa = match load(&dump, Arc::clone(&spaces)) {
             Ok(s) => s,
             Err(e) => {
@@ -137,8 +190,11 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
         let out = write(&ssa, &dump, &names, &CanonicalCalls::Identity).unwrap();
         match first_diff(&text, &out) {
             None => equal += 1,
+            Some(_) if has_join && equal_but_joins(&text, &out) => {
+                *causes.entry("join-record-missing").or_default() += 1;
+            }
             Some((line, a, b)) => {
-                *causes.entry(cause(&b)).or_default() += 1;
+                *causes.entry("other").or_default() += 1;
                 let _ = writeln!(report, "DIFF {name}:{line}\n  dump {a}\n  ours {b}");
             }
         }
@@ -157,7 +213,6 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
             }
         }
     }
-    let _ = NoRegisters;
     let summary = format!(
         "dumps loaded {loaded}, written equal {equal}; print raw equal {raw_eq} of {raw_n}; differences {causes:?}\n"
     );
@@ -165,6 +220,19 @@ fn every_captured_dump_round_trips_and_prints_as_the_console() {
     std::fs::write(out_dir.join("corpus.txt"), format!("{summary}{report}")).unwrap();
     eprintln!("{summary}");
     assert!(loaded > 0, "no dumps found in {}", cap.display());
+    // The pinned exception: exactly the dumps with join varnodes differ, and
+    // only in how those print (support/join_dumps.rs).
+    let pinned: BTreeSet<String> = support::join_dumps::JOIN_DUMPS
+        .iter()
+        .map(|s| (*s).to_owned())
+        .collect();
+    assert_eq!(with_joins, pinned, "the dumps with join varnodes changed");
+    assert_eq!(
+        causes.get("join-record-missing").copied().unwrap_or(0),
+        pinned.len(),
+        "every dump with join varnodes differs only in them"
+    );
+    assert_eq!(equal + pinned.len(), loaded, "every other dump is exact");
     let other = causes.get("other").copied().unwrap_or(0)
         + causes.get("load-error").copied().unwrap_or(0)
         + causes.get("print-raw").copied().unwrap_or(0);

@@ -22,27 +22,53 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 4.5 | `op_semantics` | `semantics.rs` | uncommitted |
 | 4.9 | Units, origins, soundness, table, Ghidra name list generated from the inventory | `unit/` | uncommitted |
 
-### (b) In progress (paused at a clean point, usage limit)
+### (b) In progress
 
-- The crate compiles; unit tests and `tests/state_samples.rs` pass (the
-  five `switchind` samples round-trip byte for byte, op texts and both bank
-  orders included). Clippy is **not clean** (about 30 warnings, mostly
-  pedantic: backticks, unused `self`, `ok_or` with a call, dead helpers).
-- **Corpus (L), `tests/corpus.rs`**, run once on the build host (x86-64,
-  libstdc++) before the last fix: 3,642 dumps loaded (all), 3,510 written
-  back byte for byte; `print raw` at the first point equal to the console's
-  in **607 of 607** decompilations. Differences: 76 `join-record-missing`
-  (the dump has no join records, so join varnodes print `{unlinked:…}`;
-  needs a dump-format addition), 56 user-op names of Ghidra's built-in user
-  ops (`stringdata`, `read_volatile`, …, index 0x10000000+). The last commit
-  adds those built-in names in `state/names.rs` (not yet re-run on the
-  host). The test still asserts zero "other" differences, so it fails
-  until the join cause is either accepted as a counted cause (change the
-  assertion to pin the count, ADR-040 form) or the dump carries joins.
+- Clippy clean (`f…` commits of 2026-11-16, no blanket `allow`).
+- **Corpus (L), `tests/corpus.rs`**, on the build host (x86-64,
+  libstdc++), 2026-11-16: 3,642 dumps loaded (all), **3,566 written back
+  byte for byte**; `print raw` at the first point equal to the console's in
+  **607 of 607** decompilations. The 76 others are exactly the dumps that
+  contain join-space varnodes; they are a pinned, named exception
+  (`tests/support/join_dumps.rs`): the test asserts that the set of dumps
+  with join varnodes equals that list, that each of them equals the dump
+  once every `j{…}` address is blanked (only op-text lines printing a join
+  differ), and that every other dump is exact. See "Join records" below.
   Rerun: `scripts/remote.sh run -- cargo test -p bk-decomp-ir --test
   corpus -- --nocapture` (captures into `target/decomp-ir/capture` on the
-  host, about 10 s; summary in `target/decomp-ir/corpus.txt`).
+  host when absent; summary in `target/decomp-ir/corpus.txt`).
 - Mac (libc++) corpus run not done yet.
+
+### Join records (request for the dump format)
+
+A join varnode's text is `JoinSpace::printRaw` (`space.cc:606`–`628`): the
+record's pieces, each by `VarnodeData::printRaw` (`pcoderaw.hh:113`, which
+prints a register name or a shortcut and offset, **never the piece's
+size**), `pad:N` for a constant piece, and `:size` for a single piece. The
+dump carries neither the records nor the piece sizes (an op text such as
+`j{s0x00000000,s0xfffffffffffffffc}` does not say how 8 bytes split between
+two stack pieces), so the records cannot be rebuilt exactly from a version-2
+dump. Needed: a new section (a format version 3, or an optional section
+version 2 readers skip), written by the console extension after `@spaces`:
+
+    @joins	<count>
+    J	<offset>	<size>	<npieces>	<piece>…
+
+one `J` per record of `AddrSpaceManager::splitlist`
+(`translate.hh:198`–`211`, filled by `findAddJoin`, `translate.cc:684`–`728`),
+in `splitlist` order (= creation order = ascending offset), **all of them**,
+not only those the function's varnodes name; `offset` is `unified.offset`
+(hex), `size` is `unified.size` (decimal); each piece is
+`<space name>:0x<offset>:<size>` (the form `@proto`'s model entries use),
+most significant first, a constant-space piece for padding. Example: x86-64
+`retstruct.0` returns `j{EDX,EAX}:8`: `J	0x0	8	2	register:0x10:4	register:0x0:4`
+(offsets illustrative). Carrying all records in order lets the loader
+replay them through `findAddJoin` (`bk_core::SpaceManager::find_add_join`)
+on the dump's spaces and *check* each offset, with no new `bk-core` API:
+`bk_decomp_ir::state::install_joins` does that today (test
+`join_records_replay_at_the_offsets_the_dump_names`); once `bk-testkit`'s
+`StateDump` parses the section, `load` calls it and the 76 dumps leave the
+exception list.
 
 ### (c) Not started, in order
 

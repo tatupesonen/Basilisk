@@ -79,3 +79,36 @@ fn switchind_samples_round_trip_byte_for_byte() {
         }
     }
 }
+
+#[test]
+fn join_records_replay_at_the_offsets_the_dump_names() {
+    use bk_core::VarnodeData;
+    use bk_decomp_ir::state::{JoinRecordDump, install_joins};
+    let text = read_text(&sample_dir().join("switchind.end.state.gz")).unwrap();
+    let dump = StateDump::parse(&text).unwrap();
+    let spaces = spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap();
+    let reg = spaces.space_by_name("register").unwrap().id();
+    let cst = spaces.constant_space().unwrap().id();
+    // RDX:RAX (16 bytes, offset 0), then a padded 4-byte piece whose record
+    // is 8 bytes long: the second record starts at the next multiple of 16.
+    let records = [
+        JoinRecordDump {
+            offset: 0,
+            size: 16,
+            pieces: vec![VarnodeData::new(reg, 0x10, 8), VarnodeData::new(reg, 0, 8)],
+        },
+        JoinRecordDump {
+            offset: 0x10,
+            size: 8,
+            pieces: vec![VarnodeData::new(cst, 0, 4), VarnodeData::new(reg, 0, 4)],
+        },
+    ];
+    install_joins(&spaces, &records).unwrap();
+    let second = spaces.find_join(0x10).unwrap();
+    assert_eq!(second.pieces(), records[1].pieces.as_slice());
+    // A table whose offsets do not follow creation order is refused.
+    let fresh = spaces_from_dump(&dump, Arc::new(NoRegisters)).unwrap();
+    let mut skewed = records[1].clone();
+    skewed.offset = 0x20;
+    assert!(install_joins(&fresh, &[records[0].clone(), skewed]).is_err());
+}

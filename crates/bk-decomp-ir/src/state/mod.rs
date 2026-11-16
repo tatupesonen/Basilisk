@@ -7,11 +7,13 @@
 //! Types are dump-local: `t<n>` loads as `TypeId::from_raw(n)` and writes
 //! back as `t<n>`, until D07 attaches a type factory.
 
+mod joins;
 mod load;
 mod names;
 mod spaces;
 mod write;
 
+pub use joins::{JoinRecordDump, install_joins};
 pub use load::load;
 pub use names::DumpNames;
 pub use spaces::spaces_from_dump;
