@@ -6,19 +6,36 @@ D08 (`decomp-typeop`, crate `bk-decomp-typeop`) of
 
 ## State
 
-- [x] Rules, direction, loop, ADRs (to ADR-048), plan with amendments 11
-      and 12, the neighbouring specs (D00 to D06), the wave-2 report, the
-      inventory read.
-- [ ] D07 source reading (`action.*`, `options.*`, `funcdata*.*`,
-      `architecture.*`, `expression.*`, `transform.*`, `FuncCallSpecs`,
-      `userop.*`, `pcodeinject.*`, `dynamic.*`).
-- [ ] D07 runs against the reference consoles.
-- [ ] `docs/features/decomp-core.md`.
-- [ ] D08 source reading (`typeop.*`, `cast.*`, `unionresolve.*`, the
-      IR-bound methods of `type.cc`).
-- [ ] D08 runs and oracle prototype.
-- [ ] `docs/features/decomp-typeop.md`.
-- [ ] This report, final form.
+- [x] Rules, direction, loop, ADRs (to ADR-048, read from local `master`),
+      plan with amendments 11 and 12, the neighbouring specs (D00 to D06),
+      the wave-2 report, the inventory, the printer spike's report.
+- [x] D07 source reading, to the standard, of: `action.hh`, `action.cc`
+      (all), `options.cc` (all), `coreaction.cc` 5818–6149,
+      `architecture.cc` 134–704 and 1139–1472, `funcdata.hh` (all),
+      `funcdata.cc` (all), `funcdata_block.cc` 27–750, `userop.cc` (all),
+      `pcodeinject.cc` 100–361, the `Varnode` members that touch
+      `HighVariable`, `FuncCallSpecs`' declaration, parts of
+      `funcdata_varnode.cc` (25–66, 312–328, 613–640), `dynamic.cc`
+      60–150, `expression.cc` 236–292.
+- [ ] **Not read to the standard** (marked "to be specified" in the
+      spec, with lines): the bodies of `funcdata_op.cc` 473–1668 and of
+      `funcdata_varnode.cc` beyond the lines above, `fspec.cc`'s
+      `FuncCallSpecs`, `ProtoStoreSymbol` and `FspecSpace`,
+      `expression.cc` and `dynamic.cc` beyond the lines above,
+      `transform.*`, `variable.cc`, `heritage.cc`'s bookkeeping
+      functions, `sleigh_arch.cc`, `funcdata_block.cc` 760–1114.
+- [x] D07 runs against the reference consoles (X1 to X7) and two oracle
+      prototypes run on both reference builds.
+- [x] `docs/features/decomp-core.md` (all nine sections, an
+      implementation plan, open items; 15 "to be specified" marks).
+- [ ] D08: **not specified.** `docs/features/decomp-typeop.md` is an
+      outline: its boundary, dependencies and design come from the D07
+      work and are stated with evidence; its behaviour section lists what
+      to read and where, and says so at the top. `typeop.cc`, `cast.cc`
+      and `unionresolve.cc` were not read; no D08 oracle was prototyped.
+- [x] The plan compared with the source (14 findings; what was not
+      checked is listed).
+- [x] This report.
 
 ## Misfits with D05 and D06 found so far (told early)
 
@@ -65,6 +82,22 @@ D08 (`decomp-typeop`, crate `bk-decomp-typeop`) of
    opened at 457 and never closed, so the `closeElement(elemId)` at 480
    fails. D06's "closes once" behaviour is unaffected; the bug entry
    should be reworded. Not run.
+3. **`bk-cspec` (D03, merged) has no way to back a prototype's
+   parameters by symbols.** `FuncProto` holds `store:
+   Option<ProtoStoreInternal>` with read access only
+   (`crates/bk-cspec/src/proto/funcproto.rs`); Ghidra's function being
+   decompiled uses `ProtoStoreSymbol` (`fspec.cc` 3128–3300). D07's design
+   (`decomp-core.md` 4.A.6) mirrors the symbols into the internal store
+   and needs `FuncProto::store_mut` (one accessor); the alternative is a
+   store trait in `bk-cspec`. Either is a change to a merged crate.
+4. **D05's unit data and D07** fit: `UnitInfo` already lists several
+   groups per name on the branch (`unit/ghidra.rs`), which the placements
+   of `unreachable`, `deadcode`, `directwrite` need. D07 needs from D05,
+   besides finding 1: a key cursor over the main op tree that survives
+   insertion and retirement (the pool walk), `op_dead_and_gone`, and the
+   recorder's unit brackets; the coordinator says ranged cursors are
+   being added. Not checked against the branch after its review fixes.
+
 
 ## The plan compared with Ghidra's source
 
@@ -107,6 +140,195 @@ absence; rows marked **read** were checked in the source. `CPP/` =
   `buildSpecFile`, `restoreXml`) is in no row. D06 took `buildSymbols`;
   the rest is `bk-lang`'s and D07a's assembly. Not read beyond that.
 
-## Next
+## What each document covers
 
-Continue the D07 source reading; the plan comparison below grows with it.
+**`docs/features/decomp-core.md` (D07; 1,580 lines).** Three crates:
+`bk-decomp-core` (state), `bk-decomp-pipeline` (framework),
+`bk-decomp-ops` (compound operations). Scope by crate; what is not in the
+track and where it goes; the D08 boundary; a table giving every member of
+`Funcdata` an owner. Behaviour, part A: the architecture as four values
+with every default; assembly order; function record against the state of
+one decompilation; flags, `clear` (exactly which flags), warnings,
+`startProcessing`; `<function>`; call specs as data; `FunctionEnv`;
+block surgery; user ops and the injection library at run time with every
+error text; the state structs of later tracks; high variables and D05's
+events; dump sections; the traits later crates fill. Part B: `perform`
+as a state machine; groups; the restart group; pools (`processOp`
+exactly); listing, state, statistics, warnings, specifiers; root
+actions; units, profiles, the builder; all 38 options with texts and
+quirks; pipelines and drivers. Part C: the compound operations as tables
+of functions, lines and users. Design, tests (two oracle tables with
+measured sizes, one oracle to add), acceptance, differences,
+implementation plan in 20 steps, open items.
+
+**`docs/features/decomp-typeop.md` (D08; outline).** See State.
+
+## What was run, and where
+
+`docs/research/decomp-wave3/runs.md`, X1 to X7.
+
+- Mac only: the six root listings (X1); the option quirks in the console
+  (X2); the `printState` crash in Ghidra's own console (X3);
+  `normalizesetup` (X7).
+- Mac and build host, each twice: `action_oracle` (136,527 rows,
+  identical everywhere) and `option_oracle` (74,055 rows; 49 rows differ
+  between the builds, one cause).
+- `plan_graph.py` on the reference source copy (identical to the Ghidra
+  tree for the six files compared with `cmp`).
+- No gate run: documentation-only branch. Every push succeeded.
+
+## Proposed ADRs (unnumbered)
+
+**A. D07 is three crates; a pipeline belongs to one decompilation.**
+`bk-decomp-core` holds state, `bk-decomp-pipeline` the action framework,
+units, profiles and options, `bk-decomp-ops` the compound operations;
+pipeline and ops depend on core and not on each other. The architecture's
+action database becomes a frozen `PipelineConfig` plus one `Pipeline` per
+decompilation (the `jumptable` pipeline built on first use); the console
+and the data-test runner keep one pipeline per root across functions,
+which is Ghidra's shared instance.
+
+**B. `bk-decomp-typeop` is below `bk-decomp-core`.** It owns the
+type-operator table, the cast strategies, union resolution and the union
+map, and reads function state through a trait (`TypeOpEnv`) that core
+implements; core depends on it. Amends the crate drawing of
+`decomp-plan.md` section 2.
+
+**C. A function is a record in program state and the state of one
+decompilation.** What Ghidra keeps in a `Funcdata` across decompilations
+(prototype, overrides, override jump tables, `no_code`) is a
+`FunctionRecord`, frozen while functions are decompiled; a decompilation
+works on a copy and returns its changes, with the symbol overlay, the
+type fork, built-in user ops, comments and statistics, to be committed in
+operation order (extends ADR-044 to these).
+
+**D. The table of high variables and `HighVariable`'s own methods are
+core's; `Merge` and the intersection tests stay D14's.** D05 records an
+event for every varnode change Ghidra forwards to a high variable; core
+applies them before a high is read. Amends the D14 row.
+
+**E. Where Ghidra's action framework and options are undefined, crash or
+depend on the host, Basilisk defines them; where they are merely odd, the
+`ghidra` profile reproduces them** (ADR-024's form). Defined: a null root
+action is an error; a group stopped after its last member prints its
+name; `<function>` with an unknown child is an error; numeric option
+parameters are read as the libstdc++ build reads them; `TermOrder` and
+`DynamicHash` sort stably (ADR-040). Reproduced, each pinned by a table
+or capture: the items of `decomp-core.md` section 8, "Reproduced on
+purpose".
+
+## Proposed amendments to `decomp-plan.md`
+
+The "What should change" column of the findings table above, findings 1
+to 14. In short: split D07 in three (1, 2); D08 below core, needing D05,
+D02, D03, D06 (3); the value-set solver before D10 (4); `switchnorm` to
+D13 and `lanedivide` to R7 (5); D14 without D11 except naming (6, 7);
+`transform.*` to R7 (8); `EmulateSnippet` and the `Emulate` base to D18,
+`crc32` with `dynamic.*`, the unassigned modules listed (9); the
+arrangement and group lists to D07b (10); sizes (11); `<function>` to
+D07a (12); the two traits that let D09 precede D13 (13); the rule-subset
+oracle's limits (14).
+
+## Defects found in Ghidra (for `docs/GHIDRA-BUGS.md`)
+
+Paths under `CPP/`. Confirmed = reproduced against the reference build.
+
+1. **Crash**: `ActionGroup::printState` (`action.cc:444–454`)
+   dereferences `state` when it is `list.end()`, which
+   `ActionGroup::apply` leaves after an action breakpoint on a group
+   fires behind its last member (517–519). Confirmed in Ghidra's own
+   console: `condmulti.xml`, `break action mainloop`, `decompile`,
+   `continue` six times, exit 139 (X3).
+2. **Crash**: a root action with no member is a null pointer
+   (`ActionGroup::clone`, `action.cc:391–406`;
+   `ActionDatabase::toggleAction`, 1024–1041) that `list action`,
+   `option warning`, `option nanignore` and `decompile` dereference.
+   Confirmed: `option setaction firstpass`, `option currentaction
+   firstpass base off`, `list action`, exit 139 (X2). `option
+   togglerule` alone checks (`options.cc:911–913`).
+3. **Host dependence**: numeric option parameters are read with
+   `istream >>` and the base taken from the text (`options.cc` 223–225,
+   476–479, 493–496, 511–514, 803–805, 865–868, 974–976). `12abc` is 12
+   with libstdc++ and a failure (0) with libc++: 49 of 74,055 oracle rows
+   differ between the two reference builds. Confirmed (X5).
+4. **`option nanignore none` is undone by later options.** The setting
+   is only a disabled-rule flag on the current root's instance
+   (`options.cc:1080–1086`); `nan_ignore_compare` is read by no rule
+   (`ruleaction.cc:9746` reads `nan_ignore_all` only). Any option that
+   derives the root again (`splitdatatype`, `currentaction`) builds every
+   rule enabled (`action.cc:1024–1041`, `Rule::clone`), and the
+   `jumptable` root never gets the flag. Confirmed by listing (X2);
+   output not compared. `option togglerule` is lost the same way.
+5. **`ActionNormalizeSetup::reset` (`coreaction.hh:646`) does not call
+   `Action::reset`**, so the action applies once per root instance, not
+   once per function. Confirmed: three decompilations under the
+   `normalize` root, `normalizesetup Tested=1` (X7). Six other overrides
+   (`coreaction.hh` 77, 99, 133, 198, 872, 1003) skip the base too; with
+   flags 0 only their "warning given" bit is affected (by reading).
+6. `ActionDatabase::setCurrent` (`action.cc:1012–1013`) stores the new
+   name before deriving the action; when the group list does not exist
+   the name stays changed with the old action. Confirmed (X5: 16,000
+   rows of the form `root=<name>` after `Action group does not exist`).
+7. **Hang**: `Funcdata::decode` (`funcdata.cc:800–825`) has no branch
+   for an unknown child of `<function>` and peeks it for ever; `encode`
+   with the tree writes `<ast>` and `<highlist>`, which it cannot read
+   back. Read; not run.
+8. `ActionPool::processOp` (`action.cc:839–851`): a rule's action
+   breakpoint returns before the check for a changed opcode, and on
+   resumption the rule index is not reset, so a breakpoint changes which
+   rules are tried. Read; the action oracle contains such rows, none was
+   isolated.
+9. `Action::perform` (`action.cc:305–313`): `count_tests` is incremented
+   only on the path through `status_start`, so an action stopped at its
+   own start breakpoint is not counted. Read; in the oracle's `E` rows.
+10. Option numbers: text that is not a number reads as 0 (C++11), so the
+    sentinels are unreachable: `option extrapop abc` sets extrapop 0,
+    `baddatacount abc` and `maxinstruction abc` set 0, `maxlinewidth abc`
+    reports the printer's `Bad maximum line size` instead of `Must
+    specify integer linewidth`. Confirmed (X2).
+11. `OptionBraceFormat`'s comment (`options.cc:588–597`) gives the
+    parameters in the opposite order to the code (category first).
+    Confirmed (X2).
+12. `SegmentOp::isConcatenation` (`userop.cc:204`) shifts by
+    `innerinsize * 8` bits, undefined for an inner size of 8. Read.
+13. Correction of an existing entry: see Misfits, item 2.
+14. Smaller: `Architecture::resetDefaults` leaves a model's extrapop,
+    the default and evaluation models, function properties, the print
+    language and `allowcontextset` changed (X5, `U` rows); the `jumptable`
+    root is a separate instance, so its statistics are not in `print
+    actionstats` of the current root (by reading).
+
+## Open questions for the owner
+
+1. Three crates and three tracks for D07 (ADR A), or one?
+2. D08 needs its own specification pass (the outline exists). Who writes
+   it, and before or after D07a starts?
+3. Should the `ghidra` profile reproduce defects 4 and 5 (the spec says
+   yes: option order is part of a script; the parallel driver's handling
+   of `normalizesetup` is open)?
+
+## What the implementation tracks should be told beyond the documents
+
+- **D07**: start from the two prototypes (they build with `build.sh`);
+  the action table is the definition of the framework, the option table
+  of the options. Write the scripted units of the action oracle first.
+  Specify each "to be specified" item from its lines in the status
+  report before the step that needs it. The `arch` oracle (test A-2) is
+  not prototyped.
+- **D05**: the high events (Misfits 1).
+- **R tracks, D19**: plan finding 14.
+- **D09**: `startProcessing` takes flow as a callback; flow options are
+  core's bits; without a `JumpTableRecovery` every `BRANCHIND` fails
+  normally.
+
+## Not done, plainly
+
+D08's behaviour was not read or specified and has no oracle prototype.
+Part C of D07 lists functions with lines and users but their bodies were
+not read. The evaluator (ADR-025 3a) and `FlowFacts` are unspecified. No
+`arch` oracle. X1 to X3 and X7 ran on the Mac only. The plan comparison
+rests on a text scan except where a row says "read".
+
+## Commits
+
+`git log --oneline master..spec-decomp-wave3`.
