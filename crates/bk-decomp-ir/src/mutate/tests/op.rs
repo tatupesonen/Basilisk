@@ -150,17 +150,17 @@ fn set_input_adds_the_reader_and_clones_a_shared_constant() {
     let a = fix.op(OpCode::IntAdd, 2, 0x100);
     let c = fix.cst(4, 5);
     fix.ssa.op_set_input(&mut fix.env, a, c, 0).unwrap();
-    assert_eq!(fix.ssa.readers(c), vec![a]);
+    assert_eq!(fix.ssa.readers(c).collect::<Vec<_>>(), vec![a]);
     fix.ssa.op_set_input(&mut fix.env, a, c, 1).unwrap();
     let c2 = fix.ssa.op_input(a, 1).unwrap();
     assert_ne!(c2, c);
     assert_eq!(fix.ssa.varnode_offset(c2), 5);
-    assert_eq!(fix.ssa.readers(c), vec![a]);
+    assert_eq!(fix.ssa.readers(c).collect::<Vec<_>>(), vec![a]);
     // Replacing slot 0 unsets the old reader.
     let r = fix.regvn(0, 4);
     let r = fix.ssa.set_input_varnode(&mut fix.env, r).unwrap();
     fix.ssa.op_set_input(&mut fix.env, a, r, 0).unwrap();
-    assert_eq!(fix.ssa.readers(c), [] as [OpId; 0]);
+    assert_eq!(fix.ssa.readers(c).collect::<Vec<_>>(), [] as [OpId; 0]);
     // A free varnode may have one reader only (Varnode::addDescend,
     // varnode.cc:330–336).
     let b = fix.op(OpCode::Copy, 1, 0x104);
@@ -185,9 +185,12 @@ fn unset_and_swap_inputs() {
     fix.ssa.op_set_input(&mut fix.env, a, x, 0).unwrap();
     fix.ssa.op_set_input(&mut fix.env, a, y, 1).unwrap();
     fix.ssa.op_swap_input(a, 0, 1).unwrap();
-    assert_eq!(fix.ssa.op_inputs(a), vec![Some(y), Some(x)]);
+    assert_eq!(
+        fix.ssa.op_inputs(a).collect::<Vec<_>>(),
+        vec![Some(y), Some(x)]
+    );
     fix.ssa.op_unset_input(a, 0).unwrap();
-    assert_eq!(fix.ssa.readers(y), [] as [OpId; 0]);
+    assert_eq!(fix.ssa.readers(y).collect::<Vec<_>>(), [] as [OpId; 0]);
     assert_eq!(fix.ssa.op_input(a, 0), None);
     assert!(matches!(
         fix.ssa.op_unset_input(a, 0),
@@ -209,12 +212,12 @@ fn insert_and_uninsert() {
     let b = fix.op(OpCode::Copy, 1, 0x104);
     fix.ssa.op_insert(a, b0, None).unwrap();
     fix.ssa.op_insert(b, b0, Some(a)).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![b, a]);
+    assert_eq!(fix.ssa.block_ops(b0).collect::<Vec<_>>(), vec![b, a]);
     assert_eq!(fix.ssa.ops_alive(), vec![a, b]);
     assert!(fix.ssa.op_order(b) < fix.ssa.op_order(a));
     assert!(fix.ssa.op_insert(a, b0, None).is_err());
     fix.ssa.op_uninsert(a).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![b]);
+    assert_eq!(fix.ssa.block_ops(b0).collect::<Vec<_>>(), vec![b]);
     assert_eq!(fix.ssa.ops_dead(), vec![a]);
     assert!(fix.ssa.op_uninsert(a).is_err());
     fix.ok();
@@ -230,7 +233,7 @@ fn unlink_detaches_everything_and_keeps_the_op() {
     fix.ssa.op_unlink(a).unwrap();
     assert_eq!(fix.ssa.op_output(a), None);
     assert!(fix.ssa.varnode_exists(out));
-    assert_eq!(fix.ssa.readers(x), [] as [OpId; 0]);
+    assert_eq!(fix.ssa.readers(x).collect::<Vec<_>>(), [] as [OpId; 0]);
     assert_eq!(fix.ssa.op_parent(a), None);
     assert!(!fix.ssa.op_is_retired(a));
     fix.ok();
@@ -294,7 +297,10 @@ fn destroy_recursive_follows_lone_reader_defs_but_not_calls() {
     // top (lone reader of its output) and d1 go; the call stays; `shared`
     // stays because v3 has another reader.
     let b0 = fix.blocks[0];
-    assert_eq!(fix.ssa.block_ops(b0), vec![call, shared, other]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![call, shared, other]
+    );
     fix.ok();
 }
 
@@ -307,15 +313,24 @@ fn set_all_remove_and_insert_input() {
     let a = fix.op(OpCode::MultiEqual, 1, 0x100);
     fix.ssa.op_set_input(&mut fix.env, a, x, 0).unwrap();
     fix.ssa.op_set_all_input(&mut fix.env, a, &[y, z]).unwrap();
-    assert_eq!(fix.ssa.op_inputs(a), vec![Some(y), Some(z)]);
-    assert_eq!(fix.ssa.readers(x), [] as [OpId; 0]);
+    assert_eq!(
+        fix.ssa.op_inputs(a).collect::<Vec<_>>(),
+        vec![Some(y), Some(z)]
+    );
+    assert_eq!(fix.ssa.readers(x).collect::<Vec<_>>(), [] as [OpId; 0]);
     fix.ssa.op_remove_input(a, 0).unwrap();
-    assert_eq!(fix.ssa.op_inputs(a), vec![Some(z)]);
-    assert_eq!(fix.ssa.readers(y), [] as [OpId; 0]);
+    assert_eq!(fix.ssa.op_inputs(a).collect::<Vec<_>>(), vec![Some(z)]);
+    assert_eq!(fix.ssa.readers(y).collect::<Vec<_>>(), [] as [OpId; 0]);
     fix.ssa.op_insert_input(&mut fix.env, a, x, 0).unwrap();
-    assert_eq!(fix.ssa.op_inputs(a), vec![Some(x), Some(z)]);
+    assert_eq!(
+        fix.ssa.op_inputs(a).collect::<Vec<_>>(),
+        vec![Some(x), Some(z)]
+    );
     fix.ssa.op_insert_input(&mut fix.env, a, y, 2).unwrap();
-    assert_eq!(fix.ssa.op_inputs(a), vec![Some(x), Some(z), Some(y)]);
+    assert_eq!(
+        fix.ssa.op_inputs(a).collect::<Vec<_>>(),
+        vec![Some(x), Some(z), Some(y)]
+    );
     assert!(fix.ssa.op_insert_input(&mut fix.env, a, y, 9).is_err());
     fix.ok();
 }
@@ -361,7 +376,10 @@ fn new_op_before_makes_a_unique_output_of_in1s_size() {
         fix.ssa.varnode_addr(out).space(),
         fix.ssa.spaces().unique_space().map(bk_core::Space::id)
     );
-    assert_eq!(fix.ssa.block_ops(fix.blocks[0]), vec![op, follow]);
+    assert_eq!(
+        fix.ssa.block_ops(fix.blocks[0]).collect::<Vec<_>>(),
+        vec![op, follow]
+    );
     assert_eq!(fix.ssa.op_addr(op), fix.ram(0x100));
     fix.ok();
 }
@@ -388,7 +406,10 @@ fn indirect_op_and_indirect_creation() {
     assert!(fix.ssa.is_constant(cin));
     assert!(fix.ssa.varnode_flags(cin) & vflags::INDIRECT_CREATION != 0);
     assert!(fix.ssa.op_flags(cr) & oflags::INDIRECT_CREATION != 0);
-    assert_eq!(fix.ssa.block_ops(fix.blocks[0]), vec![ind, cr, call]);
+    assert_eq!(
+        fix.ssa.block_ops(fix.blocks[0]).collect::<Vec<_>>(),
+        vec![ind, cr, call]
+    );
     fix.ok();
     // markIndirectCreation on the plain INDIRECT: input 0 is not a
     // constant, an error before anything changes (Ghidra sets the op flag

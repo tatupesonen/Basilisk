@@ -13,7 +13,7 @@ use crate::data::BasicData;
 use crate::error::{IrError, IrResult};
 use crate::flags::oflags;
 use crate::ids::{NONE, OpId};
-use crate::list::Thread;
+use crate::list::{OpIter, Thread};
 use crate::ssa::Ssa;
 
 impl Ssa {
@@ -59,11 +59,11 @@ impl Ssa {
         self.bdata(b).is_ok()
     }
 
-    /// The block's ops in order (`beginOp`..`endOp`).
-    pub fn block_ops(&self, b: NodeId) -> Vec<OpId> {
-        self.bdata(b)
-            .map(|d| d.ops.collect(&self.links, Thread::Block))
-            .unwrap_or_default()
+    /// The block's ops in order (`beginOp`..`endOp`), borrowed;
+    /// `.collect()` a snapshot to change the IR while walking.
+    pub fn block_ops(&self, b: NodeId) -> OpIter<'_> {
+        let head = self.bdata(b).map(|d| d.ops).unwrap_or_default();
+        head.iter(&self.links, Thread::Block)
     }
 
     /// The number of ops in the block.
@@ -91,14 +91,24 @@ impl Ssa {
         self.links.get(op.index())?.prev(Thread::Block)
     }
 
-    /// The out-edges of a block.
-    pub(crate) fn outs(&self, b: NodeId) -> Vec<EdgeView> {
-        self.cfg.out_edges(b)
+    /// The out-edges of a block, borrowed.
+    pub(crate) fn outs(&self, b: NodeId) -> impl ExactSizeIterator<Item = EdgeView> + '_ {
+        self.cfg.outs(b)
     }
 
-    /// The in-edges of a block.
-    pub(crate) fn ins(&self, b: NodeId) -> Vec<EdgeView> {
-        self.cfg.in_edges(b)
+    /// The in-edges of a block, borrowed.
+    pub(crate) fn ins(&self, b: NodeId) -> impl ExactSizeIterator<Item = EdgeView> + '_ {
+        self.cfg.ins(b)
+    }
+
+    /// `getOut(i)`.
+    pub(crate) fn out_edge(&self, b: NodeId, i: usize) -> Option<EdgeView> {
+        self.cfg.out_edge(b, i)
+    }
+
+    /// `getIn(i)`.
+    pub(crate) fn in_edge(&self, b: NodeId, i: usize) -> Option<EdgeView> {
+        self.cfg.in_edge(b, i)
     }
 
     /// `BlockBasic::insert`: puts `op` before `before` (`None`: at the end)
@@ -175,15 +185,26 @@ impl Ssa {
     /// with `step = 0xffffffff / n - 1` (block.cc:2700). Ghidra divides by
     /// zero for an empty block; here an empty block has nothing to number.
     pub fn set_order(&mut self, b: NodeId) {
-        let ops = self.block_ops(b);
-        let n = ops.len().max(1) as u32;
+        let Ok(head) = self.bdata(b).map(|d| d.ops) else {
+            return;
+        };
+        let n = head.len().max(1) as u32;
         let step = (u32::MAX / n).wrapping_sub(1);
         let mut count = 0u32;
-        for op in ops {
+        let mut cur = head.first();
+        let mut left = head.len();
+        while let Some(op) = cur
+            && left > 0
+        {
+            left -= 1;
             count = count.wrapping_add(step);
             if let Some(d) = self.ops.get_mut(op.index()) {
                 d.order = count;
             }
+            cur = self
+                .links
+                .get(op.index())
+                .and_then(|l| l.next(Thread::Block));
         }
     }
 

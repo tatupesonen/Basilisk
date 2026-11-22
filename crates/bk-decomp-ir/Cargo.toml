@@ -24,6 +24,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 bk-lang.workspace = true
+dhat.workspace = true
 bk-sleigh.workspace = true
 bk-testkit.workspace = true
 proptest.workspace = true

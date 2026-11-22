@@ -238,15 +238,30 @@ impl Ssa {
         self.vns.get(vn.index()).map_or(0, |d| d.nzm)
     }
 
-    /// The readers in `descend` order.
-    pub fn readers(&self, vn: VarnodeId) -> Vec<OpId> {
-        self.vns.get(vn.index()).map_or_else(Vec::new, |d| {
-            d.readers
-                .as_slice(&self.pool)
-                .iter()
-                .map(|&r| OpId(r))
-                .collect()
-        })
+    /// The readers in `descend` order (`beginDescend`..`endDescend`),
+    /// borrowed; `.collect()` a snapshot to change the IR while walking.
+    pub fn readers(
+        &self,
+        vn: VarnodeId,
+    ) -> impl DoubleEndedIterator<Item = OpId> + ExactSizeIterator + Clone + '_ {
+        let list: &[u32] = self
+            .vns
+            .get(vn.index())
+            .map_or(&[], |d| d.readers.as_slice(&self.pool));
+        list.iter().map(|&r| OpId(r))
+    }
+
+    /// The readers as a snapshot, for loops that change the IR.
+    pub fn readers_vec(&self, vn: VarnodeId) -> Vec<OpId> {
+        self.readers(vn).collect()
+    }
+
+    /// `getDescend(i)`: the `i`-th reader.
+    pub fn reader(&self, vn: VarnodeId, i: usize) -> Option<OpId> {
+        self.vns
+            .get(vn.index())
+            .and_then(|d| d.readers.get(&self.pool, i))
+            .map(OpId)
     }
 
     /// The number of readers.

@@ -53,18 +53,24 @@ const fn dk(class: u32, seq: SeqKey, addr: Address, size: i32) -> DefKey {
     }
 }
 
-/// A range of a map that never panics on crossed bounds.
-fn safe_range<K: Ord + Copy, V: Copy>(map: &BTreeMap<K, V>, lo: Bound<K>, hi: Bound<K>) -> Vec<V> {
-    let empty = match (&lo, &hi) {
+/// Whether a bound pair is crossed (`BTreeMap::range` panics on one).
+pub(crate) fn crossed<K: Ord>(lo: &Bound<K>, hi: &Bound<K>) -> bool {
+    match (lo, hi) {
         (Bound::Included(a), Bound::Included(b)) => a > b,
         (Bound::Included(a) | Bound::Excluded(a), Bound::Excluded(b))
         | (Bound::Excluded(a), Bound::Included(b)) => a >= b,
         _ => false,
-    };
-    if empty {
-        return Vec::new();
     }
-    map.range((lo, hi)).map(|(_, v)| *v).collect()
+}
+
+/// A range of a map that never panics on crossed bounds.
+fn safe_range<K: Ord + Copy>(
+    map: &BTreeMap<K, VarnodeId>,
+    lo: Bound<K>,
+    hi: Bound<K>,
+) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
+    let r = (!crossed(&lo, &hi)).then(|| map.range((lo, hi)));
+    r.into_iter().flatten().map(|(_, v)| *v)
 }
 
 fn lower<K>(k: K) -> Bound<K> {
@@ -108,14 +114,17 @@ impl Ssa {
     }
 
     /// The varnodes of one space in loc order (`beginLoc(spc)`..`endLoc(spc)`).
-    pub fn loc_in_space(&self, space: SpaceId) -> Vec<VarnodeId> {
+    pub fn loc_in_space(
+        &self,
+        space: SpaceId,
+    ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let lo = lk(Address::new(space, 0), 0, INPUT_CLASS, SEQ_MIN);
         let hi = lk(self.next_space_start(space), 0, INPUT_CLASS, SEQ_MIN);
         safe_range(&self.loc, lower(lo), before(hi))
     }
 
     /// The varnodes starting at `addr` (`beginLoc(addr)`..`endLoc(addr)`).
-    pub fn loc_at(&self, addr: Address) -> Vec<VarnodeId> {
+    pub fn loc_at(&self, addr: Address) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let lo = lk(addr, 0, INPUT_CLASS, SEQ_MIN);
         let end = match addr.space() {
             Some(space)
@@ -137,7 +146,11 @@ impl Ssa {
     }
 
     /// The varnodes of size `size` at `addr` (`beginLoc(s,addr)`..`endLoc(s,addr)`).
-    pub fn loc_sized(&self, size: i32, addr: Address) -> Vec<VarnodeId> {
+    pub fn loc_sized(
+        &self,
+        size: i32,
+        addr: Address,
+    ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let lo = lk(addr, size, INPUT_CLASS, SEQ_MIN);
         let hi = lk(addr, size.saturating_add(1), INPUT_CLASS, SEQ_MIN);
         safe_range(&self.loc, lower(lo), before(hi))
@@ -163,7 +176,12 @@ impl Ssa {
 
     /// The varnodes of one class, size and address
     /// (`beginLoc(s,addr,fl)`..`endLoc(s,addr,fl)`).
-    pub fn loc_class(&self, size: i32, addr: Address, class: VnClass) -> Vec<VarnodeId> {
+    pub fn loc_class(
+        &self,
+        size: i32,
+        addr: Address,
+        class: VnClass,
+    ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let (lo, hi) = Self::loc_class_bounds(size, addr, class);
         safe_range(&self.loc, lo, hi)
     }
@@ -177,14 +195,17 @@ impl Ssa {
         addr: Address,
         pc: Address,
         uniq: Option<u32>,
-    ) -> Vec<VarnodeId> {
+    ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let lo = lk(addr, size, WRITTEN_CLASS, (pc, uniq.unwrap_or(0)));
         let hi = lk(addr, size, WRITTEN_CLASS, (pc, uniq.unwrap_or(u32::MAX)));
         safe_range(&self.loc, lower(lo), through(hi))
     }
 
     /// The varnodes of one class in def order (`beginDef(fl)`..`endDef(fl)`).
-    pub fn def_class(&self, class: VnClass) -> Vec<VarnodeId> {
+    pub fn def_class(
+        &self,
+        class: VnClass,
+    ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
         let first_written = dk(WRITTEN_CLASS, SEQ_MIN, Address::MINIMAL, 0);
         let last_written = dk(WRITTEN_CLASS, SEQ_MAX, Address::MAXIMAL, 0);
         match class {
@@ -214,7 +235,11 @@ impl Ssa {
     /// The inputs or free varnodes at `addr` in def order
     /// (`beginDef(fl,addr)`..`endDef(fl,addr)`); written ones are Ghidra's
     /// error "Cannot get contiguous written AND addressed".
-    pub fn def_class_at(&self, class: VnClass, addr: Address) -> IrResult<Vec<VarnodeId>> {
+    pub fn def_class_at(
+        &self,
+        class: VnClass,
+        addr: Address,
+    ) -> IrResult<impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_> {
         let (lo, hi) = Self::def_class_addr_bounds(class, addr)?;
         Ok(safe_range(&self.def, lo, hi))
     }
@@ -269,7 +294,7 @@ impl Ssa {
             let next = Address::new(space.id(), addr.offset().wrapping_add(size as u64));
             before(dk(INPUT_CLASS, SEQ_MIN, next, 0))
         };
-        safe_range(&self.def, lo, hi).into_iter().find(|&vn| {
+        safe_range(&self.def, lo, hi).find(|&vn| {
             self.vns
                 .get(vn.index())
                 .is_some_and(|d| d.loc.offset().wrapping_add(d.size as u64).wrapping_sub(1) <= end)
@@ -339,7 +364,7 @@ impl Ssa {
                 .map(|(k, _)| *k)
         };
         let end = written_end(d.size, d.loc);
-        groups.push(safe_range(&self.loc, lower(first_key), through(end)));
+        groups.push(safe_range(&self.loc, lower(first_key), through(end)).collect());
         let mut cur = after(end);
         while let Some(k) = cur {
             let Some((&gk, &gvn)) = self.loc.range(k..).next() else {
@@ -362,7 +387,7 @@ impl Ssa {
             }
             flags |= gd.flags;
             let end = written_end(gd.size, gd.loc);
-            groups.push(safe_range(&self.loc, lower(gk), through(end)));
+            groups.push(safe_range(&self.loc, lower(gk), through(end)).collect());
             cur = after(end);
         }
         Ok((flags, groups))

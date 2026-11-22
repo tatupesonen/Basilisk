@@ -12,11 +12,15 @@ pub use opset::OpSet;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
+use bk_decomp_cfg::NodeId;
 use bk_pcode::OpCode;
 
 use crate::flags::oflags;
 use crate::ids::{OpId, VarnodeId};
 use crate::ssa::Ssa;
+
+/// The explicit stack of `addRefRecurse`: (block, next in-edge to try).
+type WalkStack = Vec<(NodeId, usize)>;
 
 /// A cover boundary: a mark or an op.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -262,9 +266,9 @@ impl Ssa {
     /// `Cover::addRefRecurse`, without recursion: fills `cover` backwards
     /// from the bottom of block `start` until existing cover, visiting
     /// predecessors depth first in in-edge order as Ghidra's recursion does.
-    fn cover_add_ref_recurse(&self, cover: &mut Cover, start: bk_decomp_cfg::NodeId) {
-        let mut stack: Vec<(bk_decomp_cfg::NodeId, usize)> = Vec::new();
-        let visit = |cover: &mut Cover, bl: bk_decomp_cfg::NodeId| -> bool {
+    fn cover_add_ref_recurse(&self, cover: &mut Cover, start: NodeId, stack: &mut WalkStack) {
+        stack.clear();
+        let visit = |cover: &mut Cover, bl: NodeId| -> bool {
             let Some(ix) = self.cfg.index(bl) else {
                 return false;
             };
@@ -294,15 +298,12 @@ impl Ssa {
                 break;
             }
             let (bl, i) = *top;
-            let ins = self.ins(bl);
-            if i >= ins.len() {
+            let Some(e) = self.in_edge(bl, i) else {
                 stack.pop();
                 continue;
-            }
+            };
             top.1 += 1;
-            if let Some(e) = ins.get(i)
-                && visit(cover, e.node)
-            {
+            if visit(cover, e.node) {
                 stack.push((e.node, 0));
             }
         }
@@ -311,6 +312,17 @@ impl Ssa {
     /// `Cover::addRefPoint`: adds the read of `vn` by `reader` and fills in
     /// backwards; through a `MULTIEQUAL` only along the matching edges.
     pub fn cover_add_ref_point(&self, cover: &mut Cover, reader: OpId, vn: VarnodeId) {
+        self.cover_add_ref_point_with(cover, reader, vn, &mut Vec::new());
+    }
+
+    /// [`Self::cover_add_ref_point`] with a reusable walk stack.
+    fn cover_add_ref_point_with(
+        &self,
+        cover: &mut Cover,
+        reader: OpId,
+        vn: VarnodeId,
+        stack: &mut WalkStack,
+    ) {
         let Some(bl) = self.op_parent(reader) else {
             return;
         };
@@ -336,24 +348,23 @@ impl Ssa {
                     && start == CoverPoint::Begin
                 {
                     for e in self.ins(bl) {
-                        self.cover_add_ref_recurse(cover, e.node);
+                        self.cover_add_ref_recurse(cover, e.node, stack);
                     }
                 }
                 return;
             }
         }
-        let ins = self.ins(bl);
         if is_multi {
-            for (j, v) in self.op_inputs(reader).into_iter().enumerate() {
+            for (j, v) in self.op_inputs(reader).enumerate() {
                 if v == Some(vn)
-                    && let Some(e) = ins.get(j)
+                    && let Some(e) = self.in_edge(bl, j)
                 {
-                    self.cover_add_ref_recurse(cover, e.node);
+                    self.cover_add_ref_recurse(cover, e.node, stack);
                 }
             }
         } else {
-            for e in ins {
-                self.cover_add_ref_recurse(cover, e.node);
+            for e in self.ins(bl) {
+                self.cover_add_ref_recurse(cover, e.node, stack);
             }
         }
     }
@@ -363,12 +374,13 @@ impl Ssa {
     pub fn cover_rebuild(&self, cover: &mut Cover, vn: VarnodeId) {
         self.cover_add_def_point(cover, vn);
         let mut path = vec![vn];
+        let mut stack = WalkStack::new();
         let mut pos = 0;
         let bound = self.vns.len() + 1;
         while let Some(&cur) = path.get(pos) {
             pos += 1;
             for op in self.readers(cur) {
-                self.cover_add_ref_point(cover, op, vn);
+                self.cover_add_ref_point_with(cover, op, vn, &mut stack);
                 if let Some(out) = self.op_output(op)
                     && self.is_implied(out)
                     && path.len() < bound

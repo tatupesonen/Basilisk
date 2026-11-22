@@ -120,7 +120,9 @@ fn refusals_say_what_happened() {
         })
     ));
     assert!(matches!(
-        fix.ssa.def_class_at(crate::VnClass::Written, fix.reg(0)),
+        fix.ssa
+            .def_class_at(crate::VnClass::Written, fix.reg(0))
+            .map(Iterator::collect::<Vec<_>>),
         Err(IrError::WrittenByAddress)
     ));
     assert!(matches!(

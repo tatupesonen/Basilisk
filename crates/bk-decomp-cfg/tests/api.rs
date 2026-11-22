@@ -499,3 +499,25 @@ fn hierarchy_negation_and_component_swap() {
     assert_eq!(flips, [n(0)]);
     assert!(!changed);
 }
+
+#[test]
+fn borrowed_edge_iterators_equal_the_vec_forms() {
+    let c = cfg("1,2|2|0");
+    for i in 0..3 {
+        assert_eq!(c.ins(n(i)).collect::<Vec<_>>(), c.in_edges(n(i)));
+        assert_eq!(c.outs(n(i)).collect::<Vec<_>>(), c.out_edges(n(i)));
+        assert_eq!(c.ins(n(i)).len(), c.in_edges(n(i)).len());
+        assert_eq!(c.in_len(n(i)), c.in_edges(n(i)).len());
+        assert_eq!(c.out_len(n(i)), c.out_edges(n(i)).len());
+        for (j, e) in c.in_edges(n(i)).into_iter().enumerate() {
+            assert_eq!(c.in_edge(n(i), j), Some(e));
+        }
+        for (j, e) in c.out_edges(n(i)).into_iter().enumerate() {
+            assert_eq!(c.out_edge(n(i), j), Some(e));
+        }
+        assert_eq!(c.in_edge(n(i), c.in_len(n(i))), None);
+    }
+    assert_eq!(c.ins(n(99)).len(), 0);
+    assert_eq!(c.in_len(n(99)), 0);
+    assert_eq!(c.in_edge(n(99), 0), None);
+}

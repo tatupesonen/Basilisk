@@ -47,7 +47,7 @@ impl Ssa {
     /// `BlockBasic::printRawImpliedGoto`: a `[ goto … ]` line when `b`
     /// falls through to a block other than `next` without a branch.
     pub fn block_raw_implied_goto(&self, out: &mut RawOut, b: NodeId, next: NodeId) {
-        let outs = self.outs(b);
+        let outs = self.cfg.out_edges(b);
         let [only] = outs.as_slice() else {
             return;
         };

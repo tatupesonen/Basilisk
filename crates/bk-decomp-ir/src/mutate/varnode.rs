@@ -222,7 +222,7 @@ impl Ssa {
     /// the definition, and deletes the varnode.
     pub fn destroy_varnode(&mut self, vn: VarnodeId) -> IrResult<()> {
         self.vnd(vn)?;
-        for op in self.readers(vn) {
+        for op in self.readers_vec(vn) {
             self.note_change(op);
             let pool = &mut self.pool;
             if let Some(o) = self.ops.get_mut(op.index())
@@ -320,7 +320,7 @@ impl Ssa {
         new: VarnodeId,
     ) -> IrResult<()> {
         self.vnd(new)?;
-        for op in self.readers(vn) {
+        for op in self.readers_vec(vn) {
             let slot = self.op_slot(op, vn);
             self.op_set_input(env, op, new, slot)?;
         }
@@ -338,7 +338,7 @@ impl Ssa {
     ) -> IrResult<()> {
         let size = self.varnode_size(vn);
         let mut copy_out: Option<VarnodeId> = None;
-        for op in self.readers(vn) {
+        for op in self.readers_vec(vn) {
             let slot = self.op_slot(op, vn);
             let rep = if self.op_is_marker(op) {
                 if let Some(r) = copy_out {

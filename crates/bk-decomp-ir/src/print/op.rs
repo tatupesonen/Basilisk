@@ -155,7 +155,7 @@ impl Ssa {
             RawForm::Branch => {
                 out.s(prop.name);
                 out.c(' ');
-                let outs = self.op_parent(op).map(|b| self.outs(b));
+                let outs = self.op_parent(op).map(|b| self.cfg.out_edges(b));
                 match outs.as_deref() {
                     Some([only]) => self.short_header(out, only.node),
                     _ => self.vn_raw(out, input(0), names),
@@ -164,7 +164,7 @@ impl Ssa {
             RawForm::Cbranch => {
                 out.s(prop.name);
                 out.c(' ');
-                let outs = self.op_parent(op).map(|b| self.outs(b));
+                let outs = self.op_parent(op).map(|b| self.cfg.out_edges(b));
                 let mut false_out = None;
                 match outs.as_deref() {
                     Some([f, t]) => {

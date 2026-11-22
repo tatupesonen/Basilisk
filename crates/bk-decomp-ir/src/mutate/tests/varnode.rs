@@ -171,7 +171,7 @@ fn destroy_varnode_clears_reader_slots_and_the_def() {
     fix.ssa.set_recorder(Some(Box::new(Log(Arc::clone(&log)))));
     fix.ssa.destroy_varnode(vn).unwrap();
     assert!(!fix.ssa.varnode_exists(vn));
-    assert_eq!(fix.ssa.op_inputs(r1), vec![None, None]);
+    assert_eq!(fix.ssa.op_inputs(r1).collect::<Vec<_>>(), vec![None, None]);
     assert_eq!(fix.ssa.op_output(def), None);
     assert_eq!(*log.lock().unwrap(), vec![r1, r1]);
     fix.ok();
@@ -243,8 +243,8 @@ fn total_replace_moves_every_reader() {
     let a = fix.emit(0, OpCode::IntAdd, 0x100, None, &[x, x]);
     let b = fix.emit(0, OpCode::Copy, 0x104, None, &[x]);
     fix.ssa.total_replace(&mut fix.env, x, y).unwrap();
-    assert_eq!(fix.ssa.readers(x), [] as [OpId; 0]);
-    assert_eq!(fix.ssa.readers(y), vec![a, a, b]);
+    assert_eq!(fix.ssa.readers(x).collect::<Vec<_>>(), [] as [OpId; 0]);
+    assert_eq!(fix.ssa.readers(y).collect::<Vec<_>>(), vec![a, a, b]);
     fix.ok();
 }
 
@@ -260,7 +260,7 @@ fn total_replace_constant_feeds_markers_through_one_copy() {
     let m2 = fix.emit(1, OpCode::MultiEqual, 0x200, None, &[vn]);
     let add = fix.emit(1, OpCode::IntAdd, 0x204, None, &[vn]);
     fix.ssa.total_replace_constant(&mut fix.env, vn, 7).unwrap();
-    let ops0 = fix.ssa.block_ops(fix.blocks[0]);
+    let ops0 = fix.ssa.block_ops(fix.blocks[0]).collect::<Vec<_>>();
     assert_eq!(ops0.len(), 2);
     let copy = ops0[1];
     assert_eq!(fix.ssa.op_opcode(copy), Some(OpCode::Copy));
@@ -280,7 +280,7 @@ fn total_replace_constant_feeds_markers_through_one_copy() {
     fix2.ssa
         .total_replace_constant(&mut fix2.env, x, 1)
         .unwrap();
-    let ops = fix2.ssa.block_ops(fix2.blocks[0]);
+    let ops = fix2.ssa.block_ops(fix2.blocks[0]).collect::<Vec<_>>();
     assert_eq!(
         ops[0], m,
         "the COPY goes after the MULTIEQUALs (opInsertBegin)"
@@ -324,7 +324,7 @@ fn errors_change_nothing() {
     let stale = crate::ids::VarnodeId::new(999);
     assert!(fix.ssa.op_set_input(&mut fix.env, op, stale, 0).is_err());
     assert_eq!(fix.ssa.loc_order().collect::<Vec<_>>(), before);
-    assert_eq!(fix.ssa.op_inputs(op), vec![None]);
+    assert_eq!(fix.ssa.op_inputs(op).collect::<Vec<_>>(), vec![None]);
     let _ = Address::constant(0);
     fix.ok();
 }

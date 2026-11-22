@@ -193,15 +193,22 @@ impl Ssa {
             .and_then(VarnodeId::from_packed)
     }
 
-    /// Every input slot in order.
-    pub fn op_inputs(&self, op: OpId) -> Vec<Option<VarnodeId>> {
-        self.ops.get(op.index()).map_or_else(Vec::new, |d| {
-            d.inputs
-                .as_slice(&self.pool)
-                .iter()
-                .map(|&v| VarnodeId::from_packed(v))
-                .collect()
-        })
+    /// Every input slot in order, borrowed; `.collect()` a snapshot to
+    /// change the IR while walking.
+    pub fn op_inputs(
+        &self,
+        op: OpId,
+    ) -> impl DoubleEndedIterator<Item = Option<VarnodeId>> + ExactSizeIterator + Clone + '_ {
+        let list: &[u32] = self
+            .ops
+            .get(op.index())
+            .map_or(&[], |d| d.inputs.as_slice(&self.pool));
+        list.iter().map(|&v| VarnodeId::from_packed(v))
+    }
+
+    /// The input slots as a snapshot, for loops that change the IR.
+    pub fn op_inputs_vec(&self, op: OpId) -> Vec<Option<VarnodeId>> {
+        self.op_inputs(op).collect()
     }
 
     /// `getSlot`: the first slot holding `vn` (`numInput` if none).
@@ -216,10 +223,9 @@ impl Ssa {
     /// `getRepeatSlot`: for the `nth` occurrence of `op` in `vn`'s reader
     /// list (0-based), the slot it corresponds to (op.cc:93).
     pub fn op_repeat_slot(&self, op: OpId, vn: VarnodeId, nth: usize) -> Option<usize> {
-        let ins = self.op_inputs(op);
-        ins.iter()
+        self.op_inputs(op)
             .enumerate()
-            .filter(|(_, v)| **v == Some(vn))
+            .filter(|(_, v)| *v == Some(vn))
             .nth(nth)
             .map(|(i, _)| i)
     }
@@ -250,11 +256,11 @@ impl Ssa {
             return false;
         }
         let Some(out) = d.output() else { return false };
-        let ins = self.op_inputs(op);
-        if ins.is_empty() {
+        let mut ins = self.op_inputs(op);
+        if ins.len() == 0 {
             return false;
         }
-        if !ins.iter().all(|v| v.is_some_and(|v| self.is_constant(v))) {
+        if !ins.all(|v| v.is_some_and(|v| self.is_constant(v))) {
             return false;
         }
         self.varnode_size(out) <= 8
@@ -308,11 +314,11 @@ impl Ssa {
         if ia.len() != ib.len() {
             return false;
         }
-        ia.iter().zip(&ib).all(|(x, y)| {
+        ia.zip(ib).all(|(x, y)| {
             x == y
                 || matches!((x, y), (Some(x), Some(y))
-                    if self.is_constant(*x) && self.is_constant(*y)
-                        && self.varnode_offset(*x) == self.varnode_offset(*y))
+                    if self.is_constant(x) && self.is_constant(y)
+                        && self.varnode_offset(x) == self.varnode_offset(y))
         })
     }
 
@@ -368,7 +374,7 @@ impl Ssa {
                 }
             }
         }
-        let ins: Vec<VarnodeId> = self.op_inputs(op).into_iter().flatten().collect();
+        let ins: Vec<VarnodeId> = self.op_inputs(op).flatten().collect();
         let mut cross_calls = false;
         if !special
             && let Some(out) = out

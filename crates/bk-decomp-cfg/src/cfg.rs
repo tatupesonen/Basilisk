@@ -188,6 +188,47 @@ impl Cfg {
         }
     }
 
+    /// The in-edges of `n` in order, without allocating (`sizeIn`/`getIn`);
+    /// empty for a node that is not in the graph.
+    pub fn ins(&self, n: NodeId) -> impl ExactSizeIterator<Item = EdgeView> + '_ {
+        let list: &[_] = match self.live(n) {
+            Ok(n) => &self.g.node(n).ins,
+            Err(_) => &[],
+        };
+        list.iter().map(EdgeView::from)
+    }
+
+    /// The out-edges of `n` in order, without allocating (`sizeOut`/`getOut`).
+    pub fn outs(&self, n: NodeId) -> impl ExactSizeIterator<Item = EdgeView> + '_ {
+        let list: &[_] = match self.live(n) {
+            Ok(n) => &self.g.node(n).outs,
+            Err(_) => &[],
+        };
+        list.iter().map(EdgeView::from)
+    }
+
+    /// `getIn(i)`: the `i`-th in-edge of `n` in O(1), or `None`.
+    pub fn in_edge(&self, n: NodeId, i: usize) -> Option<EdgeView> {
+        let n = self.live(n).ok()?;
+        self.g.node(n).ins.get(i).map(EdgeView::from)
+    }
+
+    /// `getOut(i)`: the `i`-th out-edge of `n` in O(1), or `None`.
+    pub fn out_edge(&self, n: NodeId, i: usize) -> Option<EdgeView> {
+        let n = self.live(n).ok()?;
+        self.g.node(n).outs.get(i).map(EdgeView::from)
+    }
+
+    /// `sizeIn()`: 0 for a node that is not in the graph.
+    pub fn in_len(&self, n: NodeId) -> usize {
+        self.live(n).map_or(0, |n| self.g.node(n).ins.len())
+    }
+
+    /// `sizeOut()`: 0 for a node that is not in the graph.
+    pub fn out_len(&self, n: NodeId) -> usize {
+        self.live(n).map_or(0, |n| self.g.node(n).outs.len())
+    }
+
     /// `getIndex()`.
     pub fn index(&self, n: NodeId) -> Option<i32> {
         self.live(n).ok().map(|n| self.g.node(n).index)

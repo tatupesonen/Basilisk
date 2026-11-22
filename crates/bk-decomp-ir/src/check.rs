@@ -132,7 +132,7 @@ impl Ssa {
     fn check_readers(&self, bad: &mut Vec<String>) {
         let mut reads: HashMap<(VarnodeId, OpId), usize> = HashMap::new();
         for op in self.live_ops() {
-            for vn in self.op_inputs(op).into_iter().flatten() {
+            for vn in self.op_inputs(op).flatten() {
                 if !self.varnode_exists(vn) {
                     bad.push(format!("{op}: reads destroyed {vn}"));
                 }

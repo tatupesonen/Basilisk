@@ -190,18 +190,49 @@ impl ListHead {
     /// The ops in order, bounded by the list's length (a corrupted link
     /// cannot make the walk endless).
     pub(crate) fn collect(&self, links: &[OpLinks], thread: Thread) -> Vec<OpId> {
-        let mut out = Vec::with_capacity(self.len as usize);
-        let mut cur = self.first();
-        while let Some(op) = cur {
-            if out.len() >= self.len as usize {
-                break;
-            }
-            out.push(op);
-            cur = links.get(op.index()).and_then(|l| l.next(thread));
+        self.iter(links, thread).collect()
+    }
+
+    /// The ops in order without allocating, bounded like [`Self::collect`].
+    pub(crate) fn iter<'a>(&self, links: &'a [OpLinks], thread: Thread) -> OpIter<'a> {
+        OpIter {
+            links,
+            thread,
+            cur: self.first(),
+            left: self.len as usize,
         }
-        out
     }
 }
+
+/// The ops of one intrusive list in order (a borrowed walk; see
+/// [`ListHead::iter`]).
+#[derive(Clone, Debug)]
+pub struct OpIter<'a> {
+    links: &'a [OpLinks],
+    thread: Thread,
+    cur: Option<OpId>,
+    left: usize,
+}
+
+impl Iterator for OpIter<'_> {
+    type Item = OpId;
+
+    fn next(&mut self) -> Option<OpId> {
+        if self.left == 0 {
+            return None;
+        }
+        let op = self.cur?;
+        self.left -= 1;
+        self.cur = self.links.get(op.index()).and_then(|l| l.next(self.thread));
+        Some(op)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.left))
+    }
+}
+
+impl std::iter::FusedIterator for OpIter<'_> {}
 
 #[cfg(test)]
 mod tests {

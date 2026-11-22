@@ -265,11 +265,10 @@ impl Ssa {
             out.s("code_");
             return;
         };
-        let outs = self.outs(bs);
-        let target = if outs.len() == 2 {
-            outs.get(usize::from(!self.op_is_fallthru_true(op)))
+        let target = if self.outs(bs).len() == 2 {
+            self.out_edge(bs, usize::from(!self.op_is_fallthru_true(op)))
         } else {
-            outs.first()
+            self.out_edge(bs, 0)
         };
         out.s("code_");
         if let Some(t) = target {

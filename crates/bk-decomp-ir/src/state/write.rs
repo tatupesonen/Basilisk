@@ -108,7 +108,6 @@ fn varnode_record(
     };
     let readers = ssa
         .readers(vn)
-        .into_iter()
         .map(|op| seq(ssa, op))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(VarnodeRecord {
@@ -189,7 +188,6 @@ pub fn write(
         .map(|&op| {
             let inputs = ssa
                 .op_inputs(op)
-                .into_iter()
                 .map(|v| {
                     v.map(|v| vname(ssa, v))
                         .ok_or_else(|| inconsistent("empty input slot", ssa.seq_text(op)))
@@ -265,7 +263,6 @@ pub fn write(
             .unwrap_or_default();
         let in_edges = ssa
             .ins(n)
-            .into_iter()
             .map(|e| {
                 Ok(EdgeRecord {
                     source: block_ref(ssa, e.node)?,
@@ -284,7 +281,6 @@ pub fn write(
                 cover,
                 ops: ssa
                     .block_ops(n)
-                    .into_iter()
                     .map(|o| seq(ssa, o))
                     .collect::<Result<_, _>>()?,
             },

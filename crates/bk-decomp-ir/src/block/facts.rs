@@ -26,7 +26,7 @@ impl Ssa {
                 statement += 1;
             } else if let Some(vn) = d.output() {
                 let readers = self.readers(vn);
-                let mut yes = readers.is_empty() || self.is_addr_tied(vn);
+                let mut yes = readers.len() == 0 || self.is_addr_tied(vn);
                 if !yes {
                     let mut total = 0;
                     for r in readers {

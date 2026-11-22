@@ -276,7 +276,7 @@ impl Ssa {
         let mut pos = 0;
         while let Some(&cur) = scratch.get(pos) {
             pos += 1;
-            for vn in self.op_inputs(cur).into_iter().flatten() {
+            for vn in self.op_inputs(cur).flatten() {
                 if !self.is_written(vn) || self.is_auto_live(vn) {
                     continue;
                 }
@@ -302,7 +302,7 @@ impl Ssa {
         if self.opd(op)?.flags & oflags::DEAD == 0 {
             return Err(IrError::IntegratedOp(op));
         }
-        for vn in self.op_inputs(op).into_iter().flatten() {
+        for vn in self.op_inputs_vec(op).into_iter().flatten() {
             if self.varnode_exists(vn) {
                 self.destroy_varnode(vn)?;
             }
@@ -396,14 +396,14 @@ impl Ssa {
         let fl = d.flags & (oflags::STARTMARK | oflags::STARTBASIC);
         let n = d.inputs.len();
         let out = d.output();
-        let ins = self.op_inputs(op);
-        if ins.iter().any(Option::is_none) {
+        if let Some(slot) = self.op_inputs(op).position(|v| v.is_none()) {
             return Err(IrError::EmptySlot {
                 method: "cloneOp",
                 op,
-                slot: ins.iter().position(Option::is_none).unwrap_or(0),
+                slot,
             });
         }
+        let ins: Vec<_> = self.op_inputs(op).collect();
         let new = self.new_op_at(n, pc, time)?;
         self.op_set_opcode(new, opc)?;
         self.opd_mut(new)?.flags |= fl;

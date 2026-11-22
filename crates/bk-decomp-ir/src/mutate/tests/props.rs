@@ -109,7 +109,7 @@ fn fingerprint(ssa: &Ssa) -> String {
             ssa.varnode_exists(vn),
             v.flags,
             v.def(),
-            ssa.readers(vn)
+            ssa.readers(vn).collect::<Vec<_>>()
         );
     }
     for (i, o) in ssa.ops.iter().enumerate() {
@@ -119,7 +119,7 @@ fn fingerprint(ssa: &Ssa) -> String {
             "{op} {:?} {:x} {:?} {:?} {:?} {} {:?}",
             o.opcode(),
             o.flags,
-            ssa.op_inputs(op),
+            ssa.op_inputs(op).collect::<Vec<_>>(),
             o.output(),
             o.parent_raw(),
             o.order,

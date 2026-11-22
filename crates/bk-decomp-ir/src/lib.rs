@@ -60,6 +60,7 @@ pub use bk_decomp_cfg::NodeId;
 pub use cover::{Cover, CoverBlock, CoverPoint, OpSet};
 pub use error::{IrError, IrResult};
 pub use ids::{CallSpecId, EntryRef, HighId, OpId, UnitId, VarnodeId};
+pub use list::OpIter;
 pub use mutate::env::{Effect, FunctionEnv, LockedType, PropertiesAnswer, TableEnv};
 pub use op::PieceNode;
 pub use opbank::MAX_OPS;

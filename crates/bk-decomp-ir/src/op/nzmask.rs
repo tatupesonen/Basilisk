@@ -187,16 +187,15 @@ impl Ssa {
             }
             OpCode::MultiEqual => {
                 let ins = self.op_inputs(op);
-                if ins.is_empty() {
+                if ins.len() == 0 {
                     return full;
                 }
                 let parent = self.op_parent(op);
-                let in_edges = parent.map(|p| self.ins(p)).unwrap_or_default();
                 let mut r = 0;
-                for (i, v) in ins.iter().enumerate() {
+                for (i, v) in ins.enumerate() {
                     if cliploop
-                        && in_edges
-                            .get(i)
+                        && parent
+                            .and_then(|p| self.in_edge(p, i))
                             .is_some_and(|e| e.label & edge_labels::LOOP != 0)
                     {
                         continue;

@@ -19,11 +19,17 @@ fn insert_before_steps_back_over_indirects() {
         .unwrap();
     let op = fix.op(OpCode::Copy, 1, 0x104);
     fix.ssa.op_insert_before(op, call).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![first, op, ind, call]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![first, op, ind, call]
+    );
     // An INDIRECT goes immediately before follow.
     let ind2 = fix.ssa.new_indirect(&mut fix.env, call).unwrap();
     fix.ssa.op_insert_before(ind2, call).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![first, op, ind, ind2, call]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![first, op, ind, ind2, call]
+    );
 }
 
 #[test]
@@ -42,7 +48,10 @@ fn insert_after_an_indirect_goes_after_its_live_target_and_past_multiequals() {
     let last = fix.emit(0, OpCode::Copy, 0x104, None, &[]);
     let op = fix.op(OpCode::Copy, 1, 0x100);
     fix.ssa.op_insert_after(op, ind).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![ind, call, op, last]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![ind, call, op, last]
+    );
 
     let mut fix2 = fx(1);
     let b0 = fix2.blocks[0];
@@ -51,10 +60,16 @@ fn insert_after_an_indirect_goes_after_its_live_target_and_past_multiequals() {
     let x = fix2.emit(0, OpCode::Copy, 0x104, None, &[]);
     let op = fix2.op(OpCode::Copy, 1, 0x100);
     fix2.ssa.op_insert_after(op, m1).unwrap();
-    assert_eq!(fix2.ssa.block_ops(b0), vec![m1, m2, op, x]);
+    assert_eq!(
+        fix2.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![m1, m2, op, x]
+    );
     let m3 = fix2.op(OpCode::MultiEqual, 0, 0x100);
     fix2.ssa.op_insert_after(m3, m1).unwrap();
-    assert_eq!(fix2.ssa.block_ops(b0), vec![m1, m3, m2, op, x]);
+    assert_eq!(
+        fix2.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![m1, m3, m2, op, x]
+    );
     fix2.ok();
 }
 
@@ -67,13 +82,19 @@ fn insert_begin_after_multiequals_and_insert_end_before_a_flow_break() {
     let br = fix.emit(0, OpCode::Branch, 0x104, None, &[]);
     let a = fix.op(OpCode::Copy, 1, 0x100);
     fix.ssa.op_insert_begin(a, b0).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![m, a, br]);
+    assert_eq!(fix.ssa.block_ops(b0).collect::<Vec<_>>(), vec![m, a, br]);
     let m2 = fix.op(OpCode::MultiEqual, 0, 0x100);
     fix.ssa.op_insert_begin(m2, b0).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![m2, m, a, br]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![m2, m, a, br]
+    );
     let e = fix.op(OpCode::Copy, 1, 0x104);
     fix.ssa.op_insert_end(e, b0).unwrap();
-    assert_eq!(fix.ssa.block_ops(b0), vec![m2, m, a, e, br]);
+    assert_eq!(
+        fix.ssa.block_ops(b0).collect::<Vec<_>>(),
+        vec![m2, m, a, e, br]
+    );
     // An empty block, and a block not ending in a flow break.
     let mut fix2 = fx(1);
     let b0 = fix2.blocks[0];
@@ -81,7 +102,7 @@ fn insert_begin_after_multiequals_and_insert_end_before_a_flow_break() {
     fix2.ssa.op_insert_end(a, b0).unwrap();
     let b = fix2.op(OpCode::Copy, 1, 0x104);
     fix2.ssa.op_insert_end(b, b0).unwrap();
-    assert_eq!(fix2.ssa.block_ops(b0), vec![a, b]);
+    assert_eq!(fix2.ssa.block_ops(b0).collect::<Vec<_>>(), vec![a, b]);
     fix2.ok();
 }
 
@@ -100,7 +121,7 @@ fn block_insert_numbers_between_neighbours_and_renumbers_when_full() {
         before = op;
     }
     fix.ok();
-    let ops = fix.ssa.block_ops(b0);
+    let ops = fix.ssa.block_ops(b0).collect::<Vec<_>>();
     assert_eq!(ops.len(), 41);
     fix.ssa.set_order(b0);
     let step = u32::MAX / 41 - 1;

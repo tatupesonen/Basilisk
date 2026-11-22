@@ -69,16 +69,18 @@ impl Ssa {
             return false;
         }
         let ins = self.ins(b);
-        if ins.is_empty() {
+        if ins.len() == 0 {
             return false;
         }
-        for e in &ins {
+        for e in ins {
             let switchbl = e.node;
             if self.cfg.flags(switchbl).unwrap_or(0) & node_flags::SWITCH_OUT == 0 {
                 continue;
             }
             if self.outs(switchbl).len() > 1
-                && outs.first().is_some_and(|o| self.ins(o.node).len() > 1)
+                && self
+                    .out_edge(b, 0)
+                    .is_some_and(|o| self.ins(o.node).len() > 1)
             {
                 return false;
             }
@@ -97,7 +99,7 @@ impl Ssa {
 
     /// `BlockBasic::unblockedMulti` (block.cc:2575).
     pub fn unblocked_multi(&self, b: NodeId, outslot: usize) -> bool {
-        let Some(blout) = self.outs(b).get(outslot).map(|e| e.node) else {
+        let Some(blout) = self.out_edge(b, outslot).map(|e| e.node) else {
             return true;
         };
         let mut redund = Vec::new();
@@ -142,8 +144,7 @@ impl Ssa {
 
     /// `BlockBasic::hasNoImmediateCopy` (block.cc:2619).
     pub fn has_no_immediate_copy(&self, b: NodeId, outslot: usize) -> bool {
-        let outs = self.outs(b);
-        let Some(e) = outs.get(outslot) else {
+        let Some(e) = self.out_edge(b, outslot) else {
             return true;
         };
         if e.label & edge_labels::IMMED_COPY == 0 {
@@ -153,7 +154,7 @@ impl Ssa {
         let Some(in_to_this) = self.cfg.in_index(blout, b) else {
             return true;
         };
-        !self.block_ops(blout).into_iter().any(|m| {
+        !self.block_ops(blout).any(|m| {
             self.op_opcode(m) == Some(OpCode::MultiEqual) && self.has_copy_immed(m, in_to_this)
         })
     }
@@ -167,10 +168,10 @@ impl Ssa {
         let Some(parent) = self.op_parent(op) else {
             return false;
         };
-        let ins = self.ins(parent);
-        let Some(e) = ins.get(slot) else { return false };
-        self.outs(e.node)
-            .get(e.rev as usize)
+        let Some(e) = self.in_edge(parent, slot) else {
+            return false;
+        };
+        self.out_edge(e.node, e.rev as usize)
             .is_some_and(|o| o.label & edge_labels::IMMED_COPY != 0)
     }
 
@@ -198,11 +199,7 @@ impl Ssa {
             if self.is_addr_tied(out) {
                 return false;
             }
-            if self
-                .readers(out)
-                .iter()
-                .any(|&r| self.op_parent(r) != Some(b))
-            {
+            if self.readers(out).any(|r| self.op_parent(r) != Some(b)) {
                 return false;
             }
         }
@@ -213,12 +210,11 @@ impl Ssa {
     /// exactly `vars`.
     pub fn find_multiequal(&self, b: NodeId, vars: &[VarnodeId]) -> Option<OpId> {
         let first = *vars.first()?;
-        let op = self.readers(first).into_iter().find(|&op| {
+        let op = self.readers(first).find(|&op| {
             self.op_opcode(op) == Some(OpCode::MultiEqual) && self.op_parent(op) == Some(b)
         })?;
         let ins = self.op_inputs(op);
-        (ins.len() >= vars.len() && vars.iter().zip(&ins).all(|(v, i)| Some(*v) == *i))
-            .then_some(op)
+        (ins.len() >= vars.len() && vars.iter().zip(ins).all(|(v, i)| Some(*v) == i)).then_some(op)
     }
 
     /// `BlockBasic::earliestUse`.
@@ -302,11 +298,11 @@ impl Ssa {
             return Ok(None);
         };
         for _ in 0..=self.cfg.len() {
-            let outs = self.outs(p);
-            if outs.len() != 1 && outs.len() != 2 {
+            let n_out = self.outs(p).len();
+            if n_out != 1 && n_out != 2 {
                 return Ok(None);
             }
-            let Some(next) = outs.first().map(|e| e.node) else {
+            let Some(next) = self.out_edge(p, 0).map(|e| e.node) else {
                 return Ok(None);
             };
             p = next;
