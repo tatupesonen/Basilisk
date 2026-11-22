@@ -102,3 +102,60 @@ normalize`, `map fun r0x1006ca testElseIf`, `load function testElseIf`,
 `normalizesetup Tested=1`. Cause (read, `coreaction.hh:646`):
 `ActionNormalizeSetup::reset` does not call `Action::reset`, so the status
 `status_end` that `rule_onceperfunc` leaves is never cleared.
+
+## X8. `typeop_oracle` (Mac; track `spec-decomp-typeop`)
+
+Built with `sh build.sh REF typeop_oracle.cc OUT` against the Mac
+reference (Apple clang 17, libc++, AArch64). `OUT REF ARCH`, each
+architecture twice, the two runs identical:
+
+| Architecture | Rows | By section | sha256 (first 16) |
+|---|---|---|---|
+| `x86:LE:64:default:gcc` (pointer 8, int 4) | 186,945 | H 1, T 39, P 73, S 12,168, Z 3,042, O 162,664, X 320, E 2,096, R 18, U 6,524 | `110d0ef8f9e6ce31` |
+| `x86:LE:16:Real Mode:default` (pointer 2, int 2, far pointer 4) | 185,208 | O 160,918, U 6,533, the rest as above | `5df62f6d0a448bd4` |
+| `PowerPC:BE:32:default:default` (pointer 4, int 4, big endian) | 191,186 | O 166,902, U 6,527, the rest as above | `9e65aee73ddf2b02` |
+
+563,339 rows in all, about 25 s per architecture. Nothing is written to
+standard error. What the rows pin, read against the source:
+
+- `P`: 73 opcodes; `INT_RIGHT` is `>>` in C and `>>>` in Java, no other
+  name changes; eleven opcodes have a boolean flip.
+- `S`/`Z`: `castStandard` for 39 × 39 type pairs × the four flag
+  combinations × two strategies, and the five predicates.
+- `O`: one row per (variant, opcode, operand shape, operand types,
+  output type) with `getOutputLocal`, `getInputLocal` per slot,
+  `getOutputToken`, `getInputCast` per slot, `getOperatorName`, every
+  non-null `propagateType` edge, `markExplicitUnsigned` and
+  `markExplicitLongSize` on constants. Examples: `INT_ADD` of `sone *`
+  and the constant 4 propagates `rel{8,1,4}(int4|sone)` (a relative
+  pointer into the structure) from slot 0 to the output, the constant 1
+  gives `rel{8,1,1}(xunknown1|sone)`, the constant 8 (the structure's
+  size) gives `sone *` again; `INT_RIGHT` on `int4` asks for a cast to
+  `uint4` in C and for none in Java, where its name is `>>>`.
+- `X`: `localExtensionType`, `intPromotionType`,
+  `checkIntPromotionForCompare`/`ForExtension` and the resulting input
+  cast for ten small types × sixteen ways the value is produced × fifteen
+  reading opcodes.
+- `E`: `isExtensionCastImplied` for both extensions, four output types,
+  fourteen readers, both slots, five shapes of the other operand.
+- `R`: `CALL` and `CALLIND` without a call specification, with an
+  unlocked one and with the locked prototype `int4 f(int4 *, uint8)`;
+  `RETURN` with a `void` and an `int4` function, inside and outside a
+  block; `CALLOTHER` for the first four user ops.
+- `U`: `ScoreUnionFields`' scores per field, the chosen field, the
+  resolved type and the trial count, for a union, a pointer to it, a
+  second union and a pointer to it, at every slot of 65 opcodes, with a
+  second op reading the result (seven choices), and the two truncation
+  constructors on six opcodes.
+
+Found while writing it: `get_opname` (`opcodes.cc`) names four decompiler
+opcodes by their SLEIGH aliases (`MULTIEQUAL` is `BUILD`, `INDIRECT` is
+`DELAY_SLOT`, `PTRADD` is `LABEL`, `PTRSUB` is `CROSSBUILD`); the oracle
+prints the decompiler's names. Known gaps of the prototype (for the D08
+track's generator): the second-level shapes of `U` do not vary for ops
+that do not propagate a trial; `X` does not cover `INT2FLOAT` absorbing a
+`ZEXT`; no row has a pointer with an address space attribute or a
+variable-length structure; the union map is empty throughout (no row
+goes through `resolveInFlow`).
+
+Not run on the build host in this track unless a later entry says so.
