@@ -14,7 +14,7 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 3. `cfg_mut` guard or contract | done (guard) | `39a3ce9` |
 | 4. High-variable events | done | `e82557b` |
 | 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | done | `abc0acc` |
-| 6. Final gates, fuzz 300 s, `check-dep-age` | in progress: `scripts/remote.sh gate` started on `abc0acc` (log `gate-remote.log` / `scripts/remote.sh log`), result not seen when the laptop shut down; `gate --no-ref`, `long fuzz 300 bk_decomp_ir_state`, `check-dep-age.py master` not run | |
+| 6. Final gates, fuzz 300 s, `check-dep-age` | in progress: `scripts/remote.sh gate` started on `abc0acc` (log `gate-remote.log` / `scripts/remote.sh log`), result: **exit 101**, rustdoc `-D rustdoc::private-intra-doc-links` on `crates/bk-decomp-ir/src/list.rs:208` (the `OpIter` doc links to the private `ListHead::iter`; make it plain text and rerun); `gate --no-ref`, `long fuzz 300 bk_decomp_ir_state`, `check-dep-age.py master` not run | |
 
 Item 1: `readers`, `op_inputs`, `block_ops` (an `OpIter` over the block's
 intrusive list) and every bank range query (`loc_in_space`, `loc_at`,
