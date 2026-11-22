@@ -11,9 +11,9 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 |---|---|---|
 | 1. Borrowed accessors, cover walk without per-step allocation | done | `4e8fc30` (benchmark on the old code), `dd28ea7` |
 | 2. Ranged cursors | done | `b95cca5` |
-| 3. `cfg_mut` guard or contract | done (guard) | see below |
-| 4. High-variable events | next | |
-| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | open | |
+| 3. `cfg_mut` guard or contract | done (guard) | `39a3ce9` |
+| 4. High-variable events | done | see `git log` (`feat(decomp-ir): high-variable events`) |
+| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | next | |
 | 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
 
 Item 1: `readers`, `op_inputs`, `block_ops` (an `OpIter` over the block's
@@ -57,6 +57,22 @@ branch, moves the successor's ops, clears `startbasic`, `setOrder`,
 node added behind the `Ssa`'s back had no op list either; a documented
 contract would leave both mistakes to the invariant check. Tests
 `src/block/tests.rs` (3).
+
+Item 4: `src/high.rs` (`HighEvent`, `high_events`, `take_high_events`,
+`set_symbol_reference`, `clear_symbol_links`; the rules with C++ lines in
+its module documentation and in spec 4.1). The bank primitives
+(`add_descend`, `erase_descend`, `bank_set_def`, `bank_set_input`,
+`xref`, `replace`, `bank_make_free` as three setter calls, `bank_destroy`
+and `xref`'s merge as `Removed`), the annotation setters (split into the
+ones Ghidra routes through `setFlags` and the direct stores),
+`varnode_set_flags`/`clear_flags`, `update_type*`, `copy_symbol`,
+`set_symbol_entry(Some)`, `calc_cover`, `varnode_cover` (updateCover's
+clear reports `CoverDirty` too), `apply_properties`
+(`setSymbolProperties`: only a *new* entry of a type-locked symbol is
+taken and reported, as in Ghidra), `set_input_varnode` (`setUnaffected`
+reports, `setReturnAddress` does not) record events. Tests
+`src/mutate/tests/high.rs` (10) and `tests/subset.rs` (loading the
+checked-in dumps, which have highs, records nothing).
 
 ### (a) Done (code written; see (b) for whether it compiles)
 

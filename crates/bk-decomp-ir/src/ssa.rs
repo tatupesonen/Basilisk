@@ -92,6 +92,8 @@ pub struct Ssa {
     pub(crate) entries: Vec<EntryRef>,
     pub(crate) entry_index: HashMap<EntryRef, u32>,
     pub(crate) recorder: Option<Box<dyn Recorder>>,
+    /// High-variable events not yet taken (`crate::high`).
+    pub(crate) high_events: Vec<crate::high::HighEvent>,
     /// The function's entry (`Funcdata::getAddress`), for use points.
     pub(crate) entry: Address,
 }
@@ -143,6 +145,7 @@ impl Ssa {
             entries: Vec::new(),
             entry_index: HashMap::new(),
             recorder: None,
+            high_events: Vec::new(),
             entry: Address::INVALID,
         })
     }

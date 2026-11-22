@@ -132,6 +132,24 @@ open item 10.1).
   `printCover`. Those that need a type factory, a symbol or a high
   variable take them as arguments or are left to the crate that has them;
   the status report lists which.
+* **High-variable events** (added by D05, review step B). Every
+  `Varnode` setter forwards to its `HighVariable` (varnode.cc:316–651):
+  `setFlags`/`clearFlags` call `flagsDirty` and, for bits with
+  `coverdirty`, `coverDirty`; `updateType` and `copySymbol` call
+  `typeDirty`; `setSymbolProperties`, `setSymbolEntry`, `copySymbol` call
+  `setSymbol`; `setSymbolReference` calls `setSymbolReference`;
+  `clearSymbolLinks` calls `symbolDirty`; the destructor calls `remove`.
+  The table of highs is D07's, but only this crate sees every change, so
+  each `Ssa` method that corresponds to such a setter records, for a
+  varnode with a high, a `HighEvent` (`FlagsDirty`, `CoverDirty`,
+  `TypeDirty`, `SymbolDirty`, `SetSymbol`, `SetSymbolReference`,
+  `Removed`) in call order in a queue the `Ssa` owns; the caller drains it
+  with `take_high_events`. The exact rules, with the C++ lines, are in
+  `src/high.rs`; setters Ghidra writes as direct field stores (`setMark`,
+  `setDirectWrite`, `setReturnAddress`, `setAutoLiveHold`,
+  `setProtoPartial`, `addlflags`, the indirect-creation marks) record
+  nothing. A varnode without a high records nothing, the queue allocates
+  only when one has a high, and loading a dump records nothing.
 
 ### 4.2 The varnode bank (read, varnode.cc:30–79, 1219–1440)
 
@@ -458,6 +476,16 @@ that runs a function is D07's):
 Provide `op_semantics(op) -> Semantics` classifying each op this way,
 total over the 73 opcodes.
 
+Added by D05, review step B: the bank and annotation methods of this
+section record high-variable events (4.1, `src/high.rs`); D07 drains them
+with `Ssa::take_high_events` after each change it makes and applies them
+to its high table. `set_symbol_reference` and `clear_symbol_links` exist
+for that purpose (`clear_symbol_links` takes the high's instances to be
+the live varnodes naming the same `HighId`). Block surgery goes through
+`Ssa::cfg_mut` (a guard without node removal), `remove_block` and
+`splice_block_basic`; ranged cursors (`loc_cursor_in_space` and the
+others) give the `vn = *iter++` loops of 4.2.
+
 ### 4.6 Per-opcode properties
 
 One static table: opcode → property word (the `PcodeOp` flag bits the
@@ -748,6 +776,23 @@ Appended by D05 (2026-11-16):
   `varnodehigh` and `IfaceStatus::expandCom` (`interface.cc:436`–`475`)
   then reads the varnode as a fourth command word ("Invalid command").
   Covers are tested against `cover.cc` by hand-derived cases instead.
+
+Appended by D05, review step B (2026-11-22):
+
+- High-variable events: Ghidra's setters call the `HighVariable`
+  directly; Basilisk records the same calls, in the same order, as
+  `HighEvent`s for the caller to apply (4.1). `clearSymbolLinks` walks
+  the live varnodes that name the high (Ghidra: the high's instance
+  list); the events do not depend on the instance order.
+  `set_symbol_entry(None)` (no Ghidra setter) records nothing.
+- `Ssa::cfg_mut` returns a guard (`CfgMut`) that cannot add, remove or
+  splice nodes; nodes leave through `remove_block` (refused while the
+  block holds ops; Ghidra trusts the caller) and `splice_block_basic`
+  (checks before it changes anything; Ghidra destroys the branch before
+  it finds a `MULTIEQUAL` and throws).
+- A ranged cursor whose remembered successor or end varnode was
+  destroyed (undefined in Ghidra) continues from the next key and stops
+  at the end's key.
 
 ## 9. Status
 

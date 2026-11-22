@@ -8,6 +8,7 @@ use crate::record::Recorder;
 use crate::ssa::Ssa;
 
 mod annotate;
+mod high;
 mod insert;
 mod op;
 mod props;

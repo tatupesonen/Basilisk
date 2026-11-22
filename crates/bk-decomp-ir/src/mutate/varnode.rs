@@ -32,7 +32,7 @@ impl Ssa {
     fn apply_properties(&mut self, vn: VarnodeId, answer: PropertiesAnswer) -> IrResult<()> {
         match answer {
             PropertiesAnswer::Flags(f) => {
-                self.vnd_mut(vn)?.flags |= f & !vflags::TYPELOCK;
+                self.vn_set_flags(vn, f & !vflags::TYPELOCK)?;
             }
             PropertiesAnswer::Entry {
                 entry,
@@ -43,11 +43,16 @@ impl Ssa {
                 if let Some(lt) = locked_type {
                     self.update_type_locked(vn, lt.ty, !lt.unknown, true)?;
                 }
+                // `setSymbolProperties` (varnode.cc:441–456): a new entry
+                // of a type-locked symbol is taken and reported.
                 if symbol_type_locked {
                     let idx = self.intern_entry(entry);
-                    self.vnd_mut(vn)?.entry = idx;
+                    if self.vnd(vn)?.entry != idx {
+                        self.vnd_mut(vn)?.entry = idx;
+                        self.high_set_symbol(vn);
+                    }
                 }
-                self.vnd_mut(vn)?.flags |= flags & !vflags::TYPELOCK;
+                self.vn_set_flags(vn, flags & !vflags::TYPELOCK)?;
             }
         }
         Ok(())
@@ -196,7 +201,7 @@ impl Ssa {
     pub fn new_coderef(&mut self, env: &mut dyn FunctionEnv, addr: Address) -> IrResult<VarnodeId> {
         let ct = env.code_type();
         let vn = self.bank_create(1, addr, Some(ct))?;
-        self.vnd_mut(vn)?.flags |= vflags::ANNOTATION;
+        self.vn_set_flags(vn, vflags::ANNOTATION)?;
         env.assign_high(self, vn);
         Ok(vn)
     }
@@ -213,7 +218,7 @@ impl Ssa {
             s.space_const = space_const;
         }
         self.bank_insert_plain(new);
-        self.vnd_mut(new)?.flags |= flags & CLONE_FLAGS;
+        self.vn_set_flags(new, flags & CLONE_FLAGS)?;
         Ok(new)
     }
 
@@ -303,9 +308,12 @@ impl Ssa {
         let vn = self.bank_set_input(vn)?;
         self.set_varnode_properties(env, vn)?;
         match env.input_effect(addr, size) {
-            Effect::Unaffected => self.vnd_mut(vn)?.flags |= vflags::UNAFFECTED,
+            Effect::Unaffected => self.set_unaffected(vn)?,
             Effect::ReturnAddress => {
-                self.vnd_mut(vn)?.flags |= vflags::UNAFFECTED | vflags::RETURN_ADDRESS;
+                // `setUnaffected` reports; `setReturnAddress` does not
+                // (funcdata_varnode.cc:380–384).
+                self.set_unaffected(vn)?;
+                self.set_return_address(vn)?;
             }
             Effect::KilledByCall | Effect::Unknown => {}
         }

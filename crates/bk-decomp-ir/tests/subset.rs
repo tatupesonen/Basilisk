@@ -50,7 +50,8 @@ fn language(dump: &StateDump) -> String {
 }
 
 /// Loads, checks and writes one dump; `Err` with the first differing line.
-fn round_trip(text: &str) -> Result<(), String> {
+/// Round-trips one dump; returns how many of its varnodes have a high.
+fn round_trip(text: &str) -> Result<usize, String> {
     let dump = StateDump::parse(text).map_err(|e| e.to_string())?;
     let lang = language(&dump);
     let tables = LangTables::load(&lang).ok_or_else(|| format!("no table for {lang}"))?;
@@ -62,6 +63,14 @@ fn round_trip(text: &str) -> Result<(), String> {
     if !bad.is_empty() {
         return Err(format!("invariants: {bad:?}"));
     }
+    // Loading calls no varnode setter: no high-variable event.
+    if !ssa.high_events().is_empty() {
+        return Err(format!("load recorded {:?}", ssa.high_events()));
+    }
+    let highs = ssa
+        .loc_order()
+        .filter(|&v| ssa.varnode_high(v).is_some())
+        .count();
     let names = DumpNames::from_dump(&dump, &spaces).with_userops(tables.userops.clone());
     let out = write(&ssa, &dump, &names, &CanonicalCalls::Identity).map_err(|e| e.to_string())?;
     match text.lines().zip(out.lines()).position(|(a, b)| a != b) {
@@ -72,7 +81,7 @@ fn round_trip(text: &str) -> Result<(), String> {
             out.lines().nth(i)
         )),
         None if text != out => Err("length differs".into()),
-        None => Ok(()),
+        None => Ok(highs),
     }
 }
 
@@ -86,17 +95,20 @@ fn checked_in_subset_round_trips() {
     files.sort();
     assert!(files.len() >= FUNCTIONS, "subset has {} dumps", files.len());
     let mut functions = BTreeSet::new();
+    let mut highs = 0;
     for f in &files {
         let name = f.file_name().unwrap().to_string_lossy().into_owned();
         // <corpus>.<script>.<k>.<point>.state.gz
         let parts: Vec<&str> = name.rsplitn(4, '.').collect();
         functions.insert(parts[3].to_owned());
         let text = read_text(f).unwrap();
-        if let Err(e) = round_trip(&text) {
-            panic!("{name}: {e}");
+        match round_trip(&text) {
+            Ok(n) => highs += n,
+            Err(e) => panic!("{name}: {e}"),
         }
     }
     assert_eq!(functions.len(), FUNCTIONS);
+    assert!(highs > 0, "no dump of the subset has high variables");
     eprintln!(
         "subset: {} dumps of {} functions round-trip",
         files.len(),

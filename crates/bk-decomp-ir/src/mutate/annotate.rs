@@ -36,6 +36,25 @@ macro_rules! vn_setters {
     };
 }
 
+/// Setters that go through `Varnode::setFlags`/`clearFlags` and so report
+/// to the high variable (`crate::high`).
+macro_rules! vn_reported_setters {
+    ($( $(#[$m:meta])* $set:ident / $clear:ident => $bits:expr ;)*) => {
+        impl Ssa {
+            $(
+                $(#[$m])*
+                pub fn $set(&mut self, vn: VarnodeId) -> IrResult<()> {
+                    self.vn_set_flags(vn, $bits)
+                }
+                #[doc = concat!("The clearing counterpart of [`Ssa::", stringify!($set), "`].")]
+                pub fn $clear(&mut self, vn: VarnodeId) -> IrResult<()> {
+                    self.vn_clear_flags(vn, $bits)
+                }
+            )*
+        }
+    };
+}
+
 macro_rules! vn_addl_setters {
     ($( $(#[$m:meta])* $set:ident / $clear:ident => $bits:expr ;)*) => {
         impl Ssa {
@@ -55,28 +74,36 @@ macro_rules! vn_addl_setters {
     };
 }
 
+// Ghidra writes these bits directly (varnode.hh:305–308, 315–316,
+// 328–331): no report to the high.
 vn_setters! {
     /// `setMark`.
     set_mark / clear_mark => vflags::MARK;
     /// `setDirectWrite`.
     set_direct_write / clear_direct_write => vflags::DIRECTWRITE;
+    /// `setReturnAddress`.
+    set_return_address / clear_return_address => vflags::RETURN_ADDRESS;
+    /// `setAutoLiveHold`.
+    set_auto_live_hold / clear_auto_live_hold => vflags::AUTOLIVE_HOLD;
+    /// `setProtoPartial`.
+    set_proto_partial / clear_proto_partial => vflags::PROTO_PARTIAL;
+}
+
+// Through `setFlags`/`clearFlags` (varnode.hh:168, 309–314, 322–325):
+// `FlagsDirty` for the high.
+vn_reported_setters! {
     /// `setAddrForce`.
     set_addr_force / clear_addr_force => vflags::ADDRFORCE;
     /// `setImplied`.
     set_implied / clear_implied => vflags::IMPLIED;
     /// `setExplicit`.
     set_explicit / clear_explicit => vflags::EXPLICIT;
-    /// `setReturnAddress`.
-    set_return_address / clear_return_address => vflags::RETURN_ADDRESS;
     /// `setPrecisLo`.
     set_precis_lo / clear_precis_lo => vflags::PRECISLO;
     /// `setPrecisHi`.
     set_precis_hi / clear_precis_hi => vflags::PRECISHI;
-    /// `setAutoLiveHold`.
-    set_auto_live_hold / clear_auto_live_hold => vflags::AUTOLIVE_HOLD;
-    /// `setProtoPartial`.
-    set_proto_partial / clear_proto_partial => vflags::PROTO_PARTIAL;
-    /// `setUnaffected` (Funcdata).
+    /// `setUnaffected` (Ghidra has no clear; the clear reports as
+    /// `clearFlags` would).
     set_unaffected / clear_unaffected => vflags::UNAFFECTED;
 }
 
@@ -118,8 +145,7 @@ impl Ssa {
                 bits: bits & STRUCTURAL_VFLAGS,
             });
         }
-        self.vnd_mut(vn)?.flags |= bits;
-        Ok(())
+        self.vn_set_flags(vn, bits)
     }
 
     /// `Varnode::clearFlags`; structural bits are refused.
@@ -131,8 +157,7 @@ impl Ssa {
                 bits: bits & STRUCTURAL_VFLAGS,
             });
         }
-        self.vnd_mut(vn)?.flags &= !bits;
-        Ok(())
+        self.vn_clear_flags(vn, bits)
     }
 
     /// `setSymbolCheck`.
@@ -143,13 +168,14 @@ impl Ssa {
     }
 
     /// `updateType(ct)`: sets the type unless it is locked; whether it
-    /// changed.
+    /// changed (`TypeDirty` for the high when it did).
     pub fn update_type(&mut self, vn: VarnodeId, ty: TypeId) -> IrResult<bool> {
         let d = self.vnd_mut(vn)?;
         if d.ty == ty.raw() || d.flags & vflags::TYPELOCK != 0 {
             return Ok(false);
         }
         d.ty = ty.raw();
+        self.type_dirty(vn);
         Ok(true)
     }
 
@@ -175,6 +201,7 @@ impl Ssa {
             d.flags |= vflags::TYPELOCK;
         }
         d.ty = ty.raw();
+        self.type_dirty(vn);
         Ok(true)
     }
 
@@ -205,13 +232,18 @@ impl Ssa {
     }
 
     /// Sets or clears the symbol entry reference (`mapentry`) without
-    /// touching flags (`Varnode::setSymbolEntry` also sets `mapped` and,
-    /// for a name-locked symbol, `namelock`: the caller passes those bits
-    /// through [`Ssa::varnode_set_flags`]).
+    /// touching flags. `Varnode::setSymbolEntry` is
+    /// [`Ssa::varnode_set_flags`] with `mapped` (and `namelock` for a
+    /// name-locked symbol), then this with `Some`, which reports
+    /// `SetSymbol` to the high (varnode.cc:461–471); `None` has no Ghidra
+    /// setter and reports nothing.
     pub fn set_symbol_entry(&mut self, vn: VarnodeId, entry: Option<EntryRef>) -> IrResult<()> {
         self.vnd(vn)?;
         let idx = entry.map_or(NONE, |e| self.intern_entry(e));
         self.vnd_mut(vn)?.entry = idx;
+        if entry.is_some() {
+            self.high_set_symbol(vn);
+        }
         Ok(())
     }
 
@@ -227,6 +259,10 @@ impl Ssa {
         d.ty = ty;
         d.entry = entry;
         d.flags = (d.flags & !(vflags::TYPELOCK | vflags::NAMELOCK)) | locks;
+        self.type_dirty(vn);
+        if entry != NONE {
+            self.high_set_symbol(vn);
+        }
         Ok(())
     }
 
@@ -234,9 +270,8 @@ impl Ssa {
     /// object.
     pub fn calc_cover(&mut self, vn: VarnodeId) -> IrResult<()> {
         if self.has_cover(vn) {
-            let d = self.vnd_mut(vn)?;
-            d.cover = Some(Box::default());
-            d.flags |= vflags::COVERDIRTY;
+            self.vnd_mut(vn)?.cover = Some(Box::default());
+            self.vn_set_flags(vn, vflags::COVERDIRTY)?;
         }
         Ok(())
     }
@@ -257,7 +292,7 @@ impl Ssa {
                 self.cover_rebuild(&mut c, vn);
                 self.vnd_mut(vn)?.cover = Some(Box::new(c));
             }
-            self.vnd_mut(vn)?.flags &= !vflags::COVERDIRTY;
+            self.vn_clear_flags(vn, vflags::COVERDIRTY)?;
         }
         Ok(self.vnd(vn)?.cover.as_deref())
     }

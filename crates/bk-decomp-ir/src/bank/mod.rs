@@ -116,10 +116,8 @@ impl Ssa {
             });
         }
         let vn = self.alloc_varnode(size, addr, ty)?;
-        if let Some(d) = self.vns.get_mut(vn.index()) {
-            d.def = op.0;
-            d.flags |= vflags::COVERDIRTY | vflags::WRITTEN;
-        }
+        self.vnd_mut(vn)?.def = op.0;
+        self.vn_set_flags(vn, vflags::COVERDIRTY | vflags::WRITTEN)?;
         self.xref(vn)
     }
 
@@ -164,6 +162,7 @@ impl Ssa {
         if let Some(other) = self.bank_twin(vn) {
             self.check_replace(vn, other)?;
             self.replace(vn, other)?;
+            self.high_removed(vn);
             if let Some(s) = self.vstate.get_mut(vn.index()) {
                 s.destroyed = true;
             }
@@ -175,9 +174,7 @@ impl Ssa {
             }
             return Ok(other);
         }
-        if let Some(d) = self.vns.get_mut(vn.index()) {
-            d.flags |= vflags::INSERT;
-        }
+        self.vn_set_flags(vn, vflags::INSERT)?;
         self.bank_insert_plain(vn);
         Ok(vn)
     }
@@ -211,8 +208,8 @@ impl Ssa {
                 o.inputs.set(pool, slot, new.0);
             }
         }
-        self.vnd_mut(old)?.flags |= vflags::COVERDIRTY;
-        self.vnd_mut(new)?.flags |= vflags::COVERDIRTY;
+        self.vn_set_flags(old, vflags::COVERDIRTY)?;
+        self.vn_set_flags(new, vflags::COVERDIRTY)?;
         Ok(())
     }
 
@@ -226,9 +223,8 @@ impl Ssa {
         let pool = &mut self.pool;
         if let Some(d) = self.vns.get_mut(vn.index()) {
             d.readers.push(pool, op.0);
-            d.flags |= vflags::COVERDIRTY;
         }
-        Ok(())
+        self.vn_set_flags(vn, vflags::COVERDIRTY)
     }
 
     /// `Varnode::eraseDescend`: removes the first occurrence of `op`.
@@ -241,9 +237,8 @@ impl Ssa {
         let pool = &mut self.pool;
         if let Some(d) = self.vns.get_mut(vn.index()) {
             d.readers.remove(pool, pos);
-            d.flags |= vflags::COVERDIRTY;
         }
-        Ok(())
+        self.vn_set_flags(vn, vflags::COVERDIRTY)
     }
 
     /// `VarnodeBank::setInput`.
@@ -257,7 +252,7 @@ impl Ssa {
         }
         self.check_merge(vn, vflags::INPUT, None)?;
         self.bank_remove(vn);
-        self.vnd_mut(vn)?.flags |= vflags::INPUT | vflags::COVERDIRTY;
+        self.vn_set_flags(vn, vflags::INPUT | vflags::COVERDIRTY)?;
         self.xref(vn)
     }
 
@@ -298,9 +293,8 @@ impl Ssa {
         }
         self.check_merge(vn, vflags::WRITTEN, Some(op))?;
         self.bank_remove(vn);
-        let d = self.vnd_mut(vn)?;
-        d.def = op.0;
-        d.flags |= vflags::COVERDIRTY | vflags::WRITTEN;
+        self.vnd_mut(vn)?.def = op.0;
+        self.vn_set_flags(vn, vflags::COVERDIRTY | vflags::WRITTEN)?;
         self.xref(vn)
     }
 
@@ -308,10 +302,15 @@ impl Ssa {
     pub(crate) fn bank_make_free(&mut self, vn: VarnodeId) -> IrResult<()> {
         self.vnd(vn)?;
         self.bank_remove(vn);
-        let d = self.vnd_mut(vn)?;
-        d.def = NONE;
-        d.flags |= vflags::COVERDIRTY;
-        d.flags &= !(vflags::WRITTEN | vflags::INSERT | vflags::INPUT | vflags::INDIRECT_CREATION);
+        // `setDef(null)` (varnode.cc:421–425), then the clear of
+        // varnode.cc:1324: three setter calls.
+        self.vnd_mut(vn)?.def = NONE;
+        self.vn_set_flags(vn, vflags::COVERDIRTY)?;
+        self.vn_clear_flags(vn, vflags::WRITTEN)?;
+        self.vn_clear_flags(
+            vn,
+            vflags::INSERT | vflags::INPUT | vflags::INDIRECT_CREATION,
+        )?;
         self.bank_insert_plain(vn);
         Ok(())
     }
@@ -323,6 +322,7 @@ impl Ssa {
             return Err(IrError::IntegratedVarnode(vn));
         }
         self.bank_remove(vn);
+        self.high_removed(vn);
         if let Some(s) = self.vstate.get_mut(vn.index()) {
             s.destroyed = true;
         }
