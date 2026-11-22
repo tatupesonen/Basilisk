@@ -73,6 +73,11 @@ fn safe_range<K: Ord + Copy>(
     r.into_iter().flatten().map(|(_, v)| *v)
 }
 
+/// A range of loc order as a pair of bounds.
+pub(super) type LocBounds = (Bound<LocKey>, Bound<LocKey>);
+/// A range of def order as a pair of bounds.
+pub(super) type DefBounds = (Bound<DefKey>, Bound<DefKey>);
+
 fn lower<K>(k: K) -> Bound<K> {
     Bound::Included(k)
 }
@@ -113,18 +118,28 @@ impl Ssa {
             .map_or(Address::MAXIMAL, |s| Address::new(s, 0))
     }
 
+    pub(super) fn loc_in_space_bounds(&self, space: SpaceId) -> LocBounds {
+        let lo = lk(Address::new(space, 0), 0, INPUT_CLASS, SEQ_MIN);
+        let hi = lk(self.next_space_start(space), 0, INPUT_CLASS, SEQ_MIN);
+        (lower(lo), before(hi))
+    }
+
     /// The varnodes of one space in loc order (`beginLoc(spc)`..`endLoc(spc)`).
     pub fn loc_in_space(
         &self,
         space: SpaceId,
     ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
-        let lo = lk(Address::new(space, 0), 0, INPUT_CLASS, SEQ_MIN);
-        let hi = lk(self.next_space_start(space), 0, INPUT_CLASS, SEQ_MIN);
-        safe_range(&self.loc, lower(lo), before(hi))
+        let (lo, hi) = self.loc_in_space_bounds(space);
+        safe_range(&self.loc, lo, hi)
     }
 
     /// The varnodes starting at `addr` (`beginLoc(addr)`..`endLoc(addr)`).
     pub fn loc_at(&self, addr: Address) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
+        let (lo, hi) = self.loc_at_bounds(addr);
+        safe_range(&self.loc, lo, hi)
+    }
+
+    pub(super) fn loc_at_bounds(&self, addr: Address) -> LocBounds {
         let lo = lk(addr, 0, INPUT_CLASS, SEQ_MIN);
         let end = match addr.space() {
             Some(space)
@@ -138,11 +153,7 @@ impl Ssa {
             Some(space) => Address::new(space, addr.offset().wrapping_add(1)),
             None => Address::MAXIMAL,
         };
-        safe_range(
-            &self.loc,
-            lower(lo),
-            before(lk(end, 0, INPUT_CLASS, SEQ_MIN)),
-        )
+        (lower(lo), before(lk(end, 0, INPUT_CLASS, SEQ_MIN)))
     }
 
     /// The varnodes of size `size` at `addr` (`beginLoc(s,addr)`..`endLoc(s,addr)`).
@@ -151,16 +162,17 @@ impl Ssa {
         size: i32,
         addr: Address,
     ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
-        let lo = lk(addr, size, INPUT_CLASS, SEQ_MIN);
-        let hi = lk(addr, size.saturating_add(1), INPUT_CLASS, SEQ_MIN);
-        safe_range(&self.loc, lower(lo), before(hi))
+        let (lo, hi) = Self::loc_sized_bounds(size, addr);
+        safe_range(&self.loc, lo, hi)
     }
 
-    fn loc_class_bounds(
-        size: i32,
-        addr: Address,
-        class: VnClass,
-    ) -> (Bound<LocKey>, Bound<LocKey>) {
+    pub(super) fn loc_sized_bounds(size: i32, addr: Address) -> LocBounds {
+        let lo = lk(addr, size, INPUT_CLASS, SEQ_MIN);
+        let hi = lk(addr, size.saturating_add(1), INPUT_CLASS, SEQ_MIN);
+        (lower(lo), before(hi))
+    }
+
+    pub(super) fn loc_class_bounds(size: i32, addr: Address, class: VnClass) -> LocBounds {
         let begin = match class {
             VnClass::Input => lower(lk(addr, size, INPUT_CLASS, SEQ_MIN)),
             VnClass::Written => lower(lk(addr, size, WRITTEN_CLASS, SEQ_MIN)),
@@ -196,9 +208,19 @@ impl Ssa {
         pc: Address,
         uniq: Option<u32>,
     ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
+        let (lo, hi) = Self::loc_defined_bounds(size, addr, pc, uniq);
+        safe_range(&self.loc, lo, hi)
+    }
+
+    pub(super) fn loc_defined_bounds(
+        size: i32,
+        addr: Address,
+        pc: Address,
+        uniq: Option<u32>,
+    ) -> LocBounds {
         let lo = lk(addr, size, WRITTEN_CLASS, (pc, uniq.unwrap_or(0)));
         let hi = lk(addr, size, WRITTEN_CLASS, (pc, uniq.unwrap_or(u32::MAX)));
-        safe_range(&self.loc, lower(lo), through(hi))
+        (lower(lo), through(hi))
     }
 
     /// The varnodes of one class in def order (`beginDef(fl)`..`endDef(fl)`).
@@ -206,19 +228,21 @@ impl Ssa {
         &self,
         class: VnClass,
     ) -> impl DoubleEndedIterator<Item = VarnodeId> + Clone + '_ {
+        let (lo, hi) = Self::def_class_bounds(class);
+        safe_range(&self.def, lo, hi)
+    }
+
+    pub(super) fn def_class_bounds(class: VnClass) -> DefBounds {
         let first_written = dk(WRITTEN_CLASS, SEQ_MIN, Address::MINIMAL, 0);
         let last_written = dk(WRITTEN_CLASS, SEQ_MAX, Address::MAXIMAL, 0);
         match class {
-            VnClass::Input => safe_range(&self.def, Bound::Unbounded, before(first_written)),
-            VnClass::Written => safe_range(&self.def, lower(first_written), through(last_written)),
-            VnClass::Free => safe_range(&self.def, upper(last_written), Bound::Unbounded),
+            VnClass::Input => (Bound::Unbounded, before(first_written)),
+            VnClass::Written => (lower(first_written), through(last_written)),
+            VnClass::Free => (upper(last_written), Bound::Unbounded),
         }
     }
 
-    fn def_class_addr_bounds(
-        class: VnClass,
-        addr: Address,
-    ) -> IrResult<(Bound<DefKey>, Bound<DefKey>)> {
+    pub(super) fn def_class_addr_bounds(class: VnClass, addr: Address) -> IrResult<DefBounds> {
         match class {
             VnClass::Written => Err(IrError::WrittenByAddress),
             VnClass::Input => Ok((
@@ -391,64 +415,5 @@ impl Ssa {
             cur = after(end);
         }
         Ok((flags, groups))
-    }
-
-    /// A cursor over loc order that survives mutation of the bank between
-    /// steps (see [`LocCursor`]).
-    pub fn loc_cursor(&self) -> LocCursor {
-        LocCursor {
-            pending: self.loc.keys().next().copied(),
-        }
-    }
-
-    /// A cursor over def order.
-    pub fn def_cursor(&self) -> DefCursor {
-        DefCursor {
-            pending: self.def.keys().next().copied(),
-        }
-    }
-}
-
-/// Steps through loc order as Ghidra's `vn = *iter++` loops do: each step
-/// returns the current varnode and remembers its successor *at that time*,
-/// so the body may create or destroy varnodes (`clearDeadVarnodes`,
-/// `funcdata_varnode.cc:860`). If the remembered successor is gone, the walk
-/// goes on from the first key after it.
-#[derive(Clone, Copy, Debug)]
-pub struct LocCursor {
-    pending: Option<LocKey>,
-}
-
-impl LocCursor {
-    /// The next varnode, or `None` at the end.
-    pub fn next(&mut self, ssa: &Ssa) -> Option<VarnodeId> {
-        let k = self.pending?;
-        let (&cur, &vn) = ssa.loc.range(k..).next()?;
-        self.pending = ssa
-            .loc
-            .range((Bound::Excluded(cur), Bound::Unbounded))
-            .next()
-            .map(|(k, _)| *k);
-        Some(vn)
-    }
-}
-
-/// [`LocCursor`] for def order.
-#[derive(Clone, Copy, Debug)]
-pub struct DefCursor {
-    pending: Option<DefKey>,
-}
-
-impl DefCursor {
-    /// The next varnode, or `None` at the end.
-    pub fn next(&mut self, ssa: &Ssa) -> Option<VarnodeId> {
-        let k = self.pending?;
-        let (&cur, &vn) = ssa.def.range(k..).next()?;
-        self.pending = ssa
-            .def
-            .range((Bound::Excluded(cur), Bound::Unbounded))
-            .next()
-            .map(|(k, _)| *k);
-        Some(vn)
     }
 }

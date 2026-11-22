@@ -10,8 +10,8 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | Item | State | Commits |
 |---|---|---|
 | 1. Borrowed accessors, cover walk without per-step allocation | done | `4e8fc30` (benchmark on the old code), `dd28ea7` |
-| 2. Ranged cursors | next | |
-| 3. `cfg_mut` guard or contract | open | |
+| 2. Ranged cursors | done | see `git log` (`feat(decomp-ir): ranged cursors`) |
+| 3. `cfg_mut` guard or contract | next | |
 | 4. High-variable events | open | |
 | 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | open | |
 | 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
@@ -28,6 +28,19 @@ for loops that change the IR (`destroyVarnode`, `totalReplace*`,
 reused per `rebuild`. Numbers in `docs/PERF.md` (0.379 → 0.032 ms on the
 build host for a 1,000-way join). `ops_alive`, `ops_dead`, `ops_of` stay
 snapshots: Ghidra's loops over those lists mutate them.
+
+Item 2: `src/bank/cursor.rs`. `loc_cursor_in_space`, `loc_cursor_at`,
+`loc_cursor_sized`, `loc_cursor_class`, `loc_cursor_defined`,
+`def_cursor_class`, `def_cursor_class_at`, and `LocCursor::until_start_of`
+/ `until_end_of` for loops between two begin/end iterators of different
+queries (`Heritage::collect`, heritage.cc:315–323). Semantics of
+`vn = *iter++` with the end iterator taken before the loop: the successor
+is remembered at each step; the end is the *varnode* the end iterator
+named (or `end()`), not a key bound, so a varnode inserted past the range
+but before that varnode is visited, as `processJoins` expects
+(heritage.cc:2282). Where Ghidra is undefined (successor or end varnode
+destroyed) the walk continues from the next key / stops at the end's key.
+Tests `src/bank/tests.rs` (6).
 
 ### (a) Done (code written; see (b) for whether it compiles)
 

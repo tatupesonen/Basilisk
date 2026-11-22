@@ -55,7 +55,8 @@ pub mod varnode;
 #[cfg(test)]
 mod testing;
 
-pub use bank::range::{DefCursor, LocCursor, VnClass};
+pub use bank::cursor::{DefCursor, LocCursor};
+pub use bank::range::VnClass;
 pub use bk_decomp_cfg::NodeId;
 pub use cover::{Cover, CoverBlock, CoverPoint, OpSet};
 pub use error::{IrError, IrResult};

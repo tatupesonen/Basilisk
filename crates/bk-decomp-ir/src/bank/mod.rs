@@ -1,6 +1,7 @@
 //! The varnode bank (Ghidra `VarnodeBank`, varnode.cc:1219–1440): creating,
 //! defining, freeing and destroying varnodes while keeping both orders.
 
+pub mod cursor;
 pub(crate) mod keys;
 pub mod range;
 
@@ -331,3 +332,6 @@ impl Ssa {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;
