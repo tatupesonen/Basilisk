@@ -32,3 +32,4 @@ fixtures/decomp-oracle/** text eol=lf
 
 # Inputs of the printer spike (data-test format, read by the reference consoles).
 docs/research/decomp-out-spike/inputs/** text eol=lf
+crates/bk-decomp-ir/tests/data/*.txt text eol=lf
