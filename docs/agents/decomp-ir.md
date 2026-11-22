@@ -12,7 +12,7 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 1. Borrowed accessors, cover walk without per-step allocation | done | `4e8fc30` (benchmark on the old code), `dd28ea7` |
 | 2. Ranged cursors | done | `b95cca5` |
 | 3. `cfg_mut` guard or contract | done (guard) | `39a3ce9` |
-| 4. High-variable events | done | see `git log` (`feat(decomp-ir): high-variable events`) |
+| 4. High-variable events | done | `e82557b` |
 | 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | next | |
 | 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
 
