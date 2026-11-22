@@ -199,6 +199,22 @@ pub enum IrError {
     /// The arithmetic of an op failed.
     #[error(transparent)]
     Eval(#[from] bk_pcode::EvalError),
+    /// A block that still holds ops cannot leave the graph (Ghidra
+    /// destroys them first: `blockRemoveInternal`, `funcdata_block.cc:319`–`341`).
+    #[error("{method}: block {block} still holds ops")]
+    BlockHasOps {
+        /// The method.
+        method: &'static str,
+        /// The block.
+        block: u32,
+    },
+    /// `spliceBlockBasic`: the block has not exactly one successor with
+    /// exactly one predecessor.
+    #[error("Cannot splice basic blocks")]
+    CannotSplice(u32),
+    /// `spliceBlockBasic`: the successor starts with a `MULTIEQUAL`.
+    #[error("Splicing block with MULTIEQUAL")]
+    SpliceMultiequal(u32),
     /// The block graph refused an edit.
     #[error(transparent)]
     Cfg(#[from] bk_decomp_cfg::CfgError),

@@ -2,8 +2,11 @@
 //! original address ranges (Ghidra `BlockBasic`, block.hh:470–531,
 //! block.cc:2270–2900).
 
+mod edit;
 mod facts;
 mod query;
+
+pub use edit::CfgMut;
 
 use bk_core::{Address, RangeList};
 use bk_decomp_cfg::{EdgeView, NodeId, node_flags};
@@ -31,13 +34,6 @@ impl Ssa {
             };
         }
         Ok(n)
-    }
-
-    /// The block graph, for edge surgery (`bk-decomp-cfg`'s methods). Ops
-    /// stay attached to their nodes; removing a node that still has ops is
-    /// the caller's error to avoid (D07 combines both).
-    pub fn cfg_mut(&mut self) -> &mut bk_decomp_cfg::Cfg {
-        &mut self.cfg
     }
 
     pub(crate) fn bdata(&self, b: NodeId) -> IrResult<&BasicData> {
@@ -258,3 +254,6 @@ impl Ssa {
         self.blocks().find(|&n| self.cfg.index(n) == Some(index))
     }
 }
+
+#[cfg(test)]
+mod tests;

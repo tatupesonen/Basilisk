@@ -58,6 +58,7 @@ mod testing;
 pub use bank::cursor::{DefCursor, LocCursor};
 pub use bank::range::VnClass;
 pub use bk_decomp_cfg::NodeId;
+pub use block::CfgMut;
 pub use cover::{Cover, CoverBlock, CoverPoint, OpSet};
 pub use error::{IrError, IrResult};
 pub use ids::{CallSpecId, EntryRef, HighId, OpId, UnitId, VarnodeId};

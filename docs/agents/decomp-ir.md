@@ -10,9 +10,9 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | Item | State | Commits |
 |---|---|---|
 | 1. Borrowed accessors, cover walk without per-step allocation | done | `4e8fc30` (benchmark on the old code), `dd28ea7` |
-| 2. Ranged cursors | done | see `git log` (`feat(decomp-ir): ranged cursors`) |
-| 3. `cfg_mut` guard or contract | next | |
-| 4. High-variable events | open | |
+| 2. Ranged cursors | done | `b95cca5` |
+| 3. `cfg_mut` guard or contract | done (guard) | see below |
+| 4. High-variable events | next | |
 | 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | open | |
 | 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
 
@@ -41,6 +41,22 @@ but before that varnode is visited, as `processJoins` expects
 (heritage.cc:2282). Where Ghidra is undefined (successor or end varnode
 destroyed) the walk continues from the next key / stops at the end's key.
 Tests `src/bank/tests.rs` (6).
+
+Item 3: a guard, not a contract. `cfg_mut()` returns `CfgMut`
+(`src/block/edit.rs`): it reads as a `Cfg` and forwards every edit that
+keeps the node set (edges, labels, flags, index, idom, structuring,
+`remove_from_flow*`), but has no `add_node`, `remove_node`, `splice_node`.
+Nodes come and go through the `Ssa`: `add_block`, `remove_block`
+(`BlockGraph::removeBlock`, refused with `BlockHasOps` while the block
+holds ops) and `splice_block_basic` (`Funcdata::spliceBlockBasic`,
+funcdata_block.cc:927–967 without `structureReset`: destroys the closing
+branch, moves the successor's ops, clears `startbasic`, `setOrder`,
+`mergeRange`, graph splice; checks before changing). Why: D07's surgery
+(`blockRemoveInternal` 272–343, `removeFromFlowSplit` 900–908,
+`spliceBlockBasic`) always pairs a node removal with op-list work, and a
+node added behind the `Ssa`'s back had no op list either; a documented
+contract would leave both mistakes to the invariant check. Tests
+`src/block/tests.rs` (3).
 
 ### (a) Done (code written; see (b) for whether it compiles)
 
