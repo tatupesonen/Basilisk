@@ -670,3 +670,22 @@ million-op function 553 MB, 553 bytes per op with its two varnodes, the
 spilled lists and the three ordered indexes' payload (B-tree node overhead
 not counted; arena capacity is). No reference-console time is given beside
 these: the console cannot stop at "load done".
+
+Review step B, item 1 (2026-11-22, same host and command, test
+`bench_cover_wide_join`): a cover rebuild of a value defined in an entry
+block, live through 1,000 parallel blocks into one join block and read 16
+times below it (best of 20). Before, `addRefRecurse` copied the join
+block's 1,000 in-edges into a new `Vec` on each of its 1,001 steps there;
+now it reads the in-edge by index and reuses one walk stack per rebuild.
+
+| Version | Cover rebuild |
+|---|---:|
+| `4e8fc30` (before) | 0.379 ms |
+| `dd28ea7` (after) | 0.032 ms |
+
+(Mac, Apple silicon, same test: 0.504 ms → 0.066 ms.) The other rows at
+`dd28ea7`: load of `modulo.0.p1` 5.3 ms (27 ms before review step A's
+linear loader check), write 8.4 ms, create 1,121 ns per op, destroy
+211 ns per op, rule-like walk 130 ms; within run-to-run noise of the table
+above. `tests/no_allocation.rs` checks that the borrowed accessors do not
+allocate and that the rebuild above makes fewer than 500 allocations.

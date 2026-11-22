@@ -5,6 +5,30 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 
 ## Status and how to continue
 
+### Review step B (API changes before other crates build on the crate)
+
+| Item | State | Commits |
+|---|---|---|
+| 1. Borrowed accessors, cover walk without per-step allocation | done | `4e8fc30` (benchmark on the old code), `dd28ea7` |
+| 2. Ranged cursors | next | |
+| 3. `cfg_mut` guard or contract | open | |
+| 4. High-variable events | open | |
+| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | open | |
+| 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
+
+Item 1: `readers`, `op_inputs`, `block_ops` (an `OpIter` over the block's
+intrusive list) and every bank range query (`loc_in_space`, `loc_at`,
+`loc_sized`, `loc_class`, `loc_defined`, `def_class`, `def_class_at`) now
+return borrowed iterators; `readers_vec`/`op_inputs_vec` are the snapshots
+for loops that change the IR (`destroyVarnode`, `totalReplace*`,
+`opDestroyRaw`); `reader(vn, i)` is `getDescend(i)`. `bk-decomp-cfg` has
+`ins`/`outs` iterators and O(1) `in_edge`/`out_edge`/`in_len`/`out_len`
+(`getIn`/`getOut`/`sizeIn`/`sizeOut`); `Cover::addRefRecurse`
+(`cover.cc:524`–`557`) reads the in-edge by index and one walk stack is
+reused per `rebuild`. Numbers in `docs/PERF.md` (0.379 → 0.032 ms on the
+build host for a 1,000-way join). `ops_alive`, `ops_dead`, `ops_of` stay
+snapshots: Ghidra's loops over those lists mutate them.
+
 ### (a) Done (code written; see (b) for whether it compiles)
 
 | Spec | What | Files | Commit |
