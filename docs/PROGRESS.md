@@ -1,6 +1,6 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-16 20:32) — two agents running (`decomp-ir` fixing review findings, `spec-decomp-wave3` finishing); see "Running"
+## Now — RESUME HERE (2026-11-22 17:42) — two agents running; see the next paragraph
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
@@ -105,6 +105,47 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 rename of the repository needs a redeploy.
 
 ### Running (state at 2026-11-15 02:27)
+
+**RESUMED 2026-11-22 17:37 (owner: "Continue", "With two agents"). The
+cap is two.** State found: `master` and CI green; the wave 3 spec agent
+had handed back on 2026-11-16 (D07 specified to "can start", D08 an
+outline); D05's step A (the review's must-fix items) was ready, gate
+green.
+* **Merged (documents): `spec-decomp-wave3`** — `features/decomp-core.md`
+  (D07, 1,581 lines), the D08 outline, "the plan compared with Ghidra's
+  source" (14 findings), two oracle prototypes. Recorded from it:
+  **ADR-059 to ADR-063** (D07 is three crates `bk-decomp-core`,
+  `-pipeline`, `-ops`; typeop is below core; the function record; the
+  high table is core's and D05 reports varnode changes as events;
+  defined and reproduced framework oddities), **`decomp-plan.md`
+  section 13** (the chain the source forces is D05 → D07a → everything
+  else → D17), GHIDRA-BUGS 53 to 62 and a corrected observation.
+* **On `integration`, CI run 45039460335: D05 step A** (`decomp-ir`
+  `24f0d91`; the merge with `master` needed both sides kept in
+  `.gitattributes`, `Cargo.toml`, `docs/PERF.md`). Merge when green,
+  then tell the step B agent to `git merge master`.
+* **Running, slot 1: D05 step B** — agent `ac80c77fc116db657` (Opus 5.5),
+  worktree `../basilisk-wt/decomp-ir`: allocation-free accessors in the
+  cover walk, ranged cursors, `cfg_mut`, **the high-variable event
+  queue** (ADR-062), and the three things D07 needs from the IR crate
+  (an op-tree key cursor, `op_dead_and_gone`, the recorder's unit
+  brackets).
+* **Running, slot 2: `spec-decomp-typeop`** — agent `a185a6871f46e7ace`
+  (Fable 5.2, high), worktree `../basilisk-wt/spec-decomp-typeop`: the
+  D08 specification complete with an oracle prototype, then the "to be
+  specified" parts of `decomp-core.md` (4.A.6, 4.A.10, 4.A.11, 4.A.14,
+  part C).
+* **Next, in order:** when step B is merged → **D07a `bk-decomp-core`**
+  (Opus; spec ready for its first steps) in slot 1. When the spec agent
+  is done → the oracle track (`@joins`, `bk print cover`, empty input
+  slots in `bk-testkit`'s reader; it rebuilds both shared references, so
+  not while another agent captures) or D08's implementation, whichever
+  is unblocked. Then `PLAN.md` "Order of work": after D07a the
+  decompiler has width (D07b, D07c, D08, the value-set solver, D10) and
+  the programs line (M4) waits for a slot.
+* Not yet applied from `plan-programs`' report: the `PARITY.md` rows.
+  Still waiting on the owner: the site's design-rule breaks and the
+  brand after the pupil's removal.
 
 **RESUMED 2026-11-16 19:25 (owner: "Continue with two agents", then
 "Or rather, with 3 agents"). The cap is three.** Checked first: CI run
