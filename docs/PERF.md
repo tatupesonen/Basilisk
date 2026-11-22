@@ -682,3 +682,25 @@ process start), best of three, the same day and host:
 |---|---:|---:|---:|
 | build host | 1,827 ms | 5,056 ms | 0.36 |
 | Mac (M1 Pro) | 1,711 ms | 4,831 ms | 0.35 |
+### `bk-decomp-ir`
+
+Track `decomp-ir` (D05), 2026-11-16, on the build host (a 20-vCPU x86-64
+Linux VM), release build, best of five where repeated. Command:
+`cargo test --release -p bk-decomp-ir --test bench -- --ignored --nocapture --test-threads 1`.
+
+| What | Size | Time |
+|---|---:|---:|
+| parse the largest corpus dump (`datatests/modulo.0.p1`) | 1,703 kB text | 6.5 ms |
+| load it into an `Ssa` (invariant check included) | 9,428 varnodes, 3,502 ops | 27 ms |
+| write it back as a dump | | 8.8 ms |
+| create one op with a constant input and a `unique` output | 10⁶ ops | 1,075 ns per op |
+| insert into a block at the end | 10⁶ ops | 10 ns per op |
+| `op_destroy` | 10⁶ ops | 202 ns per op |
+| rule-like walk of the op tree: `new_op_before` before every third op, then destroy those | 200,000 ops | 106 ms (528 ns per op) |
+
+Memory: an op slot is 92 bytes (64-byte record + 28 bytes of list links),
+a varnode slot 90 bytes; the loaded `modulo` state holds 3.1 MB; the
+million-op function 553 MB, 553 bytes per op with its two varnodes, the
+spilled lists and the three ordered indexes' payload (B-tree node overhead
+not counted; arena capacity is). No reference-console time is given beside
+these: the console cannot stop at "load done".

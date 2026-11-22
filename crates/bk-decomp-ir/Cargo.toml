@@ -1,0 +1,33 @@
+[package]
+name = "bk-decomp-ir"
+description = "Basilisk: the decompiler's intermediate representation — varnodes, p-code ops, basic blocks, covers, the mutation interface and the oracle's state dumps (Ghidra varnode.cc, op.cc, cover.cc, BlockBasic, funcdata_op.cc, funcdata_varnode.cc)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[features]
+default = ["bkstate"]
+# Loading and writing the oracle's state dumps (bkstate 1) through
+# bk-testkit's typed records. Product crates that never read dumps can turn
+# it off.
+bkstate = ["dep:bk-testkit"]
+
+[dependencies]
+bk-core.workspace = true
+bk-pcode.workspace = true
+bk-decomp-types.workspace = true
+bk-decomp-cfg.workspace = true
+bk-testkit = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[dev-dependencies]
+bk-lang.workspace = true
+bk-sleigh.workspace = true
+bk-testkit.workspace = true
+proptest.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true
