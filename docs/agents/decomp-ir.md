@@ -13,8 +13,8 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 2. Ranged cursors | done | `b95cca5` |
 | 3. `cfg_mut` guard or contract | done (guard) | `39a3ce9` |
 | 4. High-variable events | done | `e82557b` |
-| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | done | see `git log` (`feat(decomp-ir): op tree cursor`) |
-| 6. Final gates, fuzz 300 s, `check-dep-age` | next | |
+| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | done | `abc0acc` |
+| 6. Final gates, fuzz 300 s, `check-dep-age` | in progress: `scripts/remote.sh gate` started on `abc0acc` (log `gate-remote.log` / `scripts/remote.sh log`), result not seen when the laptop shut down; `gate --no-ref`, `long fuzz 300 bk_decomp_ir_state`, `check-dep-age.py master` not run | |
 
 Item 1: `readers`, `op_inputs`, `block_ops` (an `OpIter` over the block's
 intrusive list) and every bank range query (`loc_in_space`, `loc_at`,
@@ -89,6 +89,14 @@ brackets were already there: `Ssa::begin_unit(unit, name)` /
 knows it). Not added: a cursor over the per-opcode lists
 (`beginOp(opc)`, std::list iterators); `ops_of` stays a snapshot.
 Merged `master` (`f7b72cd`, step A) cleanly at `44506c5`.
+
+Stopped 2026-11-22 on the owner's instruction (laptop shut down). Every
+item 1–5 is committed, clippy clean (`cargo clippy -p bk-decomp-ir -p
+bk-decomp-cfg --all-features --all-targets`) and `cargo test -p
+bk-decomp-ir -p bk-decomp-cfg --all-features` passes on the Mac at
+`abc0acc`. Next: item 6 only — both remote gates, the 300 s fuzz run,
+`check-dep-age.py master` (one new dev-dependency use, `dhat`, already in
+the workspace), the Windows cross-check clippy, then the final report.
 
 ### (a) Done (code written; see (b) for whether it compiles)
 
