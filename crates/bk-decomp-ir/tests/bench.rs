@@ -18,7 +18,8 @@
 //! * creating, inserting and destroying one million ops;
 //! * a full walk of the op tree with a rule-like body that inserts a `COPY`
 //!   before every third op and destroys every op it inserted;
-//! * bytes per op and per varnode ([`MemoryUse`]).
+//! * bytes per op and per varnode ([`MemoryUse`]);
+//! * a cover rebuild through a 1,000-way join block.
 //!
 //! Numbers go to `docs/PERF.md`.
 
@@ -192,5 +193,53 @@ fn bench_rule_like_walk() {
         "rule-like walk over {N} ops (insert before every third, then destroy those): {:.1} ms, {:.0} ns per visited op",
         el.as_secs_f64() * 1e3,
         el.as_secs_f64() * 1e9 / N as f64
+    );
+}
+
+/// A value defined in an entry block, live through `W` parallel blocks into
+/// one join block, and read below the join by `R` ops (a switch whose cases
+/// all fall into one tail): every cover rebuild walks the join block's `W`
+/// in-edges once per reader.
+#[test]
+#[ignore = "benchmark"]
+fn bench_cover_wide_join() {
+    const W: usize = 1_000;
+    const R: usize = 16;
+    let (mut ssa, mut env, pc, entry) = function();
+    let cases: Vec<_> = (0..W).map(|_| ssa.add_block(0).unwrap()).collect();
+    let join = ssa.add_block(0).unwrap();
+    let tail = ssa.add_block(0).unwrap();
+    let order = std::iter::once(entry)
+        .chain(cases.iter().copied())
+        .chain([join, tail]);
+    for (index, b) in (0..).zip(order) {
+        ssa.cfg_mut().set_index(b, index).unwrap();
+    }
+    for &c in &cases {
+        ssa.cfg_mut().add_edge(entry, c).unwrap();
+        ssa.cfg_mut().add_edge(c, join).unwrap();
+    }
+    ssa.cfg_mut().add_edge(join, tail).unwrap();
+    let def = ssa.new_op(1, pc).unwrap();
+    ssa.op_set_opcode(def, OpCode::Copy).unwrap();
+    let c = ssa.new_constant(&mut env, 4, 7).unwrap();
+    ssa.op_set_input(&mut env, def, c, 0).unwrap();
+    let vn = ssa.new_unique_out(&mut env, 4, def).unwrap();
+    ssa.op_insert(def, entry, None).unwrap();
+    for i in 0..R {
+        let read = ssa
+            .new_op(1, pc.add(ssa.spaces(), 0x100 + i as i64))
+            .unwrap();
+        ssa.op_set_opcode(read, OpCode::Copy).unwrap();
+        ssa.op_set_input(&mut env, read, vn, 0).unwrap();
+        ssa.new_unique_out(&mut env, 4, read).unwrap();
+        ssa.op_insert(read, tail, None).unwrap();
+    }
+    let runs = 20;
+    let (el, cover) = best_of(runs, || ssa.compute_cover(vn).unwrap());
+    assert_eq!(cover.iter().count(), W + 3);
+    eprintln!(
+        "cover rebuild, value live through a {W}-way join and read {R} times below it: {:.3} ms (best of {runs})",
+        el.as_secs_f64() * 1e3
     );
 }
