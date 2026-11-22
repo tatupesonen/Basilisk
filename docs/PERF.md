@@ -415,8 +415,8 @@ master merge; the code measured is the final one).
 |---|---:|---:|---|
 | decode + lift, counting emitter (`decode` … `lift` / `instructionLength` + `oneInstruction`) | **1.61 M instructions/s, 6.60 M ops/s** (623 ns) | 1.60 M/s, 6.57 M ops/s | ≥ reference — met; both sides emit 608,674 ops |
 | decode + text + lift (`decode`, `mnemonic`, `body`, `lift_decoded`) | **1.38 M/s** | 1.01 M/s | ≥ reference — met |
-| `basilisk disasm --quiet` end to end, 778 kB (process start, load, sweep) | **0.190 s** | `pcodedump --quiet` 0.201 s | no slower — met |
-| `basilisk disasm`, full listing to a null device | **0.396 s** | `pcodedump` 0.714 s | no slower — met |
+| `basilisk sleigh decode --quiet` end to end, 778 kB (process start, load, sweep) | **0.190 s** | `pcodedump --quiet` 0.201 s | no slower — met |
+| `basilisk sleigh decode`, full listing to a null device | **0.396 s** | `pcodedump` 0.714 s | no slower — met |
 | allocations per instruction lifting, steady state (`dhat`, 100,000 instructions) | **0** (`bkpc` fixture incl. delay slots and crossbuild; x86-64) | — | 0 — met |
 | 8 threads sharing one `Language` | decode 4.0–4.7×, decode + lift 4.7–5.7× (load average 6–20 at the time) | — | ≥ 6× on an idle machine — not shown; the machine was never idle |
 
@@ -515,8 +515,8 @@ finishing).
 | decode + text | 2.83 / 2.69 | **3.40 / 3.35** | 2.30 / 2.23 | **1.50** (1.45–1.58) |
 | decode + lift, counting emitter | 1.74 / 1.69 | **2.29 / 2.26** | 2.32 / 2.26 | **1.00** (0.94–1.05) |
 | decode + text + lift | 1.47 / 1.42 | **1.78 / 1.74** | 1.51 / 1.48 | **1.18** (1.12–1.23) |
-| `basilisk disasm --quiet` end to end, 606,673 bytes | — | **0.106 s** | `pcodedump --quiet` 0.132 s | 1.25× faster |
-| `basilisk disasm`, full listing to a null device | — | **0.240 s** | `pcodedump` 0.347 s | 1.45× faster |
+| `basilisk sleigh decode --quiet` end to end, 606,673 bytes | — | **0.106 s** | `pcodedump --quiet` 0.132 s | 1.25× faster |
+| `basilisk sleigh decode`, full listing to a null device | — | **0.240 s** | `pcodedump` 0.347 s | 1.45× faster |
 
 Before, the ratios were 0.86 (decode), 1.24 (text), 0.76 (lift) and 0.99
 (text + lift); the earlier measurement on the same VM with a baseline
@@ -648,6 +648,40 @@ in 7 µs and 798 steps; command `cargo test -p bk-decomp-cfg --release
 --test corpus -- --ignored largest_corpus_graph --nocapture`.
 
 
+### `bk-decomp-symbols`
+
+2026-11-16, the Linux build host (a 20-vCPU x86-64 Linux VM, AMD Ryzen
+Threadripper 7970X), rustc 1.100.0, `--release`, one test thread, best of
+five runs inside each of two jobs (the two columns; the host was shared,
+so the spread is load). Command:
+
+    cargo test -p bk-decomp-symbols --release --test bench -- --ignored --nocapture --test-threads=1
+
+| Benchmark | Run 1 | Run 2 |
+|---|---:|---:|
+| insert 100,000 global symbols (1–24 bytes, a tenth overlapping) | 73 ms (732 ns/symbol) | 91 ms (914 ns/symbol) |
+| 1,000,000 `query_by_addr` at random addresses over them | 409 ns/call | 563 ns/call |
+| 1,000,000 `query_container` (size 4) | 397 ns/call | 676 ns/call |
+| `print_entries` of a 10,000-entry scope (329 kB of text) | 1.39 ms | 1.68 ms |
+| 1,000,000 context look-ups (`variable_at` + `context`) over 10,000 split points | — | 133 ns |
+
+A query resolves the address's scope, then searches one space's fragment
+tree (`O(log n)`) and walks the overlapping fragments of one piece; it
+allocates nothing. The random probes miss the caches on most calls over a
+1.6 MB address range.
+
+Spec 5.8's budget, loading the 93 data-test images (`<binaryimage>`, the
+language's `.sla`/`.pspec`/`.cspec`, 4.18's steps, loader symbols)
+against the reference console's `load test file` of the same files (one
+console process per file, as `bk-oracle` runs it, so its time includes
+process start), best of three, the same day and host:
+
+    cargo test -p bk-decomp-symbols --release --test image_oracle -- --ignored --nocapture budget
+
+| | Basilisk | Reference console | Ratio |
+|---|---:|---:|---:|
+| build host | 1,827 ms | 5,056 ms | 0.36 |
+| Mac (M1 Pro) | 1,711 ms | 4,831 ms | 0.35 |
 ### `bk-decomp-ir`
 
 Track `decomp-ir` (D05), 2026-11-16, on the build host (a 20-vCPU x86-64

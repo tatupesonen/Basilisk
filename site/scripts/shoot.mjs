@@ -56,7 +56,8 @@ await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 for (const theme of ['dark', 'light']) {
   for (const [path, vp, full] of shots) {
-    const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: vp === phone && !full ? 2 : 1 });
+    // reducedMotion: the page's reveal animations are off, so a full-page capture shows every section.
+    const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: vp, deviceScaleFactor: vp === phone && !full ? 2 : 1 });
     await ctx.addInitScript((t) => localStorage.setItem('starlight-theme', t), theme);
     const page = await ctx.newPage();
     const external = [];

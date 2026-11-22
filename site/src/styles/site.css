@@ -241,7 +241,8 @@ pre {
 }
 .bk-h2 {
   font-size: var(--bk-text-3xl);
-  max-width: 22ch;
+  max-width: 28ch;
+  letter-spacing: -0.025em;
 }
 .bk-lede {
   margin-top: var(--bk-space-5);
@@ -256,7 +257,7 @@ pre {
 .bk-link {
   color: var(--bk-text);
   text-decoration: underline;
-  text-decoration-color: var(--bk-line-strong);
+  text-decoration-color: color-mix(in srgb, var(--bk-accent) 65%, transparent);
   text-underline-offset: 0.2em;
 }
 .bk-link:hover {
@@ -323,7 +324,7 @@ pre {
 /* ---- Sections ----------------------------------------------------------- */
 
 .bk-section {
-  padding-block: var(--bk-space-9);
+  padding-block: clamp(3.5rem, 2rem + 4vw, 5rem);
   border-top: 1px solid var(--bk-line);
 }
 .bk-section-chrome {
@@ -358,9 +359,46 @@ pre {
 .bk-hero-grid {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   align-items: center;
-  gap: var(--bk-space-7);
+  gap: var(--bk-space-8);
+}
+.bk-hero-term {
+  position: relative;
+}
+.bk-hero-term::before {
+  /* A soft ember glow behind the terminal: the one place the accent is large. */
+  content: '';
+  position: absolute;
+  inset: -12% -8%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bk-accent) 16%, transparent), transparent);
+  pointer-events: none;
+}
+.bk-hero-term .bk-terminal {
+  position: relative;
+}
+.bk-hero-term .bk-terminal pre {
+  font-size: 0.8125rem;
+  line-height: 1.8;
+}
+.bk-terminal .d {
+  color: var(--bk-text-muted);
+}
+.bk-terminal .m {
+  color: var(--bk-syn-mnemonic);
+  font-weight: 600;
+}
+.bk-terminal .r {
+  color: var(--bk-syn-register);
+}
+.bk-terminal .n {
+  color: var(--bk-syn-number);
+}
+.bk-hero-term-note {
+  position: relative;
+  margin-top: var(--bk-space-4);
+  font-size: var(--bk-text-sm);
+  color: var(--bk-text-muted);
 }
 .bk-hero h1 {
   font-size: var(--bk-text-display);
@@ -428,8 +466,8 @@ pre {
   .bk-hero-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .bk-hero-mark {
-    display: none;
+  .bk-hero-term {
+    margin-top: var(--bk-space-7);
   }
   .bk-hero-shot {
     margin-top: var(--bk-space-8);
@@ -573,7 +611,8 @@ pre {
   list-style: none;
   display: grid;
   gap: var(--bk-space-4);
-  font-size: var(--bk-text-sm);
+  font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--bk-text-2);
 }
 .bk-checklist li {
@@ -650,8 +689,22 @@ pre {
   background: var(--bk-syn-number);
   color: var(--bk-chrome);
 }
+.bk-milestones .ms-partial .bk-ms-node {
+  border-color: var(--bk-syn-number);
+  color: var(--bk-syn-number);
+}
 .bk-milestones .ms-current .bk-ms-node {
   border: 2px solid var(--bk-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bk-accent) 18%, transparent);
+}
+.bk-milestones .bk-ms-count {
+  font-family: var(--bk-font-mono);
+  font-size: 0.6875rem;
+  color: var(--bk-text-muted);
+  margin-top: calc(var(--bk-space-2) * -1);
+}
+.bk-milestones .ms-current .bk-ms-count {
+  color: var(--bk-accent);
 }
 .bk-milestones .bk-ms-id {
   font-family: var(--bk-font-mono);
@@ -691,45 +744,53 @@ pre {
 
 /* ---- Why ---------------------------------------------------------------- */
 
+.bk-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--bk-space-6);
+  margin: 0 0 var(--bk-space-8);
+}
+.bk-stats > div {
+  padding-top: var(--bk-space-5);
+  border-top: 2px solid var(--bk-accent);
+}
+.bk-stats dt {
+  font-family: var(--bk-font-display, inherit);
+  font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--bk-text);
+}
+.bk-stats dd {
+  margin: var(--bk-space-3) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--bk-text-2);
+}
+@media (max-width: 56rem) {
+  .bk-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .bk-why {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--bk-line);
-  border: 1px solid var(--bk-line);
-  border-radius: var(--bk-radius-3);
-  overflow: hidden;
+  gap: var(--bk-space-7) var(--bk-space-7);
 }
 .bk-why > div {
-  padding: var(--bk-space-7) var(--bk-space-6);
-  background: var(--bk-surface);
+  padding-top: var(--bk-space-5);
+  border-top: 1px solid var(--bk-line-strong);
 }
 .bk-why h3 {
-  margin-top: var(--bk-space-5);
   font-size: var(--bk-text-lg);
   letter-spacing: -0.015em;
 }
 .bk-why p {
   margin-top: var(--bk-space-3);
-  font-size: var(--bk-text-sm);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   color: var(--bk-text-2);
-}
-.bk-why .bk-why-icon {
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--bk-radius-3);
-  border: 1px solid var(--bk-line-strong);
-  color: var(--bk-text-2);
-  background: var(--bk-chrome);
-}
-.bk-why .bk-tag {
-  display: inline-block;
-  margin-top: var(--bk-space-4);
-  font-family: var(--bk-font-mono);
-  font-size: var(--bk-text-xs);
-  color: var(--bk-text-muted);
 }
 @media (max-width: 64rem) {
   .bk-why {
@@ -739,9 +800,6 @@ pre {
 @media (max-width: 36rem) {
   .bk-why {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .bk-why > div {
-    padding: var(--bk-space-6) var(--bk-space-5);
   }
 }
 
@@ -952,5 +1010,103 @@ pre {
   }
   .bk-footer-base {
     padding-inline: var(--bk-space-5);
+  }
+}
+
+/* ---- Motion --------------------------------------------------------------
+   Small, CSS-only, and never in charge of scrolling: the page scrolls natively
+   and nothing is pinned or snapped. Everything here is off under
+   prefers-reduced-motion, and content is fully visible without it. */
+
+.bk-btn,
+.bk-pill,
+.bk-feature,
+.bk-why > div,
+.bk-stats > div,
+.bk-panel,
+.bk-terminal {
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    translate 160ms ease,
+    box-shadow 160ms ease;
+}
+.bk-btn:hover {
+  translate: 0 -1px;
+}
+.bk-why > div:hover {
+  border-top-color: var(--bk-accent);
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  @keyframes bk-rise {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+  @keyframes bk-line-in {
+    from {
+      opacity: 0;
+      translate: -6px 0;
+    }
+  }
+  @keyframes bk-glow {
+    50% {
+      opacity: 0.55;
+    }
+  }
+  @keyframes bk-ring {
+    50% {
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--bk-accent) 8%, transparent);
+    }
+  }
+
+  /* The hero arrives once, on load. */
+  .bk-hero-grid > div:first-child > * {
+    animation: bk-rise 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .bk-hero-grid > div:first-child > :nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .bk-hero-grid > div:first-child > :nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .bk-hero-grid > div:first-child > :nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .bk-hero-grid > div:first-child > :nth-child(5) {
+    animation-delay: 240ms;
+  }
+  .bk-hero-term {
+    animation: bk-rise 620ms 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  /* The output prints line by line, as it would in a terminal. */
+  .bk-hero-term .ln {
+    display: inline-block;
+    animation: bk-line-in 260ms calc(900ms + var(--i) * 110ms) ease-out both;
+  }
+  .bk-hero-term::before {
+    animation: bk-glow 7s ease-in-out infinite;
+  }
+  .bk-milestones .ms-current .bk-ms-node {
+    animation: bk-ring 2.8s ease-in-out infinite;
+  }
+
+  /* Sections rise into place as they scroll into view. Driven by the
+     element's own position in the viewport (a view timeline); browsers
+     without it show the content as it is. */
+  @supports (animation-timeline: view()) {
+    .bk-section .bk-section-head,
+    .bk-features > *,
+    .bk-split > *,
+    .bk-stats > div,
+    .bk-why > div,
+    .bk-milestones,
+    .bk-hero-shot {
+      animation: bk-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
   }
 }

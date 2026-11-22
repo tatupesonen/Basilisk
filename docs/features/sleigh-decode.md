@@ -45,7 +45,7 @@ context commits; apply commits); disassembly text; the errors; the
 differential test harness against `pcodedump`; benchmarks.
 
 **Not in.** P-code generation and the `Translate` trait's
-`one_instruction` (`sleigh-pcode`); the `basilisk disasm` command
+`one_instruction` (`sleigh-pcode`); the `basilisk sleigh decode` command
 (`sleigh-pcode`); flow types, operand objects, register groups, p-code
 overrides, compiling a missing `.sla` (`sleigh-language`); following flow
 across instructions (`bk-disasm`, M5); the file format (`bk-sla`).

@@ -1,0 +1,130 @@
+# Groups for pkgdeps.py: <group> <module or *> <package prefix>
+# Longest prefix wins; a rule naming the module beats a `*` rule of the same
+# length. A file no rule matches falls into "<module>:other".
+
+# --- Framework/SoftwareModeling: the program model (interfaces and values)
+model.address     Framework/SoftwareModeling ghidra.program.model.address
+model.mem         Framework/SoftwareModeling ghidra.program.model.mem
+model.lang        Framework/SoftwareModeling ghidra.program.model.lang
+model.pcode       Framework/SoftwareModeling ghidra.program.model.pcode
+model.data        Framework/SoftwareModeling ghidra.program.model.data
+model.dtarchive   Framework/SoftwareModeling ghidra.program.model.dtarchive
+model.listing     Framework/SoftwareModeling ghidra.program.model.listing
+model.symbol      Framework/SoftwareModeling ghidra.program.model.symbol
+model.block       Framework/SoftwareModeling ghidra.program.model.block
+model.reloc       Framework/SoftwareModeling ghidra.program.model.reloc
+model.sourcemap   Framework/SoftwareModeling ghidra.program.model.sourcemap
+model.scalar      Framework/SoftwareModeling ghidra.program.model.scalar
+model.util        Framework/SoftwareModeling ghidra.program.model.util
+model.correlate   Framework/SoftwareModeling ghidra.program.model.correlate
+model.gclass      Framework/SoftwareModeling ghidra.program.model.gclass
+sm.program.util   Framework/SoftwareModeling ghidra.program.util
+sm.disassemble    Framework/SoftwareModeling ghidra.program.disassemble
+sm.app.util       Framework/SoftwareModeling ghidra.app.util
+sm.util           Framework/SoftwareModeling ghidra.util
+sm.graphservice   Framework/SoftwareModeling ghidra.service.graph
+
+# --- Framework/SoftwareModeling: the database implementation
+pdb.root          Framework/SoftwareModeling ghidra.program.database
+pdb.map           Framework/SoftwareModeling ghidra.program.database.map
+pdb.mem           Framework/SoftwareModeling ghidra.program.database.mem
+pdb.code          Framework/SoftwareModeling ghidra.program.database.code
+pdb.data          Framework/SoftwareModeling ghidra.program.database.data
+pdb.dtarchive     Framework/SoftwareModeling ghidra.program.database.dtarchive
+pdb.symbol        Framework/SoftwareModeling ghidra.program.database.symbol
+pdb.function      Framework/SoftwareModeling ghidra.program.database.function
+pdb.oldfunction   Framework/SoftwareModeling ghidra.program.database.oldfunction
+pdb.references    Framework/SoftwareModeling ghidra.program.database.references
+pdb.external      Framework/SoftwareModeling ghidra.program.database.external
+pdb.register      Framework/SoftwareModeling ghidra.program.database.register
+pdb.reloc         Framework/SoftwareModeling ghidra.program.database.reloc
+pdb.properties    Framework/SoftwareModeling ghidra.program.database.properties
+pdb.bookmark      Framework/SoftwareModeling ghidra.program.database.bookmark
+pdb.module        Framework/SoftwareModeling ghidra.program.database.module
+pdb.sourcemap     Framework/SoftwareModeling ghidra.program.database.sourcemap
+pdb.util          Framework/SoftwareModeling ghidra.program.database.util
+
+# --- Framework/SoftwareModeling: language side (ported in M0 to M2, M6)
+sleigh.java       Framework/SoftwareModeling ghidra.app.plugin.processors
+sleigh.compiler   Framework/SoftwareModeling ghidra.pcodeCPort
+sleigh.compiler   Framework/SoftwareModeling ghidra.sleigh.grammar
+sm.languages      Framework/SoftwareModeling ghidra.app.plugin.languages
+assembler         Framework/SoftwareModeling ghidra.app.plugin.assembler
+pcode.float       Framework/SoftwareModeling ghidra.pcode
+
+# --- Other framework modules, each one group
+fw.DB             Framework/DB ghidra
+fw.DB             Framework/DB db
+fw.Generic        Framework/Generic ghidra
+fw.Generic        Framework/Generic generic
+fw.Generic        Framework/Generic util
+fw.Generic        Framework/Generic utility
+fw.Generic        Framework/Generic resources
+fw.Generic        Framework/Generic utilities
+fw.Generic        Framework/Generic help
+fw.Generic        Framework/Generic log
+fw.Generic        Framework/Generic mdemangler
+
+# --- Features/Base: formats
+bin               Features/Base ghidra.app.util.bin
+fmt.elf           Features/Base ghidra.app.util.bin.format.elf
+fmt.elf.reloc     Features/Base ghidra.app.util.bin.format.elf.relocation
+fmt.elf.ext       Features/Base ghidra.app.util.bin.format.elf.extend
+fmt.pe            Features/Base ghidra.app.util.bin.format.pe
+fmt.macho         Features/Base ghidra.app.util.bin.format.macho
+fmt.coff          Features/Base ghidra.app.util.bin.format.coff
+fmt.dwarf         Features/Base ghidra.app.util.bin.format.dwarf
+fmt.golang        Features/Base ghidra.app.util.bin.format.golang
+fmt.omf           Features/Base ghidra.app.util.bin.format.omf
+fmt.ne            Features/Base ghidra.app.util.bin.format.ne
+fmt.mz            Features/Base ghidra.app.util.bin.format.mz
+fmt.pef           Features/Base ghidra.app.util.bin.format.pef
+fmt.som           Features/Base ghidra.app.util.bin.format.som
+fmt.xcoff         Features/Base ghidra.app.util.bin.format.xcoff
+fmt.aout          Features/Base ghidra.app.util.bin.format.unixaout
+fmt.macos         Features/Base ghidra.app.util.bin.format.macos
+fmt.pdbinfo       Features/Base ghidra.app.util.bin.format.pdb
+fmt.ubi           Features/Base ghidra.app.util.bin.format.ubi
+fmt.lx            Features/Base ghidra.app.util.bin.format.lx
+
+# --- Features/Base: import
+opinion           Features/Base ghidra.app.util.opinion
+importer          Features/Base ghidra.app.util.importer
+importer.ui       Features/Base ghidra.plugin.importer
+importer.ui       Features/Base ghidra.plugins.importer
+gfilesystem       Features/Base ghidra.formats.gfilesystem
+fsbrowser.ui      Features/Base ghidra.plugins.fsbrowser
+
+# --- Features/Base: commands, analysis, headless
+cmd               Features/Base ghidra.app.cmd
+cmd.function      Features/Base ghidra.app.cmd.function
+cmd.disassemble   Features/Base ghidra.app.cmd.disassemble
+cmd.formats       Features/Base ghidra.app.cmd.formats
+analysis.core     Features/Base ghidra.app.plugin.core.analysis
+analysis.fmt      Features/Base ghidra.app.analyzers
+analysis.services Features/Base ghidra.app.services
+base.program.util Features/Base ghidra.program.util
+base.util.state   Features/Base ghidra.util.state
+bytesearch        Features/Base ghidra.util.bytesearch
+memsearch         Features/Base ghidra.features.base.memsearch
+demangler         Features/Base ghidra.app.util.demangler
+eh.gcc            Features/Base ghidra.app.plugin.exceptionhandlers
+headless          Features/Base ghidra.app.util.headless
+script            Features/Base ghidra.app.script
+flatapi           Features/Base ghidra.program.flatapi
+exporter          Features/Base ghidra.app.util.exporter
+xml               Features/Base ghidra.app.util.xml
+cparser           Features/Base ghidra.app.util.cparser
+datatype.util     Features/Base ghidra.app.util.datatype
+base.app.util     Features/Base ghidra.app.util
+base.program.db   Features/Base ghidra.program.database
+base.program.model Features/Base ghidra.program.model
+merge             Features/Base ghidra.app.merge
+base.test         Features/Base ghidra.test
+
+# --- Features/Base: user interface
+ui.viewer         Features/Base ghidra.app.util.viewer
+ui.plugins        Features/Base ghidra.app.plugin
+ui.plugins        Features/Base ghidra.app.plugin.core
+ui.table          Features/Base ghidra.util.table
+ui.main           Features/Base ghidra.framework.main

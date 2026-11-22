@@ -147,7 +147,7 @@ wait)  # log timeout: stream the log until the job ends, then print its exit cod
 latest) ls -t "$BK/logs/$1"/*.log 2>/dev/null | head -1 ;;
 status)
   df -h "$BK" | tail -1 | awk '{print "disk: " $4 " free of " $2}'
-  echo "load: $(cut -d' ' -f1-3 /proc/loadavg)  memory: $(free -g | awk '/Mem:/ {print $7 " GB available of " $2}')"
+  echo "load: $(cut -d' ' -f1-3 /proc/loadavg)  memory: $(free -g | awk '/Mem:/ {print $7 " GB available of " $2 " visible (the VM balloons: the total varies with load)"}')"
   for d in "$BK"/wt/*/; do
     [ -d "$d" ] || continue
     s=$(basename "$d")

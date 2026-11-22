@@ -11,21 +11,30 @@ loaders, SLEIGH, p-code, analysis, the decompiler and a desktop interface. These
 and how it works inside.
 
 <Callout kind="caution" title="Early development">
-Basilisk cannot open a real program yet. The desktop interface runs on a built-in demo program, and the
-foundations — Ghidra's language files, SLEIGH, p-code — are being built first. Every page says what exists
-today and what is planned. The [status matrix](/status/) and the [roadmap](/roadmap/) are generated from the
-project's own records.
+Basilisk cannot open a real program yet. What works today is the language layer: it decodes instructions from raw bytes and
+lifts them to p-code for every processor Ghidra ships, and it compiles SLEIGH specifications to the same
+bytes as Ghidra's compiler. The desktop interface runs on a built-in demo program. The decompiler is being
+ported now. Every page says what exists today and what is planned. The [status matrix](/status/) and the
+[roadmap](/roadmap/) are generated from the project's own records.
 </Callout>
+
+## Start here
+
+- **Try it:** [build Basilisk](/docs/getting-started/build/), then
+  [disassemble your first bytes](/docs/getting-started/first-disassembly/).
+- **Coming from Ghidra:** [what is the same and what differs](/docs/getting-started/coming-from-ghidra/).
+- **Curious how it works:** [the architecture](/docs/internals/), [SLEIGH](/docs/internals/sleigh/),
+  [p-code](/docs/internals/pcode/) and [how every result is checked against Ghidra](/docs/internals/verification/).
 
 ## Sections
 
 | Section | What it covers | Today |
 |---|---|---|
-| [Getting started](/docs/getting-started/) | What Basilisk is, building and running it | Builds and runs |
+| [Getting started](/docs/getting-started/) | What Basilisk is, building it, a first disassembly | Builds and runs |
 | [The interface](/docs/interface/) | The CodeBrowser window, one page per view | On demo data |
-| [The command line](/docs/cli/) | `basilisk` and its subcommands | `gui`, `--version` |
+| [The command line](/docs/cli/) | `basilisk` and its subcommands | `gui`, `sleigh decode`, `sleigh compile` |
 | [Analysis](/docs/analysis/) | Disassembly and auto-analysis | Planned (M5) |
-| [The decompiler](/docs/decompiler/) | Decompiling functions to C | Planned (M3) |
+| [The decompiler](/docs/decompiler/) | Decompiling functions to C | Being ported (M3) |
 | [Scripting and plugins](/docs/scripting/) | Python scripts, analyzers, loaders, exporters | Designed; planned (M9) |
-| [Formats and processors](/docs/formats/) | Binary formats and processor languages | ELF parser, Ghidra's language files |
-| [How it works](/docs/internals/) | SLEIGH, p-code, the decompiler pipeline, the program database | Architecture |
+| [Formats and processors](/docs/formats/) | Binary formats and processor languages | All 39 processor modules; ELF parser |
+| [How it works](/docs/internals/) | SLEIGH, p-code, the decompiler pipeline, how results are checked | Architecture |

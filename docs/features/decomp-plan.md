@@ -956,3 +956,54 @@ specifications hold.
    report). A follow-up to D00 (`decomp-oracle-v2`), before D05 starts
    so that D05 builds on the final `oracle::state`.
 
+## 13. Amendments, 2026-11-22 (the plan compared with Ghidra's source)
+
+From the D07 specification track, which checked this plan's track table
+against the source (`docs/agents/spec-decomp-wave3.md`, "The plan
+compared with Ghidra's source": 14 findings with file and line; method and
+output in `docs/research/decomp-wave3/plan_graph.*`). A text scan is
+evidence of a use, not proof of its absence; findings marked "read" there
+were checked in the source. These override sections 2, 5 and 5.1.
+
+1. **D07 is three tracks and three crates** (ADR-059): D07a
+   `bk-decomp-core` (state), D07b `bk-decomp-pipeline` (the action
+   framework, units, profiles, options, and the arrangement and group
+   lists of `coreaction.cc:5818–6149` as data), D07c `bk-decomp-ops` (the
+   compound operations: `funcdata_op.cc` 473–628 and 938–1668,
+   `funcdata_varnode.cc` beyond D05's part, `expression.*`, `dynamic.*`
+   with `crc32`, `FuncCallSpecs`' methods, `AncestorRealistic`). The
+   measured size of the old row is 16,239 lines. D07a owns
+   `Funcdata::encode` without the tree and `decode`; D17 keeps
+   `encodeTree`, `encodeHigh`, the result encoding, binding the unit
+   names and `paramid.*`.
+2. **D08 is below core** (ADR-060): it needs D05, D02, D03, D06, not D07.
+3. **A new small track, the value-set solver** (`rangeutil.cc` 1491–2605,
+   `rangeutil.hh` 103–330), before D10 and D13: heritage uses it for load
+   guards (`heritage.cc:740–898`), and D13 needs D10. It needs D01, D04,
+   D05.
+4. **`switchnorm` goes to D13 and `lanedivide` to R7** (`coreaction.cc`
+   4787–4800 and 610 call into them), or D12 gains those dependencies.
+5. **D14's merge passes do not need D11**; only the naming actions wait
+   for `varmap`. `HighVariable`'s own methods are core's (ADR-062).
+6. **`transform.*` minus `LanedRegister` goes to R7**, its only user.
+7. **`EmulateSnippet` and the `Emulate` base go to D18**, behind a trait
+   core defines (`ExecScript`); `EmulateFunction` stays D13's; `memstate`
+   is `bk-emu`'s (M6). **Not ported**: `graph.*` (data-flow graph dumps
+   for the console) and `capability.*` (static registration).
+8. **Sizes**: D09's is plausible; D11 and D12 together are about 8,700
+   lines, not 14,000 — one large track or two medium ones.
+9. **D09 precedes D13** through two traits in core: `ActionRunner` and a
+   jump-table recovery hook that D13 fills; D09 is accepted without
+   switch recovery until then.
+10. **The rule-subset oracle** (section 4): `option togglerule` changes
+    the current root's instance only. Capture scripts give every
+    `togglerule` after the last root-changing option, and a rule family's
+    comparison on functions with switches has all rules enabled in the
+    `jumptable` root on both sides. For the rule tracks and D19.
+
+**The chain the source forces** is D05 → D07a → everything else → D17.
+After D07a these can run side by side: D07b, D07c, D08, the value-set
+solver, D10; then D09, D11/D12, the rule families, D13, D14; D15, D16b
+and D16c have no dependency on the merge code (D16b needs D07, D08 and
+the loaded structure). The waves of 5.1 are replaced by this.
+

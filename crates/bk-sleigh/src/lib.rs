@@ -19,10 +19,11 @@
 //! - [`DecodeError`], [`LoadError`]: errors carrying Ghidra's messages.
 //! - [`Decoder::lift`], [`Decoder::build_template`]: p-code generation into
 //!   a [`PcodeEmit`] (`features/sleigh-pcode.md`).
-//! - [`dump`]: `pcodedump`'s sweep and record format (`basilisk disasm`).
+//! - [`dump`]: `pcodedump`'s sweep and record format (`basilisk sleigh decode`).
 //! - [`Translate`]: the translator interface; [`Translator`] implements it.
 
-pub mod context;
+/// The context store, re-exported from `bk-context` (ADR-043).
+pub use bk_context as context;
 pub mod decode;
 pub mod dump;
 pub mod emit;

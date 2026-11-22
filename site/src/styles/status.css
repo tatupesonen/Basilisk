@@ -237,6 +237,10 @@
   background: var(--bk-syn-number);
   border-color: var(--bk-syn-number);
 }
+.rm-partial .bk-rm-node {
+  border-color: var(--bk-syn-number);
+  color: var(--bk-syn-number);
+}
 .rm-current .bk-rm-node {
   border: 2px solid var(--bk-accent);
 }

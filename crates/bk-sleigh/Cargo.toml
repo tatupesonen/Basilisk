@@ -8,6 +8,7 @@ publish.workspace = true
 license.workspace = true
 
 [dependencies]
+bk-context.workspace = true
 bk-core.workspace = true
 bk-lang.workspace = true
 bk-pcode.workspace = true

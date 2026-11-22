@@ -1,0 +1,21 @@
+Framework/DB engine	19	288	0	framework-db 17, framework-filesystem 2
+program.model.address	12	141	0	features-base 1, framework-softwaremodeling 11
+program.model.data + database.data (data types)	61	982	16	features-base 28, framework-softwaremodeling 32, test-integrationtest 1
+program.database.map / mem / model.mem	18	217	12	features-base 16, framework-softwaremodeling 2
+program.database.code / model.listing	7	95	1	features-base 5, framework-softwaremodeling 2
+program.database.symbol / external / model.symbol	11	220	7	features-base 9, framework-softwaremodeling 2
+program.database.references	3	52	3	features-base 3
+program.database.function	4	75	4	features-base 4
+program.database: properties, bookmark, module, register, reloc, util, sourcemap, root	28	401	15	features-base 20, framework-softwaremodeling 2, test-integrationtest 6
+program.util (both modules)	25	407	9	features-base 24, test-integrationtest 1
+program.model: lang, pcode, scalar, util, block	23	98	2	features-base 1, framework-softwaremodeling 8, test-integrationtest 14
+framework.data / options / model (domain objects, options)	17	274	13	debug-proposedutils 1, features-base 14, framework-project 2
+app.util.bin (readers, formats)	37	762	2	features-base 28, features-pdb 8, test-integrationtest 1
+app.util.opinion + importer (loaders)	10	54	3	debug-debugger-importers 2, features-base 8
+program.disassemble + app.cmd.disassemble	9	113	5	features-base 6, test-integrationtest 3
+app.cmd.* (commands)	24	236	5	features-base 18, features-microsoftcodeanalyzer 5, test-integrationtest 1
+app.plugin.core.analysis + analyzers	39	346	26	features-base 27, features-decompilerdependent 2, features-gnudemangler 1, features-microsoftcodeanalyzer 1, features-microsoftdemangler 1, features-rust 3, processors-arm 2, processors-mips 1, test-integrationtest 1
+app.util.headless + script	4	62	3	features-base 3, test-integrationtest 1
+app.util.demangler	10	282	0	features-gnudemangler 4, features-microsoftdemangler 2, features-swift 1, test-integrationtest 3
+app.util.exporter + xml	0	0	0	
+app.merge (program merge)	65	1167	24	features-base 65

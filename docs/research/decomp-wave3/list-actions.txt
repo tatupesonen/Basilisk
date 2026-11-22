@@ -1,0 +1,1201 @@
+init> load test file DT/elseif.xml
+DT/elseif.xml test successfully loaded: Intel/AMD 64-bit x86
+init> bk list actions
+H	bkactions	1	decompile	243
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         defaultparams	universal:defaultparams
+   4        !         extrapopsetup	universal:extrapopsetup
+   5        !         prototypetypes	universal:prototypetypes
+   6        !         funclink	universal:funclink
+   7 repeat           fullloop	universal:fullloop
+   8 repeat                mainloop	universal:fullloop:mainloop
+   9                            unreachable	universal:fullloop:mainloop:unreachable
+  10                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+  11                            heritage	universal:fullloop:mainloop:heritage
+  12                            paramdouble	universal:fullloop:mainloop:paramdouble
+  13                            segmentize	universal:fullloop:mainloop:segmentize
+  14        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  15                            forcegoto	universal:fullloop:mainloop:forcegoto
+  16                            directwrite	universal:fullloop:mainloop:directwrite
+  17                            activeparam	universal:fullloop:mainloop:activeparam
+  18                            returnrecovery	universal:fullloop:mainloop:returnrecovery
+  19                            restrictlocal	universal:fullloop:mainloop:restrictlocal
+  20                            deadcode	universal:fullloop:mainloop:deadcode
+  21                            dynamicmapping	universal:fullloop:mainloop:dynamicmapping
+  22                            spacebase	universal:fullloop:mainloop:spacebase
+  23                            nonzeromask	universal:fullloop:mainloop:nonzeromask
+  24                            infertypes	universal:fullloop:mainloop:infertypes
+  25                            restructure_varnode	universal:fullloop:mainloop:restructure_varnode
+  26 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  27 repeat                          oppool1	universal:fullloop:mainloop:stackstall:oppool1
+  28                             earlyremoval	universal:fullloop:mainloop:stackstall:oppool1:earlyremoval
+  29                             termorder	universal:fullloop:mainloop:stackstall:oppool1:termorder
+  30                             selectcse	universal:fullloop:mainloop:stackstall:oppool1:selectcse
+  31                             collect_terms	universal:fullloop:mainloop:stackstall:oppool1:collect_terms
+  32                             pullsub_multi	universal:fullloop:mainloop:stackstall:oppool1:pullsub_multi
+  33                             pullsub_indirect	universal:fullloop:mainloop:stackstall:oppool1:pullsub_indirect
+  34                             push_multi	universal:fullloop:mainloop:stackstall:oppool1:push_multi
+  35                             sborrow	universal:fullloop:mainloop:stackstall:oppool1:sborrow
+  36                             scarry	universal:fullloop:mainloop:stackstall:oppool1:scarry
+  37                             intlessequal	universal:fullloop:mainloop:stackstall:oppool1:intlessequal
+  38                             trivialarith	universal:fullloop:mainloop:stackstall:oppool1:trivialarith
+  39                             trivialbool	universal:fullloop:mainloop:stackstall:oppool1:trivialbool
+  40                             trivialshift	universal:fullloop:mainloop:stackstall:oppool1:trivialshift
+  41                             signshift	universal:fullloop:mainloop:stackstall:oppool1:signshift
+  42                             testsign	universal:fullloop:mainloop:stackstall:oppool1:testsign
+  43                             identityel	universal:fullloop:mainloop:stackstall:oppool1:identityel
+  44                             ormask	universal:fullloop:mainloop:stackstall:oppool1:ormask
+  45                             andmask	universal:fullloop:mainloop:stackstall:oppool1:andmask
+  46                             orconsume	universal:fullloop:mainloop:stackstall:oppool1:orconsume
+  47                             orcollapse	universal:fullloop:mainloop:stackstall:oppool1:orcollapse
+  48                             andorlump	universal:fullloop:mainloop:stackstall:oppool1:andorlump
+  49                             shiftbitops	universal:fullloop:mainloop:stackstall:oppool1:shiftbitops
+  50                             rightshiftand	universal:fullloop:mainloop:stackstall:oppool1:rightshiftand
+  51                             notdistribute	universal:fullloop:mainloop:stackstall:oppool1:notdistribute
+  52                             highorderand	universal:fullloop:mainloop:stackstall:oppool1:highorderand
+  53                             anddistribute	universal:fullloop:mainloop:stackstall:oppool1:anddistribute
+  54                             andcommute	universal:fullloop:mainloop:stackstall:oppool1:andcommute
+  55                             andpiece	universal:fullloop:mainloop:stackstall:oppool1:andpiece
+  56                             andzext	universal:fullloop:mainloop:stackstall:oppool1:andzext
+  57                             andcompare	universal:fullloop:mainloop:stackstall:oppool1:andcompare
+  58                             doublesub	universal:fullloop:mainloop:stackstall:oppool1:doublesub
+  59                             doubleshift	universal:fullloop:mainloop:stackstall:oppool1:doubleshift
+  60                             doublearithshift	universal:fullloop:mainloop:stackstall:oppool1:doublearithshift
+  61                             concatshift	universal:fullloop:mainloop:stackstall:oppool1:concatshift
+  62                             leftright	universal:fullloop:mainloop:stackstall:oppool1:leftright
+  63                             shiftcompare	universal:fullloop:mainloop:stackstall:oppool1:shiftcompare
+  64                             shift2mult	universal:fullloop:mainloop:stackstall:oppool1:shift2mult
+  65                             shiftpiece	universal:fullloop:mainloop:stackstall:oppool1:shiftpiece
+  66                             multicollapse	universal:fullloop:mainloop:stackstall:oppool1:multicollapse
+  67                             aliasupdate	universal:fullloop:mainloop:stackstall:oppool1:aliasupdate
+  68                             2comp2mult	universal:fullloop:mainloop:stackstall:oppool1:2comp2mult
+  69                             sub2add	universal:fullloop:mainloop:stackstall:oppool1:sub2add
+  70                             carryelim	universal:fullloop:mainloop:stackstall:oppool1:carryelim
+  71                             bxor2notequal	universal:fullloop:mainloop:stackstall:oppool1:bxor2notequal
+  72                             less2zero	universal:fullloop:mainloop:stackstall:oppool1:less2zero
+  73                             lessequal2zero	universal:fullloop:mainloop:stackstall:oppool1:lessequal2zero
+  74                             sless2zero	universal:fullloop:mainloop:stackstall:oppool1:sless2zero
+  75                             equal2zero	universal:fullloop:mainloop:stackstall:oppool1:equal2zero
+  76                             equal2constant	universal:fullloop:mainloop:stackstall:oppool1:equal2constant
+  77                             threewaycomp	universal:fullloop:mainloop:stackstall:oppool1:threewaycomp
+  78                             xorcollapse	universal:fullloop:mainloop:stackstall:oppool1:xorcollapse
+  79                             addmultcollapse	universal:fullloop:mainloop:stackstall:oppool1:addmultcollapse
+  80                             collapseconstants	universal:fullloop:mainloop:stackstall:oppool1:collapseconstants
+  81                             transformcpool	universal:fullloop:mainloop:stackstall:oppool1:transformcpool
+  82                             propagatecopy	universal:fullloop:mainloop:stackstall:oppool1:propagatecopy
+  83                             zexteliminate	universal:fullloop:mainloop:stackstall:oppool1:zexteliminate
+  84                             slesstoless	universal:fullloop:mainloop:stackstall:oppool1:slesstoless
+  85                             zextsless	universal:fullloop:mainloop:stackstall:oppool1:zextsless
+  86                             bitundistribute	universal:fullloop:mainloop:stackstall:oppool1:bitundistribute
+  87                             booleanundistribute	universal:fullloop:mainloop:stackstall:oppool1:booleanundistribute
+  88                             booleandedup	universal:fullloop:mainloop:stackstall:oppool1:booleandedup
+  89                             boolzext	universal:fullloop:mainloop:stackstall:oppool1:boolzext
+  90                             booleannegate	universal:fullloop:mainloop:stackstall:oppool1:booleannegate
+  91                             logic2bool	universal:fullloop:mainloop:stackstall:oppool1:logic2bool
+  92                             subextcomm	universal:fullloop:mainloop:stackstall:oppool1:subextcomm
+  93                             subcommute	universal:fullloop:mainloop:stackstall:oppool1:subcommute
+  94                             concatcommute	universal:fullloop:mainloop:stackstall:oppool1:concatcommute
+  95                             concatzext	universal:fullloop:mainloop:stackstall:oppool1:concatzext
+  96                             zextcommute	universal:fullloop:mainloop:stackstall:oppool1:zextcommute
+  97                             zextshiftzext	universal:fullloop:mainloop:stackstall:oppool1:zextshiftzext
+  98                             shiftand	universal:fullloop:mainloop:stackstall:oppool1:shiftand
+  99                             concatzero	universal:fullloop:mainloop:stackstall:oppool1:concatzero
+ 100                             concatleftshift	universal:fullloop:mainloop:stackstall:oppool1:concatleftshift
+ 101                             subzext	universal:fullloop:mainloop:stackstall:oppool1:subzext
+ 102                             subcancel	universal:fullloop:mainloop:stackstall:oppool1:subcancel
+ 103                             shiftsub	universal:fullloop:mainloop:stackstall:oppool1:shiftsub
+ 104                             humptydumpty	universal:fullloop:mainloop:stackstall:oppool1:humptydumpty
+ 105                             dumptyhump	universal:fullloop:mainloop:stackstall:oppool1:dumptyhump
+ 106                             humptyor	universal:fullloop:mainloop:stackstall:oppool1:humptyor
+ 107                             negateidentity	universal:fullloop:mainloop:stackstall:oppool1:negateidentity
+ 108                             subnormal	universal:fullloop:mainloop:stackstall:oppool1:subnormal
+ 109                             positivediv	universal:fullloop:mainloop:stackstall:oppool1:positivediv
+ 110                             divtermadd	universal:fullloop:mainloop:stackstall:oppool1:divtermadd
+ 111                             divtermadd2	universal:fullloop:mainloop:stackstall:oppool1:divtermadd2
+ 112                             divopt	universal:fullloop:mainloop:stackstall:oppool1:divopt
+ 113                             signform	universal:fullloop:mainloop:stackstall:oppool1:signform
+ 114                             signform2	universal:fullloop:mainloop:stackstall:oppool1:signform2
+ 115                             signdiv2	universal:fullloop:mainloop:stackstall:oppool1:signdiv2
+ 116                             divchain	universal:fullloop:mainloop:stackstall:oppool1:divchain
+ 117                             signnearmult	universal:fullloop:mainloop:stackstall:oppool1:signnearmult
+ 118                             modopt	universal:fullloop:mainloop:stackstall:oppool1:modopt
+ 119                             signmod2nopt	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt
+ 120                             signmod2nopt2	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt2
+ 121                             signmod2opt	universal:fullloop:mainloop:stackstall:oppool1:signmod2opt
+ 122                             switchsingle	universal:fullloop:mainloop:stackstall:oppool1:switchsingle
+ 123                             condnegate	universal:fullloop:mainloop:stackstall:oppool1:condnegate
+ 124                             boolnegate	universal:fullloop:mainloop:stackstall:oppool1:boolnegate
+ 125                             lessequal	universal:fullloop:mainloop:stackstall:oppool1:lessequal
+ 126                             lessnotequal	universal:fullloop:mainloop:stackstall:oppool1:lessnotequal
+ 127                             lessone	universal:fullloop:mainloop:stackstall:oppool1:lessone
+ 128                             rangemeld	universal:fullloop:mainloop:stackstall:oppool1:rangemeld
+ 129                             floatrange	universal:fullloop:mainloop:stackstall:oppool1:floatrange
+ 130                             piece2zext	universal:fullloop:mainloop:stackstall:oppool1:piece2zext
+ 131                             piece2sext	universal:fullloop:mainloop:stackstall:oppool1:piece2sext
+ 132                             popcountboolxor	universal:fullloop:mainloop:stackstall:oppool1:popcountboolxor
+ 133                             xorswap	universal:fullloop:mainloop:stackstall:oppool1:xorswap
+ 134                             lzcountshiftbool	universal:fullloop:mainloop:stackstall:oppool1:lzcountshiftbool
+ 135                             floatsign	universal:fullloop:mainloop:stackstall:oppool1:floatsign
+ 136                             orcompare	universal:fullloop:mainloop:stackstall:oppool1:orcompare
+ 137                             subvar_and	universal:fullloop:mainloop:stackstall:oppool1:subvar_and
+ 138                             subvar_subpiece	universal:fullloop:mainloop:stackstall:oppool1:subvar_subpiece
+ 139                             splitflow	universal:fullloop:mainloop:stackstall:oppool1:splitflow
+ 140                             ptrflow	universal:fullloop:mainloop:stackstall:oppool1:ptrflow
+ 141                             subvar_compzero	universal:fullloop:mainloop:stackstall:oppool1:subvar_compzero
+ 142                             subvar_shift	universal:fullloop:mainloop:stackstall:oppool1:subvar_shift
+ 143                             subvar_zext	universal:fullloop:mainloop:stackstall:oppool1:subvar_zext
+ 144                             subvar_sext	universal:fullloop:mainloop:stackstall:oppool1:subvar_sext
+ 145                             negatenegate	universal:fullloop:mainloop:stackstall:oppool1:negatenegate
+ 146                             conditionalmove	universal:fullloop:mainloop:stackstall:oppool1:conditionalmove
+ 147                             orpredicate	universal:fullloop:mainloop:stackstall:oppool1:orpredicate
+ 148                             funcptrencoding	universal:fullloop:mainloop:stackstall:oppool1:funcptrencoding
+ 149                             subfloat_convert	universal:fullloop:mainloop:stackstall:oppool1:subfloat_convert
+ 150                             floatcast	universal:fullloop:mainloop:stackstall:oppool1:floatcast
+ 151                             ignorenan	universal:fullloop:mainloop:stackstall:oppool1:ignorenan
+ 152                             unsigned2float	universal:fullloop:mainloop:stackstall:oppool1:unsigned2float
+ 153                             int2floatcollapse	universal:fullloop:mainloop:stackstall:oppool1:int2floatcollapse
+ 154                             ptraddundo	universal:fullloop:mainloop:stackstall:oppool1:ptraddundo
+ 155                             ptrsubundo	universal:fullloop:mainloop:stackstall:oppool1:ptrsubundo
+ 156                             segment	universal:fullloop:mainloop:stackstall:oppool1:segment
+ 157                             piecepathology	universal:fullloop:mainloop:stackstall:oppool1:piecepathology
+ 158                             doubleload	universal:fullloop:mainloop:stackstall:oppool1:doubleload
+ 159                             doublestore	universal:fullloop:mainloop:stackstall:oppool1:doublestore
+ 160                             doublein	universal:fullloop:mainloop:stackstall:oppool1:doublein
+ 161                             doubleout	universal:fullloop:mainloop:stackstall:oppool1:doubleout
+ 162                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+ 163                                 multicse	universal:fullloop:mainloop:stackstall:multicse
+ 164                                 shadowvar	universal:fullloop:mainloop:stackstall:shadowvar
+ 165                                 deindirect	universal:fullloop:mainloop:stackstall:deindirect
+ 166                                 stackptrflow	universal:fullloop:mainloop:stackstall:stackptrflow
+ 167                            redundbranch	universal:fullloop:mainloop:redundbranch
+ 168                            blockstructure	universal:fullloop:mainloop:blockstructure
+ 169                            constantptr	universal:fullloop:mainloop:constantptr
+ 170 repeat                     oppool2	universal:fullloop:mainloop:oppool2
+ 171                        pushptr	universal:fullloop:mainloop:oppool2:pushptr
+ 172                        structoffset0	universal:fullloop:mainloop:oppool2:structoffset0
+ 173                        ptrarith	universal:fullloop:mainloop:oppool2:ptrarith
+ 174                        loadvarnode	universal:fullloop:mainloop:oppool2:loadvarnode
+ 175                        storevarnode	universal:fullloop:mainloop:oppool2:storevarnode
+ 176                            determinedbranch	universal:fullloop:mainloop:determinedbranch
+ 177                            unreachable	universal:fullloop:mainloop:unreachable
+ 178                            nodejoin	universal:fullloop:mainloop:nodejoin
+ 179                            conditionalexe	universal:fullloop:mainloop:conditionalexe
+ 180                            condconst	universal:fullloop:mainloop:condconst
+ 181                       likelytrash	universal:fullloop:likelytrash
+ 182                       directwrite	universal:fullloop:directwrite
+ 183                       deadcode	universal:fullloop:deadcode
+ 184 repeat                donothing	universal:fullloop:donothing
+ 185                       switchnorm	universal:fullloop:switchnorm
+ 186                       returnsplit	universal:fullloop:returnsplit
+ 187                       unjustparams	universal:fullloop:unjustparams
+ 188                       starttypes	universal:fullloop:starttypes
+ 189                       activereturn	universal:fullloop:activereturn
+ 190                  mapped_local_sync	universal:mapped_local_sync
+ 191                  startcleanup	universal:startcleanup
+ 192 repeat           cleanup	universal:cleanup
+ 193              multnegone	universal:cleanup:multnegone
+ 194              addunsigned	universal:cleanup:addunsigned
+ 195              2comp2sub	universal:cleanup:2comp2sub
+ 196              dumptyhumplate	universal:cleanup:dumptyhumplate
+ 197              subright	universal:cleanup:subright
+ 198              floatsigncleanup	universal:cleanup:floatsigncleanup
+ 199              expandload	universal:cleanup:expandload
+ 200              ptrsubcharconstant	universal:cleanup:ptrsubcharconstant
+ 201              extensionpush	universal:cleanup:extensionpush
+ 202              piecestructure	universal:cleanup:piecestructure
+ 203              andstructure	universal:cleanup:andstructure
+ 204              splitcopy	universal:cleanup:splitcopy
+ 205              splitload	universal:cleanup:splitload
+ 206              splitstore	universal:cleanup:splitstore
+ 207              stringcopy	universal:cleanup:stringcopy
+ 208              stringstore	universal:cleanup:stringstore
+ 209              bitfield_store	universal:cleanup:bitfield_store
+ 210              bitfield_out	universal:cleanup:bitfield_out
+ 211              bitfield_load	universal:cleanup:bitfield_load
+ 212              bitfield_in	universal:cleanup:bitfield_in
+ 213              pull_absorb	universal:cleanup:pull_absorb
+ 214              insert_absorb	universal:cleanup:insert_absorb
+ 215                  prefercomplement	universal:prefercomplement
+ 216                  structuretransform	universal:structuretransform
+ 217        !         assignhigh	universal:assignhigh
+ 218        !         mergerequired	universal:mergerequired
+ 219        !         markexplicit	universal:markexplicit
+ 220        !         markimplied	universal:markimplied
+ 221        !         mergemultientry	universal:mergemultientry
+ 222        !         mergecopy	universal:mergecopy
+ 223        !         dominantcopy	universal:dominantcopy
+ 224        !         dynamicsymbols	universal:dynamicsymbols
+ 225        !         markindirectonly	universal:markindirectonly
+ 226        !         mergeadjacent	universal:mergeadjacent
+ 227        !         mergetype	universal:mergetype
+ 228        !         hideshadow	universal:hideshadow
+ 229        !         copymarker	universal:copymarker
+ 230                  latedonothing	universal:latedonothing
+ 231                  blockstructure	universal:blockstructure
+ 232                  prefercomplement	universal:prefercomplement
+ 233                  structuretransform	universal:structuretransform
+ 234        !         outputprototype	universal:outputprototype
+ 235        !         inputprototype	universal:inputprototype
+ 236        !         mapglobals	universal:mapglobals
+ 237        !         dynamicsymbols	universal:dynamicsymbols
+ 238        !         namevars	universal:namevars
+ 239        !         setcasts	universal:setcasts
+ 240                  finalstructure	universal:finalstructure
+ 241        !         prototypewarnings	universal:prototypewarnings
+ 242                  stop	universal:stop
+T
+init> option setaction jumptable
+Set current action to jumptable
+init> bk list actions
+H	bkactions	1	jumptable	157
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         defaultparams	universal:defaultparams
+   4        !         extrapopsetup	universal:extrapopsetup
+   5        !         funclink_outonly	universal:funclink_outonly
+   6 repeat           fullloop	universal:fullloop
+   7 repeat                mainloop	universal:fullloop:mainloop
+   8                            unreachable	universal:fullloop:mainloop:unreachable
+   9                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+  10                            heritage	universal:fullloop:mainloop:heritage
+  11                            segmentize	universal:fullloop:mainloop:segmentize
+  12        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  13                            restrictlocal	universal:fullloop:mainloop:restrictlocal
+  14                            deadcode	universal:fullloop:mainloop:deadcode
+  15                            spacebase	universal:fullloop:mainloop:spacebase
+  16                            nonzeromask	universal:fullloop:mainloop:nonzeromask
+  17                            restructure_varnode	universal:fullloop:mainloop:restructure_varnode
+  18 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  19 repeat                          oppool1	universal:fullloop:mainloop:stackstall:oppool1
+  20                             earlyremoval	universal:fullloop:mainloop:stackstall:oppool1:earlyremoval
+  21                             termorder	universal:fullloop:mainloop:stackstall:oppool1:termorder
+  22                             selectcse	universal:fullloop:mainloop:stackstall:oppool1:selectcse
+  23                             collect_terms	universal:fullloop:mainloop:stackstall:oppool1:collect_terms
+  24                             pullsub_multi	universal:fullloop:mainloop:stackstall:oppool1:pullsub_multi
+  25                             pullsub_indirect	universal:fullloop:mainloop:stackstall:oppool1:pullsub_indirect
+  26                             sborrow	universal:fullloop:mainloop:stackstall:oppool1:sborrow
+  27                             scarry	universal:fullloop:mainloop:stackstall:oppool1:scarry
+  28                             intlessequal	universal:fullloop:mainloop:stackstall:oppool1:intlessequal
+  29                             trivialarith	universal:fullloop:mainloop:stackstall:oppool1:trivialarith
+  30                             trivialbool	universal:fullloop:mainloop:stackstall:oppool1:trivialbool
+  31                             trivialshift	universal:fullloop:mainloop:stackstall:oppool1:trivialshift
+  32                             signshift	universal:fullloop:mainloop:stackstall:oppool1:signshift
+  33                             testsign	universal:fullloop:mainloop:stackstall:oppool1:testsign
+  34                             identityel	universal:fullloop:mainloop:stackstall:oppool1:identityel
+  35                             ormask	universal:fullloop:mainloop:stackstall:oppool1:ormask
+  36                             andmask	universal:fullloop:mainloop:stackstall:oppool1:andmask
+  37                             orconsume	universal:fullloop:mainloop:stackstall:oppool1:orconsume
+  38                             orcollapse	universal:fullloop:mainloop:stackstall:oppool1:orcollapse
+  39                             andorlump	universal:fullloop:mainloop:stackstall:oppool1:andorlump
+  40                             shiftbitops	universal:fullloop:mainloop:stackstall:oppool1:shiftbitops
+  41                             rightshiftand	universal:fullloop:mainloop:stackstall:oppool1:rightshiftand
+  42                             notdistribute	universal:fullloop:mainloop:stackstall:oppool1:notdistribute
+  43                             highorderand	universal:fullloop:mainloop:stackstall:oppool1:highorderand
+  44                             anddistribute	universal:fullloop:mainloop:stackstall:oppool1:anddistribute
+  45                             andcommute	universal:fullloop:mainloop:stackstall:oppool1:andcommute
+  46                             andpiece	universal:fullloop:mainloop:stackstall:oppool1:andpiece
+  47                             andzext	universal:fullloop:mainloop:stackstall:oppool1:andzext
+  48                             andcompare	universal:fullloop:mainloop:stackstall:oppool1:andcompare
+  49                             doublesub	universal:fullloop:mainloop:stackstall:oppool1:doublesub
+  50                             doubleshift	universal:fullloop:mainloop:stackstall:oppool1:doubleshift
+  51                             doublearithshift	universal:fullloop:mainloop:stackstall:oppool1:doublearithshift
+  52                             concatshift	universal:fullloop:mainloop:stackstall:oppool1:concatshift
+  53                             leftright	universal:fullloop:mainloop:stackstall:oppool1:leftright
+  54                             shiftcompare	universal:fullloop:mainloop:stackstall:oppool1:shiftcompare
+  55                             shift2mult	universal:fullloop:mainloop:stackstall:oppool1:shift2mult
+  56                             shiftpiece	universal:fullloop:mainloop:stackstall:oppool1:shiftpiece
+  57                             multicollapse	universal:fullloop:mainloop:stackstall:oppool1:multicollapse
+  58                             aliasupdate	universal:fullloop:mainloop:stackstall:oppool1:aliasupdate
+  59                             2comp2mult	universal:fullloop:mainloop:stackstall:oppool1:2comp2mult
+  60                             sub2add	universal:fullloop:mainloop:stackstall:oppool1:sub2add
+  61                             carryelim	universal:fullloop:mainloop:stackstall:oppool1:carryelim
+  62                             bxor2notequal	universal:fullloop:mainloop:stackstall:oppool1:bxor2notequal
+  63                             less2zero	universal:fullloop:mainloop:stackstall:oppool1:less2zero
+  64                             lessequal2zero	universal:fullloop:mainloop:stackstall:oppool1:lessequal2zero
+  65                             sless2zero	universal:fullloop:mainloop:stackstall:oppool1:sless2zero
+  66                             equal2zero	universal:fullloop:mainloop:stackstall:oppool1:equal2zero
+  67                             equal2constant	universal:fullloop:mainloop:stackstall:oppool1:equal2constant
+  68                             threewaycomp	universal:fullloop:mainloop:stackstall:oppool1:threewaycomp
+  69                             xorcollapse	universal:fullloop:mainloop:stackstall:oppool1:xorcollapse
+  70                             addmultcollapse	universal:fullloop:mainloop:stackstall:oppool1:addmultcollapse
+  71                             collapseconstants	universal:fullloop:mainloop:stackstall:oppool1:collapseconstants
+  72                             transformcpool	universal:fullloop:mainloop:stackstall:oppool1:transformcpool
+  73                             propagatecopy	universal:fullloop:mainloop:stackstall:oppool1:propagatecopy
+  74                             zexteliminate	universal:fullloop:mainloop:stackstall:oppool1:zexteliminate
+  75                             slesstoless	universal:fullloop:mainloop:stackstall:oppool1:slesstoless
+  76                             zextsless	universal:fullloop:mainloop:stackstall:oppool1:zextsless
+  77                             bitundistribute	universal:fullloop:mainloop:stackstall:oppool1:bitundistribute
+  78                             booleanundistribute	universal:fullloop:mainloop:stackstall:oppool1:booleanundistribute
+  79                             booleandedup	universal:fullloop:mainloop:stackstall:oppool1:booleandedup
+  80                             boolzext	universal:fullloop:mainloop:stackstall:oppool1:boolzext
+  81                             booleannegate	universal:fullloop:mainloop:stackstall:oppool1:booleannegate
+  82                             logic2bool	universal:fullloop:mainloop:stackstall:oppool1:logic2bool
+  83                             subextcomm	universal:fullloop:mainloop:stackstall:oppool1:subextcomm
+  84                             subcommute	universal:fullloop:mainloop:stackstall:oppool1:subcommute
+  85                             concatcommute	universal:fullloop:mainloop:stackstall:oppool1:concatcommute
+  86                             concatzext	universal:fullloop:mainloop:stackstall:oppool1:concatzext
+  87                             zextcommute	universal:fullloop:mainloop:stackstall:oppool1:zextcommute
+  88                             zextshiftzext	universal:fullloop:mainloop:stackstall:oppool1:zextshiftzext
+  89                             shiftand	universal:fullloop:mainloop:stackstall:oppool1:shiftand
+  90                             concatzero	universal:fullloop:mainloop:stackstall:oppool1:concatzero
+  91                             concatleftshift	universal:fullloop:mainloop:stackstall:oppool1:concatleftshift
+  92                             subzext	universal:fullloop:mainloop:stackstall:oppool1:subzext
+  93                             subcancel	universal:fullloop:mainloop:stackstall:oppool1:subcancel
+  94                             shiftsub	universal:fullloop:mainloop:stackstall:oppool1:shiftsub
+  95                             humptydumpty	universal:fullloop:mainloop:stackstall:oppool1:humptydumpty
+  96                             dumptyhump	universal:fullloop:mainloop:stackstall:oppool1:dumptyhump
+  97                             humptyor	universal:fullloop:mainloop:stackstall:oppool1:humptyor
+  98                             negateidentity	universal:fullloop:mainloop:stackstall:oppool1:negateidentity
+  99                             subnormal	universal:fullloop:mainloop:stackstall:oppool1:subnormal
+ 100                             positivediv	universal:fullloop:mainloop:stackstall:oppool1:positivediv
+ 101                             divtermadd	universal:fullloop:mainloop:stackstall:oppool1:divtermadd
+ 102                             divtermadd2	universal:fullloop:mainloop:stackstall:oppool1:divtermadd2
+ 103                             divopt	universal:fullloop:mainloop:stackstall:oppool1:divopt
+ 104                             signform	universal:fullloop:mainloop:stackstall:oppool1:signform
+ 105                             signform2	universal:fullloop:mainloop:stackstall:oppool1:signform2
+ 106                             signdiv2	universal:fullloop:mainloop:stackstall:oppool1:signdiv2
+ 107                             divchain	universal:fullloop:mainloop:stackstall:oppool1:divchain
+ 108                             signnearmult	universal:fullloop:mainloop:stackstall:oppool1:signnearmult
+ 109                             modopt	universal:fullloop:mainloop:stackstall:oppool1:modopt
+ 110                             signmod2nopt	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt
+ 111                             signmod2nopt2	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt2
+ 112                             signmod2opt	universal:fullloop:mainloop:stackstall:oppool1:signmod2opt
+ 113                             switchsingle	universal:fullloop:mainloop:stackstall:oppool1:switchsingle
+ 114                             condnegate	universal:fullloop:mainloop:stackstall:oppool1:condnegate
+ 115                             boolnegate	universal:fullloop:mainloop:stackstall:oppool1:boolnegate
+ 116                             lessequal	universal:fullloop:mainloop:stackstall:oppool1:lessequal
+ 117                             lessnotequal	universal:fullloop:mainloop:stackstall:oppool1:lessnotequal
+ 118                             lessone	universal:fullloop:mainloop:stackstall:oppool1:lessone
+ 119                             rangemeld	universal:fullloop:mainloop:stackstall:oppool1:rangemeld
+ 120                             floatrange	universal:fullloop:mainloop:stackstall:oppool1:floatrange
+ 121                             piece2zext	universal:fullloop:mainloop:stackstall:oppool1:piece2zext
+ 122                             piece2sext	universal:fullloop:mainloop:stackstall:oppool1:piece2sext
+ 123                             popcountboolxor	universal:fullloop:mainloop:stackstall:oppool1:popcountboolxor
+ 124                             xorswap	universal:fullloop:mainloop:stackstall:oppool1:xorswap
+ 125                             lzcountshiftbool	universal:fullloop:mainloop:stackstall:oppool1:lzcountshiftbool
+ 126                             floatsign	universal:fullloop:mainloop:stackstall:oppool1:floatsign
+ 127                             orcompare	universal:fullloop:mainloop:stackstall:oppool1:orcompare
+ 128                             subvar_and	universal:fullloop:mainloop:stackstall:oppool1:subvar_and
+ 129                             subvar_subpiece	universal:fullloop:mainloop:stackstall:oppool1:subvar_subpiece
+ 130                             splitflow	universal:fullloop:mainloop:stackstall:oppool1:splitflow
+ 131                             ptrflow	universal:fullloop:mainloop:stackstall:oppool1:ptrflow
+ 132                             subvar_compzero	universal:fullloop:mainloop:stackstall:oppool1:subvar_compzero
+ 133                             subvar_shift	universal:fullloop:mainloop:stackstall:oppool1:subvar_shift
+ 134                             subvar_zext	universal:fullloop:mainloop:stackstall:oppool1:subvar_zext
+ 135                             subvar_sext	universal:fullloop:mainloop:stackstall:oppool1:subvar_sext
+ 136                             negatenegate	universal:fullloop:mainloop:stackstall:oppool1:negatenegate
+ 137                             conditionalmove	universal:fullloop:mainloop:stackstall:oppool1:conditionalmove
+ 138                             orpredicate	universal:fullloop:mainloop:stackstall:oppool1:orpredicate
+ 139                             funcptrencoding	universal:fullloop:mainloop:stackstall:oppool1:funcptrencoding
+ 140                             unsigned2float	universal:fullloop:mainloop:stackstall:oppool1:unsigned2float
+ 141                             int2floatcollapse	universal:fullloop:mainloop:stackstall:oppool1:int2floatcollapse
+ 142                             segment	universal:fullloop:mainloop:stackstall:oppool1:segment
+ 143                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+ 144                                 multicse	universal:fullloop:mainloop:stackstall:multicse
+ 145                                 shadowvar	universal:fullloop:mainloop:stackstall:shadowvar
+ 146                                 stackptrflow	universal:fullloop:mainloop:stackstall:stackptrflow
+ 147 repeat                     oppool2	universal:fullloop:mainloop:oppool2
+ 148                        loadvarnode	universal:fullloop:mainloop:oppool2:loadvarnode
+ 149                        storevarnode	universal:fullloop:mainloop:oppool2:storevarnode
+ 150                            conditionalexe	universal:fullloop:mainloop:conditionalexe
+ 151                            condconst	universal:fullloop:mainloop:condconst
+ 152                       deadcode	universal:fullloop:deadcode
+ 153                  mapped_local_sync	universal:mapped_local_sync
+ 154                  normalizebranches	universal:normalizebranches
+ 155        !         outputprototype	universal:outputprototype
+ 156                  stop	universal:stop
+T
+init> option setaction normalize
+Set current action to normalize
+init> bk list actions
+H	bkactions	1	normalize	179
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         normalizesetup	universal:normalizesetup
+   4        !         defaultparams	universal:defaultparams
+   5        !         extrapopsetup	universal:extrapopsetup
+   6        !         prototypetypes	universal:prototypetypes
+   7        !         funclink	universal:funclink
+   8 repeat           fullloop	universal:fullloop
+   9 repeat                mainloop	universal:fullloop:mainloop
+  10                            unreachable	universal:fullloop:mainloop:unreachable
+  11                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+  12                            heritage	universal:fullloop:mainloop:heritage
+  13                            paramdouble	universal:fullloop:mainloop:paramdouble
+  14                            segmentize	universal:fullloop:mainloop:segmentize
+  15        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  16                            directwrite	universal:fullloop:mainloop:directwrite
+  17                            activeparam	universal:fullloop:mainloop:activeparam
+  18                            returnrecovery	universal:fullloop:mainloop:returnrecovery
+  19                            restrictlocal	universal:fullloop:mainloop:restrictlocal
+  20                            deadcode	universal:fullloop:mainloop:deadcode
+  21                            spacebase	universal:fullloop:mainloop:spacebase
+  22                            nonzeromask	universal:fullloop:mainloop:nonzeromask
+  23                            restructure_varnode	universal:fullloop:mainloop:restructure_varnode
+  24 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  25 repeat                          oppool1	universal:fullloop:mainloop:stackstall:oppool1
+  26                             earlyremoval	universal:fullloop:mainloop:stackstall:oppool1:earlyremoval
+  27                             termorder	universal:fullloop:mainloop:stackstall:oppool1:termorder
+  28                             selectcse	universal:fullloop:mainloop:stackstall:oppool1:selectcse
+  29                             collect_terms	universal:fullloop:mainloop:stackstall:oppool1:collect_terms
+  30                             pullsub_multi	universal:fullloop:mainloop:stackstall:oppool1:pullsub_multi
+  31                             pullsub_indirect	universal:fullloop:mainloop:stackstall:oppool1:pullsub_indirect
+  32                             push_multi	universal:fullloop:mainloop:stackstall:oppool1:push_multi
+  33                             sborrow	universal:fullloop:mainloop:stackstall:oppool1:sborrow
+  34                             scarry	universal:fullloop:mainloop:stackstall:oppool1:scarry
+  35                             intlessequal	universal:fullloop:mainloop:stackstall:oppool1:intlessequal
+  36                             trivialarith	universal:fullloop:mainloop:stackstall:oppool1:trivialarith
+  37                             trivialbool	universal:fullloop:mainloop:stackstall:oppool1:trivialbool
+  38                             trivialshift	universal:fullloop:mainloop:stackstall:oppool1:trivialshift
+  39                             signshift	universal:fullloop:mainloop:stackstall:oppool1:signshift
+  40                             testsign	universal:fullloop:mainloop:stackstall:oppool1:testsign
+  41                             identityel	universal:fullloop:mainloop:stackstall:oppool1:identityel
+  42                             ormask	universal:fullloop:mainloop:stackstall:oppool1:ormask
+  43                             andmask	universal:fullloop:mainloop:stackstall:oppool1:andmask
+  44                             orconsume	universal:fullloop:mainloop:stackstall:oppool1:orconsume
+  45                             orcollapse	universal:fullloop:mainloop:stackstall:oppool1:orcollapse
+  46                             andorlump	universal:fullloop:mainloop:stackstall:oppool1:andorlump
+  47                             shiftbitops	universal:fullloop:mainloop:stackstall:oppool1:shiftbitops
+  48                             rightshiftand	universal:fullloop:mainloop:stackstall:oppool1:rightshiftand
+  49                             notdistribute	universal:fullloop:mainloop:stackstall:oppool1:notdistribute
+  50                             highorderand	universal:fullloop:mainloop:stackstall:oppool1:highorderand
+  51                             anddistribute	universal:fullloop:mainloop:stackstall:oppool1:anddistribute
+  52                             andcommute	universal:fullloop:mainloop:stackstall:oppool1:andcommute
+  53                             andpiece	universal:fullloop:mainloop:stackstall:oppool1:andpiece
+  54                             andzext	universal:fullloop:mainloop:stackstall:oppool1:andzext
+  55                             andcompare	universal:fullloop:mainloop:stackstall:oppool1:andcompare
+  56                             doublesub	universal:fullloop:mainloop:stackstall:oppool1:doublesub
+  57                             doubleshift	universal:fullloop:mainloop:stackstall:oppool1:doubleshift
+  58                             doublearithshift	universal:fullloop:mainloop:stackstall:oppool1:doublearithshift
+  59                             concatshift	universal:fullloop:mainloop:stackstall:oppool1:concatshift
+  60                             leftright	universal:fullloop:mainloop:stackstall:oppool1:leftright
+  61                             shiftcompare	universal:fullloop:mainloop:stackstall:oppool1:shiftcompare
+  62                             shift2mult	universal:fullloop:mainloop:stackstall:oppool1:shift2mult
+  63                             shiftpiece	universal:fullloop:mainloop:stackstall:oppool1:shiftpiece
+  64                             multicollapse	universal:fullloop:mainloop:stackstall:oppool1:multicollapse
+  65                             aliasupdate	universal:fullloop:mainloop:stackstall:oppool1:aliasupdate
+  66                             2comp2mult	universal:fullloop:mainloop:stackstall:oppool1:2comp2mult
+  67                             sub2add	universal:fullloop:mainloop:stackstall:oppool1:sub2add
+  68                             carryelim	universal:fullloop:mainloop:stackstall:oppool1:carryelim
+  69                             bxor2notequal	universal:fullloop:mainloop:stackstall:oppool1:bxor2notequal
+  70                             less2zero	universal:fullloop:mainloop:stackstall:oppool1:less2zero
+  71                             lessequal2zero	universal:fullloop:mainloop:stackstall:oppool1:lessequal2zero
+  72                             sless2zero	universal:fullloop:mainloop:stackstall:oppool1:sless2zero
+  73                             equal2zero	universal:fullloop:mainloop:stackstall:oppool1:equal2zero
+  74                             equal2constant	universal:fullloop:mainloop:stackstall:oppool1:equal2constant
+  75                             threewaycomp	universal:fullloop:mainloop:stackstall:oppool1:threewaycomp
+  76                             xorcollapse	universal:fullloop:mainloop:stackstall:oppool1:xorcollapse
+  77                             addmultcollapse	universal:fullloop:mainloop:stackstall:oppool1:addmultcollapse
+  78                             collapseconstants	universal:fullloop:mainloop:stackstall:oppool1:collapseconstants
+  79                             transformcpool	universal:fullloop:mainloop:stackstall:oppool1:transformcpool
+  80                             propagatecopy	universal:fullloop:mainloop:stackstall:oppool1:propagatecopy
+  81                             zexteliminate	universal:fullloop:mainloop:stackstall:oppool1:zexteliminate
+  82                             slesstoless	universal:fullloop:mainloop:stackstall:oppool1:slesstoless
+  83                             zextsless	universal:fullloop:mainloop:stackstall:oppool1:zextsless
+  84                             bitundistribute	universal:fullloop:mainloop:stackstall:oppool1:bitundistribute
+  85                             booleanundistribute	universal:fullloop:mainloop:stackstall:oppool1:booleanundistribute
+  86                             booleandedup	universal:fullloop:mainloop:stackstall:oppool1:booleandedup
+  87                             boolzext	universal:fullloop:mainloop:stackstall:oppool1:boolzext
+  88                             booleannegate	universal:fullloop:mainloop:stackstall:oppool1:booleannegate
+  89                             logic2bool	universal:fullloop:mainloop:stackstall:oppool1:logic2bool
+  90                             subextcomm	universal:fullloop:mainloop:stackstall:oppool1:subextcomm
+  91                             subcommute	universal:fullloop:mainloop:stackstall:oppool1:subcommute
+  92                             concatcommute	universal:fullloop:mainloop:stackstall:oppool1:concatcommute
+  93                             concatzext	universal:fullloop:mainloop:stackstall:oppool1:concatzext
+  94                             zextcommute	universal:fullloop:mainloop:stackstall:oppool1:zextcommute
+  95                             zextshiftzext	universal:fullloop:mainloop:stackstall:oppool1:zextshiftzext
+  96                             shiftand	universal:fullloop:mainloop:stackstall:oppool1:shiftand
+  97                             concatzero	universal:fullloop:mainloop:stackstall:oppool1:concatzero
+  98                             concatleftshift	universal:fullloop:mainloop:stackstall:oppool1:concatleftshift
+  99                             subzext	universal:fullloop:mainloop:stackstall:oppool1:subzext
+ 100                             subcancel	universal:fullloop:mainloop:stackstall:oppool1:subcancel
+ 101                             shiftsub	universal:fullloop:mainloop:stackstall:oppool1:shiftsub
+ 102                             humptydumpty	universal:fullloop:mainloop:stackstall:oppool1:humptydumpty
+ 103                             dumptyhump	universal:fullloop:mainloop:stackstall:oppool1:dumptyhump
+ 104                             humptyor	universal:fullloop:mainloop:stackstall:oppool1:humptyor
+ 105                             negateidentity	universal:fullloop:mainloop:stackstall:oppool1:negateidentity
+ 106                             subnormal	universal:fullloop:mainloop:stackstall:oppool1:subnormal
+ 107                             positivediv	universal:fullloop:mainloop:stackstall:oppool1:positivediv
+ 108                             divtermadd	universal:fullloop:mainloop:stackstall:oppool1:divtermadd
+ 109                             divtermadd2	universal:fullloop:mainloop:stackstall:oppool1:divtermadd2
+ 110                             divopt	universal:fullloop:mainloop:stackstall:oppool1:divopt
+ 111                             signform	universal:fullloop:mainloop:stackstall:oppool1:signform
+ 112                             signform2	universal:fullloop:mainloop:stackstall:oppool1:signform2
+ 113                             signdiv2	universal:fullloop:mainloop:stackstall:oppool1:signdiv2
+ 114                             divchain	universal:fullloop:mainloop:stackstall:oppool1:divchain
+ 115                             signnearmult	universal:fullloop:mainloop:stackstall:oppool1:signnearmult
+ 116                             modopt	universal:fullloop:mainloop:stackstall:oppool1:modopt
+ 117                             signmod2nopt	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt
+ 118                             signmod2nopt2	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt2
+ 119                             signmod2opt	universal:fullloop:mainloop:stackstall:oppool1:signmod2opt
+ 120                             switchsingle	universal:fullloop:mainloop:stackstall:oppool1:switchsingle
+ 121                             condnegate	universal:fullloop:mainloop:stackstall:oppool1:condnegate
+ 122                             boolnegate	universal:fullloop:mainloop:stackstall:oppool1:boolnegate
+ 123                             lessequal	universal:fullloop:mainloop:stackstall:oppool1:lessequal
+ 124                             lessnotequal	universal:fullloop:mainloop:stackstall:oppool1:lessnotequal
+ 125                             lessone	universal:fullloop:mainloop:stackstall:oppool1:lessone
+ 126                             rangemeld	universal:fullloop:mainloop:stackstall:oppool1:rangemeld
+ 127                             floatrange	universal:fullloop:mainloop:stackstall:oppool1:floatrange
+ 128                             piece2zext	universal:fullloop:mainloop:stackstall:oppool1:piece2zext
+ 129                             piece2sext	universal:fullloop:mainloop:stackstall:oppool1:piece2sext
+ 130                             popcountboolxor	universal:fullloop:mainloop:stackstall:oppool1:popcountboolxor
+ 131                             xorswap	universal:fullloop:mainloop:stackstall:oppool1:xorswap
+ 132                             lzcountshiftbool	universal:fullloop:mainloop:stackstall:oppool1:lzcountshiftbool
+ 133                             floatsign	universal:fullloop:mainloop:stackstall:oppool1:floatsign
+ 134                             orcompare	universal:fullloop:mainloop:stackstall:oppool1:orcompare
+ 135                             subvar_and	universal:fullloop:mainloop:stackstall:oppool1:subvar_and
+ 136                             subvar_subpiece	universal:fullloop:mainloop:stackstall:oppool1:subvar_subpiece
+ 137                             splitflow	universal:fullloop:mainloop:stackstall:oppool1:splitflow
+ 138                             ptrflow	universal:fullloop:mainloop:stackstall:oppool1:ptrflow
+ 139                             subvar_compzero	universal:fullloop:mainloop:stackstall:oppool1:subvar_compzero
+ 140                             subvar_shift	universal:fullloop:mainloop:stackstall:oppool1:subvar_shift
+ 141                             subvar_zext	universal:fullloop:mainloop:stackstall:oppool1:subvar_zext
+ 142                             subvar_sext	universal:fullloop:mainloop:stackstall:oppool1:subvar_sext
+ 143                             negatenegate	universal:fullloop:mainloop:stackstall:oppool1:negatenegate
+ 144                             conditionalmove	universal:fullloop:mainloop:stackstall:oppool1:conditionalmove
+ 145                             orpredicate	universal:fullloop:mainloop:stackstall:oppool1:orpredicate
+ 146                             funcptrencoding	universal:fullloop:mainloop:stackstall:oppool1:funcptrencoding
+ 147                             subfloat_convert	universal:fullloop:mainloop:stackstall:oppool1:subfloat_convert
+ 148                             floatcast	universal:fullloop:mainloop:stackstall:oppool1:floatcast
+ 149                             ignorenan	universal:fullloop:mainloop:stackstall:oppool1:ignorenan
+ 150                             unsigned2float	universal:fullloop:mainloop:stackstall:oppool1:unsigned2float
+ 151                             int2floatcollapse	universal:fullloop:mainloop:stackstall:oppool1:int2floatcollapse
+ 152                             piecepathology	universal:fullloop:mainloop:stackstall:oppool1:piecepathology
+ 153                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+ 154                                 multicse	universal:fullloop:mainloop:stackstall:multicse
+ 155                                 shadowvar	universal:fullloop:mainloop:stackstall:shadowvar
+ 156                                 deindirect	universal:fullloop:mainloop:stackstall:deindirect
+ 157                                 stackptrflow	universal:fullloop:mainloop:stackstall:stackptrflow
+ 158                            redundbranch	universal:fullloop:mainloop:redundbranch
+ 159 repeat                     oppool2	universal:fullloop:mainloop:oppool2
+ 160                        loadvarnode	universal:fullloop:mainloop:oppool2:loadvarnode
+ 161                        storevarnode	universal:fullloop:mainloop:oppool2:storevarnode
+ 162                            determinedbranch	universal:fullloop:mainloop:determinedbranch
+ 163                            unreachable	universal:fullloop:mainloop:unreachable
+ 164                            nodejoin	universal:fullloop:mainloop:nodejoin
+ 165                            conditionalexe	universal:fullloop:mainloop:conditionalexe
+ 166                            condconst	universal:fullloop:mainloop:condconst
+ 167                       likelytrash	universal:fullloop:likelytrash
+ 168                       directwrite	universal:fullloop:directwrite
+ 169                       deadcode	universal:fullloop:deadcode
+ 170 repeat                donothing	universal:fullloop:donothing
+ 171                       unjustparams	universal:fullloop:unjustparams
+ 172                       activereturn	universal:fullloop:activereturn
+ 173                  mapped_local_sync	universal:mapped_local_sync
+ 174                  normalizebranches	universal:normalizebranches
+ 175        !         outputprototype	universal:outputprototype
+ 176        !         inputprototype	universal:inputprototype
+ 177        !         prototypewarnings	universal:prototypewarnings
+ 178                  stop	universal:stop
+T
+init> option setaction paramid
+Set current action to paramid
+init> bk list actions
+H	bkactions	1	paramid	183
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         defaultparams	universal:defaultparams
+   4        !         extrapopsetup	universal:extrapopsetup
+   5        !         prototypetypes	universal:prototypetypes
+   6        !         funclink	universal:funclink
+   7 repeat           fullloop	universal:fullloop
+   8 repeat                mainloop	universal:fullloop:mainloop
+   9                            unreachable	universal:fullloop:mainloop:unreachable
+  10                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+  11                            heritage	universal:fullloop:mainloop:heritage
+  12                            paramdouble	universal:fullloop:mainloop:paramdouble
+  13                            segmentize	universal:fullloop:mainloop:segmentize
+  14        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  15                            directwrite	universal:fullloop:mainloop:directwrite
+  16                            activeparam	universal:fullloop:mainloop:activeparam
+  17                            returnrecovery	universal:fullloop:mainloop:returnrecovery
+  18                            restrictlocal	universal:fullloop:mainloop:restrictlocal
+  19                            deadcode	universal:fullloop:mainloop:deadcode
+  20                            spacebase	universal:fullloop:mainloop:spacebase
+  21                            nonzeromask	universal:fullloop:mainloop:nonzeromask
+  22                            infertypes	universal:fullloop:mainloop:infertypes
+  23                            restructure_varnode	universal:fullloop:mainloop:restructure_varnode
+  24 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  25 repeat                          oppool1	universal:fullloop:mainloop:stackstall:oppool1
+  26                             earlyremoval	universal:fullloop:mainloop:stackstall:oppool1:earlyremoval
+  27                             termorder	universal:fullloop:mainloop:stackstall:oppool1:termorder
+  28                             selectcse	universal:fullloop:mainloop:stackstall:oppool1:selectcse
+  29                             collect_terms	universal:fullloop:mainloop:stackstall:oppool1:collect_terms
+  30                             pullsub_multi	universal:fullloop:mainloop:stackstall:oppool1:pullsub_multi
+  31                             pullsub_indirect	universal:fullloop:mainloop:stackstall:oppool1:pullsub_indirect
+  32                             sborrow	universal:fullloop:mainloop:stackstall:oppool1:sborrow
+  33                             scarry	universal:fullloop:mainloop:stackstall:oppool1:scarry
+  34                             intlessequal	universal:fullloop:mainloop:stackstall:oppool1:intlessequal
+  35                             trivialarith	universal:fullloop:mainloop:stackstall:oppool1:trivialarith
+  36                             trivialbool	universal:fullloop:mainloop:stackstall:oppool1:trivialbool
+  37                             trivialshift	universal:fullloop:mainloop:stackstall:oppool1:trivialshift
+  38                             signshift	universal:fullloop:mainloop:stackstall:oppool1:signshift
+  39                             testsign	universal:fullloop:mainloop:stackstall:oppool1:testsign
+  40                             identityel	universal:fullloop:mainloop:stackstall:oppool1:identityel
+  41                             ormask	universal:fullloop:mainloop:stackstall:oppool1:ormask
+  42                             andmask	universal:fullloop:mainloop:stackstall:oppool1:andmask
+  43                             orconsume	universal:fullloop:mainloop:stackstall:oppool1:orconsume
+  44                             orcollapse	universal:fullloop:mainloop:stackstall:oppool1:orcollapse
+  45                             andorlump	universal:fullloop:mainloop:stackstall:oppool1:andorlump
+  46                             shiftbitops	universal:fullloop:mainloop:stackstall:oppool1:shiftbitops
+  47                             rightshiftand	universal:fullloop:mainloop:stackstall:oppool1:rightshiftand
+  48                             notdistribute	universal:fullloop:mainloop:stackstall:oppool1:notdistribute
+  49                             highorderand	universal:fullloop:mainloop:stackstall:oppool1:highorderand
+  50                             anddistribute	universal:fullloop:mainloop:stackstall:oppool1:anddistribute
+  51                             andcommute	universal:fullloop:mainloop:stackstall:oppool1:andcommute
+  52                             andpiece	universal:fullloop:mainloop:stackstall:oppool1:andpiece
+  53                             andzext	universal:fullloop:mainloop:stackstall:oppool1:andzext
+  54                             andcompare	universal:fullloop:mainloop:stackstall:oppool1:andcompare
+  55                             doublesub	universal:fullloop:mainloop:stackstall:oppool1:doublesub
+  56                             doubleshift	universal:fullloop:mainloop:stackstall:oppool1:doubleshift
+  57                             doublearithshift	universal:fullloop:mainloop:stackstall:oppool1:doublearithshift
+  58                             concatshift	universal:fullloop:mainloop:stackstall:oppool1:concatshift
+  59                             leftright	universal:fullloop:mainloop:stackstall:oppool1:leftright
+  60                             shiftcompare	universal:fullloop:mainloop:stackstall:oppool1:shiftcompare
+  61                             shift2mult	universal:fullloop:mainloop:stackstall:oppool1:shift2mult
+  62                             shiftpiece	universal:fullloop:mainloop:stackstall:oppool1:shiftpiece
+  63                             multicollapse	universal:fullloop:mainloop:stackstall:oppool1:multicollapse
+  64                             aliasupdate	universal:fullloop:mainloop:stackstall:oppool1:aliasupdate
+  65                             2comp2mult	universal:fullloop:mainloop:stackstall:oppool1:2comp2mult
+  66                             sub2add	universal:fullloop:mainloop:stackstall:oppool1:sub2add
+  67                             carryelim	universal:fullloop:mainloop:stackstall:oppool1:carryelim
+  68                             bxor2notequal	universal:fullloop:mainloop:stackstall:oppool1:bxor2notequal
+  69                             less2zero	universal:fullloop:mainloop:stackstall:oppool1:less2zero
+  70                             lessequal2zero	universal:fullloop:mainloop:stackstall:oppool1:lessequal2zero
+  71                             sless2zero	universal:fullloop:mainloop:stackstall:oppool1:sless2zero
+  72                             equal2zero	universal:fullloop:mainloop:stackstall:oppool1:equal2zero
+  73                             equal2constant	universal:fullloop:mainloop:stackstall:oppool1:equal2constant
+  74                             threewaycomp	universal:fullloop:mainloop:stackstall:oppool1:threewaycomp
+  75                             xorcollapse	universal:fullloop:mainloop:stackstall:oppool1:xorcollapse
+  76                             addmultcollapse	universal:fullloop:mainloop:stackstall:oppool1:addmultcollapse
+  77                             collapseconstants	universal:fullloop:mainloop:stackstall:oppool1:collapseconstants
+  78                             transformcpool	universal:fullloop:mainloop:stackstall:oppool1:transformcpool
+  79                             propagatecopy	universal:fullloop:mainloop:stackstall:oppool1:propagatecopy
+  80                             zexteliminate	universal:fullloop:mainloop:stackstall:oppool1:zexteliminate
+  81                             slesstoless	universal:fullloop:mainloop:stackstall:oppool1:slesstoless
+  82                             zextsless	universal:fullloop:mainloop:stackstall:oppool1:zextsless
+  83                             bitundistribute	universal:fullloop:mainloop:stackstall:oppool1:bitundistribute
+  84                             booleanundistribute	universal:fullloop:mainloop:stackstall:oppool1:booleanundistribute
+  85                             booleandedup	universal:fullloop:mainloop:stackstall:oppool1:booleandedup
+  86                             boolzext	universal:fullloop:mainloop:stackstall:oppool1:boolzext
+  87                             booleannegate	universal:fullloop:mainloop:stackstall:oppool1:booleannegate
+  88                             logic2bool	universal:fullloop:mainloop:stackstall:oppool1:logic2bool
+  89                             subextcomm	universal:fullloop:mainloop:stackstall:oppool1:subextcomm
+  90                             subcommute	universal:fullloop:mainloop:stackstall:oppool1:subcommute
+  91                             concatcommute	universal:fullloop:mainloop:stackstall:oppool1:concatcommute
+  92                             concatzext	universal:fullloop:mainloop:stackstall:oppool1:concatzext
+  93                             zextcommute	universal:fullloop:mainloop:stackstall:oppool1:zextcommute
+  94                             zextshiftzext	universal:fullloop:mainloop:stackstall:oppool1:zextshiftzext
+  95                             shiftand	universal:fullloop:mainloop:stackstall:oppool1:shiftand
+  96                             concatzero	universal:fullloop:mainloop:stackstall:oppool1:concatzero
+  97                             concatleftshift	universal:fullloop:mainloop:stackstall:oppool1:concatleftshift
+  98                             subzext	universal:fullloop:mainloop:stackstall:oppool1:subzext
+  99                             subcancel	universal:fullloop:mainloop:stackstall:oppool1:subcancel
+ 100                             shiftsub	universal:fullloop:mainloop:stackstall:oppool1:shiftsub
+ 101                             humptydumpty	universal:fullloop:mainloop:stackstall:oppool1:humptydumpty
+ 102                             dumptyhump	universal:fullloop:mainloop:stackstall:oppool1:dumptyhump
+ 103                             humptyor	universal:fullloop:mainloop:stackstall:oppool1:humptyor
+ 104                             negateidentity	universal:fullloop:mainloop:stackstall:oppool1:negateidentity
+ 105                             subnormal	universal:fullloop:mainloop:stackstall:oppool1:subnormal
+ 106                             positivediv	universal:fullloop:mainloop:stackstall:oppool1:positivediv
+ 107                             divtermadd	universal:fullloop:mainloop:stackstall:oppool1:divtermadd
+ 108                             divtermadd2	universal:fullloop:mainloop:stackstall:oppool1:divtermadd2
+ 109                             divopt	universal:fullloop:mainloop:stackstall:oppool1:divopt
+ 110                             signform	universal:fullloop:mainloop:stackstall:oppool1:signform
+ 111                             signform2	universal:fullloop:mainloop:stackstall:oppool1:signform2
+ 112                             signdiv2	universal:fullloop:mainloop:stackstall:oppool1:signdiv2
+ 113                             divchain	universal:fullloop:mainloop:stackstall:oppool1:divchain
+ 114                             signnearmult	universal:fullloop:mainloop:stackstall:oppool1:signnearmult
+ 115                             modopt	universal:fullloop:mainloop:stackstall:oppool1:modopt
+ 116                             signmod2nopt	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt
+ 117                             signmod2nopt2	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt2
+ 118                             signmod2opt	universal:fullloop:mainloop:stackstall:oppool1:signmod2opt
+ 119                             switchsingle	universal:fullloop:mainloop:stackstall:oppool1:switchsingle
+ 120                             condnegate	universal:fullloop:mainloop:stackstall:oppool1:condnegate
+ 121                             boolnegate	universal:fullloop:mainloop:stackstall:oppool1:boolnegate
+ 122                             lessequal	universal:fullloop:mainloop:stackstall:oppool1:lessequal
+ 123                             lessnotequal	universal:fullloop:mainloop:stackstall:oppool1:lessnotequal
+ 124                             lessone	universal:fullloop:mainloop:stackstall:oppool1:lessone
+ 125                             rangemeld	universal:fullloop:mainloop:stackstall:oppool1:rangemeld
+ 126                             floatrange	universal:fullloop:mainloop:stackstall:oppool1:floatrange
+ 127                             piece2zext	universal:fullloop:mainloop:stackstall:oppool1:piece2zext
+ 128                             piece2sext	universal:fullloop:mainloop:stackstall:oppool1:piece2sext
+ 129                             popcountboolxor	universal:fullloop:mainloop:stackstall:oppool1:popcountboolxor
+ 130                             xorswap	universal:fullloop:mainloop:stackstall:oppool1:xorswap
+ 131                             lzcountshiftbool	universal:fullloop:mainloop:stackstall:oppool1:lzcountshiftbool
+ 132                             floatsign	universal:fullloop:mainloop:stackstall:oppool1:floatsign
+ 133                             orcompare	universal:fullloop:mainloop:stackstall:oppool1:orcompare
+ 134                             subvar_and	universal:fullloop:mainloop:stackstall:oppool1:subvar_and
+ 135                             subvar_subpiece	universal:fullloop:mainloop:stackstall:oppool1:subvar_subpiece
+ 136                             splitflow	universal:fullloop:mainloop:stackstall:oppool1:splitflow
+ 137                             ptrflow	universal:fullloop:mainloop:stackstall:oppool1:ptrflow
+ 138                             subvar_compzero	universal:fullloop:mainloop:stackstall:oppool1:subvar_compzero
+ 139                             subvar_shift	universal:fullloop:mainloop:stackstall:oppool1:subvar_shift
+ 140                             subvar_zext	universal:fullloop:mainloop:stackstall:oppool1:subvar_zext
+ 141                             subvar_sext	universal:fullloop:mainloop:stackstall:oppool1:subvar_sext
+ 142                             negatenegate	universal:fullloop:mainloop:stackstall:oppool1:negatenegate
+ 143                             conditionalmove	universal:fullloop:mainloop:stackstall:oppool1:conditionalmove
+ 144                             orpredicate	universal:fullloop:mainloop:stackstall:oppool1:orpredicate
+ 145                             funcptrencoding	universal:fullloop:mainloop:stackstall:oppool1:funcptrencoding
+ 146                             subfloat_convert	universal:fullloop:mainloop:stackstall:oppool1:subfloat_convert
+ 147                             floatcast	universal:fullloop:mainloop:stackstall:oppool1:floatcast
+ 148                             ignorenan	universal:fullloop:mainloop:stackstall:oppool1:ignorenan
+ 149                             unsigned2float	universal:fullloop:mainloop:stackstall:oppool1:unsigned2float
+ 150                             int2floatcollapse	universal:fullloop:mainloop:stackstall:oppool1:int2floatcollapse
+ 151                             ptraddundo	universal:fullloop:mainloop:stackstall:oppool1:ptraddundo
+ 152                             ptrsubundo	universal:fullloop:mainloop:stackstall:oppool1:ptrsubundo
+ 153                             piecepathology	universal:fullloop:mainloop:stackstall:oppool1:piecepathology
+ 154                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+ 155                                 multicse	universal:fullloop:mainloop:stackstall:multicse
+ 156                                 shadowvar	universal:fullloop:mainloop:stackstall:shadowvar
+ 157                                 deindirect	universal:fullloop:mainloop:stackstall:deindirect
+ 158                                 stackptrflow	universal:fullloop:mainloop:stackstall:stackptrflow
+ 159                            redundbranch	universal:fullloop:mainloop:redundbranch
+ 160                            constantptr	universal:fullloop:mainloop:constantptr
+ 161 repeat                     oppool2	universal:fullloop:mainloop:oppool2
+ 162                        pushptr	universal:fullloop:mainloop:oppool2:pushptr
+ 163                        structoffset0	universal:fullloop:mainloop:oppool2:structoffset0
+ 164                        ptrarith	universal:fullloop:mainloop:oppool2:ptrarith
+ 165                        loadvarnode	universal:fullloop:mainloop:oppool2:loadvarnode
+ 166                        storevarnode	universal:fullloop:mainloop:oppool2:storevarnode
+ 167                            determinedbranch	universal:fullloop:mainloop:determinedbranch
+ 168                            unreachable	universal:fullloop:mainloop:unreachable
+ 169                            conditionalexe	universal:fullloop:mainloop:conditionalexe
+ 170                            condconst	universal:fullloop:mainloop:condconst
+ 171                       likelytrash	universal:fullloop:likelytrash
+ 172                       directwrite	universal:fullloop:directwrite
+ 173                       deadcode	universal:fullloop:deadcode
+ 174 repeat                donothing	universal:fullloop:donothing
+ 175                       unjustparams	universal:fullloop:unjustparams
+ 176                       starttypes	universal:fullloop:starttypes
+ 177                       activereturn	universal:fullloop:activereturn
+ 178                  mapped_local_sync	universal:mapped_local_sync
+ 179        !         outputprototype	universal:outputprototype
+ 180        !         inputprototype	universal:inputprototype
+ 181        !         prototypewarnings	universal:prototypewarnings
+ 182                  stop	universal:stop
+T
+init> option setaction register
+Set current action to register
+init> bk list actions
+H	bkactions	1	register	140
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         defaultparams	universal:defaultparams
+   4        !         extrapopsetup	universal:extrapopsetup
+   5 repeat           fullloop	universal:fullloop
+   6 repeat                mainloop	universal:fullloop:mainloop
+   7                            unreachable	universal:fullloop:mainloop:unreachable
+   8                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+   9                            heritage	universal:fullloop:mainloop:heritage
+  10                            segmentize	universal:fullloop:mainloop:segmentize
+  11        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  12                            spacebase	universal:fullloop:mainloop:spacebase
+  13                            nonzeromask	universal:fullloop:mainloop:nonzeromask
+  14 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  15 repeat                          oppool1	universal:fullloop:mainloop:stackstall:oppool1
+  16                             termorder	universal:fullloop:mainloop:stackstall:oppool1:termorder
+  17                             selectcse	universal:fullloop:mainloop:stackstall:oppool1:selectcse
+  18                             collect_terms	universal:fullloop:mainloop:stackstall:oppool1:collect_terms
+  19                             pullsub_multi	universal:fullloop:mainloop:stackstall:oppool1:pullsub_multi
+  20                             pullsub_indirect	universal:fullloop:mainloop:stackstall:oppool1:pullsub_indirect
+  21                             sborrow	universal:fullloop:mainloop:stackstall:oppool1:sborrow
+  22                             scarry	universal:fullloop:mainloop:stackstall:oppool1:scarry
+  23                             intlessequal	universal:fullloop:mainloop:stackstall:oppool1:intlessequal
+  24                             trivialarith	universal:fullloop:mainloop:stackstall:oppool1:trivialarith
+  25                             trivialbool	universal:fullloop:mainloop:stackstall:oppool1:trivialbool
+  26                             trivialshift	universal:fullloop:mainloop:stackstall:oppool1:trivialshift
+  27                             signshift	universal:fullloop:mainloop:stackstall:oppool1:signshift
+  28                             testsign	universal:fullloop:mainloop:stackstall:oppool1:testsign
+  29                             identityel	universal:fullloop:mainloop:stackstall:oppool1:identityel
+  30                             ormask	universal:fullloop:mainloop:stackstall:oppool1:ormask
+  31                             andmask	universal:fullloop:mainloop:stackstall:oppool1:andmask
+  32                             orconsume	universal:fullloop:mainloop:stackstall:oppool1:orconsume
+  33                             orcollapse	universal:fullloop:mainloop:stackstall:oppool1:orcollapse
+  34                             andorlump	universal:fullloop:mainloop:stackstall:oppool1:andorlump
+  35                             shiftbitops	universal:fullloop:mainloop:stackstall:oppool1:shiftbitops
+  36                             rightshiftand	universal:fullloop:mainloop:stackstall:oppool1:rightshiftand
+  37                             notdistribute	universal:fullloop:mainloop:stackstall:oppool1:notdistribute
+  38                             highorderand	universal:fullloop:mainloop:stackstall:oppool1:highorderand
+  39                             anddistribute	universal:fullloop:mainloop:stackstall:oppool1:anddistribute
+  40                             andcommute	universal:fullloop:mainloop:stackstall:oppool1:andcommute
+  41                             andpiece	universal:fullloop:mainloop:stackstall:oppool1:andpiece
+  42                             andzext	universal:fullloop:mainloop:stackstall:oppool1:andzext
+  43                             andcompare	universal:fullloop:mainloop:stackstall:oppool1:andcompare
+  44                             doublesub	universal:fullloop:mainloop:stackstall:oppool1:doublesub
+  45                             doubleshift	universal:fullloop:mainloop:stackstall:oppool1:doubleshift
+  46                             doublearithshift	universal:fullloop:mainloop:stackstall:oppool1:doublearithshift
+  47                             concatshift	universal:fullloop:mainloop:stackstall:oppool1:concatshift
+  48                             leftright	universal:fullloop:mainloop:stackstall:oppool1:leftright
+  49                             shiftcompare	universal:fullloop:mainloop:stackstall:oppool1:shiftcompare
+  50                             shift2mult	universal:fullloop:mainloop:stackstall:oppool1:shift2mult
+  51                             shiftpiece	universal:fullloop:mainloop:stackstall:oppool1:shiftpiece
+  52                             multicollapse	universal:fullloop:mainloop:stackstall:oppool1:multicollapse
+  53                             aliasupdate	universal:fullloop:mainloop:stackstall:oppool1:aliasupdate
+  54                             2comp2mult	universal:fullloop:mainloop:stackstall:oppool1:2comp2mult
+  55                             sub2add	universal:fullloop:mainloop:stackstall:oppool1:sub2add
+  56                             carryelim	universal:fullloop:mainloop:stackstall:oppool1:carryelim
+  57                             bxor2notequal	universal:fullloop:mainloop:stackstall:oppool1:bxor2notequal
+  58                             less2zero	universal:fullloop:mainloop:stackstall:oppool1:less2zero
+  59                             lessequal2zero	universal:fullloop:mainloop:stackstall:oppool1:lessequal2zero
+  60                             sless2zero	universal:fullloop:mainloop:stackstall:oppool1:sless2zero
+  61                             equal2zero	universal:fullloop:mainloop:stackstall:oppool1:equal2zero
+  62                             equal2constant	universal:fullloop:mainloop:stackstall:oppool1:equal2constant
+  63                             threewaycomp	universal:fullloop:mainloop:stackstall:oppool1:threewaycomp
+  64                             xorcollapse	universal:fullloop:mainloop:stackstall:oppool1:xorcollapse
+  65                             addmultcollapse	universal:fullloop:mainloop:stackstall:oppool1:addmultcollapse
+  66                             collapseconstants	universal:fullloop:mainloop:stackstall:oppool1:collapseconstants
+  67                             transformcpool	universal:fullloop:mainloop:stackstall:oppool1:transformcpool
+  68                             propagatecopy	universal:fullloop:mainloop:stackstall:oppool1:propagatecopy
+  69                             zexteliminate	universal:fullloop:mainloop:stackstall:oppool1:zexteliminate
+  70                             slesstoless	universal:fullloop:mainloop:stackstall:oppool1:slesstoless
+  71                             zextsless	universal:fullloop:mainloop:stackstall:oppool1:zextsless
+  72                             bitundistribute	universal:fullloop:mainloop:stackstall:oppool1:bitundistribute
+  73                             booleanundistribute	universal:fullloop:mainloop:stackstall:oppool1:booleanundistribute
+  74                             booleandedup	universal:fullloop:mainloop:stackstall:oppool1:booleandedup
+  75                             boolzext	universal:fullloop:mainloop:stackstall:oppool1:boolzext
+  76                             booleannegate	universal:fullloop:mainloop:stackstall:oppool1:booleannegate
+  77                             logic2bool	universal:fullloop:mainloop:stackstall:oppool1:logic2bool
+  78                             subextcomm	universal:fullloop:mainloop:stackstall:oppool1:subextcomm
+  79                             subcommute	universal:fullloop:mainloop:stackstall:oppool1:subcommute
+  80                             concatcommute	universal:fullloop:mainloop:stackstall:oppool1:concatcommute
+  81                             concatzext	universal:fullloop:mainloop:stackstall:oppool1:concatzext
+  82                             zextcommute	universal:fullloop:mainloop:stackstall:oppool1:zextcommute
+  83                             zextshiftzext	universal:fullloop:mainloop:stackstall:oppool1:zextshiftzext
+  84                             shiftand	universal:fullloop:mainloop:stackstall:oppool1:shiftand
+  85                             concatzero	universal:fullloop:mainloop:stackstall:oppool1:concatzero
+  86                             concatleftshift	universal:fullloop:mainloop:stackstall:oppool1:concatleftshift
+  87                             subzext	universal:fullloop:mainloop:stackstall:oppool1:subzext
+  88                             subcancel	universal:fullloop:mainloop:stackstall:oppool1:subcancel
+  89                             shiftsub	universal:fullloop:mainloop:stackstall:oppool1:shiftsub
+  90                             humptydumpty	universal:fullloop:mainloop:stackstall:oppool1:humptydumpty
+  91                             dumptyhump	universal:fullloop:mainloop:stackstall:oppool1:dumptyhump
+  92                             humptyor	universal:fullloop:mainloop:stackstall:oppool1:humptyor
+  93                             negateidentity	universal:fullloop:mainloop:stackstall:oppool1:negateidentity
+  94                             subnormal	universal:fullloop:mainloop:stackstall:oppool1:subnormal
+  95                             positivediv	universal:fullloop:mainloop:stackstall:oppool1:positivediv
+  96                             divtermadd	universal:fullloop:mainloop:stackstall:oppool1:divtermadd
+  97                             divtermadd2	universal:fullloop:mainloop:stackstall:oppool1:divtermadd2
+  98                             divopt	universal:fullloop:mainloop:stackstall:oppool1:divopt
+  99                             signform	universal:fullloop:mainloop:stackstall:oppool1:signform
+ 100                             signform2	universal:fullloop:mainloop:stackstall:oppool1:signform2
+ 101                             signdiv2	universal:fullloop:mainloop:stackstall:oppool1:signdiv2
+ 102                             divchain	universal:fullloop:mainloop:stackstall:oppool1:divchain
+ 103                             signnearmult	universal:fullloop:mainloop:stackstall:oppool1:signnearmult
+ 104                             modopt	universal:fullloop:mainloop:stackstall:oppool1:modopt
+ 105                             signmod2nopt	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt
+ 106                             signmod2nopt2	universal:fullloop:mainloop:stackstall:oppool1:signmod2nopt2
+ 107                             signmod2opt	universal:fullloop:mainloop:stackstall:oppool1:signmod2opt
+ 108                             switchsingle	universal:fullloop:mainloop:stackstall:oppool1:switchsingle
+ 109                             condnegate	universal:fullloop:mainloop:stackstall:oppool1:condnegate
+ 110                             boolnegate	universal:fullloop:mainloop:stackstall:oppool1:boolnegate
+ 111                             lessequal	universal:fullloop:mainloop:stackstall:oppool1:lessequal
+ 112                             lessnotequal	universal:fullloop:mainloop:stackstall:oppool1:lessnotequal
+ 113                             lessone	universal:fullloop:mainloop:stackstall:oppool1:lessone
+ 114                             rangemeld	universal:fullloop:mainloop:stackstall:oppool1:rangemeld
+ 115                             floatrange	universal:fullloop:mainloop:stackstall:oppool1:floatrange
+ 116                             piece2zext	universal:fullloop:mainloop:stackstall:oppool1:piece2zext
+ 117                             piece2sext	universal:fullloop:mainloop:stackstall:oppool1:piece2sext
+ 118                             popcountboolxor	universal:fullloop:mainloop:stackstall:oppool1:popcountboolxor
+ 119                             xorswap	universal:fullloop:mainloop:stackstall:oppool1:xorswap
+ 120                             lzcountshiftbool	universal:fullloop:mainloop:stackstall:oppool1:lzcountshiftbool
+ 121                             floatsign	universal:fullloop:mainloop:stackstall:oppool1:floatsign
+ 122                             orcompare	universal:fullloop:mainloop:stackstall:oppool1:orcompare
+ 123                             subvar_and	universal:fullloop:mainloop:stackstall:oppool1:subvar_and
+ 124                             subvar_subpiece	universal:fullloop:mainloop:stackstall:oppool1:subvar_subpiece
+ 125                             splitflow	universal:fullloop:mainloop:stackstall:oppool1:splitflow
+ 126                             ptrflow	universal:fullloop:mainloop:stackstall:oppool1:ptrflow
+ 127                             subvar_compzero	universal:fullloop:mainloop:stackstall:oppool1:subvar_compzero
+ 128                             subvar_shift	universal:fullloop:mainloop:stackstall:oppool1:subvar_shift
+ 129                             subvar_zext	universal:fullloop:mainloop:stackstall:oppool1:subvar_zext
+ 130                             subvar_sext	universal:fullloop:mainloop:stackstall:oppool1:subvar_sext
+ 131                             negatenegate	universal:fullloop:mainloop:stackstall:oppool1:negatenegate
+ 132                             funcptrencoding	universal:fullloop:mainloop:stackstall:oppool1:funcptrencoding
+ 133                             unsigned2float	universal:fullloop:mainloop:stackstall:oppool1:unsigned2float
+ 134                             int2floatcollapse	universal:fullloop:mainloop:stackstall:oppool1:int2floatcollapse
+ 135                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+ 136                                 multicse	universal:fullloop:mainloop:stackstall:multicse
+ 137                                 shadowvar	universal:fullloop:mainloop:stackstall:shadowvar
+ 138                            condconst	universal:fullloop:mainloop:condconst
+ 139                  stop	universal:stop
+T
+init> option setaction firstpass
+Set current action to firstpass
+init> bk list actions
+H	bkactions	1	firstpass	16
+   0        !    universal	universal
+   1                  start	universal:start
+   2                  constbase	universal:constbase
+   3        !         defaultparams	universal:defaultparams
+   4        !         extrapopsetup	universal:extrapopsetup
+   5 repeat           fullloop	universal:fullloop
+   6 repeat                mainloop	universal:fullloop:mainloop
+   7                            unreachable	universal:fullloop:mainloop:unreachable
+   8                            varnodeprops	universal:fullloop:mainloop:varnodeprops
+   9                            heritage	universal:fullloop:mainloop:heritage
+  10                            segmentize	universal:fullloop:mainloop:segmentize
+  11        !                   internalstorage	universal:fullloop:mainloop:internalstorage
+  12                            spacebase	universal:fullloop:mainloop:spacebase
+  13 repeat                     stackstall	universal:fullloop:mainloop:stackstall
+  14                                 lanedivide	universal:fullloop:mainloop:stackstall:lanedivide
+  15                  stop	universal:stop
+T
+init> option setaction decompile
+Set current action to decompile
+init> list action
+   0        !    universal
+   1                  start
+   2                  constbase
+   3        !         defaultparams
+   4        !         extrapopsetup
+   5        !         prototypetypes
+   6        !         funclink
+   7 repeat           fullloop
+   8 repeat                mainloop
+   9                            unreachable
+  10                            varnodeprops
+  11                            heritage
+  12                            paramdouble
+  13                            segmentize
+  14        !                   internalstorage
+  15                            forcegoto
+  16                            directwrite
+  17                            activeparam
+  18                            returnrecovery
+  19                            restrictlocal
+  20                            deadcode
+  21                            dynamicmapping
+  22                            spacebase
+  23                            nonzeromask
+  24                            infertypes
+  25                            restructure_varnode
+  26 repeat                     stackstall
+  27 repeat                          oppool1
+  28                             earlyremoval
+  29                             termorder
+  30                             selectcse
+  31                             collect_terms
+  32                             pullsub_multi
+  33                             pullsub_indirect
+  34                             push_multi
+  35                             sborrow
+  36                             scarry
+  37                             intlessequal
+  38                             trivialarith
+  39                             trivialbool
+  40                             trivialshift
+  41                             signshift
+  42                             testsign
+  43                             identityel
+  44                             ormask
+  45                             andmask
+  46                             orconsume
+  47                             orcollapse
+  48                             andorlump
+  49                             shiftbitops
+  50                             rightshiftand
+  51                             notdistribute
+  52                             highorderand
+  53                             anddistribute
+  54                             andcommute
+  55                             andpiece
+  56                             andzext
+  57                             andcompare
+  58                             doublesub
+  59                             doubleshift
+  60                             doublearithshift
+  61                             concatshift
+  62                             leftright
+  63                             shiftcompare
+  64                             shift2mult
+  65                             shiftpiece
+  66                             multicollapse
+  67                             aliasupdate
+  68                             2comp2mult
+  69                             sub2add
+  70                             carryelim
+  71                             bxor2notequal
+  72                             less2zero
+  73                             lessequal2zero
+  74                             sless2zero
+  75                             equal2zero
+  76                             equal2constant
+  77                             threewaycomp
+  78                             xorcollapse
+  79                             addmultcollapse
+  80                             collapseconstants
+  81                             transformcpool
+  82                             propagatecopy
+  83                             zexteliminate
+  84                             slesstoless
+  85                             zextsless
+  86                             bitundistribute
+  87                             booleanundistribute
+  88                             booleandedup
+  89                             boolzext
+  90                             booleannegate
+  91                             logic2bool
+  92                             subextcomm
+  93                             subcommute
+  94                             concatcommute
+  95                             concatzext
+  96                             zextcommute
+  97                             zextshiftzext
+  98                             shiftand
+  99                             concatzero
+ 100                             concatleftshift
+ 101                             subzext
+ 102                             subcancel
+ 103                             shiftsub
+ 104                             humptydumpty
+ 105                             dumptyhump
+ 106                             humptyor
+ 107                             negateidentity
+ 108                             subnormal
+ 109                             positivediv
+ 110                             divtermadd
+ 111                             divtermadd2
+ 112                             divopt
+ 113                             signform
+ 114                             signform2
+ 115                             signdiv2
+ 116                             divchain
+ 117                             signnearmult
+ 118                             modopt
+ 119                             signmod2nopt
+ 120                             signmod2nopt2
+ 121                             signmod2opt
+ 122                             switchsingle
+ 123                             condnegate
+ 124                             boolnegate
+ 125                             lessequal
+ 126                             lessnotequal
+ 127                             lessone
+ 128                             rangemeld
+ 129                             floatrange
+ 130                             piece2zext
+ 131                             piece2sext
+ 132                             popcountboolxor
+ 133                             xorswap
+ 134                             lzcountshiftbool
+ 135                             floatsign
+ 136                             orcompare
+ 137                             subvar_and
+ 138                             subvar_subpiece
+ 139                             splitflow
+ 140                             ptrflow
+ 141                             subvar_compzero
+ 142                             subvar_shift
+ 143                             subvar_zext
+ 144                             subvar_sext
+ 145                             negatenegate
+ 146                             conditionalmove
+ 147                             orpredicate
+ 148                             funcptrencoding
+ 149                             subfloat_convert
+ 150                             floatcast
+ 151                             ignorenan
+ 152                             unsigned2float
+ 153                             int2floatcollapse
+ 154                             ptraddundo
+ 155                             ptrsubundo
+ 156                             segment
+ 157                             piecepathology
+ 158                             doubleload
+ 159                             doublestore
+ 160                             doublein
+ 161                             doubleout
+
+ 162                                 lanedivide
+ 163                                 multicse
+ 164                                 shadowvar
+ 165                                 deindirect
+ 166                                 stackptrflow
+
+ 167                            redundbranch
+ 168                            blockstructure
+ 169                            constantptr
+ 170 repeat                     oppool2
+ 171                        pushptr
+ 172                        structoffset0
+ 173                        ptrarith
+ 174                        loadvarnode
+ 175                        storevarnode
+
+ 176                            determinedbranch
+ 177                            unreachable
+ 178                            nodejoin
+ 179                            conditionalexe
+ 180                            condconst
+
+ 181                       likelytrash
+ 182                       directwrite
+ 183                       deadcode
+ 184 repeat                donothing
+ 185                       switchnorm
+ 186                       returnsplit
+ 187                       unjustparams
+ 188                       starttypes
+ 189                       activereturn
+
+ 190                  mapped_local_sync
+ 191                  startcleanup
+ 192 repeat           cleanup
+ 193              multnegone
+ 194              addunsigned
+ 195              2comp2sub
+ 196              dumptyhumplate
+ 197              subright
+ 198              floatsigncleanup
+ 199              expandload
+ 200              ptrsubcharconstant
+ 201              extensionpush
+ 202              piecestructure
+ 203              andstructure
+ 204              splitcopy
+ 205              splitload
+ 206              splitstore
+ 207              stringcopy
+ 208              stringstore
+ 209              bitfield_store
+ 210              bitfield_out
+ 211              bitfield_load
+ 212              bitfield_in
+ 213              pull_absorb
+ 214              insert_absorb
+
+ 215                  prefercomplement
+ 216                  structuretransform
+ 217        !         assignhigh
+ 218        !         mergerequired
+ 219        !         markexplicit
+ 220        !         markimplied
+ 221        !         mergemultientry
+ 222        !         mergecopy
+ 223        !         dominantcopy
+ 224        !         dynamicsymbols
+ 225        !         markindirectonly
+ 226        !         mergeadjacent
+ 227        !         mergetype
+ 228        !         hideshadow
+ 229        !         copymarker
+ 230                  latedonothing
+ 231                  blockstructure
+ 232                  prefercomplement
+ 233                  structuretransform
+ 234        !         outputprototype
+ 235        !         inputprototype
+ 236        !         mapglobals
+ 237        !         dynamicsymbols
+ 238        !         namevars
+ 239        !         setcasts
+ 240                  finalstructure
+ 241        !         prototypewarnings
+ 242                  stop
+init> 

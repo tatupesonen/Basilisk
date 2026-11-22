@@ -86,19 +86,19 @@
 
   /* Surfaces, dark. */
   --bk-chrome: #15100e;
-  --bk-surface: #1d1815;
-  --bk-raised: #27211d;
+  --bk-surface: #221c18;
+  --bk-raised: #2c2520;
   --bk-selection: #45291c;
   --bk-cursor-line: #2c241f;
   --bk-linked: #262421;
   --bk-highlight: #4a3d17;
-  --bk-line: #2f2723;
+  --bk-line: #382f2a;
   --bk-line-strong: #463b35;
 
   /* Text, dark. */
   --bk-text: #ece5dd;
-  --bk-text-2: #b3a89e;
-  --bk-text-muted: #968c82;
+  --bk-text-2: #c8bdb3;
+  --bk-text-muted: #a69b91;
   --bk-accent: #ff6a2b;
   --bk-accent-text: #ff8a57;
   --bk-on-accent: #150f0d;

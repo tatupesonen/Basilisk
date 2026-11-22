@@ -35,24 +35,31 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <h1 id="hero-title">Reverse engineering, rebuilt in Rust.</h1>
           <p class="bk-lede">
             Basilisk is a reimplementation of <a class="bk-link" href={ghidra}>Ghidra</a> — loaders, SLEIGH, p-code,
-            analysis, the decompiler and a desktop interface — that reads Ghidra’s processor specifications unchanged.
-            It aims for full parity first, then better.
+            analysis, the decompiler and a desktop interface. It reads Ghidra’s processor specifications unchanged.
+            Today it decodes instructions and lifts them to p-code for every processor Ghidra ships; the decompiler is being ported.
           </p>
           <div class="bk-actions">
             <a class="bk-btn bk-btn-primary" href={`${base}docs/`}>Read the documentation <Icon name="arrow-right" size="16" /></a>
             <a class="bk-btn bk-btn-secondary" href={`${base}status/`}>What works today</a>
           </div>
         </div>
-        <div class="bk-hero-mark" aria-hidden="true">
-          <svg class="bk-iris" viewBox="0 0 400 400" fill="none" stroke="currentColor">
-            <circle cx="200" cy="200" r="60" stroke-width="1" />
-            <circle cx="200" cy="200" r="84" stroke-width="1" />
-            <circle cx="200" cy="200" r="110" stroke-width="1" />
-            <circle cx="200" cy="200" r="140" stroke-width="1" />
-            <circle cx="200" cy="200" r="174" stroke-width="1" />
-            <circle cx="200" cy="200" r="199" stroke-width="1" />
-          </svg>
-          <Mark size="100%" />
+        <div class="bk-hero-term">
+          <div class="bk-terminal">
+            <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />basilisk sleigh decode</div>
+            <pre><code><span class="p">$ </span><span class="f">basilisk</span> sleigh decode --language x86:LE:64:default \
+    --base 0x401000 --hex 554889e58b45fc83c0015dc3 \
+    --format text --no-pcode
+<span class="ln" style="--i:0"><span class="d">0x401000  55        </span> <span class="m">PUSH</span> <span class="r">RBP</span></span>
+<span class="ln" style="--i:1"><span class="d">0x401001  48 89 e5  </span> <span class="m">MOV</span>  <span class="r">RBP</span>,<span class="r">RSP</span></span>
+<span class="ln" style="--i:2"><span class="d">0x401004  8b 45 fc  </span> <span class="m">MOV</span>  <span class="r">EAX</span>,dword ptr [<span class="r">RBP</span> + <span class="n">-0x4</span>]</span>
+<span class="ln" style="--i:3"><span class="d">0x401007  83 c0 01  </span> <span class="m">ADD</span>  <span class="r">EAX</span>,<span class="n">0x1</span></span>
+<span class="ln" style="--i:4"><span class="d">0x40100a  5d        </span> <span class="m">POP</span>  <span class="r">RBP</span></span>
+<span class="ln" style="--i:5"><span class="d">0x40100b  c3        </span> <span class="m">RET</span></span></code></pre>
+          </div>
+          <p class="bk-hero-term-note">
+            Works today, for all 150 of Ghidra’s processor languages. Column spacing is trimmed here; the text is the
+            command’s. <a class="bk-link" href={`${base}docs/getting-started/first-disassembly/`}>Try it</a>
+          </p>
         </div>
       </div>
       <div class="bk-hero-shot">
@@ -60,7 +67,6 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           name="main"
           alt="Basilisk's main window: Program Trees and Symbol Tree on the left, the Listing in the centre, the Decompiler on the right and the Console below, showing the function main of the demo program."
           caption="The CodeBrowser layout Ghidra users know: Listing, Decompiler, trees and tables, on Basilisk’s built-in demo program."
-          tag="bk-ui · screenshot test"
           sizes="(min-width: 1200px) 1152px, calc(100vw - 32px)"
           widths={[640, 960, 1440, 2000]}
           eager
@@ -76,8 +82,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-eyebrow"><span class="bk-addr">0x10</span> The interface</p>
           <h2 class="bk-h2" id="interface-title">If you know Ghidra, you already know Basilisk.</h2>
           <p class="bk-lede">
-            The same windows in the same places, Ghidra’s names, menus and default keys — with type, colour and
-            spacing tuned for long sessions, and a few additions that take nothing away.
+            The windows are where Ghidra puts them, with Ghidra’s names, menus and default keys. It runs on a built-in
+            demo program until Basilisk can load real binaries.
           </p>
         </div>
       </div>
@@ -90,7 +96,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         </div>
         <div class="bk-feature">
           <h3><Icon name="magnifying-glass" size="18" />A palette for everything</h3>
-          <p>Every action, function, label, string and address, fuzzy-matched from one field.</p>
+          <p>One field searches every action, function, label, string and address.</p>
           <p><Kbd keys="Ctrl+Shift+P" /></p>
         </div>
         <div class="bk-feature">
@@ -99,7 +105,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
         </div>
         <div class="bk-feature">
           <h3><Icon name="circle-half" size="18" />Calm, in two themes</h3>
-          <p>Warm low-glare darks and a light theme; twelve syntax colours that carry meaning, not decoration.</p>
+          <p>Both themes use the same twelve syntax colours, one per kind of token.</p>
         </div>
       </div>
 
@@ -136,8 +142,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-eyebrow"><span class="bk-addr">0x20</span> Listing and Decompiler</p>
           <h2 class="bk-h2" id="code-title">Colour that means something.</h2>
           <p class="bk-lede">
-            Twelve syntax roles, each a distinct hue at similar lightness, measured for contrast in both themes. Put
-            the cursor on a statement and the Listing marks the instructions it came from.
+            Put the cursor on a statement in the Decompiler and the Listing marks the instructions it came from. Each
+            of the twelve kinds of token has its own colour, checked for contrast in both themes.
           </p>
         </div>
       </div>
@@ -169,8 +175,8 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <p class="bk-eyebrow"><span class="bk-addr">0x30</span> Where it stands</p>
           <h2 class="bk-h2" id="status-title">Early, and honest about it.</h2>
           <p class="bk-lede">
-            Basilisk is being built foundations first. This summary is generated from the project’s parity matrix
-            (updated {parity.updated}), so it cannot claim more than the matrix does.
+            Basilisk is built from the bottom up: language files, then SLEIGH, then the decompiler, then programs and
+            analysis. The summary on the right is generated from the project’s parity matrix (updated {parity.updated}).
           </p>
         </div>
         <a class="bk-arrow-link" href={`${base}status/`}>Full status matrix <Icon name="arrow-right" size="16" /></a>
@@ -182,20 +188,21 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <h3>Works today</h3>
             <ul class="bk-checklist">
               <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The desktop interface</strong> on a built-in demo program: Listing, Decompiler view, trees, tables, search, Go To, the palette, rename and comment dialogs, docking and pop-out windows.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Ghidra’s language files</strong>: <code>.ldefs</code>, <code>.pspec</code> and <code>.opinion</code> read; all 150 SLEIGH specifications parse.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Compiled SLEIGH</strong>: all 150 reference <code>.sla</code> files read and written back byte for byte.</span></li>
-              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: ELF parsing, the p-code model and float formats, the GNU disassembler behind a safe API.</span></li>
-            </ul>
-          </div>
-          <div class="bk-panel">
-            <h3>Not yet</h3>
-            <ul class="bk-checklist">
-              <li class="no"><Icon name="circle-dashed" size="16" /><span>Opening a real binary, disassembly, analysis, the decompiler and Python scripting. Each has its milestone on the <a class="bk-link" href={`${base}roadmap/`}>roadmap</a>.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Instruction decoding and p-code for every processor Ghidra ships</strong>: <code>basilisk sleigh decode</code> decodes bytes with any of the 150 SLEIGH languages, with the same result as Ghidra’s engine.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The SLEIGH compiler</strong>: <code>basilisk sleigh compile</code> produces the same <code>.sla</code> content as Ghidra’s compiler for all 150 specifications, in under five seconds for the lot.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>The first parts of the decompiler</strong>: types, value ranges, calling conventions and control-flow structuring, each checked against Ghidra’s decompiler.</span></li>
+              <li class="yes"><Icon name="check" weight="bold" size="16" /><span><strong>Foundations</strong>: Ghidra’s language and compiler specifications read unchanged, ELF parsing, the p-code model and float formats.</span></li>
             </ul>
           </div>
         </div>
         <div>
           <StatusSummary />
+          <div class="bk-panel" style="margin-top: var(--bk-space-6)">
+            <h3>Not yet</h3>
+            <ul class="bk-checklist">
+              <li class="no"><Icon name="circle-dashed" size="16" /><span>Opening a real binary, analysis, decompiling a function and Python scripting. Each has its milestone on the <a class="bk-link" href={`${base}roadmap/`}>roadmap</a>.</span></li>
+            </ul>
+          </div>
         </div>
       </div>
       <Milestones />
@@ -210,42 +217,36 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
           <h2 class="bk-h2" id="why-title">Everything Ghidra does. Then better.</h2>
         </div>
       </div>
+      <dl class="bk-stats">
+        <div><dt>150 / 150</dt><dd>SLEIGH specifications compile to the same content as with Ghidra’s compiler</dd></div>
+        <div><dt>39</dt><dd>processor families decode and lift to p-code like Ghidra’s engine</dd></div>
+        <div><dt>2,400+</dt><dd>tests, most of them comparing against Ghidra on the same input</dd></div>
+        <div><dt>3</dt><dd>systems built and tested on every change: Linux, macOS, Windows</dd></div>
+      </dl>
       <div class="bk-why">
         <div>
-          <span class="bk-why-icon"><Icon name="equals" size="20" /></span>
           <h3>Parity first</h3>
           <p>Module by module, headless core first. Ghidra’s processor specifications work unchanged, and each feature lands with Ghidra’s own tests for it ported.</p>
-          <span class="bk-tag">PLAN · goal 1</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="arrow-up-right" size="20" /></span>
           <h3>Better where it can be</h3>
-          <p>Not a line-by-line port: behaviour from Ghidra, structure from Rust, and every deliberate difference written down.</p>
-          <span class="bk-tag">ADR-001</span>
+          <p>Behaviour comes from Ghidra and structure from Rust. Each deliberate difference is recorded with its reason.</p>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="lightning" size="20" /></span>
           <h3>Fast, and never waiting</h3>
           <p>Language load, disassembly and decompilation at least as fast as Ghidra’s, analysis in parallel where safe, and an interface that never blocks.</p>
-          <span class="bk-tag">ADR-012</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="shield-check" size="20" /></span>
           <h3>Trustworthy</h3>
-          <p>Panic-free on hostile binaries, fuzzed parsers, and output checked against Ghidra itself.</p>
-          <span class="bk-tag">ADR-007 · ADR-009</span>
+          <p>Parsers are fuzzed and must return an error, not crash, on a malformed file. Output is compared with Ghidra’s on the same input.</p>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="code" size="20" /></span>
           <h3>Python plugins</h3>
           <p>Scripts, analyzers, loaders and exporters in Python through an embedded interpreter, and Basilisk importable from Python. Planned for milestone M9.</p>
-          <span class="bk-tag">ADR-014 · planned</span>
         </div>
         <div>
-          <span class="bk-why-icon"><Icon name="desktop" size="20" /></span>
           <h3>One binary, three systems</h3>
-          <p>Windows, macOS and Linux are all first-class, checked in CI on every change. Basilisk ships as a single binary.</p>
-          <span class="bk-tag">ADR-022</span>
+          <p>Windows, macOS and Linux are built and tested on every change. Basilisk is a single binary.</p>
         </div>
       </div>
     </div>
@@ -262,15 +263,23 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <li><span><strong>Install Rust</strong> with rustup; it picks up the pinned toolchain from <code>rust-toolchain.toml</code>.</span></li>
             <li><span><strong>Clone and run.</strong> The interface opens on its demo program.</span></li>
             <li><span><strong>Find your way</strong> with the keys you know from Ghidra.</span></li>
+            <li><span><strong>Disassemble something.</strong> <a class="bk-link" href={`${base}docs/getting-started/first-disassembly/`}>Your first disassembly</a> takes five minutes.</span></li>
           </ol>
         </div>
         <div>
           <div class="bk-terminal">
             <div class="bk-terminal-bar"><Icon name="terminal-window" size="15" />shell</div>
             <pre><code><span class="p">$ </span>git clone {repo}
-<span class="p">$ </span>cd basilisk
+<span class="p">$ </span>cd Basilisk
 <span class="p">$ </span><span class="f">cargo</span> run --release -p basilisk
-<span class="c"># the interface opens on its built-in demo program</span></code></pre>
+<span class="c"># the interface opens on its built-in demo program</span>
+
+<span class="c"># or decode bytes with one of Ghidra's languages</span>
+<span class="p">$ </span><span class="f">basilisk</span> sleigh decode --language x86:LE:64:default \
+    --hex 554889e5c3 --format text --no-pcode
+0x0  55                       PUSH RBP
+0x1  48 89 e5                 MOV RBP,RSP
+0x4  c3                       RET</code></pre>
           </div>
           <div class="bk-keys-row">
             <div><span>Command palette</span><Kbd keys="Ctrl+Shift+P" /></div>
@@ -281,7 +290,7 @@ const roles = ['mnemonic', 'register', 'number', 'label', 'function', 'global', 
             <div><span>References to</span><Kbd keys="Ctrl+Shift+F" /></div>
           </div>
           <p class="bk-muted" style="margin-top: var(--bk-space-5); font-size: var(--bk-text-sm)">
-            Ctrl is Cmd on macOS, as in Ghidra. <a class="bk-link" href={`${base}docs/getting-started/build/`}>Build instructions</a>
+            Ctrl is Cmd on macOS, as in Ghidra. <a class="bk-link" href={`${base}docs/getting-started/build/`}>Build instructions</a> · <a class="bk-link" href={`${base}docs/`}>Documentation</a>
           </p>
         </div>
       </div>

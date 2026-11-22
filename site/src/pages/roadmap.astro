@@ -9,7 +9,7 @@ import '../styles/status.css';
 const ms = loadMilestones();
 const linkCode = (code: string) =>
   /^(features|research|inventory)\/[\w./-]+\.md$/.test(code) ? `${repo}/blob/master/docs/${code}` : undefined;
-const stateLabel = { done: 'Complete', current: 'Current', planned: 'Planned' } as const;
+const stateLabel = { done: 'Complete', partial: 'Mostly complete', current: 'Current', planned: 'Planned' } as const;
 ---
 
 <SiteLayout
@@ -37,7 +37,7 @@ const stateLabel = { done: 'Complete', current: 'Current', planned: 'Planned' } 
             <li class={`rm-${m.state}`} id={m.id.toLowerCase()} aria-current={m.state === 'current' ? 'step' : undefined}>
               <div class="bk-rm-marker" aria-hidden="true">
                 <span class="bk-rm-node">
-                  {m.state === 'done' && <Icon name="check" weight="bold" size="14" />}
+                  {(m.state === 'done' || m.state === 'partial') && <Icon name="check" weight="bold" size="14" />}
                   {m.state === 'current' && <span class="bk-pupil" />}
                 </span>
               </div>

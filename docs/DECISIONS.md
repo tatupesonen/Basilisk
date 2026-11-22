@@ -1487,3 +1487,292 @@ where Ghidra consults that state. D07's function state implements the
 trait; D05 ships a table-driven implementation for its own tests.
 Whether the trait should be split is an open item of the D05
 specification, to be settled by the D05 track.
+
+## ADR-047 — `basilisk disasm` is reserved for the flow-following disassembler; the linear sweep is `basilisk sleigh decode`
+(Coordinator, 2026-11-15, on the owner's decision: "Yes it should be different name".)
+
+**Context.** M1 delivered a command named `basilisk disasm` (ADR-023). It
+is a linear sweep over raw bytes: decode at an address, advance by the
+instruction's length, repeat. It exists to drive the SLEIGH decoder and
+to be compared record for record with the reference tool `pcodedump`,
+which does the same sweep around Ghidra's C++ engine. Ghidra's own
+disassembler is not linear: it follows the flow of control from entry
+points and propagates context along each path. The name `disasm` made
+the M1 command look like Basilisk's version of that disassembler, and
+the site presented it as such.
+
+**Decision.**
+* The linear sweep is **`basilisk sleigh decode`**, beside
+  `basilisk sleigh compile`. Options, output formats and exit statuses
+  are unchanged; the differential tests against `pcodedump` use it.
+* **`basilisk disasm` is reserved** for the flow-following disassembler
+  of M5 (`bk-disasm`): given a loadable file it disassembles from entry
+  points and symbols by following flow. Until then the name prints a
+  pointer to `sleigh decode` and exits with status 2.
+* Whole-program analysis (function-start patterns, switch tables,
+  references) stays with `basilisk analyze`.
+* Documentation calls what exists today "instruction decoding", not
+  "disassembly", wherever the difference matters.
+
+**Consequences.** ADR-023's sentence about `basilisk disasm` writing
+`pcodedump`'s format now applies to `sleigh decode`. Feature specs,
+`tools/reference/README.md`, `PERF.md` and the site use the new name;
+historical track reports under `docs/agents/` keep the old one.
+
+## ADR-048 — ADR-025 3c is confirmed: the output is built as PrintC's emission tree, then printed
+(Coordinator, 2026-11-16, from track D16a `decomp-out-spike`; its report is
+the section "Report" of `docs/agents/decomp-out-spike.md`, its evidence
+`docs/research/decomp-out-spike/`.)
+
+**Context.** ADR-025 item 3c — a typed output tree that is built first and
+printed afterwards — was conditional on a spike (`decomp-plan.md` 8.1). The
+spike instrumented Ghidra's printer (`tools/reference/patches-instr/`) to
+log, per printed document, the printer's decisions (structural events and
+every reverse-Polish push) and, separately, the resulting `Emit` calls. A
+prototype built a tree from the first log alone and printed it.
+
+**Evidence.** 169 scripts (the 93 data tests, 72 research fragments, 4
+inputs written for unreached cases) in five variants (`print C`,
+`print C xml`, `print C flat`, `print language java`, non-default printer
+options): 3,231 of 3,231 documents and 618,300 of 618,300 `Emit` calls
+reproduced, on the build host and on the Mac, with no emission interleaved
+with the expression stack (0 of 252,735 direct emits). Parentheses and the
+modifier word are recomputed from the tree with no difference. The one
+piece of `Emit` state `PrintC` reads back, `hasPendingPrint`
+(`printc.cc:3043`), is reproduced from the printer's own calls. The
+instrumented console's output is byte-identical to the reference
+console's (1,014 of 1,014 runs on the build host; on the Mac all but
+`print C types`, which the reference itself prints differently from run
+to run, GHIDRA-BUGS 43).
+
+**Decision.**
+* 3c stands. **D16b (`bk-decomp-out`) builds the emission tree**: one node
+  per thing printed, not per block of the structured hierarchy — a block
+  printed twice in two modes (`flat`, `no_branch`, `only_branch`) is two
+  nodes. Node kinds and the facts each carries are the table in the
+  spike's report; header comments get a node kind of their own (the
+  prototype told them apart by their text, which the port must not do).
+* **D16c (`bk-decomp-print`) prints from the tree and the printer options
+  alone.** Parenthesis decisions, the modifier word and pending-print
+  state are the emitter's, computed while printing.
+* **D16c is accepted on logged trees**: `bk-testkit` gets a reader for the
+  printer log (`.tree`/`.emit`, the versioned format in
+  `tools/reference/README.md`, "The printer log"). Logs and expected text
+  come from the same machine (`floatprint` differs between the two
+  reference builds); `print C types` text is excluded. The spike compared
+  `Emit` calls, not the pretty printer's text: `EmitPrettyPrint` is
+  covered by D16c's own tests (plan 8.1).
+* **Operator tokens belong to a printer-language instance**, not to
+  statics as in Ghidra, so that functions print in parallel.
+* **Not yet shown** (never reached by the corpus; D16b adds inputs before
+  claiming them): the tokens `new_op` and `instanceof` (they need a Java
+  constant pool) and `unary_plus` (never pushed by Ghidra); the nodes
+  `constructor`, `opBranch` and `docSingleGlobal` and the flags
+  `bestfit`, `force_scinote`, `force_pointer`, `option_unplaced`, which
+  have no caller or are never set in Ghidra; `nofallthru` in flat mode
+  (dead code).
+
+**The prototype's removal point.** The Python prototype under
+`docs/research/decomp-out-spike/prototype/` is evidence, not product. It
+stays until D16c (`bk-decomp-print`) is merged and accepted on the logged
+trees, because until then it is the most exact statement of the node
+kinds; then it is deleted from `master` and this ADR is given the commit
+where it last existed. The instrumentation under
+`tools/reference/patches-instr/` stays.
+
+**Consequences.** `decomp-plan.md` 8.1's fall-back ("if the spike's answer
+is no") is not needed. The specifications of D16b and D16c are written
+from the spike's report and Ghidra's printer source. Ghidra's flat mode
+and `print C types` are defective (GHIDRA-BUGS 40, 43, 44); D16b's spec
+says what Basilisk prints there.
+
+## ADR-049 — The program side is area crates and one assembling crate
+(Coordinator, 2026-11-16, from track `plan-programs`; `features/program-plan.md` section 2.)
+
+Area crates — `bk-memory`, `bk-refs`, `bk-symbols`, `bk-datatypes`,
+`bk-listing`, `bk-functions` — own their tables and the rules inside one
+area. Effects that cross areas are written once, in `bk-program`, at the
+points of Ghidra's manager protocol. Beside them: `bk-addr`, `bk-task`
+(the monitor type), `bk-cmd`, `bk-reloc-*`, `bk-cparser`, `bk-export`,
+`bk-ui-program`, `bk-decomp-host`. This replaces the single `bk-program`,
+`bk-datatypes`, `bk-store`, `bk-loader*` rows of the crate map (ADR-013).
+
+## ADR-050 — ADR-003 is decided in two parts: the table interface now, the engine by the finished study
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 3.)
+
+`bk-store`'s table interface is fixed by its specification; no track
+waits for the engine. The engine is chosen when the paused storage study
+is finished; the study adds a memory-first candidate. Its only numbers so
+far are from an aborted run (LMDB about 1 million instructions a second
+on load, `redb` 0.2 to 0.4 million) and decide nothing. **The engine is
+pure Rust** (owner, 2026-11-16: "Pure Rust only"; ADR-005): engines
+written in C, LMDB among them, are out of the comparison whatever their
+numbers; the study compares Rust candidates and the memory-first design.
+
+## ADR-051 — One logical change log; readers use snapshots
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 3.)
+
+One log of logical changes is the source of undo, of change sets and of
+events. Readers work on snapshots while one writer changes the program; a
+snapshot is the frozen state ADR-044 requires for a decompilation, and it
+is what keeps the interface from blocking. Undo survives a save. How undo
+of bulk steps is stored stays open until the storage study ends. This
+differs from Ghidra, whose undo is page deltas of its database.
+
+## ADR-052 — Ids are never reused
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+An id given to a symbol, a function, a variable or any other record is
+not given again in that program, also after undo. Ghidra reuses record
+keys after undo (`db/Table.java:605–611`; GHIDRA-BUGS 52). Variables have
+an identity of their own. The Python bindings rely on this
+(`plugin-binding-constraints.md`).
+
+## ADR-053 — Parity of the Java side is measured at six levels with a program dump
+(Coordinator, 2026-11-16, from `plan-programs`; plan section 4. The counterpart of ADR-027.)
+
+Ghidra, built on the build host, runs headless with a script that writes
+a Basilisk-defined, versioned text dump of the program: 21 sorted
+sections, no Ghidra ids. Basilisk writes the same format, and can load a
+dump, so an analyzer is accepted from Ghidra's state before it, as
+decompiler passes are. Levels P0 to P5 run from a loader's result to
+whole analysis; runs of Ghidra with a subset of analyzers are an accepted
+oracle. The oracle track is `ref-headless` (P00). Not yet verified by
+running: headless compilation of the script, timings, isolation of
+one-time analyzers.
+
+## ADR-054 — ADR-002 covers the data files of Ghidra's features
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+Data files under `Ghidra/Features/*/data` (patterns, type archives,
+Function ID databases, symbol tables) are read in place, like processor
+data, and never copied into the repository. **The packed databases among
+them (`.gdt`, `.fidb`) are read, read-only** (owner, 2026-11-16: "Yes,
+read-only"): a small reader of Ghidra's packed database format, used for
+the shipped data-type archives and Function ID databases and for a
+user's own archives. This narrows ADR-003, which still stands for
+programs and projects: Basilisk does not read or write those.
+
+## ADR-055 — Loaders are written against a `LoadTarget` trait; format parsers hold no program code
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+A loader calls a trait for everything it creates. A recording
+implementation makes a loader testable against Ghidra's dump before the
+program model exists; the program model implements the same trait.
+Format parsers (`bk-elf`, `bk-pe`, `bk-macho`, …) depend only on `bk-bin`
+(as today). Loaders give typed diagnostics and a partial program from a
+damaged file, where Ghidra often gives up.
+
+## ADR-056 — Analysis improvements live in profiles
+(Coordinator, 2026-11-16, from `plan-programs`; ADR-025 applied to analysis.)
+
+The `ghidra` analysis profile reproduces Ghidra's analyzers, their order
+and options, and is what the oracle is compared with. Improvements are
+other, named profiles.
+
+## ADR-057 — The corpus of test binaries is built by the project
+(Coordinator, 2026-11-16, from `plan-programs`.)
+
+Ghidra's public tree has no test binaries (they are in a repository that
+is not public), and its loaders have 54 tests in all. The project builds
+its corpus: compiler-built samples per format and processor, Ghidra's
+p-code test sources, deliberately damaged files, and named system
+binaries, recorded in a manifest with how each is obtained. `LOOP.md`'s
+rule about referring to Ghidra's test resources in place applies only to
+the three source directories that exist. **System binaries and samples
+built with Microsoft's compiler may be kept on the build host and the
+testbed, uncommitted** (owner, 2026-11-16: "Yes, and you can also put
+them on testbed"); the manifest says how each is obtained, and nothing
+proprietary enters the public repository.
+
+## ADR-058 — The emulator is an interpreter; a JIT is left for later
+(Coordinator, 2026-11-16, on the owner's decision: "Leave JIT for later then.")
+
+**Context.** 45,439 of the 71,882 lines of Ghidra's `Framework/Emulation`
+are a JIT (`ghidra.pcode.emu.jit.*`) that compiles p-code to JVM bytecode.
+It cannot be ported as it is. A JIT gives only speed, and only for long
+emulations (fuzzing, unpacking, whole-program runs); the interpreter
+defines the semantics, and both must give the same results.
+
+**Decision.** `bk-emu` (M6) ports the p-code interpreter and is accepted
+on its parity with Ghidra's. No JIT is planned or designed for now. The
+interpreter is benchmarked against Ghidra's emulator, with and without
+its JIT, on the same workloads, and the numbers go into `PERF.md`. A JIT
+is reconsidered only if those numbers show a gap on a use that matters;
+it would then be a Basilisk design, not a port, and would need its own
+decision: it means `unsafe`, executable memory with different rules on
+each of the three systems, code Miri cannot check, and either a large
+dependency or a backend per host processor (ADR-005, ADR-011, ADR-020).
+
+**Consequences.** The size of M6's emulator item is the 26,000 lines
+without the JIT. Ghidra's JIT-specific classes and their tests are marked
+not applicable in the test checklist, with this ADR as the reason, until
+a JIT exists.
+
+## ADR-059 — D07 is three crates; a pipeline belongs to one decompilation
+(Coordinator, 2026-11-22, from track `spec-decomp-wave3`; `features/decomp-core.md`, and finding 1 and 2 of "The plan compared with Ghidra's source" in `docs/agents/spec-decomp-wave3.md`.)
+
+The Ghidra code the plan gave to D07 is about 16,000 lines, not 10,000,
+and falls into three parts with different users. `bk-decomp-core` holds
+state (function and architecture state, block surgery, the call-spec
+list, dump loading, the table of high variables); `bk-decomp-pipeline`
+the action framework, units, profiles and options; `bk-decomp-ops` the
+compound operations. Pipeline and ops depend on core and not on each
+other. Tracks D07a, D07b, D07c; after D07a the other two, D08 and D10 can
+run in parallel. The architecture's action database becomes a frozen
+`PipelineConfig` plus one `Pipeline` per decompilation (the `jumptable`
+pipeline is built on first use); the console and the data-test runner
+keep one pipeline per root across functions, which is Ghidra's shared
+instance. Amends ADR-026 and the D07 row of `decomp-plan.md`.
+
+## ADR-060 — `bk-decomp-typeop` is below `bk-decomp-core`
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`; finding 3.)
+
+Both directions exist in Ghidra's source (`architecture.cc:416`, `614`;
+`funcdata.cc:917–1117`; `typeop.cc:693–868`, `915`). Typeop owns the
+type-operator table, the cast strategies, union resolution and the union
+map, and reads function state through a trait (`TypeOpEnv`: call specs,
+the prototype, user ops, high types) that core implements; core depends
+on typeop. D08 needs D05, D02, D03 and D06, not D07. Amends the crate
+drawing of `decomp-plan.md` section 2.
+
+## ADR-061 — A function is a record in program state and the state of one decompilation
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`. Extends ADR-044.)
+
+What Ghidra keeps in a `Funcdata` across decompilations — the prototype,
+overrides, override jump tables, `no_code` — is a `FunctionRecord`,
+frozen while functions are decompiled. A decompilation works on a copy
+and returns its changes, with the symbol overlay, the type fork, built-in
+user ops, comments and statistics, to be committed in operation order.
+
+## ADR-062 — The table of high variables is core's; D05 reports every varnode change that concerns one
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`; misfit 1 and finding 7.)
+
+In Ghidra every `Varnode` setter forwards to its `HighVariable`
+(`varnode.cc:371–651`). The table of high variables and `HighVariable`'s
+own methods (the lazily computed type, name representative, symbol; about
+870 lines of `variable.cc`) are `bk-decomp-core`'s; `Merge`, the
+intersection tests, the piece groups' cover logic and the merge actions
+stay D14's. `bk-decomp-ir` records an event for every varnode change
+Ghidra forwards — flags dirty, cover dirty, type dirty, symbol dirty, set
+symbol, set symbol reference, removed — in call order, in a queue core
+drains before a high is read. With this the only chain the source forces
+is D05 → D07a → everything else → D17: D14's merge passes do not need
+D11, and D16b needs D07, D08 and the loaded structure, not D14's merge
+code. Amends the D14 row and the critical path of `decomp-plan.md`.
+
+## ADR-063 — Where Ghidra's action framework and options are undefined or depend on the host, Basilisk defines them; where they are only odd, the `ghidra` profile reproduces them
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`. ADR-024's form.)
+
+Defined: a root action without members is an error (GHIDRA-BUGS 54); a
+group stopped after its last member prints its name (53); `<function>`
+with an unknown child is an error (58); numeric option parameters are
+read as the libstdc++ build reads them (55, ADR-021); `TermOrder` and
+`DynamicHash` sort stably (ADR-040). Reproduced on purpose, each pinned
+by an oracle table or a capture: the items of `features/decomp-core.md`
+section 8 — among them that `option nanignore none` and `togglerule` are
+lost when the root is derived again (56) and that `normalizesetup`
+applies once per root instance (57). Option order is part of a script,
+so the `ghidra` profile keeps these; how the parallel driver treats
+`normalizesetup` is decided in D17.
+

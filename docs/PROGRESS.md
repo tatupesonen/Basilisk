@@ -1,12 +1,12 @@
 # Progress
 
-## Now — RESUME HERE (2026-11-15 02:02)
+## Now — RESUME HERE (2026-11-22 17:42) — two agents running; see the next paragraph
 
 Read `docs/DIRECTION.md` first (owner decisions and working rules), then
 `docs/LOOP.md`.
 
 **Milestones M0 and M2 are complete and on `master`**; `master`
-(`9fbadf3` plus docs) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
+(`3149b56`) also has `bk-decomp-range`, `bk-decomp-cfg`, the decompiler oracle (D00), `bk-ui`, the GNU disassembler crates,
 `bk-sla`, `bk-decomp-types`, `bk-cspec`, `bk-sleigh` parts 1 and 2
 (decoding and p-code generation, `basilisk disasm`), the whole SLEIGH
 compiler (`bk-sleigh-compiler`, `basilisk sleigh compile`,
@@ -104,7 +104,267 @@ whose assets returned 404; a redeploy (run 43606229878) built it for
 `/Basilisk/` and every asset on the home and docs pages answers 200. A
 rename of the repository needs a redeploy.
 
-### Running (state at 2026-11-15 02:02)
+### Running (state at 2026-11-15 02:27)
+
+**RESUMED 2026-11-22 17:37 (owner: "Continue", "With two agents"). The
+cap is two.** State found: `master` and CI green; the wave 3 spec agent
+had handed back on 2026-11-16 (D07 specified to "can start", D08 an
+outline); D05's step A (the review's must-fix items) was ready, gate
+green.
+* **Merged (documents): `spec-decomp-wave3`** — `features/decomp-core.md`
+  (D07, 1,581 lines), the D08 outline, "the plan compared with Ghidra's
+  source" (14 findings), two oracle prototypes. Recorded from it:
+  **ADR-059 to ADR-063** (D07 is three crates `bk-decomp-core`,
+  `-pipeline`, `-ops`; typeop is below core; the function record; the
+  high table is core's and D05 reports varnode changes as events;
+  defined and reproduced framework oddities), **`decomp-plan.md`
+  section 13** (the chain the source forces is D05 → D07a → everything
+  else → D17), GHIDRA-BUGS 53 to 62 and a corrected observation.
+* **Merged 18:00: D05 `decomp-ir`, step A** (`f7b72cd`; CI run
+  45039460335 green on all 8 jobs; integration gate 2,563 tests, 0 new
+  packages, advisories ok; the host's `master` published). New crate
+  `bk-decomp-ir`. The merge with `master` needed both sides kept in
+  `.gitattributes`, `Cargo.toml`, `docs/PERF.md`. The step B agent was
+  told to `git merge master`. The branch `decomp-ir` and its worktree
+  stay for step B. The owner said at 17:50 that the Mac is on an
+  unreliable train connection: both agents were told that connection
+  failures are not results; pushes here are retried.
+* **Running, slot 1: D05 step B** — agent `ac80c77fc116db657` (Opus 5.5),
+  worktree `../basilisk-wt/decomp-ir`: allocation-free accessors in the
+  cover walk, ranged cursors, `cfg_mut`, **the high-variable event
+  queue** (ADR-062), and the three things D07 needs from the IR crate
+  (an op-tree key cursor, `op_dead_and_gone`, the recorder's unit
+  brackets).
+* **Running, slot 2: `spec-decomp-typeop`** — agent `a185a6871f46e7ace`
+  (Fable 5.2, high), worktree `../basilisk-wt/spec-decomp-typeop`: the
+  D08 specification complete with an oracle prototype, then the "to be
+  specified" parts of `decomp-core.md` (4.A.6, 4.A.10, 4.A.11, 4.A.14,
+  part C).
+* **Next, in order:** when step B is merged → **D07a `bk-decomp-core`**
+  (Opus; spec ready for its first steps) in slot 1. When the spec agent
+  is done → the oracle track (`@joins`, `bk print cover`, empty input
+  slots in `bk-testkit`'s reader; it rebuilds both shared references, so
+  not while another agent captures) or D08's implementation, whichever
+  is unblocked. Then `PLAN.md` "Order of work": after D07a the
+  decompiler has width (D07b, D07c, D08, the value-set solver, D10) and
+  the programs line (M4) waits for a slot.
+* Not yet applied from `plan-programs`' report: the `PARITY.md` rows.
+  Still waiting on the owner: the site's design-rule breaks and the
+  brand after the pupil's removal.
+
+**RESUMED 2026-11-16 19:25 (owner: "Continue with two agents", then
+"Or rather, with 3 agents"). The cap is three.** Checked first: CI run
+43663964511 (the rename) ended green on all 8 jobs; `master` `b3c921e`
+is green; the nightly of 2026-11-16 passed (gate 2,423 tests, wine,
+oracle, differential). The build host's visible memory varies (15 GB when
+idle at 19:25, 23 GB at 19:48 under load, no reboot since 2026-11-14):
+the hypervisor reclaims idle memory and gives it back, so
+`remote.sh status` is not the machine's size. The coordinator first
+read the 15 as a reduction and told the agents to hold back; corrected
+by message at 19:49.
+**Three fresh agents continue the three unfinished tracks** (started
+19:26; each was pointed at "Status and how to continue" in its track
+report):
+
+| Branch | Agent id | Task |
+|---|---|---|
+| `decomp-symbols` (D06) | `adc10fb4fccb83e94` | clippy clean and a green gate first; the `@scope` dump test on `bkstate` 2; the remaining tests, fuzz targets, benchmarks, spec appends; testbed, both gates, report |
+| `decomp-ir` (D05) | `aebffc71c4b0d4ebb` | clippy clean, re-run the corpus, green gate; the 76 dumps with join-space varnodes: it specifies the join records it needs from the state dump (a `bkstate` addition the coordinator schedules; it must not touch the console extension or the shared references) and pins those 76 by name meanwhile; the remaining tests; testbed, both gates, report |
+| `spec-decomp-wave3` (worktree `../basilisk-wt/spec-decomp-wave3`) | `ab973f78895604366` (Fable 5.2, high) | started 19:55. Specifications D07 `decomp-core` first, then D08 `decomp-typeop`, from the design documents and Ghidra's source; on the owner's instruction (19:58) it also compares `decomp-plan.md`'s track table, dependencies and critical path with the source and reports "The plan compared with Ghidra's source" early in `docs/agents/spec-decomp-wave3.md`. Told that ADR-048 is taken (next free: ADR-049) |
+| `plan-programs` (worktree `../basilisk-wt/plan-programs`) | `aebe09976bb2497c7` (Fable 5.2, high) | started 20:02 as a **fourth** agent (owner: "Spawn another fable subagent to plan onwards … compare against Ghidra source as well, improving where possible, and keeping high performance, code quality and Rust standards"). Delivers `docs/features/program-plan.md` (the port plan for M4 and M5 in the shape of `decomp-plan.md`, with the `ref-headless` oracle track specified), `docs/research/plan-programs/roadmap-check.md` (M4 to M10 against Ghidra's source: dependencies, what the roadmap misses, a corrected order) and its report; reads the paused `store-spike` and `spec-pe` work |
+
+**`decomp-ir` (D05) reported finished at about 20:12** (head `dfebe94`,
+pushed; both gates green, 2,489 tests; not merged yet). **It is under
+independent review** before the merge, as `PLAN.md` "Order of work"
+sets for data-model tracks: reviewer `a50fda968a778e978` (Opus 5.5,
+started 20:15) on a detached read-only checkout
+`../basilisk-wt/review-decomp-ir`; it reports findings to the
+coordinator and changes nothing. After the review: fixes go back to the
+D05 agent (`aebffc71c4b0d4ebb`, resumable), then the coordinator merges
+through `integration`. **Only the coordinator merges** (owner, about 20:14:
+"Remember that you merge all work, not the agents"). D05's numbers:
+3,642 dumps load on both machines, 3,566 write back byte for byte, the
+other 76 are the pinned list with join-space varnodes; `print raw`
+equal in 607 of 607; block facts equal at 1,684 stops (137 dumps there
+cannot be read: empty input slots written as `-`). GHIDRA-BUGS 46 to 48
+added. **It asks for an oracle change — the next line-1 task, after
+`decomp-symbols` has finished using the references:** (1) a `@joins`
+section in `bkstate` after `@spaces` (`J <offset hex> <size dec>
+<npieces> <space:0xoff:size>…`, every record of
+`AddrSpaceManager::splitlist` in creation order; `install_joins` on the
+branch already replays it), (2) `bk-testkit`'s `StateDump` reads an
+op's empty input slot (`-`), (3) a `bk print cover` console command
+(Ghidra's own `print cover varnode` cannot be run, entry 48).
+
+**The review of D05 came back at 20:24: merge after two fixes.** The
+reviewer reproduced one real bug — the sort key of an `iop` varnode
+changes after insertion (`src/ssa.rs:272`), which corrupts the bank
+orders and can be triggered through the public API and from a dump —
+and found the 137-dump exception in `tests/block_facts.rs` unpinned;
+also a quadratic step in the loader, a fuzz target that never mutates,
+unchecked flag invariants, three misleading error variants, a wrong
+"withdrawn" note. For the API it asked for allocation-free accessors
+in the cover walk and for ranged cursors. It checked the bank keys and
+searches, every mutation method, covers and cursors against the C++ and
+found them right. **The D05 agent was resumed with the findings**: step
+A (items 1 to 8) before the merge, step B (accessors, ranged cursors,
+`cfg_mut`) as a second merge. Reading and writing ops with empty input
+slots (mid-pass states) goes to the oracle track with `@joins`.
+**`decomp-symbols` (D06) met all acceptance conditions at about 20:20** and is
+on `integration` (CI run 43928154285); merge when green. GHIDRA-BUGS 49
+to 51 added (`rangemap.hh`).
+
+**Merged 20:31: `decomp-symbols` (D06)** (`11eb74f`; CI run 43928154285
+green on all 8 jobs; integration gate 2,492 tests, 0 new packages,
+advisories ok; worktree and branches removed, the host's `master`
+published). New crates `bk-context` and `bk-decomp-symbols`; every
+acceptance condition of the spec met (image oracle 93 data tests and
+8,435 rows, `print map` 93 of 93 on both machines, `@scope` rebuilt for
+3,642 of 3,642 dumps, properties at 1,000,000 cases, a test per query
+rule). Open by design: `<protooverride>` round trips (D07's prototype
+codec), one checklist line (D17).
+
+**Merged 20:27 (documents): `plan-programs`** — `features/program-plan.md`
+(the port plan for M4 and M5), `research/plan-programs/roadmap-check.md`
+(M4 to M10 against Ghidra's source) and its report. Recorded from it:
+ADR-049 to ADR-057, the corrected "Order of work" in `PLAN.md`,
+GHIDRA-BUGS 52. **The owner decided (20:30):** Ghidra's packed
+databases (`.gdt`, `.fidb`) are read, read-only (ADR-054); system
+binaries and MSVC-built samples may be kept on the build host and the
+testbed, uncommitted (ADR-057); **the storage engine is pure Rust
+only** (ADR-050; LMDB is out); the emulator is an interpreter and the JIT is left
+for later (ADR-058; "Leave JIT for later then."). Not yet applied from the
+report: the `PARITY.md` row changes, the split of four tracks marked
+"to split", the items marked "to be planned". The storage study's only
+measurements were copied out of its build directory to
+`../basilisk-wt/store-spike/tools/store-spike/results-aborted-2026-11-13/`
+(uncommitted, in the paused worktree). `../spec-macho` and
+`../spec-program-model` are empty worktrees; the plan supersedes the
+second.
+
+**The cap drops to two when the specs are done** (owner, about 20:10:
+"Once the specs are done, go down to 2 agents"): when
+`spec-decomp-wave3` and `plan-programs` have both handed back, at most
+two agents run. So: do not start a new agent in a slot that an
+implementation track frees if that would leave more than two running
+after the two Fable tracks end. With two slots the order is line 1
+(the decompiler's chain) always, and the second slot alternating
+between line 2 (specs ahead, side tracks) and line 3 (programs).
+
+**`decomp-symbols` reported at 20:07 and was sent back** (not merged):
+clippy clean, 69 tests, both gates green (2,482 tests), fuzz, Wine and
+arm64 clean — but five acceptance conditions of its spec's section 7
+were not met: whether the image oracle ran or skipped, the live
+`print map` check on all 93 data tests, the `@scope` rebuild over all
+3,642 captured dumps, the properties at 1,000,000 cases, and unit tests
+per row of 4.6. It was resumed to do them before the merge. **A third
+rarely failing test** showed in its first gate run: `bk-decomp-range`
+`tests/no_allocation.rs::methods_do_not_allocate` (for the follow-ups
+track, with the `bk-ui` task test). Its Ghidra finding (white space in
+mixed XML content dropped by `xml.y:451–466` `print_content`; `bk-marshal`
+behaves the same) and the three `rangemap.hh` defects go into
+GHIDRA-BUGS when it reports again.
+
+**Merged 20:04: `decomp-out-spike` and `range-proptest`** (`234a43b`;
+CI run 43923279796 green on all 8 jobs; integration gate 2,425 tests,
+0 new packages, advisories ok; worktrees and branches removed, the
+host's `master` published). The spike's answer is **yes** — ADR-048
+confirms ADR-025 3c: the output is `PrintC`'s emission tree (3,231 of
+3,231 documents, 618,300 of 618,300 `Emit` calls on both machines).
+GHIDRA-BUGS 40 to 45 added. The spike's report is the section "Report"
+of `docs/agents/decomp-out-spike.md` (the agent's harness refused to let
+it create `report.md`; the coordinator did not move it, the owner was
+told). The property test now expects Ghidra's result for ranges of
+different sizes (Ghidra's `newDomain` defect, entry 45).
+
+**A property test on `master` fails rarely**: `bk-decomp-range`
+`intersect_is_exact_when_it_succeeds` (CI run 43661252298, on a
+site-only commit): the generator intersects ranges of different sizes
+(the full 1-byte range with a 2-byte range). Given to the spike agent
+as its second task (branch `range-proptest`, tests only).
+
+When one reports → review, record ADRs (next ADR-048) and Ghidra
+defects (next entry 40; eight are waiting, listed below), merge
+through `integration`, `scripts/remote.sh publish`. When `decomp-ir`
+names its join records → schedule the `bkstate` addition (the D00
+tooling; its own small track, after `decomp-symbols` has run its dump
+test or coordinated with it). Then the queue: D07 needs a spec.
+
+**MACHINE SHUT DOWN at the owner's request (2026-11-15, 03:43), after
+everything was pushed.** `master` is `a7b7540` plus this note, the same
+on the remote and on the build host. **First thing next session: check
+CI run 43663964511 (integration, head `957d143`) and the CI and Pages
+runs on `master` `a7b7540`** — at shutdown the Windows and macOS test
+jobs were still running; the other six jobs, the gate on the build
+host (2,423 tests) and the site check were green. If one failed, fix it
+before anything else.
+
+Done after the agents stopped (all on `master`):
+* **The site.** Documentation pages rewritten and extended (first
+  disassembly, coming from Ghidra, `sleigh decode` and `sleigh compile`
+  references, processors, SLEIGH, p-code, how results are checked);
+  front page: real decoder output in the hero, a stats band, a lighter
+  goals grid, more contrast, CSS-only motion (no script, native
+  scrolling), the milestone strip with true progress (`plan.ts` has a
+  `partial` state and task counts), the internal screenshot tag
+  removed. The owner preferred the original headings; they are back.
+* **The logo.** The pupil in the middle of the mark is removed (site
+  components and the six main SVGs in `assets/brand`); the serpent's
+  eye blinks (cut with a mask in `Mark.astro`/`Logo.astro`). **Not
+  redone:** the PNG renders in `assets/brand/png` (favicon, touch
+  icon), `basilisk-icon-small.svg`, the PNGs embedded in `bk-ui`, the
+  design variants — they still show the old mark.
+* **ADR-047: `basilisk sleigh decode`** is the linear sweep's name;
+  `basilisk disasm` is reserved for the flow-following disassembler of
+  M5 and until then prints a pointer and exits 2. The coordinator made
+  this code change directly (a mechanical rename, agents stopped).
+  The three unfinished branches do not use the old name.
+* Not verified by eye: the animations playing, the light theme and the
+  phone layout after the redesign; the section reveal starts from
+  transparent (view timeline) — if a browser leaves a section hidden,
+  start it from visible.
+
+**STOPPED (2026-11-15, 02:44). No agent is running.** The owner:
+"Stop work for now until current tracks are done as we are low on usage
+and we want to stop at a good point" (02:33), then "the agents really
+should finish their work about now as we are very low on usage". All
+three agents were told to commit, write "Status and how to continue" in
+their track report, push, and hand back. **None of the three branches
+is merged; none is mergeable as it stands.** All three are on the
+remote. To continue a track: start an agent in the same worktree and
+branch and point it at that section of its report.
+
+| Branch (worktree `../basilisk-wt/<branch>`) | Head | State | Missing |
+|---|---|---|---|
+| `decomp-symbols` (D06) | `dab07a3` (wip) | Compiles; 26 crate tests and 10 `bk-context` tests pass; oracle replays all equal (scope 205,104 rows, context 85,713, image 8,435). One gate so far, at step 0 (`de37c32`, 2,359 tests, exit 0). One of two merges from `master` used | **Clippy: 67 errors** (mechanical; itemised in the report). The `@scope` dump test (restore API written, untested), pspec volatility test, per-table unit tests, codec property tests, seven fuzz targets, benchmarks and `PERF.md`, spec appends, testbed runs, Windows clippy, `check-dep-age`, both gates, final report |
+| `decomp-ir` (D05) | `f35e932` | Compiles; unit tests pass; the five `switchind` dumps load and write back byte for byte. Corpus (one run on the build host, before its last fix): 3,642 dumps loaded, 3,510 written back equal, `print raw` equal in 607 of 607. Its one merge from `master` is used | **Corpus test fails**: 76 dumps print `{unlinked:…}` because the dump has no join records (extend `bkstate` or pin the count); 56 differed in built-in user-op names (fixed in the last commit, not re-run). **Clippy: about 30 warnings.** Unit tests per mutation method, property tests, opcode table against the console, covers against `print cover varnode`, block facts, unit-table test, fuzz target, benchmarks, the Mac corpus run, the 20-function subset, spec sections 8–10, testbed checks, both gates |
+| `decomp-out-spike` (D16a) | `c46d0e6` | **Provisional answer to ADR-025 3c: yes.** A tree built from the printer's logged decisions, without the `Emit` log, prints back the identical `Emit` sequence: 3,176 functions (`print C`, `xml`, `flat`, Java, non-default options), 614,357 calls, 0 mismatches. Instrumented console byte-identical to the reference in 990 runs (build host only). Hook patch, logger, `build-instr.sh`, prototype and `rerun.sh` are committed | `report.md`, the README section on the printer log, a gzip log sample, the gate and `check-dep-age`, the Mac run, host cleanup. Unproven (not reached by the corpus): tokens `unary_plus`, `boolean_xor`, `new_op`, `instanceof`, `remequal`, `leftequal`, `orequal`; nodes `constructor`, `opBranch`, globals/types entry points |
+
+Ghidra defects the three reported, **not yet added to
+`GHIDRA-BUGS.md`** (next entry 40; take the details from the reports):
+`rangemap.hh` — `insert` adds a duplicate last fragment, `erase` can
+stretch a neighbouring record over addresses it does not cover, and a
+later erase leaves dangling fragments (use after free) (D06, confirmed
+with a C++ program); `PieceNode::findRoot` (`op.cc:883`) uses
+`compareOrder`'s -1/0/1 as a boolean, `VarnodeBank::searchvn`
+(`varnode.cc:1220`) leaves `create_index` uninitialised (D05, read);
+`print C flat` is broken (labels print as a bare `:`, goto targets as
+`Ram…` names, unconditional branches dropped), `hideextensions` is
+declared but never registered as an option (D16a). Spec items D06 found
+wrong are in its report. ADR-025 3c is to be confirmed when the spike's
+report exists. `decomp-symbols` could not push from inside its agent
+(the permission system refused); the coordinator pushes that branch.
+
+**Docs site** (owner, about 02:36: "Spend remaining usage and the time
+improving the docs page"): branch `docs-content`, written by the
+coordinator — the pages were stale (they listed `disasm` and the SLEIGH
+compiler as planned). New: first disassembly, coming from Ghidra,
+`disasm` and `sleigh compile` reference pages, processors, SLEIGH,
+p-code, how results are checked; updated: overview, introduction,
+build, CLI, formats, architecture, decompiler, analysis. Every command
+and output on the pages was run with a build of `master`. Still shells:
+the interface's per-view pages, analysis, scripting (queue item 11
+remains for those and for the generated key-binding and CLI tables).
 
 **The cap is three agents** (owner, 2026-11-15 about 02:00: "Use 3
 agents for now"; it was two from 2026-11-14 20:17), and every agent builds,
@@ -437,11 +697,37 @@ testbed's Wine set-up); `docs/agents/decomp-cspec.md` and
 `remote-build.md` still describe the single table (historical reports,
 left as they are).
 
+**Merged: `decomp-oracle-v2`** (`a5bfa968bedb8543f`; `3149b56`, CI run
+43657261978 green on all 8 jobs, integration gate on the build host
+2,423 tests, 0 new packages, advisories ok; worktree and branches
+removed, the host's `master` published). `bkstate` **version 2**: after
+the `G` records of `@scope`, for the function's local scope only, the
+records `I` (scope id, `nextUniqueId`, display name, parent, children),
+`C` (category vectors with their empty slots), `E` (`multiEntrySet`),
+`R` (one per record of each space's entry map in record-list order,
+with the subsort stored at insertion), `F` (fragments in multiset
+order), `Q` (the dynamic entry list); an entry is named
+`s<symbol id>:<real index>`. `bk-testkit` reads and writes versions 1
+and 2 (`StateDump::version`, `ScopeSection::orders`). Both shared
+reference directories were rebuilt once; 2,207 files hashed before and
+after on each machine: only `STAMP`, `bin/decomp_bk`,
+`bin/decomp_bk_dbg`, `.state/consoleext.fp` and the extension's objects
+changed; `bin/decomp` is byte-identical. Corpus (167 scripts, 607
+decompilations, 3,642 state dumps, identical on both builds apart from
+the five known `floatprint` files): 2,983 `C` records and no empty
+slot, `multiEntrySet` never non-empty, 42 dumps with dynamic entries,
+7,750 `R` records, 8,242 fragments; every record list happens to be in
+`(last, subsort)` order. **A spec error it found**: `decomp-symbols.md`
+4.5 and 4.21 row 4 said the dump writes `getMapEntryPosition`; it
+writes the real index (spec amended, `decomp-symbols` told at 02:14).
+`decomp-symbols` and `decomp-ir` were told at 02:25 that version 2 is
+on `master`. Report: `docs/agents/decomp-oracle-v2.md`.
+
 | Branch | Model | Agent id | State |
 |---|---|---|---|
 | `decomp-ir` (worktree `../basilisk-wt/decomp-ir`, cut from `master` `4fb460d`) | Opus | `a1e2b060313375b6f` | started 02:02 on 2026-11-15, in the third slot. D05 from `features/decomp-ir.md` (ADR-046): crate `bk-decomp-ir` — varnodes, ops and their banks with Ghidra's orders, basic blocks over `bk-decomp-cfg`, covers, the mutation interface with the `FunctionEnv` trait, the opcode property table, text dumps, loading and writing `bkstate`. Builds on `bkstate` version 1; **tell it when `decomp-oracle-v2` is on `master`** (it may then `git merge master` once). |
 | `decomp-symbols` (worktree `../basilisk-wt/decomp-symbols`, cut from `master` `4d12e6e`) | Opus | `ada7bcd688de4b0b7` | started 01:35 on 2026-11-15. D06 from `features/decomp-symbols.md` (ADR-043, 044, 045): step 0 moves `bk-sleigh`'s context store into a new crate `bk-context` (re-exported; no behaviour change; speed checked); then `bk-decomp-symbols` (interval map with Ghidra's orders, symbols and scopes, queries, comments, strings, constant pool, `<binaryimage>`, context names and XML, overrides, the `ProgramHost` trait, overlays). It may add the `Spacebase` constructor to `bk-decomp-types` and `git merge master` at most twice (for D00). Its test that loads `@scope` from a dump waits for the dump's format version 2. |
-| `decomp-oracle-v2` (worktree `../basilisk-wt/decomp-oracle-v2`, cut from `master` `1d922c1`) | Opus | `a5bfa968bedb8543f` (the D00 agent, resumed) | resumed 01:48 on 2026-11-15. The state dump's format version 2: a `@scope` section from which D06 can rebuild a function scope exactly (scope and symbol ids, the entry map's record and fragment orders per space, the dynamic-entry order, and whatever else the D06 spec's queries need); extension, `bk-testkit` `oracle::state`, samples and fixtures on both builds. It rebuilds both shared reference directories once at the end (only the extension's own outputs may change; before/after hashes in its report). D05 starts after it. |
+| `decomp-out-spike` (worktree `../basilisk-wt/decomp-out-spike`, cut from the integration commit `9fe8123`, now part of `master`) | Opus | `ae99812eea4ab106a` | started 02:16 on 2026-11-15 in the slot `decomp-oracle-v2` freed. D16a (plan 8.1): answers ADR-025 3c — can `PrintC`'s output be reproduced token for token from a tree built first and printed afterwards? D00 did not deliver the printer log, so the spike builds it: a hook patch for a copy of Ghidra's source under `tools/reference/patches-instr/` with a build script (kept: D16c is tested against trees logged with it), an instrumented console built in a scratch directory (it must not write into the shared references), a throw-away prototype under `docs/research/decomp-out-spike/prototype/`, the report `docs/research/decomp-out-spike/report.md` and `docs/agents/decomp-out-spike.md`. No crate. The coordinator confirms or revises 3c from the report. |
 
 **Build host CPU model changed** (20:26, by the owner): from QEMU's
 baseline to the host's (AMD Zen 4 class). Checked afterwards: 20 cores,
@@ -605,6 +891,48 @@ start a fresh agent briefed from the branch's files.
 
 ### Queue (three agents at a time; in this order)
 
+**Order from 2026-11-16** (`PLAN.md`, "Order of work"; the numbered
+items below are the older queue and are referred to by number). Three
+lines, one slot each:
+
+*Line 1 — the decompiler's chain:* D05 `decomp-ir` and D06
+`decomp-symbols` (running) → the `bkstate` join-record addition D05
+asks for (small, oracle tooling) → **D07** `decomp-core` → D11 → D14 →
+D16b → D17.
+
+*Line 2 — specifications one step ahead, else a decompiler side track:*
+wave 3 specs D07, D08 (running, Fable 5.2) → D16c and D16b specs (from
+ADR-048 and the spike's report) → implement D08, D16c → wave 4 specs
+(D09, D10, D11, the rule families in the order R1, R4, R6, R3, R2, R7,
+R5, R8, R9) → D09 with the data-test runner (the first end-to-end
+decompilation of a Ghidra test file) → D10, the rules, D12, D13, D15.
+D18 (injection) and D19 (corpus; 32 rules apply in no corpus yet) are
+unblocked today and fill gaps.
+
+*Line 3 — programs (M4), starting as soon as the slot is free:*
+resume `store-spike` (ADR-003's engine; item 9) → **`ref-headless`**
+(new: Ghidra headless on the build host as the oracle for the Java
+side; needs JDK 21 and about 10 GB there) → the program-model plan and
+specification (Fable 5.2; reads the spike's result) → resume `spec-pe`,
+then `spec-macho` → `bk-store`, `bk-program`, `bk-datatypes`, the
+loaders.
+
+*Fill-ins when a line is blocked,* in this order: the follow-ups list
+(item 12) plus the `bk-ui` flaky test and the monitor type (item 7);
+`sleigh-language` (item 14; M5 needs it); compiled p-code templates
+(speed margin on x86-64); the site and brand corrections waiting on the
+owner (below); plugin tracks P0, P1, P3 (item 10); the emulator and the
+assembler (M6, need only M1 and M2).
+
+*Waiting on the owner:* whether the site's redesign of 2026-11-15 is
+brought back within the written design rules (it breaks five of them:
+`features/site.md` 5, `assets/brand/README.md`), and what happens to
+the brand now that the pupil is removed from the mark (PNG renders,
+favicon, the program's icons and the brand guide still have it). The
+owner answered the first with "I was talking about the software
+design" and the second with "Something else"; nothing was changed.
+
+
 1. **`cspec-host` (merged 21:16; the text below is the brief it had)** — `bk-cspec`'s oracle table depends on the
    C++ standard library. Regenerated on Linux x86-64 (g++ 14, libstdc++)
    it differs from the checked-in table (macOS, libc++): 20 `EFF` rows
@@ -754,15 +1082,20 @@ Done and no longer queued: every SLEIGH track of M1/M2 except
 2. `sleigh-fixups` and `testbed` are merged (above).
    `decomp-range` and `spec-decomp-wave1` are merged (above).
    `decomp-oracle` is merged (above). `decomp-cfg-oracle` is merged
-   (above). `decomp-oracle-v2` reports → check
-   its before/after hashes, merge through `integration`, tell
-   `decomp-symbols` and `decomp-ir` that version 2 is on `master`; in
-   its slot start the **D16a printer spike** (plan 8.1: a report and a
-   throw-away prototype from D00's final-state dumps; it decides how
-   D16b is built) — then the monitor type (queue item 7) with the
-   `bk-ui` flaky test. `decomp-symbols` and `decomp-ir` report → merge;
-   D07 `decomp-core` needs both and a spec. After each merge:
-   `scripts/remote.sh publish`.
+   (above). `decomp-oracle-v2` is merged (above). Running:
+   `decomp-symbols` (D06), `decomp-ir` (D05), `decomp-out-spike`
+   (D16a). When one reports → review, record its ADRs (next number
+   ADR-047) and Ghidra defects (next entry 40), merge through
+   `integration`, `scripts/remote.sh publish`. The spike's report →
+   confirm or revise ADR-025 3c. Next into a free slot: the monitor
+   type (queue item 7) with the `bk-ui` flaky test; then a spec agent
+   for D07 `decomp-core` (it needs D05 and D06 merged to be built, but
+   its spec can be written once both crates' interfaces are fixed).
+   **Run `scripts/remote.sh clean --merged` before creating a new
+   worktree, not after**: a fresh branch with no commit of its own
+   counts as merged and its checkout on the host is removed (it
+   happened to `decomp-out-spike` at 02:25, five minutes after its
+   start; the agent was told).
 3. After that the queue above, one slot on the decompiler line (5, 6),
    the other on the side work (7 onwards).
 

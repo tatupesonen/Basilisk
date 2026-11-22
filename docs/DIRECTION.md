@@ -56,6 +56,45 @@ and a sane architecture in mind.
 
 ## Working rules
 
+* **Specifications are written with Fable 5.2** (owner, 2026-11-16:
+  "Remember to write specs using Fable 5.2. If we are out of Fable 5.2
+  usage, use opus 5.5 on high. And remember to look at the ghidra
+  source."). A specification track is a Fable 5.2 agent at high effort;
+  when Fable 5.2 usage is exhausted it is an Opus 5.5 agent at **high**
+  effort. Every specification is written from Ghidra's source, read at
+  the pinned commit and cited by file and line, never from memory of
+  Ghidra. **And from the project's own design documents** (owner, same
+  day: "Remember to read the docs for design too", meaning the software
+  design): the ADRs in `DECISIONS.md`, the architecture and crate map
+  in `PLAN.md`, the feature-document sections and the engineering and
+  testing rules in `LOOP.md`, and for the decompiler
+  `features/decomp-plan.md` with its amendments and the neighbouring
+  specs. A spec brief lists them. This replaces "including specification and research tracks"
+  in the entry of 2026-11-14 below; implementation agents stay Opus 5.5
+  at medium effort.
+* **Three agents** (owner, 2026-11-16: "Continue with two agents", then
+  "Or rather, with 3 agents"), as on 2026-11-15. A fourth was added the same evening on the
+  owner's request ("Spawn another fable subagent to plan onwards"): the
+  planning agent for M4 onwards. The cap for the other work stays three.
+* **Finished work goes to `master` promptly** (owner, 2026-11-16: "we
+  also want to merge basically everything to master that's finished so
+  all fresh agents have up to date specs"; and "Remember that you merge
+  all work, not the agents"). The coordinator merges a track as soon as
+  it has reported and its gate and CI are green, specifications and
+  plans included; a fresh agent's worktree is cut from that `master`.
+  A review that is still running does not hold a green branch back: its
+  findings are fixed on a follow-up branch.
+* **Two agents once the specs are done** (owner, 2026-11-16 about 20:10:
+  "Once the specs are done, go down to 2 agents"). When the wave 3
+  specification agent and the planning agent have both handed back, no
+  more than two agents run. The coordinator reads "the specs" as those
+  two Fable tracks; until both are done the four running agents
+  continue, and a slot freed by an implementation agent is refilled
+  only while that keeps the total at two after the specs end.
+* **Agents push their own branch** (owner, 2026-11-15: "Also push those
+  work branches"): a plain push of its own branch after each commit,
+  never force, never another branch, never `master`. If the permission
+  system refuses an agent's push, the coordinator pushes that branch.
 * **Division of labour** (owner, 2026-11-12): the coordinator (Claude Fable)
   writes the docs — ADRs, plan, feature specs, agent rules — and manages
   subagents, which write the code from those docs. The coordinator spawns
