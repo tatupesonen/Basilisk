@@ -140,7 +140,7 @@ tracks, their order, sizes and acceptance are in `features/decomp-plan.md`;
 this list follows its waves.
 - [x] Wave 1 (leaf tracks; **all five tracks done**: D01, D02, D03 on 2026-11-14, D00 and D04 on 2026-11-15 — `features/decomp-oracle.md`, `features/decomp-cfg.md`, ADR-042; one follow-up in progress, the state dump's `@scope` section, format version 2): D01 `bk-decomp-range` (117 `testcirclerange` tests; `features/decomp-range.md`) · D02 `bk-decomp-types` (3 of the 8 `testtypes` tests, the other five need the IR and move to D08; `features/decomp-types.md`) · D03 `bk-cspec` (21 `testfuncproto`, 5 `testparamstore`, nine Java prototype-model classes; `features/decomp-cspec.md`) · D00 oracle tooling (state dumps, debug console, recorded p-code; `features/decomp-oracle.md`) · D04 `bk-decomp-cfg` block graph and structuring (`features/decomp-cfg.md`)
 - [ ] Wave 2: D05 `bk-decomp-ir` (`features/decomp-ir.md`, revised 2026-11-15; ADR-046) · D06 `bk-decomp-symbols` and the host trait (`features/decomp-symbols.md`; ADR-043, 044, 045; **in progress**) · D16a printer spike ✔ (2026-11-16: the answer is yes, ADR-048)
-- [ ] Wave 3: D07 core (function state, units, profiles, drivers) · D08 typeop and casts · D16c emitter
+- [ ] Wave 3 (revised 2026-11-22, ADR-059 to ADR-063, `features/decomp-plan.md` 13): **D07a** `bk-decomp-core` (state; specified in `features/decomp-core.md`) — the one track everything else waits for · then side by side D07b `bk-decomp-pipeline` (action framework, units, profiles, options), D07c `bk-decomp-ops` (compound operations), D08 `bk-decomp-typeop` (below core; outline only, its specification is being written), the value-set solver · D16c emitter
 - [ ] Wave 4: D09 flow and the data-test runner · D10 heritage · D11 actions A · R1–R9 rule families · D19 corpus extension (32 rules apply in no corpus yet)
 - [ ] Wave 5: D12 actions B · D13 jump tables · D14 merge
 - [ ] Wave 6: D15 structuring on the IR · D16b output tree
@@ -203,10 +203,14 @@ everything built on them (about 2.4 million of Ghidra's 3.1 million
 lines) — and none of that depends on M3. So M4 starts now, beside M3.
 
 **The chains.**
-* *Decompiler* (M3): D05 → D07 → D11 → D14 → D16b → D17. Five tracks in
-  a row remain; more agents do not shorten it, they only take the side
-  tracks (D08, D09, D10, D12, D13, D15, D16c, D18, D19, the nine rule
-  families).
+* *Decompiler* (M3): checked against Ghidra's source on 2026-11-22
+  (`features/decomp-plan.md` 13), the chain is shorter than first
+  planned: D05 → **D07a** (core state) → everything else → D17. After
+  D07a, D07b, D07c, D08, the value-set solver and D10 run side by side,
+  then flow, the actions, the rule families, jump tables and merging;
+  the output tracks need core, typeop and a loaded structure, not the
+  merge code. So after D07a the decompiler can use as many agents as it
+  is given.
 * *Programs* (M4 → M5 → M7 on real binaries). The detailed plan is
   `features/program-plan.md` (2026-11-16, measured from Ghidra's source;
   it corrects the first version of this section). The long pole is the

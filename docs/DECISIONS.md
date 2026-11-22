@@ -1709,3 +1709,70 @@ without the JIT. Ghidra's JIT-specific classes and their tests are marked
 not applicable in the test checklist, with this ADR as the reason, until
 a JIT exists.
 
+## ADR-059 — D07 is three crates; a pipeline belongs to one decompilation
+(Coordinator, 2026-11-22, from track `spec-decomp-wave3`; `features/decomp-core.md`, and finding 1 and 2 of "The plan compared with Ghidra's source" in `docs/agents/spec-decomp-wave3.md`.)
+
+The Ghidra code the plan gave to D07 is about 16,000 lines, not 10,000,
+and falls into three parts with different users. `bk-decomp-core` holds
+state (function and architecture state, block surgery, the call-spec
+list, dump loading, the table of high variables); `bk-decomp-pipeline`
+the action framework, units, profiles and options; `bk-decomp-ops` the
+compound operations. Pipeline and ops depend on core and not on each
+other. Tracks D07a, D07b, D07c; after D07a the other two, D08 and D10 can
+run in parallel. The architecture's action database becomes a frozen
+`PipelineConfig` plus one `Pipeline` per decompilation (the `jumptable`
+pipeline is built on first use); the console and the data-test runner
+keep one pipeline per root across functions, which is Ghidra's shared
+instance. Amends ADR-026 and the D07 row of `decomp-plan.md`.
+
+## ADR-060 — `bk-decomp-typeop` is below `bk-decomp-core`
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`; finding 3.)
+
+Both directions exist in Ghidra's source (`architecture.cc:416`, `614`;
+`funcdata.cc:917–1117`; `typeop.cc:693–868`, `915`). Typeop owns the
+type-operator table, the cast strategies, union resolution and the union
+map, and reads function state through a trait (`TypeOpEnv`: call specs,
+the prototype, user ops, high types) that core implements; core depends
+on typeop. D08 needs D05, D02, D03 and D06, not D07. Amends the crate
+drawing of `decomp-plan.md` section 2.
+
+## ADR-061 — A function is a record in program state and the state of one decompilation
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`. Extends ADR-044.)
+
+What Ghidra keeps in a `Funcdata` across decompilations — the prototype,
+overrides, override jump tables, `no_code` — is a `FunctionRecord`,
+frozen while functions are decompiled. A decompilation works on a copy
+and returns its changes, with the symbol overlay, the type fork, built-in
+user ops, comments and statistics, to be committed in operation order.
+
+## ADR-062 — The table of high variables is core's; D05 reports every varnode change that concerns one
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`; misfit 1 and finding 7.)
+
+In Ghidra every `Varnode` setter forwards to its `HighVariable`
+(`varnode.cc:371–651`). The table of high variables and `HighVariable`'s
+own methods (the lazily computed type, name representative, symbol; about
+870 lines of `variable.cc`) are `bk-decomp-core`'s; `Merge`, the
+intersection tests, the piece groups' cover logic and the merge actions
+stay D14's. `bk-decomp-ir` records an event for every varnode change
+Ghidra forwards — flags dirty, cover dirty, type dirty, symbol dirty, set
+symbol, set symbol reference, removed — in call order, in a queue core
+drains before a high is read. With this the only chain the source forces
+is D05 → D07a → everything else → D17: D14's merge passes do not need
+D11, and D16b needs D07, D08 and the loaded structure, not D14's merge
+code. Amends the D14 row and the critical path of `decomp-plan.md`.
+
+## ADR-063 — Where Ghidra's action framework and options are undefined or depend on the host, Basilisk defines them; where they are only odd, the `ghidra` profile reproduces them
+(Coordinator, 2026-11-22, from `spec-decomp-wave3`. ADR-024's form.)
+
+Defined: a root action without members is an error (GHIDRA-BUGS 54); a
+group stopped after its last member prints its name (53); `<function>`
+with an unknown child is an error (58); numeric option parameters are
+read as the libstdc++ build reads them (55, ADR-021); `TermOrder` and
+`DynamicHash` sort stably (ADR-040). Reproduced on purpose, each pinned
+by an oracle table or a capture: the items of `features/decomp-core.md`
+section 8 — among them that `option nanignore none` and `togglerule` are
+lost when the root is derived again (56) and that `normalizesetup`
+applies once per root instance (57). Option order is part of a script,
+so the `ghidra` profile keeps these; how the parallel driver treats
+`normalizesetup` is decided in D17.
+
