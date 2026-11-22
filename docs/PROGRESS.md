@@ -120,10 +120,15 @@ green.
   defined and reproduced framework oddities), **`decomp-plan.md`
   section 13** (the chain the source forces is D05 → D07a → everything
   else → D17), GHIDRA-BUGS 53 to 62 and a corrected observation.
-* **On `integration`, CI run 45039460335: D05 step A** (`decomp-ir`
-  `24f0d91`; the merge with `master` needed both sides kept in
-  `.gitattributes`, `Cargo.toml`, `docs/PERF.md`). Merge when green,
-  then tell the step B agent to `git merge master`.
+* **Merged 18:00: D05 `decomp-ir`, step A** (`f7b72cd`; CI run
+  45039460335 green on all 8 jobs; integration gate 2,563 tests, 0 new
+  packages, advisories ok; the host's `master` published). New crate
+  `bk-decomp-ir`. The merge with `master` needed both sides kept in
+  `.gitattributes`, `Cargo.toml`, `docs/PERF.md`. The step B agent was
+  told to `git merge master`. The branch `decomp-ir` and its worktree
+  stay for step B. The owner said at 17:50 that the Mac is on an
+  unreliable train connection: both agents were told that connection
+  failures are not results; pushes here are retried.
 * **Running, slot 1: D05 step B** — agent `ac80c77fc116db657` (Opus 5.5),
   worktree `../basilisk-wt/decomp-ir`: allocation-free accessors in the
   cover walk, ranged cursors, `cfg_mut`, **the high-variable event
