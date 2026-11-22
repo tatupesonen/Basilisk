@@ -13,8 +13,8 @@ Contract: `docs/features/decomp-ir.md`. Branch `decomp-ir`. Crate
 | 2. Ranged cursors | done | `b95cca5` |
 | 3. `cfg_mut` guard or contract | done (guard) | `39a3ce9` |
 | 4. High-variable events | done | `e82557b` |
-| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | next | |
-| 6. Final gates, fuzz 300 s, `check-dep-age` | open | |
+| 5. What D07 needs besides (key cursor over the op tree, `op_dead_and_gone`, unit brackets) | done | see `git log` (`feat(decomp-ir): op tree cursor`) |
+| 6. Final gates, fuzz 300 s, `check-dep-age` | next | |
 
 Item 1: `readers`, `op_inputs`, `block_ops` (an `OpIter` over the block's
 intrusive list) and every bank range query (`loc_in_space`, `loc_at`,
@@ -73,6 +73,22 @@ taken and reported, as in Ghidra), `set_input_varnode` (`setUnaffected`
 reports, `setReturnAddress` does not) record events. Tests
 `src/mutate/tests/high.rs` (10) and `tests/subset.rs` (loading the
 checked-in dumps, which have highs, records nothing).
+
+Item 5 (spec-decomp-wave3 misfit 4, decomp-core.md 4.B pool walk):
+`OpCursor` (`src/op_cursor.rs`, `Ssa::op_cursor_main`): `current` /
+`advance` / `at_end` over the main tree with `op_state` semantics (moves
+only when told, to the op after the current one *then*; an op that left
+the tree leaves the cursor on the next); `op_dead_and_gone`
+(`Funcdata::opDeadAndGone`, funcdata.hh:485 → `PcodeOpBank::destroy`,
+op.cc:1047–1060; a live op is refused). Tests: 2 in `op_cursor.rs` (the
+`processOp` order: a rule's later insert is visited, an earlier one not,
+the killed op is visited dead and retired after the move). The unit
+brackets were already there: `Ssa::begin_unit(unit, name)` /
+`Ssa::end_unit()` (`src/record/mod.rs`; Ghidra `debugActivate` /
+`debugModPrint(name)`: the name is given at the start, where Basilisk
+knows it). Not added: a cursor over the per-opcode lists
+(`beginOp(opc)`, std::list iterators); `ops_of` stays a snapshot.
+Merged `master` (`f7b72cd`, step A) cleanly at `44506c5`.
 
 ### (a) Done (code written; see (b) for whether it compiles)
 
